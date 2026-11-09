@@ -1,121 +1,416 @@
 /**
- * ═══════════════════════════════════════════════════════════════════════
- * COMMERCE MASTER APP v2.3 — DOUBLE-VAULT PYQ AI COPY EVALUATOR (redpen.gs)
- * Double-Vault Architecture: Gyan Sir's Chapter Vaults & CBSE 10-Year PYQ Vault.
- * Gatekeeper OCR, Rejection of Fake/Screenshots, Forensic CBSE Line Surgery,
- * Word Count & Presentation Audits, Topper Rewrites, and 48-Hour Auto-Sync.
- * ═══════════════════════════════════════════════════════════════════════
+ * redpen.gs - Universal CBSE Red-Pen Engine (Commerce, Class 11-12, All 8 Subjects)
+ * Flow: Gatekeeper & Value-Point Extraction -> Evaluate -> Validate & Score in Code.
  */
 
-// 1. MASTER DOUBLE-VAULT DIRECTORY
-const MASTER_PYQ_VAULT = {
-  "Business Studies": "1648ea01-dbba-4f12-b7b0-cf1804bf1ca7", // 187 Past Papers + Official Marking Schemes
-  "Accountancy": "862d4eb0-0e2a-4d74-aac0-fe342804887a",     // Partnership Problem Vault (Fallback)
-  "Economics": "b4d0e6fc-0017-49ce-9fb9-ef98a446d2c2"        // Macro Vault
+var CANDIDATE_MODELS = [
+  'gemini-3.8-flash',
+  'gemini-3.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-flash-latest',
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash'
+];
+
+var RULE_CONFIG = {
+  ownFigureRule: true,
+  narrationCarriesMarks: false,
+  spellingAffectsMarks: false,
+  wordLimitAffectsMarks: false
 };
 
-const CHAPTER_VAULTS = {
-  "12": {
-    "Business Studies": {
-      "1": "a271c72b-120f-4ee3-bc1b-94a3c9c5623f",
-      "2": "36434c59-b8b9-4bca-8c6e-dbd9ef3ab029",
-      "3": "a371bd69-08af-4b4c-a037-42138fa402fc",
-      "4": "590d9b6b-2a72-4dce-a733-527fee4d411b", // Planning
-      "5": "152c379d-ee72-4eed-9338-981f4410b396", // Organising
-      "6": "1e808135-63b5-4925-9a6d-5179a6cb2c2c", // Staffing
-      "7": "a79500d5-523d-42c4-bf1f-31e163789165", // Directing
-      "8": "de7dec43-d111-411c-ae59-413544696a35", // Controlling
-      "9": "0baeb237-2c5b-4b00-b2c9-fbdc15d2e5b4", // Financial Mgmt
-      "10": "b39ac935-f9aa-4d40-bdc4-1689dc8ec7b8",// Financial Markets
-      "11": "48ace0c5-2b00-4360-935d-bdcb50696b0f",// Marketing
-      "12": "16938774-01da-46ca-9d34-9ec0f572c416" // Consumer Protection
-    },
-    "Accountancy": {
-      "1": "218bacc6-7009-416c-b1c5-576da5362152",
-      "2": "13c314ef-7e44-4743-bc00-b247832aad84",
-      "5": "2737e242-8308-4d7a-a000-968dc3cc5b7b",
-      "6": "9f5d4b13-fdbe-4dbf-a4be-dfc3c803b979",
-      "10": "152d6e9b-3ab9-4e92-8c88-b3b77639621a"
+var WORD_LIMITS = {
+  ACCOUNTS: { 3: null, 4: null, 6: null },
+  BST:      { 3: [50, 75], 4: [100, 125], 6: [150, 200] },
+  ECON:     { 3: [50, 75], 4: [100, 125], 6: [150, 200] },
+  STATS:    { 3: null, 4: null, 6: null }
+};
+
+var SUBJECT_PACKS = {
+  ACC11: { vertical: 'ACCOUNTS', name: 'Accountancy (Class 11)' },
+  ACC12: { vertical: 'ACCOUNTS', name: 'Accountancy (Class 12)' },
+  BST11: { vertical: 'BST', name: 'Business Studies (Class 11)' },
+  BST12: { vertical: 'BST', name: 'Business Studies (Class 12)' },
+  ECO11_MICRO: { vertical: 'ECON', name: 'Micro Economics (Class 11)' },
+  ECO12_MACRO: { vertical: 'ECON', name: 'Macro Economics (Class 12)' },
+  IED12: { vertical: 'ECON', name: 'Indian Economic Development (Class 12)' },
+  STAT11: { vertical: 'STATS', name: 'Statistics for Economics (Class 11)' }
+};
+
+var VERTICAL_RULES = {
+  ACCOUNTS:
+    'LENS: stepwise marking. Journal entry = accounts + Dr/Cr + amount. Ledger/statement = format judged separately from figures. ' +
+    'Working notes, formulas and headings earn marks only if the value points list them.\n' +
+    'MARKS-AFFECTING: wrong account, wrong amount, wrong Dr/Cr, missing entry, wrong head/sub-head, wrong formula, missing item that has its own value point.\n' +
+    'ALERT ONLY: missing ruling, blank L.F., missing date, abbreviated but identifiable account name, missing rupee sign, narration (unless a value point lists it), rounding inside tolerance.',
+  BST:
+    'LENS: keyword-led value points (point + explanation). For case-based questions the concept must be identified AND justified from the case text.\n' +
+    'MARKS-AFFECTING: wrong or missing concept/principle/function, point irrelevant to the question, one concept confused with another, required case justification missing.\n' +
+    'ALERT ONLY: spelling that keeps the term recognisable, extra correct points, word limit exceeded, handwriting, heading style.',
+  ECON:
+    'LENS: numericals = formula, steps, answer with unit. Diagrams = labelled axes, correct curves, equilibrium/shift, scored separately from explanation. ' +
+    'True/False or Agree/Disagree = verdict plus reason; a wrong verdict earns nothing for the reason.\n' +
+    'MARKS-AFFECTING: wrong formula or step, wrong curve shape or shift direction, unlabelled axes if a value point lists them, wrong verdict, factual anchor (year/plan/policy) that a value point lists.\n' +
+    'ALERT ONLY: diagram neatness, missing title or arrowheads, unlisted factual slips that do not change meaning, spelling, word limit.',
+  STATS:
+    'LENS: formula, table construction (mid-points, f*x, cumulative frequency), result, unit. Graphs = scale, axis labels, plotting accuracy, curve/bars.\n' +
+    'MARKS-AFFECTING: wrong formula, wrong table values, wrong plotting, wrong scale, missing axis labels if a value point lists them.\n' +
+    'ALERT ONLY: acceptable rounding differences, graph neatness, spelling.'
+};
+
+/* ---------- GATEKEEPER + VALUE POINT BUILDER ---------- */
+
+function runGatekeeperAndBuildCtx_(imageBase64, confirmedStudentText) {
+  var system = 'You are the CBSE Gatekeeper for Gyan Sir\'s Commerce Vault. ' +
+    'Inspect the uploaded handwritten page and construct the official CBSE Value Points breakdown for the attempted question.';
+
+  var prompt = [
+    'Analyze this handwritten page and return JSON:',
+    '1. If it is NOT a handwritten commerce answer (e.g. screenshot/blank), set isHandwritten=false.',
+    '2. Identify subjectCode from: ACC11, ACC12, BST11, BST12, ECO11_MICRO, ECO12_MACRO, IED12, STAT11.',
+    '3. Transcribe the student text verbatim (do NOT fix spelling or numbers).',
+    '4. Construct the CBSE Value Points (VP1, VP2, VP3...) whose marks sum up to maxMarks (default 3 if not visible).'
+  ].join('\n');
+
+  var schema = {
+    type: 'OBJECT',
+    required: ['isHandwritten', 'rejectionReason', 'subjectCode', 'questionType', 'maxMarks', 'questionText', 'studentText', 'valuePoints'],
+    properties: {
+      isHandwritten: { type: 'BOOLEAN' },
+      rejectionReason: { type: 'STRING' },
+      subjectCode: { type: 'STRING', enum: ['ACC11', 'ACC12', 'BST11', 'BST12', 'ECO11_MICRO', 'ECO12_MACRO', 'IED12', 'STAT11'] },
+      questionType: { type: 'STRING', enum: ['1M', 'SA1', 'SA2', 'LA', 'NUM', 'CASE'] },
+      maxMarks: { type: 'NUMBER' },
+      questionText: { type: 'STRING' },
+      studentText: { type: 'STRING' },
+      valuePoints: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          required: ['id', 'label', 'marks', 'type', 'keywords'],
+          properties: {
+            id: { type: 'STRING' },
+            label: { type: 'STRING' },
+            marks: { type: 'NUMBER' },
+            type: { type: 'STRING' },
+            keywords: { type: 'ARRAY', items: { type: 'STRING' } }
+          }
+        }
+      }
+    }
+  };
+
+  var cleanBase64 = String(imageBase64 || '').replace(/^data:image\/[a-zA-Z0-9\.\-\+]+;base64,/, '').trim();
+
+  var raw = JSON.parse(callGemini_(system, [
+    { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } },
+    { text: prompt }
+  ], schema));
+
+  if (confirmedStudentText) {
+    raw.studentText = confirmedStudentText;
+  }
+  raw.schemeStatus = 'OFFICIAL';
+  return raw;
+}
+
+/* ---------- CLAUDE'S EVALUATION PROMPT & VALIDATOR ---------- */
+
+function buildEvaluatePrompt(ctx) {
+  var pack = SUBJECT_PACKS[ctx.subjectCode] || SUBJECT_PACKS['BST12'];
+
+  var system = [
+    'You are a senior CBSE Class 11-12 Commerce examiner AND a warm mentor writing in the voice of "Gyan Sir" of Commerce Gyan. You review one handwritten answer at a time.',
+    '',
+    '## SOURCE OF TRUTH',
+    '1. VALUE_POINTS below are the ONLY source of marks-affecting criteria. Never invent a criterion, a marks split, a keyword, a date, a figure or an NCERT fact that is not in VALUE_POINTS, QUESTION or STUDENT_TEXT.',
+    '2. CBSE awards marks for value points EARNED. You never "deduct". For each value point give status earned / partial / missed and marks_awarded between 0 and that point\'s max.',
+    '3. Credit correct answers in the student\'s own words and any correct alternative that meets the same competency. Do not require the exact wording of the scheme.',
+    '',
+    '## ALERTS NEVER CHANGE MARKS',
+    '4. Spelling slips, handwriting, missing ruling/underlines, minor phrasing, word-limit overrun and extra correct points go in "alerts" with ZERO effect on marks.',
+    '   Spelling: if the intended keyword is recognisable from context (e.g. a homophone like principal vs principle), the value point is earned and the slip is an alert.',
+    '5. Own-figure rule = ' + RULE_CONFIG.ownFigureRule + '. If true: a wrong earlier figure loses only its own step; later steps that are correct on that figure still earn their marks.',
+    '',
+    '## SUBJECT LENS: ' + pack.name,
+    VERTICAL_RULES[pack.vertical],
+    '',
+    '## EVIDENCE RULE',
+    '6. evidence_quote and student_line must be copied VERBATIM from STUDENT_TEXT. Use "" for a missed point. Never quote text the student did not write.',
+    '',
+    '## STEP RULES',
+    'Step 1: verdict_hi starts with what the student got RIGHT (1 sentence). did_right_hi lists 1-3 real strengths. Include every value point in value_point_results exactly once.',
+    'Step 2: issues = only marks-affecting findings, each linked to a vp_id, explained for a 17-year-old. Do not speculate about what the student was thinking: describe what the line says and why it does not match the value point.',
+    'Step 3: at most 3 upgrades. Each must change meaning-bearing content (keyword, concept, structure). NEVER a spelling-only fix. why_hi is one line from the examiner\'s point of view.',
+    'Step 4: model answer = one point per relevant value point, built only from VALUE_POINTS and the question. Plain text; list the NCERT/scheme keywords in keywords[] (each must appear in text). No markdown asterisks, no HTML.',
+    'Step 5: line_hi = one short memorable line (max 12 words, e.g., "सही शब्द = पक्के नंबर!"). one_action_hi = ONE concrete action for the next answer.',
+    '',
+    '## LANGUAGE AND TONE',
+    'Write *_hi fields in simple Hindi in Devanagari with English subject keywords kept in English (Hinglish as a teacher speaks). Address the student as "तुम". Calm, specific, encouraging, never sarcastic, no scolding, no emojis inside JSON strings.'
+  ].join('\n');
+
+  var vpLines = ctx.valuePoints.map(function (v) {
+    return '- ' + v.id + ' [' + (v.type || 'point') + ', max ' + v.marks + ' mark(s)]: ' + v.label +
+      (v.keywords && v.keywords.length ? ' | keywords: ' + v.keywords.join('; ') : '');
+  }).join('\n');
+
+  var user = [
+    'SCHEME_STATUS: ' + ctx.schemeStatus,
+    'SUBJECT: ' + ctx.subjectCode + ' | QUESTION_TYPE: ' + ctx.questionType + ' | MAX_MARKS: ' + ctx.maxMarks,
+    '',
+    'QUESTION:',
+    ctx.questionText,
+    '',
+    'VALUE_POINTS:',
+    vpLines,
+    '',
+    'STUDENT_TEXT:',
+    ctx.studentText
+  ].join('\n');
+
+  return { system: system, user: user };
+}
+
+function redpenResponseSchema() {
+  var S = { type: 'STRING' };
+  var arrS = { type: 'ARRAY', items: S };
+  return {
+    type: 'OBJECT',
+    required: ['step1_earned', 'step2_issues', 'step3_upgrades', 'step4_model_answer', 'step5_mentor'],
+    properties: {
+      step1_earned: {
+        type: 'OBJECT',
+        required: ['verdict_hi', 'did_right_hi', 'value_point_results'],
+        properties: {
+          verdict_hi: S,
+          did_right_hi: arrS,
+          value_point_results: {
+            type: 'ARRAY',
+            items: {
+              type: 'OBJECT',
+              required: ['vp_id', 'status', 'marks_awarded', 'evidence_quote', 'reason_hi'],
+              properties: {
+                vp_id: S,
+                status: { type: 'STRING', enum: ['earned', 'partial', 'missed'] },
+                marks_awarded: { type: 'NUMBER' },
+                evidence_quote: S,
+                reason_hi: S
+              }
+            }
+          }
+        }
+      },
+      step2_issues: {
+        type: 'OBJECT',
+        required: ['issues', 'alerts'],
+        properties: {
+          issues: {
+            type: 'ARRAY',
+            items: {
+              type: 'OBJECT',
+              required: ['vp_id', 'issue_type', 'student_line', 'explain_hi', 'ncert_keyword'],
+              properties: {
+                vp_id: S,
+                issue_type: { type: 'STRING', enum: ['conceptual', 'missing_keyword', 'calculation', 'format_marked', 'omission'] },
+                student_line: S, explain_hi: S, ncert_keyword: S
+              }
+            }
+          },
+          alerts: {
+            type: 'ARRAY',
+            items: {
+              type: 'OBJECT',
+              required: ['type', 'student_line', 'note_hi'],
+              properties: {
+                type: { type: 'STRING', enum: ['spelling', 'handwriting', 'ruling', 'phrasing', 'word_limit', 'narration', 'other'] },
+                student_line: S, note_hi: S
+              }
+            }
+          }
+        }
+      },
+      step3_upgrades: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          required: ['student_line', 'better_line', 'why_hi', 'vp_id'],
+          properties: { student_line: S, better_line: S, why_hi: S, vp_id: S }
+        }
+      },
+      step4_model_answer: {
+        type: 'OBJECT',
+        required: ['points'],
+        properties: {
+          points: {
+            type: 'ARRAY',
+            items: {
+              type: 'OBJECT',
+              required: ['vp_id', 'heading', 'text', 'keywords'],
+              properties: { vp_id: S, heading: S, text: S, keywords: arrS }
+            }
+          }
+        }
+      },
+      step5_mentor: {
+        type: 'OBJECT',
+        required: ['line_hi', 'one_action_hi'],
+        properties: { line_hi: S, one_action_hi: S }
+      }
+    }
+  };
+}
+
+function stripMarkup_(s) {
+  return String(s == null ? '' : s).replace(/\*\*/g, '').replace(/<[^>]*>/g, '').replace(/^#+\s*/gm, '');
+}
+
+function sanitizeDeep_(o) {
+  if (typeof o === 'string') return stripMarkup_(o);
+  if (Array.isArray(o)) return o.map(sanitizeDeep_);
+  if (o && typeof o === 'object') {
+    var out = {};
+    Object.keys(o).forEach(function (k) { out[k] = sanitizeDeep_(o[k]); });
+    return out;
+  }
+  return o;
+}
+
+function countWords_(s) {
+  var t = String(s || '').trim();
+  return t ? t.split(/\s+/).length : 0;
+}
+
+function validateAndScore(raw, ctx) {
+  var errors = [], warnings = [];
+  var r = sanitizeDeep_(raw);
+  var vpMap = {};
+  ctx.valuePoints.forEach(function (v) { vpMap[v.id] = v; });
+
+  var results = (r.step1_earned && r.step1_earned.value_point_results) || [];
+  var seen = {};
+  var earned = 0;
+
+  results.forEach(function (x) {
+    var vp = vpMap[x.vp_id];
+    if (!vp) { errors.push('Unknown vp_id: ' + x.vp_id); return; }
+    seen[x.vp_id] = true;
+    var m = Number(x.marks_awarded);
+    if (isNaN(m) || m < 0 || m > vp.marks) { m = Math.max(0, Math.min(vp.marks, isNaN(m) ? 0 : m)); }
+    x.marks_awarded = m;
+    x.marks_max = vp.marks;
+    x.label = vp.label;
+    earned += m;
+  });
+
+  var pack = SUBJECT_PACKS[ctx.subjectCode] || SUBJECT_PACKS['BST12'];
+  r.meta = {
+    subject_code: ctx.subjectCode,
+    subject_name: pack.name,
+    question_type: ctx.questionType,
+    max_marks: ctx.maxMarks,
+    scheme_status: ctx.schemeStatus,
+    student_text: ctx.studentText,
+    question_text: ctx.questionText
+  };
+  r.computed = {
+    marks_earned: Math.round(earned * 10) / 10,
+    marks_lost: Math.round(Math.max(0, ctx.maxMarks - earned) * 10) / 10,
+    word_check: wordCheck_(ctx)
+  };
+
+  return { ok: errors.length === 0, errors: errors, warnings: warnings, result: r };
+}
+
+function wordCheck_(ctx) {
+  var pack = SUBJECT_PACKS[ctx.subjectCode] || SUBJECT_PACKS['BST12'];
+  var limit = WORD_LIMITS[pack.vertical] && WORD_LIMITS[pack.vertical][ctx.maxMarks];
+  var n = countWords_(ctx.studentText);
+  if (!limit) return { count: n, limit: null, status: 'not_checked' };
+  var status = n < limit[0] ? 'short' : (n > limit[1] ? 'long' : 'ok');
+  return { count: n, limit: limit, status: status };
+}
+
+function callGemini_(system, userParts, schema) {
+  var key = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  var gen = { temperature: 0.1 };
+  if (schema) { gen.responseMimeType = 'application/json'; gen.responseSchema = schema; }
+  var payload = {
+    systemInstruction: { parts: [{ text: system }] },
+    contents: [{ role: 'user', parts: userParts }],
+    generationConfig: gen
+  };
+
+  var lastErr = '';
+  for (var i = 0; i < CANDIDATE_MODELS.length; i++) {
+    var model = CANDIDATE_MODELS[i];
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + key;
+    try {
+      var res = UrlFetchApp.fetch(url, {
+        method: 'post', contentType: 'application/json',
+        payload: JSON.stringify(payload), muteHttpExceptions: true
+      });
+      if (res.getResponseCode() === 200) {
+        var body = JSON.parse(res.getContentText());
+        return body.candidates[0].content.parts[0].text;
+      }
+      lastErr = 'Model ' + model + ' HTTP ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 200);
+    } catch (e) {
+      lastErr = 'Model ' + model + ' Exception: ' + e.message;
     }
   }
-};
+  throw new Error('Gemini API failed across candidate models: ' + lastErr);
+}
 
-// 2. MAIN EVALUATION CONTROLLER
+/** Main Endpoint Handler */
 function handleRunRedPenAnalysis(data) {
-  const imageBase64 = data.imageBase64 || data.image || (data.pagesBase64 && data.pagesBase64[0]);
-  const studentName = data.studentName || "Champion";
-  const telegramId = data.telegramId || "552858970";
+  var imageBase64 = data.imageBase64 || data.image || (data.pagesBase64 && data.pagesBase64[0]);
+  var confirmedText = data.confirmedText || null;
+  var telegramId = data.telegramId || '552858970';
+  var studentName = data.studentName || 'Champion';
 
-  if (!imageBase64) return { ok: false, error: "No image received" };
+  if (!imageBase64) return { ok: false, error: 'No image received' };
 
-  // GATEKEEPER OCR & CLASSIFICATION
-  const classification = runGatekeeperClassification_(imageBase64);
-  if (!classification.isHandwrittenAnswer) {
+  var ctx = runGatekeeperAndBuildCtx_(imageBase64, confirmedText);
+  if (!ctx.isHandwritten) {
     return {
       ok: true,
       isValid: false,
-      rejectionReason: classification.rejectionReason || "⚠️ Please upload a clear photo of your handwritten register page."
+      rejectionReason: ctx.rejectionReason || 'कृपया अपनी कॉपी के हाथ से लिखे उत्तर की फोटो अपलोड करें।'
     };
   }
 
-  // DOUBLE-VAULT RESOLUTION
-  const chapterVaultId = (CHAPTER_VAULTS[classification.classLevel] && CHAPTER_VAULTS[classification.classLevel][classification.subject])
-    ? CHAPTER_VAULTS[classification.classLevel][classification.subject][classification.chapterNo]
-    : null;
-  const pyqVaultId = MASTER_PYQ_VAULT[classification.subject] || "GLOBAL_PYQ_FALLBACK";
+  var prompt = buildEvaluatePrompt(ctx);
+  var schema = redpenResponseSchema();
+  var raw = JSON.parse(callGemini_(prompt.system, [{ text: prompt.user }], schema));
+  var scored = validateAndScore(raw, ctx);
 
-  // SURGICAL CBSE EVALUATION
-  const evaluation = performDoubleVaultEvaluation_(
-    studentName,
-    classification.classLevel || "12",
-    classification.subject || "Business Studies",
-    classification.chapterName || "Core Topic",
-    classification.transcribedQuestion || "CBSE Commerce Question",
-    classification.transcribedAnswer || "Student Answer",
-    chapterVaultId,
-    pyqVaultId
-  );
-
-  // Background Drive save
-  var driveUrl = 'N/A';
+  // Background logging & drive save
   try {
-    driveUrl = saveRedPenImageToDrive_(imageBase64, telegramId);
-  } catch (e) {
-    Logger.log('Drive save note: ' + e.message);
-  }
-
-  // Background logging to sheet
-  try {
+    var driveUrl = saveRedPenImageToDrive_(imageBase64, telegramId);
     var subId = 'RP-' + Date.now();
-    var loggedScore = evaluation.scoreDisplay || evaluation.score || ((evaluation.awardedScore || '2.0') + ' / ' + (evaluation.totalMarks || '3.0') + ' Marks');
-    var loggedMistakes = (evaluation.step2_mistakesAndOmissions || []).map(function(m) { 
-      return (m.factualMistake || m.flaw || '') + (m.marksDeducted ? ' (' + m.marksDeducted + ')' : ''); 
-    }).join('; ');
-
     appendRow_('SHEET_QB', 'RedPen_Submissions', [
       subId,
       getKolkataTimestamp(),
       String(telegramId),
       studentName,
-      classification.classLevel || '12',
-      classification.subject || 'Commerce',
-      classification.chapterName || 'Handwritten Answer',
+      ctx.subjectCode || 'BST12',
+      ctx.questionText || '',
       driveUrl,
-      loggedScore,
-      loggedMistakes,
-      evaluation.step5_motivationalCloser || '',
+      scored.result.computed.marks_earned + ' / ' + scored.result.meta.max_marks + ' Marks',
+      (scored.result.step2_issues.issues || []).map(function(iss) { return iss.explain_hi; }).join('; '),
+      scored.result.step5_mentor.line_hi || '',
       '',
-      'Analyzed'
+      'Evaluated'
     ]);
-  } catch (sheetErr) {
-    Logger.log('Notice: Could not log RedPen row: ' + sheetErr.message);
+  } catch (e) {
+    Logger.log('Drive/Sheet note: ' + e.message);
   }
 
   return {
     ok: true,
     isValid: true,
-    classification: classification,
-    evaluation: evaluation
+    data: scored.result
   };
 }
 
@@ -127,149 +422,6 @@ function apiSubmitRedPenCopy_(verifiedUser, payload) {
   payload.telegramId = String((verifiedUser && verifiedUser.id) || '552858970');
   payload.studentName = (verifiedUser && verifiedUser.first_name) || 'Champion';
   return handleRunRedPenAnalysis(payload);
-}
-
-// GATEKEEPER OCR & CLASSIFICATION
-function runGatekeeperClassification_(imageBase64) {
-  const pageStr = String(imageBase64);
-  var mimeType = "image/jpeg";
-  const mimeMatch = pageStr.match(/^data:(image\/[a-zA-Z0-9\.\-\+]+);base64,/);
-  if (mimeMatch) mimeType = mimeMatch[1];
-  const rawBase64 = pageStr.replace(/^data:image\/[a-zA-Z0-9\.\-\+]+;base64,/, "").trim();
-
-  const prompt = `
-You are Gyan Sir's strict CBSE Class 12 Board Copy Gatekeeper.
-Inspect this uploaded photo carefully and return strictly valid JSON:
-
-{
-  "isHandwrittenAnswer": true or false,
-  "rejectionReason": "If false, state why (e.g. '⚠️ This is a screenshot / printed textbook page / blurry photo. Please upload a clear photo of your handwritten notebook answer.') else empty string",
-  "classLevel": "12",
-  "subject": "Business Studies" | "Accountancy" | "Economics",
-  "chapterNo": "1" to "12" (numeric string),
-  "chapterName": "Detected Chapter Name",
-  "transcribedQuestion": "Question written on page (or deduced from context)",
-  "transcribedAnswer": "Exact handwritten student answer text transcribed verbatim from the image"
-}
-
-CRITICAL RULES:
-1. If the photo is NOT a handwritten answer written by a student in a register/notebook/paper (e.g. computer/phone screenshot, printed textbook page only, selfie, blank register page, non-commerce topic), set "isHandwrittenAnswer": false.
-2. If it is a real handwritten solution, set "isHandwrittenAnswer": true, accurately transcribe the question and answer, and classify the subject and chapter.
-Return strictly valid JSON only.`;
-
-  var payload = {
-    contents: [
-      {
-        parts: [
-          { inline_data: { mime_type: mimeType, data: rawBase64 } },
-          { text: prompt }
-        ]
-      }
-    ],
-    generationConfig: {
-      temperature: 0.1,
-      responseMimeType: "application/json"
-    }
-  };
-
-  var parsed = callGeminiGenerateContent_(payload);
-  if (!parsed.candidates || !parsed.candidates[0] || !parsed.candidates[0].content || !parsed.candidates[0].content.parts) {
-    throw new Error("Invalid response from Gatekeeper Gemini Vision");
-  }
-
-  var rawJson = parsed.candidates[0].content.parts[0].text;
-  rawJson = rawJson.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-  return JSON.parse(rawJson);
-}
-
-// 3. STRICT FORENSIC CBSE EVALUATION PROMPT (ZERO FALSE PRAISE)
-function performDoubleVaultEvaluation_(name, classLvl, sub, ch, question, studentAnswer, chVault, pyqVault) {
-  const prompt = `
-You are Gyan Sir, a STRICT, NO-NONSENSE CBSE Commerce Head Examiner.
-Evaluate this student's handwritten answer against the NCERT textbook & official CBSE marking scheme.
-
-QUESTION: "${question}"
-STUDENT'S WRITTEN ANSWER:
-"${studentAnswer}"
-
-STRICT EXAMINATION RULES:
-1. NEVER BE OVERLY POLITE OR FLATTERING. Do not say "Good job" or "Koi galti nahi mili" if the answer is not 100% perfect.
-2. MATHEMATICAL INTEGRITY: If total marks are 3.0 and you award 2.0, you MUST explicitly provide exactly 1.0 marks worth of specific deductions in "step2_mistakesAndOmissions". The sum of marks deducted must exactly equal (totalMarks - awardedScore).
-3. LOOK AT THE ACTUAL HANDWRITING:
-   - Check spelling: Did they write "principal" instead of "principle"?
-   - Check law/acts: Did they mix up Partnership Act 1932 with Statutory Corporations?
-   - Check missing NCERT terminology: Did they miss "Uberrimae fidei", "Material facts", "Special Act of Parliament"?
-4. PROVIDE THE EXACT COMPARISON:
-   - "originalFlawed": exact flawed sentence from their copy.
-   - "whyItIsWrong": exact reason why CBSE deducts marks.
-   - "correctedVersion": the exact sentence they SHOULD have written to get full marks.
-
-Return strictly valid JSON:
-{
-  "totalMarks": "3.0",
-  "awardedScore": "2.0",
-  "scoreDisplay": "2.0 / 3.0 Marks",
-  "boardContext": "CBSE Board Exam Pattern Match",
-  "step1_questionAnalysis": {
-    "expectedDemand": "State statutory corporation features and insurance principle with correct legal definitions",
-    "cbseRecommendedLimit": "50-75 words (3 Marks)",
-    "questionSummary": "Summary of question attempted"
-  },
-  "step2_mistakesAndOmissions": [
-    {
-      "studentLine": "Quote the flawed line from copy",
-      "factualMistake": "Explain the exact mistake (e.g., mixed Partnership 1932 with Statutory Corp / spelling principal)",
-      "omittedNcertKeyword": "Exact missing keyword",
-      "marksDeducted": "-0.5 Marks"
-    }
-  ],
-  "step3_howToRephrase": [
-    {
-      "originalFlawed": "Quote original line",
-      "correctedVersion": "Exact teacher-corrected sentence with keywords bolded"
-    }
-  ],
-  "step4_completeModelSolution": [
-    {
-      "pointNumber": "1.",
-      "heading": "Exact CBSE Heading",
-      "idealText": "Complete point with <mark class='highlight-keyword'>Core Keywords</mark> highlighted"
-    }
-  ],
-  "step5_motivationalCloser": "2-sentence strict but encouraging teacher advice to eliminate these errors before the board exam"
-}
-`;
-
-  var payload = {
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { responseMimeType: "application/json", temperature: 0.15 }
-  };
-
-  var parsed = callGeminiGenerateContent_(payload);
-  var rawText = parsed.candidates[0].content.parts[0].text;
-  return JSON.parse(rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim());
-}
-
-// 4. 48-HOUR AUTO-SYNC TRIGGER (Cron)
-function setupAutoSyncTrigger() {
-  // Delete existing triggers
-  const triggers = ScriptApp.getProjectTriggers();
-  for (let i = 0; i < triggers.length; i++) {
-    if (triggers[i].getHandlerFunction() === "autoReconcileNotebookRegistry") {
-      ScriptApp.deleteTrigger(triggers[i]);
-    }
-  }
-  // Run every 48 hours
-  ScriptApp.newTrigger("autoReconcileNotebookRegistry")
-    .timeBased()
-    .everyDays(2)
-    .atHour(3)
-    .create();
-  Logger.log("✅ 48-Hour Auto-Sync Trigger configured: autoReconcileNotebookRegistry (every 2 days at 3:00 AM IST)");
-}
-
-function autoReconcileNotebookRegistry() {
-  Logger.log("Notebook Registry Reconciled: All 8 Subjects Verified & Active.");
 }
 
 /**
@@ -301,17 +453,18 @@ function handleRedPenCommand_(chatId) {
   var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://gyandeepkumar.github.io/commerce-master-app';
 
   sendTelegramMessage_(chatId,
-    '📸 *RED-PEN SNAPSHOT: DOUBLE-VAULT CBSE COPY CHECK*\n' +
+    '📸 *RED-PEN SNAPSHOT: UNIVERSAL CBSE COPY EVALUATOR*\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-    'Evaluate your handwritten solution against Gyan Sir\'s Chapter Vaults & CBSE 10-Year PYQ Marking Schemes:\n\n' +
-    '• 🎯 CBSE Past Year Board Match\n' +
+    'Evaluate your handwritten solution against Gyan Sir\'s CBSE Value Points & Marking Schemes:\n\n' +
+    '• 🎯 CBSE Value-Point Step-Check\n' +
     '• ⏱️ Word Limit & Presentation Audit\n' +
-    '• 🔴 Line-by-Line Surgical Keyword Deductions\n' +
-    '• 🏆 100% Model Topper Rewrite\n\n' +
-    'Tap below to take a photo of your register solution:',
+    '• 🔴 Marks-Affecting Conceptual Issues vs ⚠️ Zero-Mark Alerts\n' +
+    '• 💡 Sentence Upgrades with Teacher "क्यों?"\n' +
+    '• 🏆 100/100 Collapsible Model Solution\n\n' +
+    'Tap below to open camera or upload from gallery:',
     {
       inline_keyboard: [
-        [{ text: '📸 Open Red-Pen Camera', web_app: { url: miniAppUrl + '/redpen.html' } }]
+        [{ text: '📸 Open Red-Pen Evaluator', web_app: { url: miniAppUrl + '/redpen.html' } }]
       ]
     }
   );

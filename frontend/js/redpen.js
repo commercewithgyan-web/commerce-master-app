@@ -1,8 +1,9 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * COMMERCE MASTER APP v3.0 — RED-PEN 5-STEP EVALUATOR (redpen.js)
- * Client-Side Canvas Compression + 5-Step Pedagogical CBSE Evaluation
- * Edge-to-Edge UI, Zero Wasted Margins, Full-Width Cards.
+ * COMMERCE MASTER APP v3.2 — UNIVERSAL CBSE RED-PEN ENGINE (redpen.js)
+ * Gatekeeper & Value-Point Step-Check, Zero-Mark Alerts,
+ * Sentence Upgrades with Examiner "क्यों?", Collapsible Model Answer with
+ * Clean Keyword Highlighting, and Edge-to-Edge CRED-Grade Mobile UI.
  * ═══════════════════════════════════════════════════════════════════════
  */
 
@@ -102,10 +103,10 @@ document.addEventListener('DOMContentLoaded', function() {
           TG_APP.hapticError();
           if (analysisLoader) analysisLoader.style.display = 'none';
           if (previewCard) previewCard.style.display = 'block';
-          showRejectionNotice(res.rejectionReason || res.rejectionMessage || '⚠️ This is not a handwritten register solution!');
+          showRejectionNotice(res.rejectionReason || res.rejectionMessage || '⚠️ कृपया अपनी कॉपी के हाथ से लिखे उत्तर की फोटो अपलोड करें।');
         } else {
           TG_APP.hapticSuccess();
-          render5StepReport(res, studentName);
+          renderUniversalRedPenReport(res, studentName);
         }
       } catch (err) {
         console.error('RedPen OCR error:', err);
@@ -246,141 +247,205 @@ function showRejectionNotice(message) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 5-STEP PEDAGOGICAL REPORT RENDERER (STRICT FORENSIC CBSE AUDIT)
+// CLAUDE'S SAFE KEYWORD HIGHLIGHTER & ESCAPE HELPERS
 // ═══════════════════════════════════════════════════════════════
 
-function render5StepReport(data, studentName) {
+function escapeHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function renderKeywords(text, keywords) {
+  var html = escapeHtml(String(text || '').replace(/\*\*/g, ''));
+  (keywords || []).forEach(function(k) {
+    var safe = escapeHtml(k).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (!safe) return;
+    html = html.replace(new RegExp('(' + safe + ')', 'gi'), '<mark class="highlight-keyword">$1</mark>');
+  });
+  return html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 5-STEP PEDAGOGICAL REPORT RENDERER (CLAUDE'S UI CONTRACT)
+// ═══════════════════════════════════════════════════════════════
+
+function renderUniversalRedPenReport(data, studentName) {
   var uploadSection = document.getElementById('uploadSection');
   var resultCard = document.getElementById('resultCard');
   if (!resultCard) return;
 
-  var evalData = data.evaluation || data;
-  var cls = data.classification || {};
+  var r = data.data || data.result || data;
 
-  var classLvl = cls.classLevel || '12';
-  var subj = cls.subject || 'Commerce';
-  var chName = cls.chapterName || '';
-  var subjectLabel = 'Class ' + classLvl + ' ' + subj + (chName ? ' • ' + chName : '');
+  // Resolve Metadata & Scores
+  var meta = r.meta || {};
+  var computed = r.computed || {};
+  var marksEarned = (computed.marks_earned !== undefined) ? computed.marks_earned : 0;
+  var maxMarks = (meta.max_marks !== undefined) ? meta.max_marks : 3;
+  var subjectName = meta.subject_name || 'Class 12 Business Studies';
+  var qType = meta.question_type ? (' • ' + meta.question_type) : '';
 
-  // Score Resolution
-  var totalMarks = parseFloat(evalData.totalMarks) || 3.0;
-  var awardedScore = parseFloat(evalData.awardedScore) || 0;
-  var scoreDisplay = evalData.scoreDisplay || evalData.score || '';
-  if (!evalData.awardedScore && scoreDisplay) {
-    var match = String(scoreDisplay).match(/([\d\.]+)\s*\/\s*([\d\.]+)/);
-    if (match) {
-      awardedScore = parseFloat(match[1]);
-      totalMarks = parseFloat(match[2]);
-    }
+  // Word Check
+  var wordCheck = computed.word_check || { count: 0, limit: null, status: 'not_checked' };
+  var wordChipText = 'Word Count: ' + wordCheck.count + ' words';
+  if (wordCheck.limit && wordCheck.limit.length >= 2) {
+    wordChipText += ' (CBSE सीमा: ' + wordCheck.limit[0] + '–' + wordCheck.limit[1] + ')';
   }
-  if (!scoreDisplay) {
-    scoreDisplay = awardedScore.toFixed(1) + ' / ' + totalMarks.toFixed(1) + ' Marks';
+
+  // ── 1. Top Card: Score + Verdict + What You Did Right First ───────
+  var step1 = r.step1_earned || {};
+  var verdictText = step1.verdict_hi || 'तुमने उत्तर लिखने का बहुत अच्छा प्रयास किया है।';
+
+  var didRightHtml = '';
+  var didRightList = step1.did_right_hi || [];
+  for (var i = 0; i < didRightList.length; i++) {
+    didRightHtml += '<div class="did-right-item"><span>✓</span><span>' + escapeHtml(didRightList[i]) + '</span></div>';
   }
-  var isFullMarks = (awardedScore >= totalMarks && totalMarks > 0);
 
-  // ── Step 1: Question Analysis & Demand ──────────────────────────────
-  var step1 = evalData.step1_questionAnalysis || {};
-  var qSummary = step1.questionSummary || cls.transcribedQuestion || 'CBSE Board Question';
-  var qLimit = step1.cbseRecommendedLimit || step1.boardMarksAndLimit || (totalMarks.toFixed(1) + ' Marks | 50-75 words');
-  var qDemand = step1.expectedDemand || step1.whatExaminerWanted || 'State key features and principles with legal definitions';
+  // Value Point Results
+  var vpResultsHtml = '';
+  var vpResults = step1.value_point_results || [];
+  for (var v = 0; v < vpResults.length; v++) {
+    var vp = vpResults[v];
+    var badgeClass = vp.status === 'earned' ? 'vp-badge-earned' : (vp.status === 'partial' ? 'vp-badge-partial' : 'vp-badge-missed');
+    var badgeLabel = vp.status === 'earned' ? ('+' + vp.marks_awarded + ' Mark') : (vp.status === 'partial' ? ('+' + vp.marks_awarded + ' / ' + vp.marks_max) : '0 Marks');
 
-  var step1Html =
+    vpResultsHtml +=
+      '<div class="vp-result-item">' +
+        '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">' +
+          '<strong style="color: #F8FAFC;">' + escapeHtml(vp.vp_id) + ': ' + escapeHtml(vp.label || '') + '</strong>' +
+          '<span class="' + badgeClass + '">' + escapeHtml(badgeLabel) + '</span>' +
+        '</div>' +
+        (vp.evidence_quote ? '<div style="font-size: 11.5px; color: #94A3B8; margin-bottom: 2px;"><em>"' + escapeHtml(vp.evidence_quote) + '"</em></div>' : '') +
+        '<div style="font-size: 12px; color: #CBD5E1;">' + escapeHtml(vp.reason_hi || '') + '</div>' +
+      '</div>';
+  }
+
+  var card1Html =
     '<div class="eval-step-card">' +
-    '  <div class="step-header step-1-header">🔍 Step 1: सवाल का एनालिसिस & बोर्ड डिमांड</div>' +
-    '  <p class="step1-detail"><strong>सवाल:</strong> ' + esc(qSummary) + '</p>' +
-    '  <p class="step1-detail"><strong>CBSE मानक सीमा:</strong> ' + esc(qLimit) + '</p>' +
-    '  <p class="step1-detail"><strong>एग्जामिनर क्या देखना चाहता था:</strong> ' + esc(qDemand) + '</p>' +
+      '<div class="step-header step-1-header">' +
+        '<span>🔍 Step 1: सवाल का एनालिसिस & तुमने क्या सही किया</span>' +
+      '</div>' +
+      '<div class="verdict-box">🗣️ <strong>ज्ञान सर:</strong> ' + escapeHtml(verdictText) + '</div>' +
+      '<div style="margin-bottom: 10px;">' +
+        '<span class="word-count-chip">📝 ' + escapeHtml(wordChipText) + '</span>' +
+      '</div>' +
+      (didRightHtml ? '<div style="margin-bottom: 12px;"><div style="font-size: 12px; font-weight: 700; color: #34D399; margin-bottom: 6px; text-transform: uppercase;">मुख्य ताकतें (Strengths):</div>' + didRightHtml + '</div>' : '') +
+      (vpResultsHtml ? '<div><div style="font-size: 12px; font-weight: 700; color: #38BDF8; margin-bottom: 6px; text-transform: uppercase;">CBSE Value Points Breakdown:</div>' + vpResultsHtml + '</div>' : '') +
     '</div>';
 
-  // ── Step 2: Specific Mistakes & Omissions ───────────────────────────
-  var mistakes = evalData.step2_mistakesAndOmissions || [];
-  var step2Items = '';
-  for (var i = 0; i < mistakes.length; i++) {
-    var m = mistakes[i];
-    var studentLine = m.studentLine || m.flawLine || '';
-    var factualMistake = m.factualMistake || m.flaw || 'त्रुटि दर्ज की गई';
-    var omittedKeyword = m.omittedNcertKeyword || '';
-    var deduction = m.marksDeducted || m.deduction || '-0.5 Marks';
+  // ── 2. Step 2: Conceptual Issues vs Zero-Mark Alerts ───────────────
+  var step2 = r.step2_issues || {};
+  var issues = step2.issues || [];
+  var alerts = step2.alerts || [];
 
-    step2Items +=
+  var issuesHtml = '';
+  for (var j = 0; j < issues.length; j++) {
+    var iss = issues[j];
+    issuesHtml +=
       '<div class="mistake-box">' +
-        (studentLine ? '<div style="font-size: 12.5px; color: #FCA5A5; margin-bottom: 5px; line-height: 1.4;"><strong>❌ तुम्हारी लाइन:</strong> "' + esc(studentLine) + '"</div>' : '') +
-        '<div class="flaw-text">⚠️ ' + esc(factualMistake) + '</div>' +
-        (omittedKeyword ? '<div style="font-size: 12px; color: #FBBF24; margin-top: 5px;"><strong>📌 छूटा हुआ NCERT कीवर्ड:</strong> <span style="text-decoration: underline;">' + esc(omittedKeyword) + '</span></div>' : '') +
-        '<div class="deduction-tag">Deduction: ' + esc(deduction) + '</div>' +
+        '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">' +
+          '<span style="font-size: 11px; font-weight: 700; color: #EF4444; text-transform: uppercase;">[' + escapeHtml(iss.vp_id || '') + ' • ' + escapeHtml(iss.issue_type || 'Conceptual') + ']</span>' +
+        '</div>' +
+        (iss.student_line ? '<div style="font-size: 12.5px; color: #FCA5A5; margin-bottom: 4px;"><strong>❌ तुम्हारी लाइन:</strong> "' + escapeHtml(iss.student_line) + '"</div>' : '') +
+        '<div class="flaw-text">⚠️ ' + escapeHtml(iss.explain_hi || '') + '</div>' +
+        (iss.ncert_keyword ? '<div style="font-size: 12px; color: #FBBF24; margin-top: 4px;"><strong>📌 आवश्यक NCERT कीवर्ड:</strong> <span style="text-decoration: underline;">' + escapeHtml(iss.ncert_keyword) + '</span></div>' : '') +
       '</div>';
   }
 
-  // Strictly eliminate false praise when marks are deducted
-  if (mistakes.length === 0) {
-    if (isFullMarks) {
-      step2Items = '<div style="color: #34D399; font-size: 13.5px; text-align: center; padding: 12px; font-weight: 700;">💯 पूर्ण अंक (Full Marks)! सभी तकनीकी शब्द और बिंदु शत-प्रतिशत सटीक हैं।</div>';
+  // Alerts: Zero-Mark Warnings (Spelling, Handwriting, Ruling)
+  var alertsHtml = '';
+  for (var a = 0; a < alerts.length; a++) {
+    var alt = alerts[a];
+    alertsHtml +=
+      '<div class="alert-card">' +
+        '<div style="font-weight: 700; font-size: 12px; margin-bottom: 3px;">⚠️ ध्यान दो (बोर्ड में नंबर नहीं कटे) • [' + escapeHtml(alt.type || 'Alert') + ']</div>' +
+        (alt.student_line ? '<div style="font-size: 12px; color: #FDE047; opacity: 0.9; margin-bottom: 2px;"><em>"' + escapeHtml(alt.student_line) + '"</em></div>' : '') +
+        '<div style="font-size: 12px; color: #FEF08A;">' + escapeHtml(alt.note_hi || '') + '</div>' +
+      '</div>';
+  }
+
+  if (issues.length === 0 && alerts.length === 0) {
+    if (marksEarned >= maxMarks) {
+      issuesHtml = '<div style="color: #34D399; font-size: 13.5px; text-align: center; padding: 12px; font-weight: 700;">💯 पूर्ण अंक! कोई मार्क्स काटने वाली वैचारिक गलती नहीं मिली।</div>';
     } else {
-      var diffMarks = (totalMarks - awardedScore).toFixed(1);
-      step2Items = '<div class="mistake-box" style="border-left-color: #EF4444;"><div class="flaw-text">⚠️ CBSE मार्किंग स्कीम के अनुसार भाषा और कीवर्ड्स में सुधार की ज़रूरत है (विस्तृत मॉडल उत्तर नीचे देखें)।</div><div class="deduction-tag">Deduction: -' + diffMarks + ' Marks</div></div>';
+      issuesHtml = '<div class="mistake-box"><div class="flaw-text">⚠️ CBSE मार्किंग स्कीम के अनुसार भाषा और कीवर्ड्स में सुधार की ज़रूरत है (विस्तृत मॉडल उत्तर नीचे देखें)।</div></div>';
     }
   }
 
-  var step2Html =
+  var card2Html =
     '<div class="eval-step-card">' +
-    '  <div class="step-header step-2-header">❌ Step 2: तुमने क्या गलतियाँ कीं और क्या छोड़ दिया</div>' +
-    step2Items +
+      '<div class="step-header step-2-header">' +
+        '<span>❌ Step 2: मार्क्स कटने वाले मुद्दे vs ध्यान देने योग्य बातें</span>' +
+      '</div>' +
+      issuesHtml +
+      alertsHtml +
     '</div>';
 
-  // ── Step 3: How to Rephrase (Aise Nahi, Aise Likho) ────────────────
-  var rephrases = evalData.step3_howToRephrase || [];
-  var step3Items = '';
-  for (var j = 0; j < rephrases.length; j++) {
-    var r = rephrases[j];
-    var flawed = r.originalFlawed || r.whatYouWrote || '';
-    var corrected = r.correctedVersion || r.howToRephrase || '';
-
-    step3Items +=
+  // ── 3. Step 3: Sentence Upgrades with "क्यों?" ─────────────────────
+  var upgrades = r.step3_upgrades || [];
+  var upgradesHtml = '';
+  for (var u = 0; u < upgrades.length; u++) {
+    var up = upgrades[u];
+    upgradesHtml +=
       '<div class="correction-row">' +
-        (flawed ? '<div><span class="was-text">❌ "' + esc(flawed) + '"</span></div>' : '') +
-        '<div style="margin-top: 5px;"><span class="should-be-text">✅ बेहतर तरीका: "' + esc(corrected) + '"</span></div>' +
+        (up.student_line ? '<div><span class="was-text">❌ "' + escapeHtml(up.student_line) + '"</span></div>' : '') +
+        '<div style="margin-top: 5px;"><span class="should-be-text">✅ बेहतर तरीका: "' + escapeHtml(up.better_line || '') + '"</span></div>' +
+        (up.why_hi ? '<div class="why-box">💡 <strong>क्यों?</strong> ' + escapeHtml(up.why_hi) + (up.vp_id ? ' <span style="opacity: 0.7;">[' + escapeHtml(up.vp_id) + ']</span>' : '') + '</div>' : '') +
       '</div>';
   }
-
-  // Strictly eliminate false praise when marks are deducted
-  if (rephrases.length === 0) {
-    if (isFullMarks) {
-      step3Items = '<div style="color: #34D399; font-size: 13.5px; text-align: center; padding: 12px; font-weight: 700;">💯 वाक्य संरचना और NCERT टर्मिनोलॉजी बिल्कुल सही है।</div>';
-    } else {
-      step3Items = '<div class="correction-row"><span class="should-be-text">⚠️ महत्वपूर्ण तकनीकी शब्दों और प्रेजेंटेशन को बेहतर बनाने के लिए नीचे दिया गया मॉडल उत्तर देखें।</span></div>';
-    }
+  if (upgrades.length === 0) {
+    upgradesHtml = '<div style="color: #34D399; font-size: 13.5px; text-align: center; padding: 10px;">🌟 वाक्य संरचना और मुख्य तकनीकी शब्दावली बिल्कुल सही है।</div>';
   }
 
-  var step3Html =
+  var card3Html =
     '<div class="eval-step-card">' +
-    '  <div class="step-header step-3-header">✍️ Step 3: ऐसे नहीं, ऐसे लिखा जाना चाहिए था</div>' +
-    step3Items +
+      '<div class="step-header step-3-header">' +
+        '<span>✍️ Step 3: ऐसे नहीं, ऐसे लिखा जाना चाहिए था (Sentence Upgrades)</span>' +
+      '</div>' +
+      upgradesHtml +
     '</div>';
 
-  // ── Step 4: Complete Model Solution with Highlighted Keywords ───────
-  var modelPts = evalData.step4_completeModelSolution || [];
-  var step4Items = '';
-  for (var k = 0; k < modelPts.length; k++) {
-    var pt = modelPts[k];
-    var pNum = pt.pointNumber ? (pt.pointNumber + ' ') : '';
-    var heading = pt.heading ? (pNum + pt.heading) : ('Point ' + (k + 1));
-    var ideal = pt.idealText || pt.bodyWithHighlightedKeywords || '';
+  // ── 4. Step 4: Collapsible Model Solution with Highlighted Keywords ─
+  var modelAnswer = r.step4_model_answer || {};
+  var points = modelAnswer.points || [];
+  var modelPointsHtml = '';
+  for (var p = 0; p < points.length; p++) {
+    var pt = points[p];
+    var heading = pt.heading ? ('Point ' + (p + 1) + ': ' + pt.heading) : ('Point ' + (p + 1));
+    var highlightedText = renderKeywords(pt.text, pt.keywords);
 
-    step4Items +=
+    modelPointsHtml +=
       '<div class="model-point">' +
-        '<div class="point-heading">' + esc(heading) + '</div>' +
-        '<div>' + sanitizeModelHtml(ideal) + '</div>' +
+        '<div class="point-heading">' + escapeHtml(heading) + '</div>' +
+        '<div style="line-height: 1.6;">' + highlightedText + '</div>' +
       '</div>';
   }
-  var step4Html =
+
+  var card4Html =
     '<div class="eval-step-card">' +
-    '  <div class="step-header step-4-header">🏆 Step 4: CBSE 100/100 परफेक्ट मॉडल उत्तर (रजिस्टर में नोट करो)</div>' +
-    '  <div class="model-solution-box">' + step4Items + '</div>' +
+      '<div class="step-header step-4-header">' +
+        '<span>🏆 Step 4: CBSE 100/100 परफेक्ट मॉडल उत्तर</span>' +
+      '</div>' +
+      '<details class="model-details" open>' +
+        '<summary class="model-summary">' +
+          '<span>💡 पहले खुद सोचो, फिर मॉडल उत्तर देखो</span>' +
+          '<span>▼</span>' +
+        '</summary>' +
+        '<div class="model-solution-box">' +
+          modelPointsHtml +
+        '</div>' +
+      '</details>' +
     '</div>';
 
-  // ── Step 5: Motivational Closer ─────────────────────────────────────
-  var closer = evalData.step5_motivationalCloser || ('परेशान बिल्कुल मत होना ' + (studentName || 'Champion') + '! गलतियाँ अभी पकड़ में आ रही हैं तो बोर्ड एग्जाम में 100/100 पक्के होंगे। मुझे तुम पर पूरा भरोसा है, शाबाश! 🔥');
-  var step5Html = '<div class="step-5-card">💪 <strong>ज्ञान सर का संदेश:</strong> ' + esc(closer) + '</div>';
+  // ── 5. Step 5: Gyan Sir's Punchline & One Action ───────────────────
+  var mentor = r.step5_mentor || {};
+  var punchline = mentor.line_hi || 'सही शब्द = पक्के नंबर!';
+  var oneAction = mentor.one_action_hi || 'अगली कॉपी में सभी मुख्य NCERT कीवर्ड्स को अंडरलाइन करो।';
+
+  var card5Html =
+    '<div class="step-5-card">' +
+      '<div style="font-size: 15px; font-weight: 800; color: #FDE047; margin-bottom: 6px;">💪 ' + escapeHtml(punchline) + '</div>' +
+      '<div style="font-size: 13.5px; color: #F8FAFC;">🎯 <strong>अगला कदम:</strong> ' + escapeHtml(oneAction) + '</div>' +
+    '</div>';
 
   // "Check Another Copy" Button
   var checkAnotherBtn = '<button type="button" class="btn-check-another" id="btnCheckAnother">📸 एक और कॉपी चेक करें</button>';
@@ -388,10 +453,10 @@ function render5StepReport(data, studentName) {
   // Assemble Full Report
   resultCard.innerHTML =
     '<div class="redpen-score-header">' +
-    '  <span class="subject-tag">' + esc(subjectLabel) + '</span>' +
-    '  <span class="score-badge">' + esc(scoreDisplay) + '</span>' +
+      '<span class="subject-tag">' + escapeHtml(subjectName + qType) + '</span>' +
+      '<span class="score-badge">' + marksEarned + ' / ' + maxMarks + ' Marks</span>' +
     '</div>' +
-    step1Html + step2Html + step3Html + step4Html + step5Html + checkAnotherBtn;
+    card1Html + card2Html + card3Html + card4Html + card5Html + checkAnotherBtn;
 
   // Hide upload, show result
   if (uploadSection) uploadSection.style.display = 'none';
@@ -414,30 +479,4 @@ function render5StepReport(data, studentName) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// UTILITY FUNCTIONS
-// ═══════════════════════════════════════════════════════════════
-
-function esc(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-/**
- * Allows ONLY <mark class="highlight-keyword"> tags through for NCERT keyword highlighting.
- * All other HTML is escaped for safety.
- */
-function sanitizeModelHtml(str) {
-  // First escape everything
-  var escaped = esc(str);
-  // Then restore only <mark class="highlight-keyword">...</mark>
-  escaped = escaped.replace(/&lt;mark\s+class=(&quot;|&#39;)highlight-keyword(&quot;|&#39;)&gt;/gi, '<mark class="highlight-keyword">');
-  escaped = escaped.replace(/&lt;\/mark&gt;/gi, '</mark>');
-  return escaped;
 }
