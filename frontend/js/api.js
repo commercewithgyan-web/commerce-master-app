@@ -11,7 +11,7 @@ var API_CLIENT = {
   // Can be overridden via window.COMMERCE_BACKEND_URL or localStorage
   backendUrl: window.COMMERCE_BACKEND_URL ||
               localStorage.getItem('cg_backend_url') ||
-              'https://script.google.com/macros/s/AKfycby85PYGgpQliv0M1ZU5-hWkLuwD84n653Pk6R9GL-e5j3vJmJf2HquHF3McB5un0Q092Q/exec',
+              'https://script.google.com/macros/s/AKfycbywJKoynUbc2fY7caEx9hZ-FARG71J9v1F6uXaL5z7XxBS_NKhwFiKCZIVeaYVJ0QS4jQ/exec',
 
   /**
    * Sets custom backend URL
