@@ -1579,6 +1579,98 @@ body.light-theme .btn-back {
   line-height: 1.5;
 }
 
+/* ONE-ON-ONE MENTOR DESK STYLING */
+.desk-greeting {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #F8FAFC;
+  font-weight: 500;
+  margin: 0;
+}
+
+.mentor-desk-card {
+  background: #151922;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+  position: relative;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.label-wrong {
+  font-size: 11px;
+  font-weight: 700;
+  color: #F87171;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.you-wrote p {
+  color: #EF4444;
+  text-decoration: line-through;
+  font-size: 13.5px;
+  margin: 4px 0 10px;
+  line-height: 1.5;
+}
+
+.label-warn {
+  font-size: 11px;
+  font-weight: 700;
+  color: #FBBF24;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.missed-point p {
+  color: #F59E0B;
+  font-size: 13.5px;
+  margin: 4px 0 10px;
+  line-height: 1.5;
+}
+
+.label-better {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #34D399;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.better-way p {
+  color: #10B981;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+
+.penalty-tag {
+  display: inline-block;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #F87171;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-top: 10px;
+}
+
+.mentor-boost {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px dashed #10B981;
+  color: #34D399;
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 14px;
+  border-radius: 12px;
+  text-align: center;
+  font-weight: 600;
+  margin-top: 16px;
+}
+
 /* Print Optimization for Digital Tuition Receipts */
 @media print {
   body {

@@ -166,7 +166,7 @@ function showRejectionNotice(message) {
 }
 
 /**
- * Renders Double-Vault Forensic CBSE Evaluation Report
+ * Renders One-on-One Mentor Desk Evaluation Report
  */
 function renderDoubleVaultReport(data, studentName) {
   var rejectionCard = document.getElementById('rejectionCard');
@@ -181,7 +181,7 @@ function renderDoubleVaultReport(data, studentName) {
   // 1. Board Match Banner
   var boardMatchEl = document.getElementById('resBoardMatch');
   if (boardMatchEl) {
-    boardMatchEl.innerText = evalData.boardExamMatch || "CBSE Board Pattern Match";
+    boardMatchEl.innerText = evalData.boardContext || evalData.boardExamMatch || "CBSE Board Exam Standard Match";
   }
 
   // 2. Header: Subject Badge & Score Pill
@@ -195,59 +195,66 @@ function renderDoubleVaultReport(data, studentName) {
 
   var scoreEl = document.getElementById('resScore');
   if (scoreEl) {
-    scoreEl.innerText = evalData.score || "0 / 4 Marks";
+    scoreEl.innerText = evalData.score || "Evaluated";
   }
 
-  // 3. Mentor Greeting
+  // 3. Render Desk Greeting
   var greetingEl = document.getElementById('resGreeting');
   if (greetingEl) {
-    greetingEl.innerText = evalData.personalGreeting || ("Excellent effort, " + (studentName || "Champion") + "! Here is Gyan Sir's surgical CBSE board review:");
+    var greetingText = evalData.deskGreeting || ("इधर आओ " + (studentName || "Champion") + ", अपनी कॉपी सामने रखो! तुमने कोशिश बहुत अच्छी की है, लेकिन ध्यान से देखो कि जो नंबर कटे हैं वो कहाँ और क्यों कटे:");
+    greetingEl.innerHTML = '<p class="desk-greeting">🗣️ ' + escapeHtml(greetingText) + '</p>';
   }
 
-  // 4. Word Count & Presentation Audit
-  var wordEl = document.getElementById('resWordAudit');
-  if (wordEl && evalData.wordCountAudit) {
-    wordEl.innerHTML = '<strong>Word Count:</strong> ' + (evalData.wordCountAudit.studentWords || 0) + ' words (CBSE Guide: ' + (evalData.wordCountAudit.cbseRecommended || '50-75 words') + '). <em>' + (evalData.wordCountAudit.advice || '') + '</em>';
+  // 4. Render Presentation Advice
+  var presBox = document.getElementById('presentationAuditBox');
+  var presEl = document.getElementById('resPresentationAdvice');
+  if (presEl && evalData.presentationAdvice) {
+    presEl.innerText = evalData.presentationAdvice;
+    if (presBox) presBox.style.display = 'block';
+  } else if (presBox) {
+    presBox.style.display = 'none';
   }
 
-  var formatEl = document.getElementById('resFormatAudit');
-  if (formatEl && evalData.presentationAudit) {
-    formatEl.innerHTML = '<strong>Format:</strong> ' + (evalData.presentationAudit.formatUsed || 'Paragraph') + '. <em>' + (evalData.presentationAudit.examinerPreference || 'Point-wise headings with keywords underlined') + '</em> (' + (evalData.presentationAudit.marksLost || '0 Marks') + ')';
-  }
-
-  // 5. Line-by-Line Red Pen Surgical Corrections
-  var surgeryContainer = document.getElementById('resSurgeryList');
-  if (surgeryContainer) {
-    surgeryContainer.innerHTML = '';
-    var items = evalData.lineByLineSurgery || [];
-    if (items.length === 0) {
-      surgeryContainer.innerHTML = '<div style="font-size:12.5px; color:#34D399; padding:8px 0;">✅ Flawless NCERT keyword alignment! Zero deductions.</div>';
+  // 5. Render "Aise Nahi, Aise Likhte" Surgical Comparisons
+  var list = document.getElementById('resSurgeryList');
+  if (list) {
+    var comparisons = evalData.surgicalComparisons || [];
+    if (comparisons.length === 0) {
+      list.innerHTML = '<div style="font-size:13.5px; color:#34D399; padding:12px; text-align:center; background:#151922; border-radius:12px;">🌟 शाबाश! कोई बड़ी गलती नहीं मिली। तुम्हारी भाषा और कीवर्ड्स एनसीईआरटी के बिल्कुल अनुरूप हैं!</div>';
     } else {
-      items.forEach(function(item) {
-        var sDiv = document.createElement('div');
-        sDiv.className = 'surgery-item';
-        sDiv.innerHTML =
-          '<div class="surgery-student-line">❌ <em>"' + escapeHtml(item.studentLine || '') + '"</em></div>' +
-          '<div class="surgery-ncert-keyword">✨ <strong>NCERT Keyword:</strong> ' + escapeHtml(item.officialNcertKeyword || '') + ' <span class="surgery-deduction">(' + escapeHtml(item.marksDeducted || '-0.5') + ')</span></div>' +
-          '<div class="surgery-explanation">' + escapeHtml(item.explanation || '') + '</div>';
-        surgeryContainer.appendChild(sDiv);
-      });
+      list.innerHTML = comparisons.map(function(c) {
+        return (
+          '<div class="mentor-desk-card">' +
+          '  <div class="you-wrote">' +
+          '    <span class="label-wrong">❌ तुमने लिखा:</span>' +
+          '    <p class="quote-text">"' + escapeHtml(c.whatYouWrote || '') + '"</p>' +
+          '  </div>' +
+          '  <div class="missed-point">' +
+          '    <span class="label-warn">⚠️ गलती & छूटा हुआ पॉइंट:</span>' +
+          '    <p>' + escapeHtml(c.mistakeAndMissedPoint || '') + '</p>' +
+          '  </div>' +
+          '  <div class="better-way">' +
+          '    <span class="label-better">✅ अगर ऐसे नहीं, ऐसे लिखते तो ज्यादा बेटर होता:</span>' +
+          '    <p class="model-rewrite">"' + escapeHtml(c.betterWayToWrite || '') + '"</p>' +
+          '  </div>' +
+          '  <div class="penalty-tag">' + escapeHtml(c.marksImpact || '-0.5 Marks') + '</div>' +
+          '</div>'
+        );
+      }).join('');
     }
   }
 
-  // 6. Topper Rewrite & Gyan Sir Prescription
-  var topperEl = document.getElementById('resTopperRewrite');
-  if (topperEl) {
-    topperEl.innerHTML = formatMarkdown(evalData.topperRewrite || 'Follow standard 3-bullet model answer structure.');
-  }
-
-  var gyanTipEl = document.getElementById('resGyanTip');
-  if (gyanTipEl) {
-    gyanTipEl.innerHTML = '<strong>💡 Gyan Sir\'s Exam-Hall Prescription:</strong> ' + escapeHtml(evalData.gyanSirPrescription || 'Underline keywords and leave 1 line between points.');
+  // 6. Render Motivational Closer
+  var motiBox = document.getElementById('motivationalBox');
+  if (motiBox) {
+    var closerText = evalData.motivationalCloser || ("परेशान बिल्कुल मत होना " + (studentName || "Champion") + "! गलतियाँ अभी पकड़ में आ रही हैं तो बोर्ड एग्जाम में 100/100 पक्के होंगे। मुझे तुम पर पूरा भरोसा है, शाबाश! 🔥");
+    motiBox.innerHTML = '<p class="mentor-boost">💪 ' + escapeHtml(closerText) + '</p>';
   }
 
   resultCard.style.display = 'block';
   resultCard.classList.add('pop-success');
+  resultCard.scrollIntoView({ behavior: 'smooth' });
+}
   resultCard.scrollIntoView({ behavior: 'smooth' });
 }
 

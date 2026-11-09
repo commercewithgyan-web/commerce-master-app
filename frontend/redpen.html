@@ -68,7 +68,7 @@
       </label>
     </div>
 
-    <!-- Evaluation Result Section (Double-Vault AI Evaluator) -->
+    <!-- Evaluation Result Section (One-on-One Mentor Desk Engine) -->
     <div id="resultCard" class="result-card" style="display: none;">
       <!-- Board Match Banner -->
       <div class="board-match-banner">
@@ -78,30 +78,26 @@
 
       <div class="result-header">
         <span class="badge-subject" id="resSubject">Class 12 BST</span>
-        <div class="score-pill" id="resScore">0 / 4 Marks</div>
+        <div class="score-pill" id="resScore">0 / 3.0 Marks</div>
       </div>
 
+      <!-- Desk Greeting: Calling student to study table -->
       <div class="mentor-greeting" id="resGreeting"></div>
 
-      <!-- Word Count & Presentation Box -->
-      <div class="card-presentation-audit">
-        <h4>⏱️ Word Limit & Presentation Audit:</h4>
-        <p id="resWordAudit"></p>
-        <p id="resFormatAudit"></p>
+      <!-- Presentation & Formatting Advice -->
+      <div class="card-presentation-audit" id="presentationAuditBox" style="display: none;">
+        <h4>⏱️ Gyan Sir's Presentation & Formatting Advice:</h4>
+        <p id="resPresentationAdvice"></p>
       </div>
 
-      <!-- Line-by-Line Red Pen Corrections -->
+      <!-- "Aise Nahi, Aise Likhte" Surgical Comparisons -->
       <div class="card-surgery">
-        <h4>🔴 Red-Pen Surgical Corrections:</h4>
+        <h4>🔴 "ऐसे नहीं, ऐसे लिखते तो ज्यादा बेटर होता":</h4>
         <div id="resSurgeryList"></div>
       </div>
 
-      <!-- Topper Rewrite -->
-      <div class="card-prescription">
-        <h4>🏆 CBSE Model Topper Rewrite:</h4>
-        <p class="prescription-text" id="resTopperRewrite"></p>
-        <div class="gyan-tip" id="resGyanTip"></div>
-      </div>
+      <!-- Motivational Closer -->
+      <div id="motivationalBox"></div>
     </div>
 
   </div>
