@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Red-Pen Snapshot — Commerce Gyan</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+  <div class="app-container">
+
+    <header class="header-bar">
+      <div>
+        <div class="text-xs text-secondary">HANDWRITTEN COPY DIAGNOSTIC</div>
+        <h2 style="font-size: 1.25rem;">📸 Red-Pen Snapshot</h2>
+      </div>
+      <div class="pill pill-gold">CBSE Step-Check</div>
+    </header>
+
+    <!-- Upload Instructions Card -->
+    <div class="card card-violet">
+      <h3 style="font-size: 1rem; margin-bottom: 6px;">Check Your Register Solution</h3>
+      <p class="text-xs text-secondary" style="line-height: 1.5; margin-bottom: 14px;">
+        Take a clear photo of your handwritten ledger or journal entries. Our Gemini Vision engine scans for missing narrations, omitted L.F. columns, and unruled balances.
+      </p>
+      
+      <!-- Camera Button -->
+      <label class="btn btn-primary" style="cursor: pointer;">
+        <span>📷</span> Take Photo of Register
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
+      </label>
+      <div class="text-xs text-secondary" style="text-align: center; margin-top: 8px;">
+        Auto-compressed client-side to 1280px / 70% (~200 KB)
+      </div>
+    </div>
+
+    <!-- Hidden Canvas for Client-Side Compression -->
+    <canvas id="compressionCanvas" style="display: none;"></canvas>
+
+    <!-- Thumbnail Preview (Hidden until image selected) -->
+    <div class="card" id="previewCard" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span class="text-xs text-secondary">PREVIEW (COMPRESSED)</span>
+        <span class="pill pill-green" id="fileSizeBadge">184 KB</span>
+      </div>
+      <img id="imagePreview" src="" alt="Snapshot Preview" style="width: 100%; max-height: 240px; object-fit: contain; border-radius: var(--radius-sm); margin-bottom: 12px; background: #000;">
+      <button class="btn btn-gold" id="btnAnalyzeCopy">🔍 Run Red-Pen Copy Analysis</button>
+    </div>
+
+    <!-- Diagnostic Feedback Card (Hidden until analyzed) -->
+    <div class="card" id="reportCard" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <span class="pill pill-gold">EXAMINER EVALUATION</span>
+        <div class="mono text-emerald" style="font-size: 1.2rem; font-weight: 700;" id="marksDisplay">5.0 / 6.0 M</div>
+      </div>
+
+      <!-- 1. Flawless Elements -->
+      <div style="margin-bottom: 12px;">
+        <div style="font-weight: 700; font-size: 0.88rem; color: #34D399; margin-bottom: 4px;">🟢 Flawless Elements (+Marks):</div>
+        <ul id="flawlessList" style="padding-left: 20px; font-size: 0.85rem; color: #CBD5E1; line-height: 1.5;"></ul>
+      </div>
+
+      <!-- 2. Traps Caught -->
+      <div style="margin-bottom: 12px;">
+        <div style="font-weight: 700; font-size: 0.88rem; color: #F87171; margin-bottom: 4px;">🔴 Examiner Traps Caught (Deductions):</div>
+        <ul id="trapsList" style="padding-left: 20px; font-size: 0.85rem; color: #FCA5A5; line-height: 1.5;"></ul>
+      </div>
+
+      <!-- 3. Prescription -->
+      <div style="padding: 12px; background: rgba(79, 70, 229, 0.15); border-left: 3px solid var(--primary-violet); border-radius: 4px;">
+        <div style="font-weight: 700; font-size: 0.85rem; color: #818CF8; margin-bottom: 4px;">📝 Topper Prescription:</div>
+        <div class="serif text-xs" style="color: #E2E8F0; line-height: 1.5;" id="prescriptionText"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <span class="nav-icon">🏠</span>
+      <span>Home</span>
+    </a>
+    <a href="question.html" class="nav-item">
+      <span class="nav-icon">⚡</span>
+      <span>Daily MCQ</span>
+    </a>
+    <a href="notebook.html" class="nav-item">
+      <span class="nav-icon">📓</span>
+      <span>Notebook</span>
+    </a>
+    <a href="progress.html" class="nav-item">
+      <span class="nav-icon">📈</span>
+      <span>Progress</span>
+    </a>
+    <a href="fee.html" class="nav-item">
+      <span class="nav-icon">💰</span>
+      <span>Fee</span>
+    </a>
+  </nav>
+
+  <script src="js/telegram.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/redpen.js"></script>
+</body>
+</html>

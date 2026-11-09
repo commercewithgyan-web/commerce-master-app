@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CBSE 80/80 Exam Heatmap — Commerce Gyan</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+  <div class="app-container">
+
+    <header class="header-bar">
+      <div>
+        <div class="text-xs text-secondary">CBSE BOARD EXAM RADAR</div>
+        <h2 style="font-size: 1.25rem;">📈 Accuracy & Score Heatmap</h2>
+      </div>
+      <div class="pill pill-gold" id="overallAccuracyBadge">85% Accuracy</div>
+    </header>
+
+    <!-- Predicted Score Card -->
+    <div class="card card-gold">
+      <div class="text-xs text-secondary" style="margin-bottom: 4px;">PROJECTED BOARD THEORY SCORE</div>
+      <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px;">
+        <h1 class="mono" id="predScoreLarge" style="font-size: 2.4rem; color: #FFFFFF;">68</h1>
+        <span class="mono" style="font-size: 1.2rem; color: var(--text-dark-muted);">/ 80 Marks</span>
+      </div>
+      <div class="text-sm" style="color: #FDE68A;">
+        Predicted Percentage: <strong class="mono" id="predPercentage">85%</strong> (Class 12 Accountancy)
+      </div>
+    </div>
+
+    <!-- Marks Leak Alert Card (Pillar 7) -->
+    <div class="card card-sos leak-radar" id="marksLeakCard" style="display: none;">
+      <div class="pill" style="background: rgba(239,68,68,0.25); color: #F87171; margin-bottom: 6px;">
+        🔴 CRITICAL MARKS-LEAK DETECTED
+      </div>
+      <h3 style="font-size: 1rem; margin-bottom: 6px;" id="leakTitle">Share Capital (18 Board Marks)</h3>
+      <p class="text-xs text-secondary" id="leakDesc" style="margin-bottom: 14px;">
+        Your accuracy in Pro-Rata Forfeiture is 42%. You risk losing up to 10 marks on the board exam!
+      </p>
+      <a href="question.html" class="btn btn-danger btn-sm" style="width: auto;">
+        🎯 Fix This 10-Mark Leak Now
+      </a>
+    </div>
+
+    <!-- Chapter-wise CBSE Heatmap Breakdown -->
+    <div class="card">
+      <h3 style="font-size: 0.95rem; margin-bottom: 12px;">📚 Chapter-wise Exam Heatmap</h3>
+      <div id="chaptersList" style="display: flex; flex-direction: column; gap: 10px;">
+        <!-- Injected via progress.js -->
+        <div class="text-xs text-secondary">Loading chapters...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Navigation Bar -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <span class="nav-icon">🏠</span>
+      <span>Home</span>
+    </a>
+    <a href="question.html" class="nav-item">
+      <span class="nav-icon">⚡</span>
+      <span>Daily MCQ</span>
+    </a>
+    <a href="notebook.html" class="nav-item">
+      <span class="nav-icon">📓</span>
+      <span>Notebook</span>
+    </a>
+    <a href="progress.html" class="nav-item active">
+      <span class="nav-icon">📈</span>
+      <span>Progress</span>
+    </a>
+    <a href="fee.html" class="nav-item">
+      <span class="nav-icon">💰</span>
+      <span>Fee</span>
+    </a>
+  </nav>
+
+  <script src="js/telegram.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/progress.js"></script>
+</body>
+</html>

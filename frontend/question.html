@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Daily Ghost Challenge — Commerce Gyan</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Multi-color Confetti Burst SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- Top Status Bar -->
+    <header class="header-bar">
+      <a href="index.html" style="text-decoration: none; font-size: 1.2rem; color: #FFFFFF;">✕</a>
+      <div style="font-weight: 700; font-size: 0.9rem;" id="qProgressHeader">Question 1 of 5</div>
+      <div class="pill pill-gold" id="liveCoinsPill">🪙 <span class="mono" id="currentCoins">0</span></div>
+    </header>
+
+    <!-- Ghost Timer Speed Challenge Aura -->
+    <div class="ghost-timer-wrap pulse-gold" id="ghostTimerCard">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.3rem;">⏱️</span>
+        <div>
+          <div style="font-size: 0.72rem; color: var(--heritage-gold); font-weight: 700;">GYAN SIR'S LIVE RECORD</div>
+          <div class="mono" style="font-size: 0.88rem; font-weight: 700;" id="ghostTargetSec">35 Seconds</div>
+        </div>
+      </div>
+      <div style="text-align: right;">
+        <div class="text-xs text-secondary">YOUR TIME</div>
+        <div class="mono" style="font-size: 1.2rem; font-weight: 700; color: #F8FAFC;" id="liveStopwatch">0s</div>
+      </div>
+    </div>
+
+    <!-- Question Card -->
+    <div class="card" id="questionCard">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="pill pill-violet" id="qTopicPill">Partnership Accounts</span>
+        <button class="btn btn-outline btn-sm" id="btnSharkTank" style="display: none;">🦈 Shark Tank Hint</button>
+      </div>
+
+      <h2 id="qText" style="font-size: 1.05rem; line-height: 1.5; margin-bottom: 20px; font-weight: 600;">
+        Loading question...
+      </h2>
+
+      <!-- Options Container -->
+      <div id="optionsContainer">
+        <!-- Injected dynamically via question.js -->
+      </div>
+    </div>
+
+    <!-- Explanation & Feedback Drawer (Hidden until answered) -->
+    <div class="card card-violet" id="feedbackCard" style="display: none;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+        <span id="feedbackIcon" style="font-size: 1.4rem;">✅</span>
+        <h3 id="feedbackTitle" style="font-size: 1.05rem;">Correct Answer!</h3>
+      </div>
+      <div class="text-sm serif" id="feedbackExplanation" style="line-height: 1.6; color: #E2E8F0; margin-bottom: 14px;">
+        Explanation goes here...
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-outline" id="btnSaveNote" style="flex: 1;">📓 Save Note</button>
+        <button class="btn btn-primary" id="btnNextQuestion" style="flex: 1.5;">Next Question ➡️</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Shark Tank Pop-Culture Modal Drawer -->
+  <div class="modal-overlay" id="sharkTankModal">
+    <div class="modal-drawer">
+      <div class="drawer-pill"></div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="pill pill-gold">🦈 SHARK TANK DE-CODER</span>
+        <button onclick="closeSharkModal()" style="background: none; border: none; color: #94A3B8; font-size: 1.2rem;">✕</button>
+      </div>
+      <h3 style="margin-bottom: 8px;" id="sharkModalTitle">Real-World Business Analogy</h3>
+      <p class="text-sm serif" style="line-height: 1.6; color: #CBD5E1;" id="sharkModalText">
+        Shark tank explanation...
+      </p>
+      <button class="btn btn-gold" style="margin-top: 18px;" onclick="closeSharkModal()">Got It! Back to MCQ</button>
+    </div>
+  </div>
+
+  <script src="js/telegram.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/question.js"></script>
+</body>
+</html>

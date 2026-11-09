@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Fee Ledger & Receipts — Commerce Gyan</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+  <div class="app-container">
+
+    <header class="header-bar">
+      <div>
+        <div class="text-xs text-secondary">OFFICIAL TUITION LEDGER</div>
+        <h2 style="font-size: 1.25rem;">💰 Fee Management</h2>
+      </div>
+      <div class="pill pill-green" id="feeStatusPill">Active</div>
+    </header>
+
+    <!-- Section 1 & 2: Plan & Payment Summary Card -->
+    <div class="card card-gold">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+        <span class="pill pill-gold" id="planNameBadge">CBSE Combined</span>
+        <span class="mono" style="font-size: 0.85rem;" id="monthlyFeeBadge">₹1,500/mo</span>
+      </div>
+      <div style="margin-bottom: 14px;">
+        <div class="text-xs text-secondary">TOTAL COURSE FEE</div>
+        <div class="mono" style="font-size: 1.5rem; font-weight: 700;" id="totalCourseFeeDisplay">₹18,000</div>
+      </div>
+      <!-- Progress Bar -->
+      <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 9999px; margin-bottom: 8px; overflow: hidden;">
+        <div id="feeProgressBar" style="width: 50%; height: 100%; background: linear-gradient(90deg, #10B981, #D4AF37); border-radius: 9999px;"></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+        <span style="color: #34D399;">Paid: <strong class="mono" id="totalPaidDisplay">₹9,000</strong></span>
+        <span style="color: #F87171;">Balance: <strong class="mono" id="balanceDisplay">₹9,000</strong></span>
+      </div>
+    </div>
+
+    <!-- Section 3 & 7: Next Due & Pay Now (UPI) -->
+    <div class="card card-violet" id="nextDueCard">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span class="pill pill-violet">NEXT DUE INVOICE</span>
+        <span class="mono text-gold text-sm" id="nextDueAmount">₹1,500</span>
+      </div>
+      <div style="font-size: 0.95rem; font-weight: 600; margin-bottom: 4px;" id="nextDueMonth">Month of November 2026</div>
+      <div class="text-xs text-secondary" style="margin-bottom: 14px;">Due Date: <span class="mono" id="nextDueDate">05-Nov-2026</span></div>
+      
+      <!-- UPI Pay Button -->
+      <a href="upi://pay?pa=gyandeep@upi&pn=Commerce%20Gyan&cu=INR" class="btn btn-primary" id="btnPayUpi">
+        <span>💳</span> Pay ₹1,500 via Any UPI App
+      </a>
+    </div>
+
+    <!-- Section 4: 12-Month Invoices Breakdown -->
+    <div class="card">
+      <h3 style="font-size: 0.95rem; margin-bottom: 12px;">📑 Monthly Invoice Schedule</h3>
+      <div id="invoicesList" style="display: flex; flex-direction: column; gap: 8px;">
+        <!-- Injected via fee.js -->
+        <div class="text-xs text-secondary">Loading invoices...</div>
+      </div>
+    </div>
+
+    <!-- Section 5 & 6: Payment History & Receipts -->
+    <div class="card">
+      <h3 style="font-size: 0.95rem; margin-bottom: 12px;">🧾 Payment Receipts</h3>
+      <div id="paymentsList" style="display: flex; flex-direction: column; gap: 8px;">
+        <!-- Injected via fee.js -->
+        <div class="text-xs text-secondary">Loading receipts...</div>
+      </div>
+    </div>
+
+    <!-- Section 8: Support Desk -->
+    <div class="card" style="text-align: center; background: var(--bg-surface-dark);">
+      <div class="text-xs text-secondary" style="margin-bottom: 4px;">NEED BILLING ASSISTANCE?</div>
+      <div style="font-size: 0.88rem; font-weight: 600; margin-bottom: 10px;">Contact Founder & Educator Gyan Sir</div>
+      <a href="https://t.me/commercegyan" class="btn btn-outline btn-sm">💬 Chat on Telegram</a>
+    </div>
+
+  </div>
+
+  <!-- Bottom Navigation Bar -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <span class="nav-icon">🏠</span>
+      <span>Home</span>
+    </a>
+    <a href="question.html" class="nav-item">
+      <span class="nav-icon">⚡</span>
+      <span>Daily MCQ</span>
+    </a>
+    <a href="notebook.html" class="nav-item">
+      <span class="nav-icon">📓</span>
+      <span>Notebook</span>
+    </a>
+    <a href="progress.html" class="nav-item">
+      <span class="nav-icon">📈</span>
+      <span>Progress</span>
+    </a>
+    <a href="fee.html" class="nav-item active">
+      <span class="nav-icon">💰</span>
+      <span>Fee</span>
+    </a>
+  </nav>
+
+  <script src="js/telegram.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/fee.js"></script>
+</body>
+</html>

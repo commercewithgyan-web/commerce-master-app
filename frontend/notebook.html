@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>5-Layer Personal Notebook — Commerce Gyan</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+  <div class="app-container">
+
+    <header class="header-bar">
+      <div>
+        <div class="text-xs text-secondary">PERSONAL LEARNING VAULT</div>
+        <h2 style="font-size: 1.25rem;">📓 My 5-Layer Notebook</h2>
+      </div>
+      <div class="pill pill-gold" id="revisionDueBadge">0 Due</div>
+    </header>
+
+    <!-- Layer 5: Spaced Repetition Due Today Banner -->
+    <div class="card card-sos" id="revisionDueCard" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div class="pill" style="background: rgba(239,68,68,0.2); color:#F87171; margin-bottom:4px;">REVISION DUE TODAY</div>
+          <div style="font-weight:700; font-size:0.95rem;" id="revisionDueCountText">2 Questions Due</div>
+          <div class="text-xs text-secondary">Spaced Repetition (3/7/15/30 Day Engine)</div>
+        </div>
+        <button class="btn btn-danger btn-sm" id="btnStartRevision">Review</button>
+      </div>
+    </div>
+
+    <!-- Notebook Tab Switcher -->
+    <div style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px;">
+      <button class="pill pill-gold" id="tabNotes" onclick="switchNotebookTab('notes')">📝 Notes (<span id="countNotes">0</span>)</button>
+      <button class="pill" id="tabMistakes" onclick="switchNotebookTab('mistakes')">❌ Mistakes (<span id="countMistakes">0</span>)</button>
+      <button class="pill" id="tabFavs" onclick="switchNotebookTab('favs')">⭐ Starred (<span id="countFavs">0</span>)</button>
+      <button class="pill" id="tabSummary" onclick="switchNotebookTab('summary')">🧠 AI Coaching</button>
+    </div>
+
+    <!-- Tab 1: My Notes Container -->
+    <div id="sectionNotes">
+      <div class="card" style="background-color: var(--bg-surface-dark);">
+        <input type="text" id="quickNoteTitle" placeholder="Note Title (e.g. Forfeiture Rule)" style="width: 100%; background: none; border: none; color: #FFF; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px; outline: none;">
+        <textarea id="quickNoteContent" placeholder="Jot down a quick personal revision note..." rows="2" style="width: 100%; background: none; border: none; color: #E2E8F0; font-family: var(--font-body); font-size: 0.85rem; resize: none; outline: none;"></textarea>
+        <button class="btn btn-primary btn-sm" id="btnSaveQuickNote" style="margin-top: 8px;">+ Save Note</button>
+      </div>
+      <div id="notesList">Loading notes...</div>
+    </div>
+
+    <!-- Tab 2: My Mistakes Container -->
+    <div id="sectionMistakes" style="display: none;">
+      <div id="mistakesList">Loading past mistakes...</div>
+    </div>
+
+    <!-- Tab 3: Starred Favourites Container -->
+    <div id="sectionFavs" style="display: none;">
+      <div id="favsList">Loading starred questions...</div>
+    </div>
+
+    <!-- Tab 4: AI Weekly Diagnostic Coaching -->
+    <div id="sectionSummary" style="display: none;">
+      <div class="card card-violet">
+        <div class="pill pill-gold" style="margin-bottom: 8px;">LATEST AI COACHING BRIEF</div>
+        <div class="serif text-sm" id="aiSummaryBody" style="line-height: 1.6; color: #E2E8F0;">
+          No weekly summary generated yet. Keep solving daily MCQs and your personalized brief will arrive this Sunday!
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Navigation Bar -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <span class="nav-icon">🏠</span>
+      <span>Home</span>
+    </a>
+    <a href="question.html" class="nav-item">
+      <span class="nav-icon">⚡</span>
+      <span>Daily MCQ</span>
+    </a>
+    <a href="notebook.html" class="nav-item active">
+      <span class="nav-icon">📓</span>
+      <span>Notebook</span>
+    </a>
+    <a href="progress.html" class="nav-item">
+      <span class="nav-icon">📈</span>
+      <span>Progress</span>
+    </a>
+    <a href="fee.html" class="nav-item">
+      <span class="nav-icon">💰</span>
+      <span>Fee</span>
+    </a>
+  </nav>
+
+  <script src="js/telegram.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/notebook.js"></script>
+</body>
+</html>

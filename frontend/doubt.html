@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Voice Doubt Solver — Commerce Gyan</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+  <div class="app-container" style="display: flex; flex-direction: column; height: 100vh; padding-bottom: 80px;">
+
+    <header class="header-bar" style="margin-bottom: 4px;">
+      <div>
+        <div class="text-xs text-secondary">24/7 AI STUDY BUDDY</div>
+        <h2 style="font-size: 1.25rem;">🎤 Voice Doubt Solver</h2>
+      </div>
+      <div class="pill pill-gold">Feynman ELI10</div>
+    </header>
+
+    <!-- Suggested Question Chips -->
+    <div style="display: flex; gap: 6px; overflow-x: auto; padding: 6px 0 10px; margin-bottom: 8px;">
+      <button class="pill pill-violet" onclick="askPreset('Why is Interest on Partner Loan a Charge and not an Appropriation?')">Loan Interest?</button>
+      <button class="pill pill-violet" onclick="askPreset('How do I calculate Gaining Ratio on Partner Retirement?')">Gaining Ratio?</button>
+      <button class="pill pill-violet" onclick="askPreset('Explain Capital Reserve in Share Forfeiture with a simple story')">Capital Reserve?</button>
+    </div>
+
+    <!-- Chat Message Container -->
+    <div id="chatMessages" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px;">
+      <!-- Welcome message -->
+      <div class="card card-violet" style="margin: 0;">
+        <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; color: #A5B4FC;">🎧 Study Buddy Mentor</div>
+        <p class="serif text-sm" style="line-height: 1.5; color: #E2E8F0;">
+          Hello! I am your 24/7 Commerce Study Buddy. Speak into the mic or type any concept doubt in Accountancy, BST, or Economics. I'll explain it using everyday Indian street food, cricket, and pocket money stories!
+        </p>
+      </div>
+    </div>
+
+    <!-- Voice Waveform Live Visualizer (Hidden until mic is active) -->
+    <div id="liveWaveform" class="waveform-container" style="display: none;">
+      <div class="wave-bar"></div>
+      <div class="wave-bar"></div>
+      <div class="wave-bar"></div>
+      <div class="wave-bar"></div>
+      <div class="wave-bar"></div>
+      <div class="wave-bar"></div>
+      <div class="wave-bar"></div>
+    </div>
+
+    <!-- Bottom Input Bar -->
+    <div style="position: fixed; bottom: 0; left: 0; right: 0; max-width: 480px; margin: 0 auto; background: var(--bg-dark); border-top: 1px solid var(--border-dark); padding: 10px 16px; display: flex; gap: 8px; align-items: center; z-index: 200;">
+      <!-- Voice Mic Button -->
+      <button id="btnVoiceRecord" style="width: 44px; height: 44px; border-radius: var(--radius-full); background: linear-gradient(135deg, #EF4444, #DC2626); border: none; color: #FFF; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        🎤
+      </button>
+
+      <!-- Text Input -->
+      <input type="text" id="doubtInput" placeholder="Type your doubt or question..." style="flex: 1; height: 44px; background: var(--bg-surface-dark); border: 1px solid var(--border-dark); border-radius: var(--radius-md); padding: 0 14px; color: #FFF; font-size: 0.9rem; outline: none;">
+
+      <!-- Send Button -->
+      <button id="btnSendDoubt" class="btn btn-primary btn-sm" style="height: 44px; padding: 0 16px; width: auto;">
+        Send
+      </button>
+    </div>
+
+  </div>
+
+  <script src="js/telegram.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/doubt.js"></script>
+</body>
+</html>

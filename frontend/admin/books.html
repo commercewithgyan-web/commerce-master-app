@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Founder Books & P&L — Commerce Gyan</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/animations.css">
+</head>
+<body>
+  <div class="app-container">
+
+    <header class="header-bar">
+      <div>
+        <div class="text-xs text-secondary">FOUNDER CONSOLE</div>
+        <h2 style="font-size: 1.25rem;">💼 Books & Financial Health</h2>
+      </div>
+      <a href="../index.html" class="pill pill-gold" style="text-decoration: none;">← Home</a>
+    </header>
+
+    <!-- Monthly P&L Highlight Card -->
+    <div class="card card-violet">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span class="pill pill-gold" id="plMonthBadge">November 2026</span>
+        <span class="mono text-emerald" style="font-size: 1.1rem; font-weight: 700;" id="plMarginBadge">54.2% Margin</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+        <div>
+          <div class="text-xs text-secondary">MONTH REVENUE</div>
+          <div class="mono" style="font-size: 1.3rem; font-weight: 700; color: #10B981;" id="plRevenue">₹90,000</div>
+        </div>
+        <div>
+          <div class="text-xs text-secondary">TOTAL EXPENSES</div>
+          <div class="mono" style="font-size: 1.3rem; font-weight: 700; color: #EF4444;" id="plExpenses">₹41,200</div>
+        </div>
+      </div>
+      <div style="padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between;">
+        <span class="text-xs text-secondary">NET PROFIT:</span>
+        <strong class="mono text-emerald" style="font-size: 1.1rem;" id="plNetProfit">₹48,800</strong>
+      </div>
+    </div>
+
+    <!-- Physical Cash Drawer Card (/cash) -->
+    <div class="card card-gold">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span class="pill pill-gold">💵 CASH DRAWER (BEGUSARAI)</span>
+        <span class="mono text-xs" id="drawerDate">Today</span>
+      </div>
+      <div style="font-size: 0.8rem; color: #FDE68A; margin-bottom: 4px;">PHYSICAL CASH TO COUNT IN DRAWER:</div>
+      <div class="mono text-gold" style="font-size: 1.8rem; font-weight: 800; margin-bottom: 8px;" id="drawerPhysicalCash">₹14,500</div>
+      <div class="text-xs text-secondary" id="drawerMovement">
+        Inflow: +₹15,000 | Outflow: -₹500 | Opening: ₹0
+      </div>
+    </div>
+
+    <!-- Balance Sheet Summary -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="font-size: 0.95rem;">🏛️ Balance Sheet</h3>
+        <span class="pill pill-green" id="bsEquationBadge">Assets = L + E ✅</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; margin-bottom: 10px;">
+        <div>Total Assets: <strong class="mono" id="bsTotalAssets">₹2,45,000</strong></div>
+        <div>Liabilities: <strong class="mono" id="bsLiabilities">₹20,000</strong></div>
+        <div>Equity: <strong class="mono" id="bsEquity">₹2,25,000</strong></div>
+        <div>Variance: <strong class="mono text-emerald" id="bsVariance">₹0</strong></div>
+      </div>
+    </div>
+
+    <!-- Financial Ratios -->
+    <div class="card">
+      <h3 style="font-size: 0.95rem; margin-bottom: 10px;">📈 Financial Health Ratios</h3>
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
+        <div style="display: flex; justify-content: space-between;">
+          <span>Net Profit Margin:</span>
+          <strong class="mono text-emerald" id="ratioMargin">54.2%</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>Operating Expense Ratio:</span>
+          <strong class="mono" id="ratioOpex">45.8%</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>Cash Runway:</span>
+          <strong class="mono text-gold" id="ratioRunway">7.4 Months</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>Fee Collection Rate:</span>
+          <strong class="mono text-emerald" id="ratioCollection">92.0%</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>Revenue Per Student:</span>
+          <strong class="mono" id="ratioRevPerStudent">₹1,500</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Add Expense Form -->
+    <div class="card" style="background: var(--bg-surface-dark);">
+      <h3 style="font-size: 0.95rem; margin-bottom: 10px;">➕ Quick Record Expense</h3>
+      <input type="number" id="expAmount" placeholder="Amount (₹)" style="width: 100%; height: 38px; background: var(--bg-dark); border: 1px solid var(--border-dark); border-radius: 6px; padding: 0 10px; color: #FFF; margin-bottom: 8px; font-family: var(--font-mono);">
+      <input type="text" id="expNote" placeholder="Description (e.g. Gemini API, Internet)" style="width: 100%; height: 38px; background: var(--bg-dark); border: 1px solid var(--border-dark); border-radius: 6px; padding: 0 10px; color: #FFF; margin-bottom: 8px;">
+      <select id="expCategory" style="width: 100%; height: 38px; background: var(--bg-dark); border: 1px solid var(--border-dark); border-radius: 6px; padding: 0 10px; color: #FFF; margin-bottom: 8px;">
+        <option value="Direct Expense">Direct Expense</option>
+        <option value="Utilities">Utilities</option>
+        <option value="Marketing">Marketing</option>
+        <option value="Admin">Admin</option>
+        <option value="Finance">Finance</option>
+        <option value="Other">Other</option>
+      </select>
+      <select id="expPaidFrom" style="width: 100%; height: 38px; background: var(--bg-dark); border: 1px solid var(--border-dark); border-radius: 6px; padding: 0 10px; color: #FFF; margin-bottom: 12px;">
+        <option value="UPI">UPI</option>
+        <option value="Cash">Cash (Debits Drawer)</option>
+        <option value="HDFC Current">HDFC Current</option>
+      </select>
+      <button class="btn btn-primary" id="btnSubmitExpense">Save Expense</button>
+    </div>
+
+  </div>
+
+  <script src="../js/telegram.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/admin-books.js"></script>
+</body>
+</html>
