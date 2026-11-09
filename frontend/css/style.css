@@ -263,6 +263,41 @@ h1, h2, h3, h4 {
   margin-bottom: 8px;
 }
 
+/* Back Navigation Button */
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface-dark);
+  border: 1px solid var(--border-dark);
+  color: var(--text-dark-primary);
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.btn-back:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--heritage-gold);
+  color: var(--heritage-gold);
+}
+
+.btn-back:active {
+  transform: scale(0.96);
+}
+
+body.light-theme .btn-back {
+  background: var(--bg-card-light);
+  border-color: var(--border-light);
+  color: var(--text-light-primary);
+}
+
 .profile-chip {
   display: flex;
   align-items: center;

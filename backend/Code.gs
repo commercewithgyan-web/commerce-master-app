@@ -185,6 +185,10 @@ function handleMiniAppRequest_(req) {
       result = apiAskDoubt_(verifiedUser, payload);
       break;
 
+    case 'askVoiceDoubt':
+      result = apiAskVoiceDoubt_(verifiedUser, payload);
+      break;
+
     // ── WOW DELIGHT MODULES ──
     case 'triggerExamPanicSOS':
       result = apiTriggerExamPanicSOS_(verifiedUser);

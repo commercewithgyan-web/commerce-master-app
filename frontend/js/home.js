@@ -9,6 +9,11 @@
 document.addEventListener('DOMContentLoaded', async function() {
   TG_APP.hapticLight();
 
+  // Hide Telegram native back button on Home
+  if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.BackButton) {
+    try { window.Telegram.WebApp.BackButton.hide(); } catch (e) {}
+  }
+
   // Load user preview from Telegram
   var userPreview = TG_APP.getUserPreview();
   var userNameEl = document.getElementById('userName');

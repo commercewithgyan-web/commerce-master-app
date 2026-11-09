@@ -119,6 +119,26 @@ function runAllCommerceTests() {
   var chunks = chunkText_('A'.repeat(5000), 4000);
   assert('Splits 5000 chars into chunks <= 4000', chunks.length === 2 && chunks[0].length <= 4000, 'Chunking failed');
 
+  // ── TEST 7: VOICE DOUBT STRICT TRANSCRIPTION GROUNDING ──
+  Logger.log('\n📋 Running Test Group 7: Voice Doubt Transcription Grounding...');
+  var promptCtx = { name: 'Aarav', classLevel: 12 };
+  var voicePrompt = buildELI10VoicePrompt_(promptCtx);
+  assert('Voice prompt enforces Step 1 Transcribe', voicePrompt.indexOf('Step 1 — Transcribe') !== -1, 'Missing Step 1');
+  assert('Voice prompt enforces Step 2 Rejection string', voicePrompt.indexOf('Sorry Aarav, I could not hear your voice clearly. Please speak again!') !== -1, 'Missing Step 2 rejection');
+  assert('Voice prompt forbids guessing weak topics', voicePrompt.indexOf('NEVER hallucinate, guess topics') !== -1, 'Missing anti-hallucination directive');
+
+  var mockGroundedOutput = 
+    '[TRANSCRIPT]: What is Debenture?\n' +
+    '[EXPLANATION]: Hey Aarav! Think of a debenture like taking an IOU slip from your friendly neighborhood shopkeeper. The company borrows money from you and promises to repay with fixed interest, whether they make a profit or not!\n' +
+    '[KEY_RULE]: Debenture is loan capital, not ownership.\n' +
+    '[CBSE_TRAP]: Debenture interest is a charge against profit, not an appropriation.';
+
+  var parsedTags = parseVoiceExplanationTags_(mockGroundedOutput, 'Aarav');
+  assert('Extracts exact transcript', parsedTags.transcript === 'What is Debenture?', 'Got: ' + parsedTags.transcript);
+  assert('Grounded strictly on Debenture without partnership', parsedTags.explanation.indexOf('debenture') !== -1 && parsedTags.explanation.indexOf('Goodwill') === -1, 'Hallucination in explanation');
+  assert('Extracts key rule', parsedTags.keyRule.indexOf('loan capital') !== -1, 'Key rule failed');
+  assert('Extracts CBSE trap', parsedTags.cbseTrap.indexOf('charge against profit') !== -1, 'Trap failed');
+
   // ── SUMMARY ──
   Logger.log('\n═══════════════════════════════════════════════');
   Logger.log('📊 TEST RESULTS: ' + passed + ' PASSED | ' + failed + ' FAILED');

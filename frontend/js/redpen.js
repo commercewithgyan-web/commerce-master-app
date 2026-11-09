@@ -11,6 +11,16 @@ var compressedBase64 = null;
 document.addEventListener('DOMContentLoaded', function() {
   TG_APP.hapticLight();
 
+  // Initialize Telegram native back button
+  if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.BackButton) {
+    try {
+      window.Telegram.WebApp.BackButton.show();
+      window.Telegram.WebApp.BackButton.onClick(function() {
+        window.location.href = 'index.html';
+      });
+    } catch (e) {}
+  }
+
   var fileInput = document.getElementById('cameraInput');
   var btnAnalyze = document.getElementById('btnAnalyzeCopy');
 

@@ -11,6 +11,16 @@ var notebookData = null;
 document.addEventListener('DOMContentLoaded', async function() {
   TG_APP.hapticLight();
 
+  // Initialize Telegram native back button
+  if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.BackButton) {
+    try {
+      window.Telegram.WebApp.BackButton.show();
+      window.Telegram.WebApp.BackButton.onClick(function() {
+        window.location.href = 'index.html';
+      });
+    } catch (e) {}
+  }
+
   // Save quick note listener
   document.getElementById('btnSaveQuickNote').addEventListener('click', async function() {
     var title = document.getElementById('quickNoteTitle').value.trim();
