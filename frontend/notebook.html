@@ -24,30 +24,50 @@
 
     <!-- Layer 5: Spaced Repetition Due Today Banner -->
     <div class="card card-sos" id="revisionDueCard" style="display: none;">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <div class="pill" style="background: rgba(239,68,68,0.2); color:#F87171; margin-bottom:4px;">REVISION DUE TODAY</div>
-          <div style="font-weight:700; font-size:0.95rem;" id="revisionDueCountText">2 Questions Due</div>
-          <div class="text-xs text-secondary">Spaced Repetition (3/7/15/30 Day Engine)</div>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+        <div style="flex: 1;">
+          <div class="pill pill-gold" style="font-size: 10.5px; margin-bottom: 5px;">🔄 SPACED REPETITION ENGINE</div>
+          <div style="font-weight: 800; font-size: 0.95rem; color: #FFFFFF;" id="revisionDueCountText">2 Questions Due</div>
+          <div class="text-xs text-secondary">3/7/15-Day memory consolidation engine</div>
         </div>
-        <button class="btn btn-danger btn-sm" id="btnStartRevision">Review</button>
+        <button class="btn btn-gold btn-sm" id="btnStartRevision" style="width: auto; padding: 8px 16px;">Review</button>
       </div>
     </div>
 
-    <!-- Notebook Tab Switcher -->
-    <div style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px;">
-      <button class="pill pill-gold" id="tabNotes" onclick="switchNotebookTab('notes')">📝 Notes (<span id="countNotes">0</span>)</button>
-      <button class="pill" id="tabMistakes" onclick="switchNotebookTab('mistakes')">❌ Mistakes (<span id="countMistakes">0</span>)</button>
-      <button class="pill" id="tabFavs" onclick="switchNotebookTab('favs')">⭐ Starred (<span id="countFavs">0</span>)</button>
-      <button class="pill" id="tabSummary" onclick="switchNotebookTab('summary')">🧠 AI Coaching</button>
+    <!-- Notebook Tab Switcher (Strict 4-Column Grid, Zero Overflow, Zero White Buttons) -->
+    <div class="notebook-tab-bar">
+      <button class="notebook-tab-btn active" id="tabNotes" onclick="switchNotebookTab('notes')">
+        <span>📝 Notes</span>
+        <span class="notebook-tab-badge" id="countNotes">0</span>
+      </button>
+      <button class="notebook-tab-btn" id="tabMistakes" onclick="switchNotebookTab('mistakes')">
+        <span>❌ Mistakes</span>
+        <span class="notebook-tab-badge" id="countMistakes">0</span>
+      </button>
+      <button class="notebook-tab-btn" id="tabFavs" onclick="switchNotebookTab('favs')">
+        <span>⭐ Starred</span>
+        <span class="notebook-tab-badge" id="countFavs">0</span>
+      </button>
+      <button class="notebook-tab-btn" id="tabSummary" onclick="switchNotebookTab('summary')">
+        <span>🧠 Coach</span>
+        <span class="notebook-tab-badge">AI</span>
+      </button>
     </div>
 
     <!-- Tab 1: My Notes Container -->
     <div id="sectionNotes">
-      <div class="card" style="background-color: var(--bg-surface-dark);">
-        <input type="text" id="quickNoteTitle" placeholder="Note Title (e.g. Forfeiture Rule)" style="width: 100%; background: none; border: none; color: #FFF; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px; outline: none;">
-        <textarea id="quickNoteContent" placeholder="Jot down a quick personal revision note..." rows="2" style="width: 100%; background: none; border: none; color: #E2E8F0; font-family: var(--font-body); font-size: 0.85rem; resize: none; outline: none;"></textarea>
-        <button class="btn btn-primary btn-sm" id="btnSaveQuickNote" style="margin-top: 8px;">+ Save Note</button>
+      <div class="note-composer-card">
+        <div class="note-composer-header">
+          <span>✏️</span>
+          <span>Quick Personal Revision Note</span>
+        </div>
+        <input type="text" id="quickNoteTitle" class="note-composer-title" placeholder="Note Title (e.g., Forfeiture Rule, AS-3 Trap)...">
+        <textarea id="quickNoteContent" class="note-composer-body" placeholder="Jot down a quick personal formula, memory hook, or exam trick..." rows="2"></textarea>
+        <div class="note-composer-footer">
+          <button class="btn btn-gold btn-sm" id="btnSaveQuickNote" style="width: auto; padding: 8px 16px;">
+            + Save to Vault
+          </button>
+        </div>
       </div>
       <div id="notesList">Loading notes...</div>
     </div>
@@ -64,10 +84,13 @@
 
     <!-- Tab 4: AI Weekly Diagnostic Coaching -->
     <div id="sectionSummary" style="display: none;">
-      <div class="card card-violet">
-        <div class="pill pill-gold" style="margin-bottom: 8px;">LATEST AI COACHING BRIEF</div>
-        <div class="serif text-sm" id="aiSummaryBody" style="line-height: 1.6; color: #E2E8F0;">
-          No weekly summary generated yet. Keep solving daily MCQs and your personalized brief will arrive this Sunday!
+      <div class="card card-violet" style="border: 1px solid rgba(212, 175, 55, 0.35); box-shadow: 0 4px 20px rgba(45, 18, 77, 0.4);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+          <span class="pill pill-gold" style="font-size: 10px; font-weight: 800;">🧠 AI SUNDAY COACHING BRIEF</span>
+          <span style="font-size: 11px; color: #94A3B8;">Weekly Diagnostic</span>
+        </div>
+        <div class="text-sm" id="aiSummaryBody" style="line-height: 1.65; color: #F1F5F9; font-family: var(--font-body);">
+          No weekly summary generated yet. Keep solving daily MCQs and your personalized diagnostic coaching brief will arrive this Sunday!
         </div>
       </div>
     </div>

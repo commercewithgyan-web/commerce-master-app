@@ -92,9 +92,9 @@ function renderProgress(data) {
       else if (ch.accuracy < 80) barColor = '#F59E0B';
 
       item.innerHTML =
-        '<div style="display:flex; justify-content:space-between; margin-bottom:4px;">' +
-        '  <strong style="font-size:0.88rem;">Ch ' + ch.chapterNo + ': ' + ch.chapterName + '</strong>' +
-        '  <span class="mono text-xs" style="color:' + barColor + ';">' + ch.accuracy + '% (' + ch.totalMarks + 'M)</span>' +
+        '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px;">' +
+        '  <strong style="font-size:0.88rem; color:#FFFFFF; flex:1;">Ch ' + ch.chapterNo + ': ' + ch.chapterName + '</strong>' +
+        '  <span class="mono text-xs" style="color:' + barColor + '; font-weight:700; flex-shrink:0;">' + ch.accuracy + '% (' + ch.totalMarks + 'M)</span>' +
         '</div>' +
         '<div style="background:rgba(255,255,255,0.08); height:6px; border-radius:9999px; overflow:hidden;">' +
         '  <div style="width:' + ch.accuracy + '%; height:100%; background:' + barColor + '; border-radius:9999px;"></div>' +

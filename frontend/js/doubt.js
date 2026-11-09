@@ -631,9 +631,13 @@ async function saveActiveLensToNotes(msgId) {
   var lensName = activeLens === 'exam_notes' ? 'Exam Notes' : (activeLens === 'real_example' ? 'Real Example' : 'Story');
   var textToSave = data[activeLens] || '';
 
+  var questionText = data.question || 'Doubt';
+  if (questionText.length > 70) questionText = questionText.substring(0, 68) + '…';
+  var noteTitle = '(' + lensName + '): ' + questionText;
+
   try {
     await API_CLIENT.call('addNote', {
-      title: (data.subject || activeSubject) + ' (' + lensName + '): ' + (data.question || 'Doubt').substring(0, 40) + '...',
+      title: noteTitle,
       note: textToSave,
       topic: data.subject || activeSubject
     });
