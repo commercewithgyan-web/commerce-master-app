@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Voice Doubt Solver — Commerce Gyan</title>
+  <title>Multi-Subject Doubt Solver — Commerce Gyan</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
@@ -11,31 +11,42 @@
 <body>
   <div class="app-container" style="display: flex; flex-direction: column; height: 100vh; padding-bottom: 125px;">
 
-    <header class="header-bar" style="margin-bottom: 4px;">
+    <!-- Top Header Bar -->
+    <header class="header-bar" style="margin-bottom: 6px;">
       <div style="display: flex; align-items: center; gap: 12px;">
         <button class="btn-back" onclick="window.location.href='index.html'">← Home</button>
         <div>
-          <div class="text-xs text-secondary">24/7 AI STUDY BUDDY</div>
-          <h2 style="font-size: 1.15rem;">🎤 Voice Doubt Solver</h2>
+          <div class="text-xs text-secondary" style="letter-spacing: 0.5px;">24/7 AI STUDY BUDDY</div>
+          <h2 style="font-size: 1.15rem; font-weight: 700;">🎤 Multi-Lens Doubt Solver</h2>
         </div>
       </div>
-      <div class="pill pill-gold">24/7 AI Mentor</div>
     </header>
 
-    <!-- Suggested Question Chips -->
-    <div style="display: flex; gap: 6px; overflow-x: auto; padding: 6px 0 10px; margin-bottom: 8px;">
-      <button class="pill pill-violet" onclick="askPreset('Why is Interest on Partner Loan a Charge and not an Appropriation?')">Loan Interest?</button>
-      <button class="pill pill-violet" onclick="askPreset('Explain Unity of Command vs Unity of Direction in Business Studies')">Unity of Command?</button>
-      <button class="pill pill-violet" onclick="askPreset('Explain Price Elasticity of Demand with real example')">Elasticity?</button>
+    <!-- Top Subject Selector (Sticky Pills) -->
+    <div class="subject-selector-bar" id="subjectSelectorBar">
+      <button class="subject-toggle-pill active" id="pillAccountancy" onclick="selectSubject('Accountancy')">
+        📘 Accountancy
+      </button>
+      <button class="subject-toggle-pill" id="pillBST" onclick="selectSubject('Business Studies')">
+        📙 Business Studies
+      </button>
+      <button class="subject-toggle-pill" id="pillEconomics" onclick="selectSubject('Economics')">
+        📗 Economics
+      </button>
+    </div>
+
+    <!-- Dynamic Preset Question Chips -->
+    <div id="presetChipsContainer" style="display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 10px; margin-bottom: 6px; scrollbar-width: none;">
+      <!-- Populated dynamically by doubt.js based on activeSubject -->
     </div>
 
     <!-- Chat Message Container -->
     <div id="chatMessages" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px;">
       <!-- Welcome message -->
       <div class="card card-violet" style="margin: 0;">
-        <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; color: #A5B4FC;">🎧 AI Study Mentor</div>
-        <p class="serif text-sm" style="line-height: 1.5; color: #E2E8F0;">
-          Hello! I am your 24/7 Commerce Mentor. Ask or speak any doubt in Accountancy, Business Studies, or Economics, and I'll break it down with clear, simple explanations and real-world examples!
+        <div style="font-weight: 700; font-size: 0.88rem; margin-bottom: 4px; color: #A5B4FC;">🎧 Gyan Sir's AI Study Buddy</div>
+        <p class="serif text-sm" id="welcomeText" style="line-height: 1.55; color: #E2E8F0;">
+          Welcome! Select your subject above, then speak or type your doubt. I'll provide your answer in 3 lenses: <b>💡 Simple Story</b>, <b>📝 Exam Notes</b>, or <b>🏢 Real Example</b>!
         </p>
       </div>
     </div>
@@ -66,7 +77,7 @@
 
       <!-- Text Input & Send -->
       <div style="display: flex; gap: 8px; align-items: center;">
-        <input type="text" id="doubtInput" placeholder="Or type your doubt or question..." style="flex: 1; height: 42px; background: var(--bg-surface-dark); border: 1px solid var(--border-dark); border-radius: var(--radius-md); padding: 0 14px; color: #FFF; font-size: 0.9rem; outline: none;">
+        <input type="text" id="doubtInput" placeholder="Ask your Accountancy doubt..." style="flex: 1; height: 42px; background: var(--bg-surface-dark); border: 1px solid var(--border-dark); border-radius: var(--radius-md); padding: 0 14px; color: #FFF; font-size: 0.9rem; outline: none;">
         <button id="btnSendDoubt" class="btn btn-primary btn-sm" style="height: 42px; padding: 0 16px; width: auto;">
           Send
         </button>

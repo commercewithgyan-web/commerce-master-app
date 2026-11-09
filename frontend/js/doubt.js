@@ -1,15 +1,36 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * COMMERCE MASTER APP v2.3 — VOICE DOUBT CONTROLLER (doubt.js)
- * Real MediaRecorder Audio Capture, Audio Waveform Animation,
- * Text & Voice Queries, Typewriter Output, and Feynman Everyday Indian Analogies.
+ * COMMERCE MASTER APP v2.3 — MULTI-SUBJECT & MULTI-LENS DOUBT CONTROLLER
+ * Subject Selector (Accountancy / BST / Economics),
+ * Real MediaRecorder Voice Capture, Pulsating Audio Waveform,
+ * Multi-Lens Response Tabs (💡 Simple Story | 📝 Exam Notes | 🏢 Real Example).
  * ═══════════════════════════════════════════════════════════════════════
  */
 
+var activeSubject = 'Accountancy';
 var isRecording = false;
 var mediaRecorder = null;
 var audioChunks = [];
 var recordStartTime = 0;
+var doubtMessagesMap = {}; // Registry of all rendered doubts and their multi-lens states
+
+var PRESETS_BY_SUBJECT = {
+  'Accountancy': [
+    { label: 'Partner Loan Interest?', q: 'Why is Interest on Partner Loan a Charge and not an Appropriation?' },
+    { label: 'Gaining Ratio?', q: 'How do I calculate Gaining Ratio on Partner Retirement?' },
+    { label: 'Share Forfeiture?', q: 'How is Capital Reserve calculated on Reissue of Forfeited Shares?' }
+  ],
+  'Business Studies': [
+    { label: 'Unity of Command?', q: 'Explain Fayol\'s Unity of Command vs Unity of Direction in Business Studies' },
+    { label: 'Planning vs Controlling?', q: 'Explain the relationship between Planning and Controlling in Business Studies' },
+    { label: 'Marketing Mix?', q: 'What are the 4 Ps of Marketing Mix in Business Studies?' }
+  ],
+  'Economics': [
+    { label: 'Price Elasticity?', q: 'Explain Price Elasticity of Demand with practical schedule and formula' },
+    { label: 'RBI Repo Rate?', q: 'How does RBI use Repo Rate to control Inflation in the economy?' },
+    { label: 'BOP vs BOT?', q: 'What is the difference between Balance of Trade and Balance of Payments?' }
+  ]
+};
 
 document.addEventListener('DOMContentLoaded', function() {
   TG_APP.hapticLight();
@@ -23,6 +44,9 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     } catch (e) {}
   }
+
+  // Render initial preset chips for default subject (Accountancy)
+  renderPresetChips();
 
   var btnSend = document.getElementById('btnSendDoubt');
   var input = document.getElementById('doubtInput');
@@ -49,6 +73,55 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 });
+
+/**
+ * Changes active subject from the top selector bar
+ * @param {string} subject - 'Accountancy' | 'Business Studies' | 'Economics'
+ */
+function selectSubject(subject) {
+  if (activeSubject === subject) return;
+  activeSubject = subject;
+  TG_APP.hapticLight();
+
+  // Update pill active classes
+  var pillAcc = document.getElementById('pillAccountancy');
+  var pillBST = document.getElementById('pillBST');
+  var pillEco = document.getElementById('pillEconomics');
+
+  if (pillAcc) pillAcc.classList.toggle('active', subject === 'Accountancy');
+  if (pillBST) pillBST.classList.toggle('active', subject === 'Business Studies');
+  if (pillEco) pillEco.classList.toggle('active', subject === 'Economics');
+
+  // Update input placeholder
+  var input = document.getElementById('doubtInput');
+  if (input) {
+    input.placeholder = 'Ask your ' + subject + ' doubt...';
+  }
+
+  // Re-render presets
+  renderPresetChips();
+}
+
+/**
+ * Renders dynamic preset question chips based on activeSubject
+ */
+function renderPresetChips() {
+  var container = document.getElementById('presetChipsContainer');
+  if (!container) return;
+
+  var presets = PRESETS_BY_SUBJECT[activeSubject] || PRESETS_BY_SUBJECT['Accountancy'];
+  container.innerHTML = '';
+
+  presets.forEach(function(item) {
+    var btn = document.createElement('button');
+    btn.className = 'pill pill-violet';
+    btn.innerText = item.label;
+    btn.onclick = function() {
+      askPreset(item.q);
+    };
+    container.appendChild(btn);
+  });
+}
 
 /**
  * Detects the best supported audio MIME type across browsers and Telegram WebApp
@@ -100,11 +173,11 @@ async function startVoiceRecording() {
       // Minimum duration guard
       if (durationSec < 1) {
         appendStudentBubble('🎙️ [Voice note was too short]');
-        appendMentorBubble('Sorry, your voice was not clear. Please speak closer to the mic and ask again!', null, null);
+        appendErrorBubble('Sorry, your voice was not clear. Please speak closer to the mic and ask again!');
         return;
       }
 
-      appendStudentBubble('🎙️ [Voice Question: ' + durationSec + 's recorded]');
+      appendStudentBubble('🎙️ [' + activeSubject + ' Voice Question: ' + durationSec + 's recorded]');
       var loadingId = appendLoadingBubble('Listening to your doubt...');
 
       // Convert to base64 data
@@ -115,24 +188,25 @@ async function startVoiceRecording() {
           var res = await API_CLIENT.call('askVoiceDoubt', {
             audioBase64: base64Audio,
             mimeType: chosenMime,
-            duration: durationSec
+            duration: durationSec,
+            subject: activeSubject
           });
           removeLoadingBubble(loadingId);
 
           if (res.isRejected) {
             TG_APP.hapticWarning();
-            appendMentorBubble(res.message || 'Sorry, your voice was not clear. Please speak closer to the mic and ask again!', null, null);
+            appendErrorBubble(res.message || 'Sorry, your voice was not clear. Please speak closer to the mic and ask again!');
           } else {
             TG_APP.hapticSuccess();
             if (res.transcribed) {
               appendTranscriptChip('Transcribed: "' + res.transcribed + '"');
             }
-            appendMentorBubble(res.answer, res.keyTakeaway, res.cbseTrap, res.followUpSuggestions);
+            renderMultiLensCard(res, res.transcribed || 'Voice Question');
           }
         } catch (err) {
           removeLoadingBubble(loadingId);
           TG_APP.hapticError();
-          appendMentorBubble('Sorry, your voice was not clear. Please speak closer to the mic and ask again!', null, null);
+          appendErrorBubble('Unable to connect to the study server. Please check your internet connection and try again!');
         }
       };
       reader.readAsDataURL(audioBlob);
@@ -157,7 +231,7 @@ async function startVoiceRecording() {
     }
     if (micIcon) micIcon.innerText = '⏹️';
     if (micLabel) micLabel.innerText = 'Stop Recording';
-    if (statusText) statusText.innerText = 'Listening to your doubt...';
+    if (statusText) statusText.innerText = 'Listening to your ' + activeSubject + ' doubt...';
 
   } catch (err) {
     console.error('Mic access error:', err);
@@ -192,10 +266,15 @@ function stopVoiceRecording() {
 
 function askPreset(text) {
   TG_APP.hapticLight();
-  document.getElementById('doubtInput').value = text;
+  var input = document.getElementById('doubtInput');
+  if (input) input.value = text;
   sendDoubtQuery(text);
 }
 
+/**
+ * Submits text doubt query to the backend
+ * @param {string} text
+ */
 async function sendDoubtQuery(text) {
   if (!text) return;
   TG_APP.hapticLight();
@@ -203,19 +282,29 @@ async function sendDoubtQuery(text) {
   appendStudentBubble(text);
   document.getElementById('doubtInput').value = '';
 
-  var loadingId = appendLoadingBubble('Thinking...');
+  var loadingId = appendLoadingBubble('Consulting Gyan Sir\'s Knowledge Vault...');
 
   try {
-    var res = await API_CLIENT.call('askDoubt', { question: text });
+    var res = await API_CLIENT.call('askDoubt', {
+      question: text,
+      subject: activeSubject,
+      lens: 'ALL'
+    });
     removeLoadingBubble(loadingId);
-    appendMentorBubble(res.answer, res.keyTakeaway, res.cbseTrap, res.followUpSuggestions);
+    renderMultiLensCard(res, text);
     TG_APP.hapticSuccess();
   } catch (err) {
     removeLoadingBubble(loadingId);
-    appendMentorBubble('According to CBSE guidelines, always structure your answer clearly with core concepts, key headings, and relevant illustrations.', 'Focus on core NCERT concepts and headings.', 'Read dates, terms, and requirements carefully.');
+    TG_APP.hapticError();
+    // Honest, truthful error handling with ZERO fake mock answers
+    appendErrorBubble('Unable to connect to the study server. Please check your internet connection and try again!');
   }
 }
 
+/**
+ * Appends student message bubble to the chat container
+ * @param {string} text
+ */
 function appendStudentBubble(text) {
   var container = document.getElementById('chatMessages');
   var bubble = document.createElement('div');
@@ -224,13 +313,17 @@ function appendStudentBubble(text) {
   bubble.style.color = '#FFFFFF';
   bubble.style.padding = '10px 14px';
   bubble.style.borderRadius = '16px 16px 2px 16px';
-  bubble.style.maxWidth = '80%';
+  bubble.style.maxWidth = '82%';
   bubble.style.fontSize = '0.9rem';
   bubble.innerText = text;
   container.appendChild(bubble);
   container.scrollTop = container.scrollHeight;
 }
 
+/**
+ * Appends transcription chip to the chat container
+ * @param {string} text
+ */
 function appendTranscriptChip(text) {
   var container = document.getElementById('chatMessages');
   var chip = document.createElement('div');
@@ -243,6 +336,11 @@ function appendTranscriptChip(text) {
   container.scrollTop = container.scrollHeight;
 }
 
+/**
+ * Appends loading indicator bubble
+ * @param {string} customText
+ * @return {string} id
+ */
 function appendLoadingBubble(customText) {
   var container = document.getElementById('chatMessages');
   var id = 'loading_' + Date.now();
@@ -265,27 +363,91 @@ function removeLoadingBubble(id) {
   if (el) el.remove();
 }
 
-function appendMentorBubble(answer, keyRule, cbseTrap, followUps) {
+/**
+ * Appends honest error bubble (no fake Accountancy fallbacks)
+ * @param {string} msg
+ */
+function appendErrorBubble(msg) {
   var container = document.getElementById('chatMessages');
   var card = document.createElement('div');
-  card.className = 'card card-violet pop-success';
+  card.className = 'card';
   card.style.margin = '0';
   card.style.maxWidth = '90%';
+  card.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+  card.innerHTML =
+    '<div style="font-weight:700; font-size:0.85rem; color:#F87171; margin-bottom:4px;">⚠️ Notice</div>' +
+    '<p class="serif text-sm" style="line-height:1.5; color:#E2E8F0;">' + msg + '</p>';
+  container.appendChild(card);
+  container.scrollTop = container.scrollHeight;
+}
+
+/**
+ * Renders the Multi-Lens Response Card with interactive Lens Chips
+ * @param {Object} res - API response
+ * @param {string} originalQuestion
+ */
+function renderMultiLensCard(res, originalQuestion) {
+  var container = document.getElementById('chatMessages');
+  var msgId = 'doubt_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+
+  var subj = res.subject || activeSubject;
+  var lenses = res.lenses || {};
+
+  // If backend returned single answer, place it into default STORY lens
+  if (!lenses.STORY && res.answer) {
+    lenses.STORY = res.answer;
+  }
+
+  // Register in memory map
+  doubtMessagesMap[msgId] = {
+    subject: subj,
+    question: originalQuestion,
+    lenses: {
+      STORY: lenses.STORY || res.answer || 'Explanation currently generating...',
+      EXAM_NOTES: lenses.EXAM_NOTES || '',
+      REAL_EXAMPLE: lenses.REAL_EXAMPLE || ''
+    },
+    activeLens: 'STORY',
+    keyRule: res.keyTakeaway || res.keyRule || '',
+    cbseTrap: res.cbseTrap || ''
+  };
+
+  var card = document.createElement('div');
+  card.className = 'card card-violet pop-success';
+  card.id = msgId;
+  card.style.margin = '0';
+  card.style.maxWidth = '92%';
+
+  var initialText = formatMarkdownText(doubtMessagesMap[msgId].lenses.STORY);
 
   var html =
-    '<div style="font-weight:700; font-size:0.85rem; color:#A5B4FC; margin-bottom:6px;">💡 Simple Explanation</div>' +
-    '<p class="serif text-sm" style="line-height:1.6; color:#E2E8F0; margin-bottom:10px;">' + answer + '</p>';
+    '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">' +
+    '  <div style="font-weight:700; font-size:0.85rem; color:#A5B4FC;">💡 ' + subj + ' Explanation</div>' +
+    '  <span class="pill pill-gold" style="font-size:0.68rem; padding:2px 8px;">Multi-Lens</span>' +
+    '</div>' +
 
-  if (keyRule) {
-    html += '<div class="pill pill-gold" style="margin-bottom:6px;">⭐ Golden Rule: ' + keyRule + '</div>';
+    // Dynamic Lens Content Container
+    '<div id="lensContent_' + msgId + '" class="lens-content-box">' +
+       initialText +
+    '</div>' +
+
+    // Multi-Lens Response Tabs (3 Clean Toggle Chips)
+    '<div class="lens-chips-bar" id="lensChips_' + msgId + '">' +
+    '  <button class="lens-chip active" id="chip_STORY_' + msgId + '" onclick="switchLens(\'' + msgId + '\', \'STORY\')">💡 Simple Story</button>' +
+    '  <button class="lens-chip" id="chip_EXAM_NOTES_' + msgId + '" onclick="switchLens(\'' + msgId + '\', \'EXAM_NOTES\')">📝 Exam Notes</button>' +
+    '  <button class="lens-chip" id="chip_REAL_EXAMPLE_' + msgId + '" onclick="switchLens(\'' + msgId + '\', \'REAL_EXAMPLE\')">🏢 Real Example</button>' +
+    '</div>';
+
+  if (doubtMessagesMap[msgId].keyRule) {
+    html += '<div class="pill pill-gold" style="margin-top:8px; margin-bottom:4px;">⭐ Golden Rule: ' + doubtMessagesMap[msgId].keyRule + '</div>';
   }
-  if (cbseTrap) {
-    html += '<div class="text-xs text-crimson" style="margin-bottom:10px;">⚠️ CBSE Trap: ' + cbseTrap + '</div>';
+  if (doubtMessagesMap[msgId].cbseTrap) {
+    html += '<div class="text-xs text-crimson" style="margin-top:4px; margin-bottom:8px;">⚠️ CBSE Trap: ' + doubtMessagesMap[msgId].cbseTrap + '</div>';
   }
 
   html +=
     '<div style="display:flex; gap:6px; margin-top:8px;">' +
-    '  <button class="btn btn-outline btn-sm" onclick="saveDoubtToNotes(\'' + encodeURIComponent(answer) + '\')">📓 Save to Notes</button>' +
+    '  <button class="btn btn-outline btn-sm" onclick="saveActiveLensToNotes(\'' + msgId + '\')">📓 Save to Notes</button>' +
     '</div>';
 
   card.innerHTML = html;
@@ -293,15 +455,125 @@ function appendMentorBubble(answer, keyRule, cbseTrap, followUps) {
   container.scrollTop = container.scrollHeight;
 }
 
-async function saveDoubtToNotes(encodedAnswer) {
+/**
+ * Dynamically switches the active lens view for a given card
+ * @param {string} msgId
+ * @param {string} lens - 'STORY' | 'EXAM_NOTES' | 'REAL_EXAMPLE'
+ */
+async function switchLens(msgId, lens) {
+  var data = doubtMessagesMap[msgId];
+  if (!data || data.activeLens === lens) return;
+
+  TG_APP.hapticSelection();
+  data.activeLens = lens;
+
+  var contentEl = document.getElementById('lensContent_' + msgId);
+  var chipStory = document.getElementById('chip_STORY_' + msgId);
+  var chipExam = document.getElementById('chip_EXAM_NOTES_' + msgId);
+  var chipReal = document.getElementById('chip_REAL_EXAMPLE_' + msgId);
+
+  // Update chip styles
+  if (chipStory) chipStory.classList.toggle('active', lens === 'STORY');
+  if (chipExam) chipExam.classList.toggle('active', lens === 'EXAM_NOTES');
+  if (chipReal) chipReal.classList.toggle('active', lens === 'REAL_EXAMPLE');
+
+  // If this specific lens content is not cached yet, fetch it on-demand
+  if (!data.lenses[lens]) {
+    if (contentEl) {
+      contentEl.style.opacity = '0.5';
+      contentEl.innerHTML = '<p class="serif text-xs text-secondary">Generating ' + (lens === 'EXAM_NOTES' ? 'Exam Notes' : 'Real-World Example') + '...</p>';
+    }
+
+    try {
+      var res = await API_CLIENT.call('askDoubt', {
+        question: data.question,
+        subject: data.subject,
+        lens: lens
+      });
+      data.lenses[lens] = res.answer || (res.lenses ? res.lenses[lens] : '');
+    } catch (e) {
+      data.lenses[lens] = 'Unable to load this lens at this moment. Please tap another lens!';
+    }
+  }
+
+  // Fade in the new content
+  if (contentEl) {
+    contentEl.style.opacity = '0';
+    setTimeout(function() {
+      contentEl.innerHTML = formatMarkdownText(data.lenses[lens]);
+      contentEl.style.opacity = '1';
+    }, 120);
+  }
+}
+
+/**
+ * Simple markdown-to-HTML parser for bullet lists, bold text, and linebreaks
+ * @param {string} mdText
+ * @return {string}
+ */
+function formatMarkdownText(mdText) {
+  if (!mdText) return '';
+  var raw = String(mdText).trim();
+
+  // Escape HTML tags to prevent XSS
+  var escaped = raw
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Bold **text**
+  escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+  // Bullet items starting with * or - or •
+  var lines = escaped.split('\n');
+  var formattedLines = [];
+  var inList = false;
+
+  lines.forEach(function(line) {
+    var trimmed = line.trim();
+    if (/^[\*\-•]\s+/.test(trimmed)) {
+      if (!inList) {
+        formattedLines.push('<ul>');
+        inList = true;
+      }
+      formattedLines.push('<li>' + trimmed.replace(/^[\*\-•]\s+/, '') + '</li>');
+    } else {
+      if (inList) {
+        formattedLines.push('</ul>');
+        inList = false;
+      }
+      if (trimmed) {
+        formattedLines.push('<p style="margin-bottom:6px;">' + trimmed + '</p>');
+      }
+    }
+  });
+
+  if (inList) {
+    formattedLines.push('</ul>');
+  }
+
+  return formattedLines.join('');
+}
+
+/**
+ * Saves current active lens explanation to the student's notebook
+ * @param {string} msgId
+ */
+async function saveActiveLensToNotes(msgId) {
   TG_APP.hapticLight();
+  var data = doubtMessagesMap[msgId];
+  if (!data) return;
+
+  var lensName = data.activeLens === 'EXAM_NOTES' ? 'Exam Notes' : (data.activeLens === 'REAL_EXAMPLE' ? 'Corporate Example' : 'Simple Story');
+  var textToSave = data.lenses[data.activeLens];
+
   try {
     await API_CLIENT.call('addNote', {
-      title: 'Doubt Explanation',
-      note: decodeURIComponent(encodedAnswer),
-      topic: 'Doubt Solver'
+      title: data.subject + ' (' + lensName + '): ' + data.question.substring(0, 40) + '...',
+      note: textToSave,
+      topic: data.subject
     });
-    alert('✅ Saved to your Personal Notebook!');
+    alert('✅ Saved ' + lensName + ' to your Personal Notebook!');
   } catch (e) {
     alert('Note saved.');
   }
