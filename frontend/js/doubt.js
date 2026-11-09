@@ -55,21 +55,12 @@ document.addEventListener('DOMContentLoaded', function() {
  * @return {string}
  */
 function getSupportedMimeType() {
-  if (typeof MediaRecorder === 'undefined') return '';
-  var types = [
-    'audio/webm;codecs=opus',
-    'audio/webm',
-    'audio/ogg;codecs=opus',
-    'audio/ogg',
-    'audio/mp4',
-    'audio/aac'
-  ];
-  for (var i = 0; i < types.length; i++) {
-    if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(types[i])) {
-      return types[i];
-    }
-  }
-  return '';
+  if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return 'audio/webm';
+  return MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+    ? 'audio/webm;codecs=opus'
+    : (MediaRecorder.isTypeSupported('audio/mp4')
+        ? 'audio/mp4'
+        : 'audio/ogg');
 }
 
 /**
@@ -109,12 +100,12 @@ async function startVoiceRecording() {
       // Minimum duration guard
       if (durationSec < 1) {
         appendStudentBubble('🎙️ [Voice note was too short]');
-        appendMentorBubble('Sorry, that was too short! Please tap the mic and speak your doubt clearly.', null, null);
+        appendMentorBubble('Sorry, your voice was not clear. Please speak closer to the mic and ask again!', null, null);
         return;
       }
 
       appendStudentBubble('🎙️ [Voice Question: ' + durationSec + 's recorded]');
-      var loadingId = appendLoadingBubble('Study Buddy is listening and transcribing...');
+      var loadingId = appendLoadingBubble('Listening to your doubt...');
 
       // Convert to base64 data
       var reader = new FileReader();
@@ -130,7 +121,7 @@ async function startVoiceRecording() {
 
           if (res.isRejected) {
             TG_APP.hapticWarning();
-            appendMentorBubble(res.message, null, null);
+            appendMentorBubble(res.message || 'Sorry, your voice was not clear. Please speak closer to the mic and ask again!', null, null);
           } else {
             TG_APP.hapticSuccess();
             if (res.transcribed) {
@@ -141,7 +132,7 @@ async function startVoiceRecording() {
         } catch (err) {
           removeLoadingBubble(loadingId);
           TG_APP.hapticError();
-          appendMentorBubble('Sorry, I had trouble processing your voice note. Please speak a little louder or type below!', null, null);
+          appendMentorBubble('Sorry, your voice was not clear. Please speak closer to the mic and ask again!', null, null);
         }
       };
       reader.readAsDataURL(audioBlob);
@@ -153,10 +144,20 @@ async function startVoiceRecording() {
     // Visual feedback
     var waveform = document.getElementById('liveWaveform');
     var btnVoice = document.getElementById('btnVoiceRecord');
-    waveform.style.display = 'flex';
-    waveform.classList.add('recording');
-    btnVoice.style.transform = 'scale(1.15)';
-    btnVoice.innerText = '⏹️';
+    var micIcon = document.getElementById('micIcon');
+    var micLabel = document.getElementById('micLabel');
+    var statusText = document.getElementById('recordingStatusText');
+
+    if (waveform) {
+      waveform.style.display = 'flex';
+      waveform.classList.add('recording');
+    }
+    if (btnVoice) {
+      btnVoice.classList.add('recording');
+    }
+    if (micIcon) micIcon.innerText = '⏹️';
+    if (micLabel) micLabel.innerText = 'Stop Recording';
+    if (statusText) statusText.innerText = 'Listening to your doubt...';
 
   } catch (err) {
     console.error('Mic access error:', err);
@@ -175,10 +176,18 @@ function stopVoiceRecording() {
 
   var waveform = document.getElementById('liveWaveform');
   var btnVoice = document.getElementById('btnVoiceRecord');
-  waveform.style.display = 'none';
-  waveform.classList.remove('recording');
-  btnVoice.style.transform = 'scale(1)';
-  btnVoice.innerText = '🎤';
+  var micIcon = document.getElementById('micIcon');
+  var micLabel = document.getElementById('micLabel');
+
+  if (waveform) {
+    waveform.style.display = 'none';
+    waveform.classList.remove('recording');
+  }
+  if (btnVoice) {
+    btnVoice.classList.remove('recording');
+  }
+  if (micIcon) micIcon.innerText = '🎤';
+  if (micLabel) micLabel.innerText = 'Tap to Speak';
 }
 
 function askPreset(text) {
@@ -194,7 +203,7 @@ async function sendDoubtQuery(text) {
   appendStudentBubble(text);
   document.getElementById('doubtInput').value = '';
 
-  var loadingId = appendLoadingBubble('Study Buddy is thinking...');
+  var loadingId = appendLoadingBubble('Thinking...');
 
   try {
     var res = await API_CLIENT.call('askDoubt', { question: text });
@@ -203,7 +212,7 @@ async function sendDoubtQuery(text) {
     TG_APP.hapticSuccess();
   } catch (err) {
     removeLoadingBubble(loadingId);
-    appendMentorBubble('According to CBSE standards, remember that charges against profit must be deducted before distributing dividends.', 'Charges precede Appropriations.', 'Manager commission is a charge.');
+    appendMentorBubble('According to CBSE guidelines, always structure your answer clearly with core concepts, key headings, and relevant illustrations.', 'Focus on core NCERT concepts and headings.', 'Read dates, terms, and requirements carefully.');
   }
 }
 
@@ -245,7 +254,7 @@ function appendLoadingBubble(customText) {
   bubble.style.borderRadius = '16px 16px 16px 2px';
   bubble.style.fontSize = '0.85rem';
   bubble.style.color = 'var(--text-dark-muted)';
-  bubble.innerText = customText || 'Study Buddy is thinking...';
+  bubble.innerText = customText || 'Thinking...';
   container.appendChild(bubble);
   container.scrollTop = container.scrollHeight;
   return id;
@@ -264,7 +273,7 @@ function appendMentorBubble(answer, keyRule, cbseTrap, followUps) {
   card.style.maxWidth = '90%';
 
   var html =
-    '<div style="font-weight:700; font-size:0.85rem; color:#A5B4FC; margin-bottom:6px;">🎧 Study Buddy Explanation</div>' +
+    '<div style="font-weight:700; font-size:0.85rem; color:#A5B4FC; margin-bottom:6px;">💡 Simple Explanation</div>' +
     '<p class="serif text-sm" style="line-height:1.6; color:#E2E8F0; margin-bottom:10px;">' + answer + '</p>';
 
   if (keyRule) {
