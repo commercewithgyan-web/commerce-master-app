@@ -186,6 +186,7 @@ function handleApiRequest(req) {
       break;
 
     case 'submitRedPenCopy':
+    case 'runRedPenAnalysis':
       dataResult = apiSubmitRedPenCopy_(verifiedUser, payload);
       break;
 

@@ -1,8 +1,8 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
  * COMMERCE MASTER APP v2.3 — RED-PEN CONTROLLER (redpen.js)
- * Client-Side HTML5 Canvas Compression Engine (1280px / 70% JPEG),
- * Image Token Throttling (~258 tokens), and Diagnostic Evaluation.
+ * Client-Side HTML5 Canvas Compression Engine (1280px / 70% JPEG)
+ * and Real Gemini 2.5 Flash Vision Forensic Evaluation.
  * ═══════════════════════════════════════════════════════════════════════
  */
 
@@ -22,49 +22,65 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   var fileInput = document.getElementById('cameraInput');
+  var rejFileInput = document.getElementById('rejectionCameraInput');
   var btnAnalyze = document.getElementById('btnAnalyzeCopy');
 
-  fileInput.addEventListener('change', function(e) {
+  function handleFileSelected(e) {
     if (e.target.files && e.target.files[0]) {
       compressImageClientSide(e.target.files[0]);
     }
-  });
+  }
 
-  btnAnalyze.addEventListener('click', async function() {
-    if (!compressedBase64) return;
-    TG_APP.hapticMedium();
+  if (fileInput) fileInput.addEventListener('change', handleFileSelected);
+  if (rejFileInput) rejFileInput.addEventListener('change', handleFileSelected);
 
-    btnAnalyze.innerText = '⏳ Analyzing Handwriting & Formatting...';
-    btnAnalyze.disabled = true;
+  if (btnAnalyze) {
+    btnAnalyze.addEventListener('click', async function() {
+      if (!compressedBase64) return;
+      TG_APP.hapticMedium();
 
-    try {
-      var res = await API_CLIENT.call('submitRedPenCopy', {
-        pagesBase64: [compressedBase64]
-      });
+      btnAnalyze.innerText = '⏳ Analyzing Handwriting & Formatting...';
+      btnAnalyze.disabled = true;
 
-      renderRedPenReport(res);
-      TG_APP.hapticSuccess();
-    } catch (err) {
-      console.error('RedPen OCR error:', err);
-      // Fallback preview
-      renderRedPenReport({
-        estimatedMarks: 5.0,
-        maxMarks: 6.0,
-        flawlessElements: ['Account heads correctly classified', 'Debit and Credit sub-totals match'],
-        trapsCaught: ['Missing (Being...) narration in Entry 2 (-0.5 Marks)', 'Unruled closing line on ledger balance (-0.5 Marks)'],
-        prescription: 'Always append (Being...) narration and use double-underline rules under ledger totals.'
-      });
-    } finally {
-      btnAnalyze.innerText = '🔍 Run Red-Pen Copy Analysis';
-      btnAnalyze.disabled = false;
-    }
-  });
+      // Hide previous reports or rejection cards during analysis
+      var reportCard = document.getElementById('reportCard');
+      var rejectionCard = document.getElementById('rejectionCard');
+      if (reportCard) reportCard.style.display = 'none';
+      if (rejectionCard) rejectionCard.style.display = 'none';
+
+      try {
+        var res = await API_CLIENT.call('submitRedPenCopy', {
+          imageBase64: compressedBase64,
+          pagesBase64: [compressedBase64]
+        });
+
+        if (!res) {
+          throw new Error('No evaluation received from server.');
+        }
+
+        // Forensic check: Validate if image is actually a handwritten notebook solution
+        if (res.isValidHandwriting === false) {
+          TG_APP.hapticError();
+          showRejectionNotice(res.rejectionMessage || '⚠️ This is not a handwritten register solution! It looks like a screenshot or printed page. Please upload a clear photo of your handwritten notebook answer.');
+        } else {
+          TG_APP.hapticSuccess();
+          renderRedPenReport(res);
+        }
+      } catch (err) {
+        console.error('RedPen OCR error:', err);
+        TG_APP.hapticError();
+        alert('⚠️ Evaluation Notice: ' + (err.message || 'Could not evaluate image. Please try again with a clearer photo.'));
+      } finally {
+        btnAnalyze.innerText = '🔍 Run Red-Pen Copy Analysis';
+        btnAnalyze.disabled = false;
+      }
+    });
+  }
 });
 
 /**
  * Compresses raw high-res photo using HTML5 canvas
  * Clamps width to max 1280px at 70% JPEG quality (~200 KB)
- * Strictly guarantees ~258 tokens per page on Gemini 2.5 Flash Vision.
  */
 function compressImageClientSide(file) {
   var reader = new FileReader();
@@ -100,9 +116,20 @@ function compressImageClientSide(file) {
 
       // Show preview
       var previewCard = document.getElementById('previewCard');
-      previewCard.style.display = 'block';
-      document.getElementById('imagePreview').src = compressedBase64;
-      document.getElementById('fileSizeBadge').innerText = sizeKB + ' KB (~258 Tokens)';
+      if (previewCard) previewCard.style.display = 'block';
+
+      var imgPreview = document.getElementById('imagePreview');
+      if (imgPreview) imgPreview.src = compressedBase64;
+
+      var sizeBadge = document.getElementById('fileSizeBadge');
+      if (sizeBadge) sizeBadge.innerText = '✅ Photo Ready (' + sizeKB + ' KB)';
+
+      // Hide older outputs on new upload
+      var reportCard = document.getElementById('reportCard');
+      if (reportCard) reportCard.style.display = 'none';
+
+      var rejectionCard = document.getElementById('rejectionCard');
+      if (rejectionCard) rejectionCard.style.display = 'none';
 
       TG_APP.hapticLight();
     };
@@ -111,31 +138,96 @@ function compressImageClientSide(file) {
   reader.readAsDataURL(file);
 }
 
-function renderRedPenReport(data) {
+/**
+ * Displays rejection card when uploaded image is a screenshot or not handwritten
+ * @param {string} message
+ */
+function showRejectionNotice(message) {
   var reportCard = document.getElementById('reportCard');
+  if (reportCard) reportCard.style.display = 'none';
+
+  var rejectionCard = document.getElementById('rejectionCard');
+  if (rejectionCard) {
+    var msgEl = document.getElementById('rejectionMessage');
+    if (msgEl) msgEl.innerText = message;
+    rejectionCard.style.display = 'block';
+    rejectionCard.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    alert(message);
+  }
+}
+
+/**
+ * Renders verified handwritten evaluation report
+ * @param {Object} data
+ */
+function renderRedPenReport(data) {
+  var rejectionCard = document.getElementById('rejectionCard');
+  if (rejectionCard) rejectionCard.style.display = 'none';
+
+  var reportCard = document.getElementById('reportCard');
+  if (!reportCard) return;
+
   reportCard.style.display = 'block';
   reportCard.classList.add('pop-success');
 
-  document.getElementById('marksDisplay').innerText = data.estimatedMarks + ' / ' + data.maxMarks + ' Marks';
+  // Subject Badge
+  var subjectBadge = document.getElementById('subjectBadge');
+  if (subjectBadge) {
+    if (data.detectedSubject) {
+      subjectBadge.innerText = data.detectedSubject;
+      subjectBadge.style.display = 'inline-block';
+    } else {
+      subjectBadge.style.display = 'none';
+    }
+  }
 
-  // Flawless
+  // Score display
+  var displayScore = data.score || (data.estimatedMarks !== undefined ? (data.estimatedMarks + ' / ' + (data.maxMarks || 6.0) + ' Marks') : 'Evaluated');
+  var marksEl = document.getElementById('marksDisplay');
+  if (marksEl) marksEl.innerText = displayScore;
+
+  // Flawless elements
   var flawlessList = document.getElementById('flawlessList');
-  flawlessList.innerHTML = '';
-  (data.flawlessElements || []).forEach(function(item) {
-    var li = document.createElement('li');
-    li.innerText = item;
-    flawlessList.appendChild(li);
-  });
+  if (flawlessList) {
+    flawlessList.innerHTML = '';
+    var flawlessItems = data.flawlessElements || [];
+    if (flawlessItems.length === 0) {
+      var li = document.createElement('li');
+      li.innerText = 'Handwriting is clear and solution steps are legible.';
+      flawlessList.appendChild(li);
+    } else {
+      flawlessItems.forEach(function(item) {
+        var li = document.createElement('li');
+        li.innerText = item;
+        flawlessList.appendChild(li);
+      });
+    }
+  }
 
-  // Traps
+  // Traps caught
   var trapsList = document.getElementById('trapsList');
-  trapsList.innerHTML = '';
-  (data.trapsCaught || []).forEach(function(item) {
-    var li = document.createElement('li');
-    li.innerText = item;
-    trapsList.appendChild(li);
-  });
+  if (trapsList) {
+    trapsList.innerHTML = '';
+    var trapItems = data.trapsCaught || [];
+    if (trapItems.length === 0) {
+      var li = document.createElement('li');
+      li.innerText = 'No major CBSE presentation traps detected.';
+      trapsList.appendChild(li);
+    } else {
+      trapItems.forEach(function(item) {
+        var li = document.createElement('li');
+        li.innerText = item;
+        trapsList.appendChild(li);
+      });
+    }
+  }
 
   // Prescription
-  document.getElementById('prescriptionText').innerText = data.prescription || 'Maintain clean double-underline borders.';
+  var prescEl = document.getElementById('prescriptionText');
+  if (prescEl) {
+    prescEl.innerText = data.prescription || 'Maintain clean double-underline borders and complete all question parts.';
+  }
+
+  reportCard.scrollIntoView({ behavior: 'smooth' });
 }

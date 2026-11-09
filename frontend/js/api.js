@@ -49,7 +49,8 @@ var API_CLIENT = {
 
     try {
       var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-      var timeoutId = controller ? setTimeout(function() { controller.abort(); }, 18000) : null;
+      var timeoutMs = (action === 'submitRedPenCopy' || action === 'runRedPenAnalysis' || action === 'askVoiceDoubt') ? 45000 : 20000;
+      var timeoutId = controller ? setTimeout(function() { controller.abort(); }, timeoutMs) : null;
 
       var response = await fetch(this.backendUrl, {
         method: 'POST',
