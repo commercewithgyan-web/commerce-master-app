@@ -354,6 +354,7 @@ function setProjectSecrets(config) {
 function applyAllProjectCredentials() {
   Logger.log('🚀 Running applyAllProjectCredentials()...');
   var props = PropertiesService.getScriptProperties();
+  props.setProperty('MINI_APP_URL', 'https://commercewithgyan-web.github.io/commerce-master-app/frontend/index.html');
 
   // Set up 13 daily triggers
   try {
