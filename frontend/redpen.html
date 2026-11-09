@@ -29,30 +29,55 @@
     <div class="card card-violet">
       <h3 style="font-size: 1rem; margin-bottom: 6px;">Check Your Register Solution</h3>
       <p class="text-xs text-secondary" style="line-height: 1.5; margin-bottom: 14px;">
-        Take a clear photo of your handwritten ledger or journal entries. Our Gemini Vision engine scans for missing narrations, omitted L.F. columns, and unruled balances.
+        Take a clear photo of your handwritten ledger, journal, or notes. Our Gemini Vision engine scans for missing narrations, omitted L.F. columns, and unruled balances.
       </p>
       
-      <!-- Camera Button -->
-      <label class="btn btn-primary" style="cursor: pointer;">
-        <span>📷</span> Take Photo of Register
-        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
-      </label>
-      <div class="text-xs text-secondary" style="text-align: center; margin-top: 8px;">
-        Auto-compressed client-side to 1280px / 70% (~200 KB)
+      <!-- Dual Action Buttons: Camera & Gallery -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+        <button type="button" class="btn btn-primary" id="btnTriggerCamera" style="padding: 12px 10px; font-size: 0.88rem; cursor: pointer;">
+          <span>📷</span> Camera
+        </button>
+        <button type="button" class="btn btn-outline" id="btnTriggerGallery" style="padding: 12px 10px; font-size: 0.88rem; border-color: rgba(212, 175, 55, 0.4); color: #F8FAFC; cursor: pointer;">
+          <span>🖼️</span> Gallery / Files
+        </button>
+      </div>
+
+      <!-- Hidden Native File Inputs -->
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none;">
+      <input type="file" id="galleryInput" accept="image/*" style="position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none;">
+
+      <div class="text-xs text-secondary" style="text-align: center; margin-top: 4px;">
+        ⚡ Auto-compressed client-side to ~200 KB for zero upload lag
       </div>
     </div>
 
     <!-- Hidden Canvas for Client-Side Compression -->
     <canvas id="compressionCanvas" style="display: none;"></canvas>
 
+    <!-- Loading State Card (Shown while reading & compressing image) -->
+    <div class="card" id="imageLoadingCard" style="display: none; text-align: center; padding: 20px;">
+      <div style="font-size: 2rem; margin-bottom: 8px; animation: pulse 1s infinite;">⏳</div>
+      <div style="font-weight: 700; font-size: 0.95rem; color: #FDE047;">Preparing & Compressing Photo...</div>
+      <div class="text-xs text-secondary" style="margin-top: 4px;">Optimizing image clarity for CBSE grading</div>
+    </div>
+
     <!-- Thumbnail Preview (Hidden until image selected) -->
     <div class="card" id="previewCard" style="display: none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <span class="text-xs text-secondary">PREVIEW</span>
+        <span class="text-xs text-secondary" style="font-weight: 700; letter-spacing: 0.5px;">REGISTER PREVIEW</span>
         <span class="pill pill-green" id="fileSizeBadge">✅ Photo Ready</span>
       </div>
-      <img id="imagePreview" src="" alt="Snapshot Preview" style="width: 100%; max-height: 240px; object-fit: contain; border-radius: var(--radius-sm); margin-bottom: 12px; background: #000;">
-      <button class="btn btn-gold" id="btnAnalyzeCopy">🔍 Run Red-Pen Copy Analysis</button>
+      <img id="imagePreview" src="" alt="Snapshot Preview" style="width: 100%; max-height: 280px; object-fit: contain; border-radius: var(--radius-sm); margin-bottom: 12px; background: #000; border: 1px solid rgba(255, 255, 255, 0.1);">
+      
+      <button type="button" class="btn btn-gold" id="btnAnalyzeCopy" style="font-size: 0.98rem; margin-bottom: 10px;">
+        🔍 Run Red-Pen Copy Analysis
+      </button>
+
+      <div style="display: flex; gap: 8px; justify-content: center;">
+        <button type="button" class="btn btn-outline btn-sm" id="btnChangePhoto" style="font-size: 0.78rem; border-color: rgba(255,255,255,0.2);">
+          🔄 Select Different Photo
+        </button>
+      </div>
     </div>
 
     <!-- Rejection Card (Hidden until validation rejects) -->
@@ -62,10 +87,14 @@
         <span style="font-weight: 700; font-size: 0.95rem; color: #F87171;">Copy Verification Failed</span>
       </div>
       <div id="rejectionMessage" style="font-size: 0.88rem; color: #FCA5A5; line-height: 1.5; margin-bottom: 14px;"></div>
-      <label class="btn btn-primary" style="cursor: pointer; display: block; text-align: center; font-size: 0.85rem; padding: 10px;">
-        <span>📷</span> Retake Photo of Handwritten Register
-        <input type="file" id="rejectionCameraInput" accept="image/*" capture="environment" style="display: none;">
-      </label>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <button type="button" class="btn btn-primary btn-sm" id="btnRejCamera" style="padding: 10px; font-size: 0.82rem;">
+          <span>📷</span> Retake Photo
+        </button>
+        <button type="button" class="btn btn-outline btn-sm" id="btnRejGallery" style="padding: 10px; font-size: 0.82rem;">
+          <span>🖼️</span> Pick from Gallery
+        </button>
+      </div>
     </div>
 
     <!-- Evaluation Result Section (One-on-One Mentor Desk Engine) -->
@@ -125,8 +154,8 @@
     </a>
   </nav>
 
-  <script src="js/telegram.js?v=2.5.0"></script>
-  <script src="js/api.js?v=2.5.0"></script>
-  <script src="js/redpen.js?v=2.5.0"></script>
+  <script src="js/telegram.js?v=2.5.2"></script>
+  <script src="js/api.js?v=2.5.2"></script>
+  <script src="js/redpen.js?v=2.5.2"></script>
 </body>
 </html>

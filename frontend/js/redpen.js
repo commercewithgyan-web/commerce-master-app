@@ -1,7 +1,7 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * COMMERCE MASTER APP v2.3 — RED-PEN CONTROLLER (redpen.js)
- * Client-Side HTML5 Canvas Compression Engine (1280px / 70% JPEG),
+ * COMMERCE MASTER APP v2.5 — RED-PEN CONTROLLER (redpen.js)
+ * Client-Side HTML5 Canvas Compression Engine (1280px / 72% JPEG),
  * Double-Vault Gatekeeper OCR & Forensic CBSE Examiner Evaluation.
  * ═══════════════════════════════════════════════════════════════════════
  */
@@ -21,25 +21,59 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (e) {}
   }
 
-  var fileInput = document.getElementById('cameraInput');
-  var rejFileInput = document.getElementById('rejectionCameraInput');
+  // File Inputs & Triggers
+  var cameraInput = document.getElementById('cameraInput');
+  var galleryInput = document.getElementById('galleryInput');
+  var btnTriggerCamera = document.getElementById('btnTriggerCamera');
+  var btnTriggerGallery = document.getElementById('btnTriggerGallery');
+  var btnChangePhoto = document.getElementById('btnChangePhoto');
+  var btnRejCamera = document.getElementById('btnRejCamera');
+  var btnRejGallery = document.getElementById('btnRejGallery');
   var btnAnalyze = document.getElementById('btnAnalyzeCopy');
 
-  function handleFileSelected(e) {
-    if (e.target.files && e.target.files[0]) {
-      compressImageClientSide(e.target.files[0]);
+  // Trigger camera file picker
+  function triggerCamera() {
+    TG_APP.hapticLight();
+    if (cameraInput) {
+      cameraInput.value = '';
+      cameraInput.click();
     }
   }
 
-  if (fileInput) fileInput.addEventListener('change', handleFileSelected);
-  if (rejFileInput) rejFileInput.addEventListener('change', handleFileSelected);
+  // Trigger gallery file picker
+  function triggerGallery() {
+    TG_APP.hapticLight();
+    if (galleryInput) {
+      galleryInput.value = '';
+      galleryInput.click();
+    }
+  }
 
+  if (btnTriggerCamera) btnTriggerCamera.addEventListener('click', triggerCamera);
+  if (btnTriggerGallery) btnTriggerGallery.addEventListener('click', triggerGallery);
+  if (btnChangePhoto) btnChangePhoto.addEventListener('click', triggerGallery);
+  if (btnRejCamera) btnRejCamera.addEventListener('click', triggerCamera);
+  if (btnRejGallery) btnRejGallery.addEventListener('click', triggerGallery);
+
+  function handleFileSelected(e) {
+    if (e.target.files && e.target.files[0]) {
+      processSelectedFile(e.target.files[0]);
+    }
+  }
+
+  if (cameraInput) cameraInput.addEventListener('change', handleFileSelected);
+  if (galleryInput) galleryInput.addEventListener('change', handleFileSelected);
+
+  // Analysis Button Event
   if (btnAnalyze) {
     btnAnalyze.addEventListener('click', async function() {
-      if (!compressedBase64) return;
+      if (!compressedBase64) {
+        alert('⚠️ Please select or take a photo of your register first.');
+        return;
+      }
       TG_APP.hapticMedium();
 
-      btnAnalyze.innerText = '⏳ Analyzing Handwriting & Formatting...';
+      btnAnalyze.innerText = '⏳ Gyan Sir Reviewing Copy Line-by-Line...';
       btnAnalyze.disabled = true;
 
       // Hide previous cards during analysis
@@ -89,17 +123,47 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
- * Compresses raw photo using HTML5 canvas to max 1280px / 70% JPEG (~200 KB)
+ * Robust Client-Side Image Loader & Canvas Compressor (1280px / 72% JPEG)
  */
-function compressImageClientSide(file) {
-  var reader = new FileReader();
-  reader.onload = function(event) {
-    var img = new Image();
-    img.onload = function() {
+function processSelectedFile(file) {
+  if (!file) return;
+
+  var loadingCard = document.getElementById('imageLoadingCard');
+  var previewCard = document.getElementById('previewCard');
+  var rejectionCard = document.getElementById('rejectionCard');
+  var resultCard = document.getElementById('resultCard');
+
+  if (loadingCard) loadingCard.style.display = 'block';
+  if (previewCard) previewCard.style.display = 'none';
+  if (rejectionCard) rejectionCard.style.display = 'none';
+  if (resultCard) resultCard.style.display = 'none';
+
+  // Fast path: Try URL.createObjectURL for 0ms lag and minimal memory consumption
+  var blobUrl = null;
+  if (typeof URL !== 'undefined' && URL.createObjectURL) {
+    try {
+      blobUrl = URL.createObjectURL(file);
+    } catch (e) {
+      blobUrl = null;
+    }
+  }
+
+  var img = new Image();
+
+  function onImageLoaded() {
+    try {
       var canvas = document.getElementById('compressionCanvas');
+      if (!canvas) {
+        canvas = document.createElement('canvas');
+      }
+
       var maxDim = 1280;
-      var width = img.width;
-      var height = img.height;
+      var width = img.naturalWidth || img.width;
+      var height = img.naturalHeight || img.height;
+
+      if (!width || !height) {
+        throw new Error('Invalid image dimensions');
+      }
 
       if (width > maxDim || height > maxDim) {
         if (width > height) {
@@ -117,15 +181,18 @@ function compressImageClientSide(file) {
       var ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Export as 70% quality JPEG
-      compressedBase64 = canvas.toDataURL('image/jpeg', 0.70);
+      // Export as 72% quality JPEG
+      compressedBase64 = canvas.toDataURL('image/jpeg', 0.72);
 
       // Calculate approximate size in KB
       var sizeKB = Math.round((compressedBase64.length * 3) / 4 / 1024);
 
       // Show preview
-      var previewCard = document.getElementById('previewCard');
-      if (previewCard) previewCard.style.display = 'block';
+      if (loadingCard) loadingCard.style.display = 'none';
+      if (previewCard) {
+        previewCard.style.display = 'block';
+        previewCard.scrollIntoView({ behavior: 'smooth' });
+      }
 
       var imgPreview = document.getElementById('imagePreview');
       if (imgPreview) imgPreview.src = compressedBase64;
@@ -133,17 +200,102 @@ function compressImageClientSide(file) {
       var sizeBadge = document.getElementById('fileSizeBadge');
       if (sizeBadge) sizeBadge.innerText = '✅ Photo Ready (' + sizeKB + ' KB)';
 
-      // Hide older outputs on new upload
-      var resultCard = document.getElementById('resultCard');
-      if (resultCard) resultCard.style.display = 'none';
+      TG_APP.hapticSuccess();
+    } catch (err) {
+      console.warn('Canvas compression failed, falling back to direct FileReader:', err);
+      fallbackDirectRead(file);
+    } finally {
+      if (blobUrl) {
+        try { URL.revokeObjectURL(blobUrl); } catch (revErr) {}
+      }
+    }
+  }
 
-      var rejectionCard = document.getElementById('rejectionCard');
-      if (rejectionCard) rejectionCard.style.display = 'none';
+  img.onload = onImageLoaded;
 
-      TG_APP.hapticLight();
-    };
-    img.src = event.target.result;
+  img.onerror = function() {
+    console.warn('Image load error with createObjectURL, attempting FileReader fallback...');
+    if (blobUrl) {
+      try { URL.revokeObjectURL(blobUrl); } catch (revErr) {}
+    }
+    fallbackDirectRead(file);
   };
+
+  if (blobUrl) {
+    img.src = blobUrl;
+  } else {
+    fallbackDirectRead(file);
+  }
+}
+
+/**
+ * Fallback direct FileReader for devices where createObjectURL fails
+ */
+function fallbackDirectRead(file) {
+  var loadingCard = document.getElementById('imageLoadingCard');
+  var previewCard = document.getElementById('previewCard');
+
+  var reader = new FileReader();
+  reader.onload = function(event) {
+    var fallbackImg = new Image();
+    fallbackImg.onload = function() {
+      try {
+        var canvas = document.getElementById('compressionCanvas') || document.createElement('canvas');
+        var maxDim = 1280;
+        var width = fallbackImg.naturalWidth || fallbackImg.width;
+        var height = fallbackImg.naturalHeight || fallbackImg.height;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(fallbackImg, 0, 0, width, height);
+        compressedBase64 = canvas.toDataURL('image/jpeg', 0.72);
+      } catch (e) {
+        // Ultimate fallback: direct raw DataURL
+        compressedBase64 = event.target.result;
+      }
+
+      var sizeKB = Math.round((compressedBase64.length * 3) / 4 / 1024);
+
+      if (loadingCard) loadingCard.style.display = 'none';
+      if (previewCard) {
+        previewCard.style.display = 'block';
+        previewCard.scrollIntoView({ behavior: 'smooth' });
+      }
+
+      var imgPreview = document.getElementById('imagePreview');
+      if (imgPreview) imgPreview.src = compressedBase64;
+
+      var sizeBadge = document.getElementById('fileSizeBadge');
+      if (sizeBadge) sizeBadge.innerText = '✅ Photo Ready (' + sizeKB + ' KB)';
+
+      TG_APP.hapticSuccess();
+    };
+
+    fallbackImg.onerror = function() {
+      if (loadingCard) loadingCard.style.display = 'none';
+      alert('⚠️ Could not open the selected photo. Please choose another image or take a clear photo.');
+    };
+
+    fallbackImg.src = event.target.result;
+  };
+
+  reader.onerror = function() {
+    if (loadingCard) loadingCard.style.display = 'none';
+    alert('⚠️ Error reading photo file. Please try again.');
+  };
+
   reader.readAsDataURL(file);
 }
 
@@ -254,18 +406,6 @@ function renderDoubleVaultReport(data, studentName) {
   resultCard.style.display = 'block';
   resultCard.classList.add('pop-success');
   resultCard.scrollIntoView({ behavior: 'smooth' });
-}
-  resultCard.scrollIntoView({ behavior: 'smooth' });
-}
-
-function formatMarkdown(text) {
-  if (!text) return '';
-  return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/\n\s*-\s*/g, '<br>• ')
-    .replace(/\n\s*\d+\.\s*/g, '<br>1. ')
-    .replace(/\n/g, '<br>');
 }
 
 function escapeHtml(str) {
