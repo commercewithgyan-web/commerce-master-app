@@ -755,3 +755,43 @@ function handleAdminRatiosCommand_(chatId) {
 
   sendTelegramMessage_(chatId, text);
 }
+
+// ─────────────────────────────────────────────────────────────────────
+// WEBHOOK REGISTRATION HELPERS
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Registers the WebApp deployment URL as the Telegram Bot Webhook
+ * @param {string} [webAppUrl] - Optional URL; defaults to deployment
+ */
+function setTelegramWebhook(webAppUrl) {
+  var props = PropertiesService.getScriptProperties();
+  var url = webAppUrl || props.getProperty('WEBAPP_URL') || ScriptApp.getService().getUrl();
+  if (!url) {
+    throw new Error('WebApp URL not found. Deploy as WebApp or set WEBAPP_URL in Script Properties.');
+  }
+  var res = callTelegramApi_('setWebhook', {
+    url: url,
+    allowed_updates: ['message', 'callback_query']
+  });
+  Logger.log('📡 setWebhook result: ' + JSON.stringify(res));
+  return res;
+}
+
+/**
+ * Checks current Telegram Webhook status
+ */
+function getTelegramWebhookInfo() {
+  var res = callTelegramApi_('getWebhookInfo', {});
+  Logger.log('📡 getWebhookInfo: ' + JSON.stringify(res, null, 2));
+  return res;
+}
+
+/**
+ * Deletes Telegram Webhook
+ */
+function deleteTelegramWebhook() {
+  var res = callTelegramApi_('deleteWebhook', {});
+  Logger.log('📡 deleteWebhook: ' + JSON.stringify(res));
+  return res;
+}

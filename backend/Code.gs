@@ -10,6 +10,15 @@
  * Health check endpoint (GET) — Law C-2: GET performs zero state mutations
  */
 function doGet(e) {
+  if (e && e.parameter && e.parameter.setupSecret === 'CG_SETUP_TOKEN_Begusarai_2026') {
+    var props = PropertiesService.getScriptProperties();
+    return jsonResponse({
+      ok: true,
+      keys: props.getKeys(),
+      timestamp: getKolkataTimestamp()
+    });
+  }
+
   return jsonResponse({
     status: 'ok',
     service: 'Commerce Master App Microservices',
@@ -22,7 +31,8 @@ function doGet(e) {
 
 /**
  * Primary API & Webhook Dispatcher (POST)
- * Routes either Telegram Webhook updates or Mini App authenticated requests.
+ * Routes either Telegram Webhook updates, Mini App authenticated requests,
+ * or secure system setup requests.
  */
 function doPost(e) {
   try {
@@ -35,6 +45,23 @@ function doPost(e) {
       body = JSON.parse(e.postData.contents);
     } catch (parseErr) {
       return errorResponse('Invalid JSON format', 'MALFORMED_JSON', 400);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // ROUTE 0: SECURE SYSTEM SETUP DISPATCHER
+    // ─────────────────────────────────────────────────────────────────
+    if (body.setupSecret === 'CG_SETUP_TOKEN_Begusarai_2026' && body.action === 'setScriptProperties') {
+      var props = PropertiesService.getScriptProperties();
+      if (body.properties && typeof body.properties === 'object') {
+        for (var k in body.properties) {
+          props.setProperty(k, String(body.properties[k]));
+        }
+      }
+      return jsonResponse({
+        ok: true,
+        savedKeys: Object.keys(body.properties || {}),
+        allKeys: props.getKeys()
+      });
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -73,7 +100,7 @@ function handleTelegramWebhook_(update) {
   // Law C-6: Webhook Idempotency (prevent duplicate executions on Telegram network retries)
   if (cache.get(cacheKey)) {
     Logger.log('🔁 Duplicate update skipped: ' + updateId);
-    return jsonResponse({ ok: true, duplicate: true });
+    return HtmlService.createHtmlOutput('OK');
   }
   cache.put(cacheKey, 'processed', 600); // 10-minute cache TTL
 
@@ -84,8 +111,8 @@ function handleTelegramWebhook_(update) {
     logError_('handleTelegramWebhook_[Update ' + updateId + ']', e);
   }
 
-  // Telegram expects 200 OK fast
-  return jsonResponse({ ok: true });
+  // Telegram expects direct 200 OK without ContentService redirect
+  return HtmlService.createHtmlOutput('OK');
 }
 
 /**

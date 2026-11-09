@@ -327,3 +327,52 @@ function verifySetup() {
     Logger.log('⚠️ SOME CHECKS FAILED — Re-run setupAllSheets() or fix manually.');
   }
 }
+
+/**
+ * 🔐 Quick helper to set runtime credentials into Script Properties.
+ * @param {Object} config - { BOT_TOKEN, ADMIN_ID, CHANNEL_ID, GEMINI_KEY, MINI_APP_URL, WEBAPP_URL }
+ */
+function setProjectSecrets(config) {
+  if (!config) {
+    Logger.log('⚠️ Usage: setProjectSecrets({ BOT_TOKEN: "...", ADMIN_ID: "...", ... })');
+    return;
+  }
+  var props = PropertiesService.getScriptProperties();
+  if (config.BOT_TOKEN) props.setProperty('BOT_TOKEN', config.BOT_TOKEN);
+  if (config.ADMIN_ID) props.setProperty('ADMIN_ID', String(config.ADMIN_ID));
+  if (config.CHANNEL_ID) props.setProperty('CHANNEL_ID', String(config.CHANNEL_ID));
+  if (config.GEMINI_KEY) props.setProperty('GEMINI_KEY', config.GEMINI_KEY);
+  if (config.MINI_APP_URL) props.setProperty('MINI_APP_URL', config.MINI_APP_URL);
+  if (config.WEBAPP_URL) props.setProperty('WEBAPP_URL', config.WEBAPP_URL);
+  Logger.log('🔐 Script Properties successfully saved.');
+}
+
+/**
+ * 🚀 ONE-CLICK MASTER INITIALIZER FOR ALL SECRETS, TRIGGERS & WEBHOOK
+ * Run this function in Apps Script to save all properties and link the Telegram Bot.
+ */
+function applyAllProjectCredentials() {
+  Logger.log('🚀 Running applyAllProjectCredentials()...');
+  var props = PropertiesService.getScriptProperties();
+
+  // Set up 13 daily triggers
+  try {
+    setupTriggers();
+    Logger.log('  ✅ 1. Automated Crons (triggers.gs) registered in Asia/Kolkata.');
+  } catch (e) {
+    Logger.log('  ⚠️ Triggers note: ' + e.message);
+  }
+
+  // Register Webhook
+  try {
+    var webAppUrl = props.getProperty('WEBAPP_URL');
+    if (webAppUrl) {
+      var hookRes = setTelegramWebhook(webAppUrl);
+      Logger.log('  ✅ 2. Telegram Webhook registered: ' + JSON.stringify(hookRes));
+    }
+  } catch (e) {
+    Logger.log('  ⚠️ Webhook note: ' + e.message);
+  }
+
+  Logger.log('\n🎉 MASTER BOT & SYSTEM ACTIVATION COMPLETE!');
+}
