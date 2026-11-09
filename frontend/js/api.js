@@ -97,7 +97,7 @@ var API_CLIENT = {
       }
 
       // Auto-cache read-only responses for instant 0ms Stale-While-Revalidate loading
-      if (result.data && (action === 'getHomeDashboard' || action === 'getNotebook' || action === 'getProgress' || action === 'getFeeDashboard' || action === 'getDailyQuestion')) {
+      if (result.data && (action === 'getHomeDashboard' || action === 'getNotebook' || action === 'getProgress' || action === 'getFeeDashboard' || action === 'getDailyQuestion' || action === 'triggerExamPanicSOS')) {
         try {
           localStorage.setItem('cg_cache_' + action, JSON.stringify(result.data));
         } catch (cErr) {}
