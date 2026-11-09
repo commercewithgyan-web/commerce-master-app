@@ -19,16 +19,25 @@ document.addEventListener('DOMContentLoaded', async function() {
     } catch (e) {}
   }
 
+  // 1. Instant 0ms render from cache
+  var cached = API_CLIENT.getCached('getProgress');
+  if (cached) {
+    renderProgress(cached);
+  }
+
   try {
+    // 2. Fetch fresh live progress in background and update
     var data = await API_CLIENT.call('getProgress');
     if (data && data.chapters && data.chapters.length > 0) {
       renderProgress(data);
-    } else {
+    } else if (!cached) {
       renderProgress(getDefaultProgressData());
     }
   } catch (err) {
-    console.error('Progress load error:', err);
-    renderProgress(getDefaultProgressData());
+    console.error('Progress load notice:', err);
+    if (!cached) {
+      renderProgress(getDefaultProgressData());
+    }
   }
 });
 

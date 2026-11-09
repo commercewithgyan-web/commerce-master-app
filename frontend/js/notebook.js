@@ -46,16 +46,27 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 async function loadNotebook() {
+  // 1. Instant 0ms render from cache
+  var cached = API_CLIENT.getCached('getNotebook');
+  if (cached) {
+    notebookData = cached;
+    renderNotebook(cached);
+  }
+
   try {
-    notebookData = await API_CLIENT.call('getNotebook');
-    if (notebookData) {
-      renderNotebook(notebookData);
-    } else {
+    // 2. Fetch fresh live notes in background and update
+    var fresh = await API_CLIENT.call('getNotebook');
+    if (fresh) {
+      notebookData = fresh;
+      renderNotebook(fresh);
+    } else if (!cached) {
       renderNotebook({ notes: [], mistakes: [], favourites: [], notesCount: 0, mistakesCount: 0, favouritesCount: 0, revisionDueCount: 0 });
     }
   } catch (err) {
-    console.warn('Notebook load error:', err);
-    renderNotebook({ notes: [], mistakes: [], favourites: [], notesCount: 0, mistakesCount: 0, favouritesCount: 0, revisionDueCount: 0 });
+    console.warn('Notebook load notice:', err);
+    if (!cached) {
+      renderNotebook({ notes: [], mistakes: [], favourites: [], notesCount: 0, mistakesCount: 0, favouritesCount: 0, revisionDueCount: 0 });
+    }
   }
 }
 

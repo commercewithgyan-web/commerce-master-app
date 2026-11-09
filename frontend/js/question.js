@@ -28,17 +28,27 @@ document.addEventListener('DOMContentLoaded', async function() {
     } catch (e) {}
   }
 
+  // 1. Instant 0ms render from cache
+  var cachedQ = API_CLIENT.getCached('getDailyQuestion');
+  if (cachedQ && Array.isArray(cachedQ) && cachedQ.length > 0) {
+    state.questions = cachedQ;
+    renderCurrentQuestion();
+  }
+
   try {
+    // 2. Fetch fresh questions in background
     var questions = await API_CLIENT.call('getDailyQuestion');
     if (questions && questions.length > 0) {
       state.questions = questions;
       renderCurrentQuestion();
-    } else {
+    } else if (!cachedQ || cachedQ.length === 0) {
       loadFallbackDrill();
     }
   } catch (err) {
     console.error('Error fetching questions:', err);
-    loadFallbackDrill();
+    if (!cachedQ || cachedQ.length === 0) {
+      loadFallbackDrill();
+    }
   }
 
   // Next Question Button

@@ -14,6 +14,20 @@ var API_CLIENT = {
               'https://script.google.com/macros/s/AKfycbywJKoynUbc2fY7caEx9hZ-FARG71J9v1F6uXaL5z7XxBS_NKhwFiKCZIVeaYVJ0QS4jQ/exec',
 
   /**
+   * Reads cached response from localStorage for instant Stale-While-Revalidate UI rendering
+   * @param {string} action
+   * @return {Object|null}
+   */
+  getCached: function(action) {
+    try {
+      var item = localStorage.getItem('cg_cache_' + action);
+      return item ? JSON.parse(item) : null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  /**
    * Sets custom backend URL
    * @param {string} url
    */
@@ -80,6 +94,13 @@ var API_CLIENT = {
 
       if (!result.ok) {
         throw new Error(result.error || ('Server error: ' + JSON.stringify(result)));
+      }
+
+      // Auto-cache read-only responses for instant 0ms Stale-While-Revalidate loading
+      if (result.data && (action === 'getHomeDashboard' || action === 'getNotebook' || action === 'getProgress' || action === 'getFeeDashboard' || action === 'getDailyQuestion')) {
+        try {
+          localStorage.setItem('cg_cache_' + action, JSON.stringify(result.data));
+        } catch (cErr) {}
       }
 
       // Cache today's questions locally for offline resilience (~15 KB)

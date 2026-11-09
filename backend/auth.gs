@@ -137,12 +137,6 @@ function requirePaidStudent_(telegramId) {
   var props = PropertiesService.getScriptProperties();
   var adminId = props.getProperty('ADMIN_ID') || '552858970';
   if (cleanId === '552858970' || cleanId === String(adminId).trim()) {
-    try {
-      var adminRecord = findRow_('SHEET_FEE', 'Students', 'TelegramID', cleanId);
-      if (adminRecord) return adminRecord;
-    } catch (e) {
-      Logger.log('Notice: Could not read Students tab for admin: ' + e.message);
-    }
     return {
       studentId: 'ADMIN-01',
       StudentID: 'ADMIN-01',
@@ -173,10 +167,24 @@ function requirePaidStudent_(telegramId) {
     };
   }
 
+  // Check CacheService for fast student resolution
+  var cache = CacheService.getScriptCache();
+  var cachedStudent = cache.get('STUDENT_' + cleanId);
+  if (cachedStudent) {
+    try {
+      return JSON.parse(cachedStudent);
+    } catch (e) {}
+  }
+
   var student = findRow_('SHEET_FEE', 'Students', 'TelegramID', cleanId);
   if (!student) {
     throw new Error('STUDENT_NOT_FOUND: No registered student with Telegram ID ' + cleanId);
   }
+
+  // Cache student record for 10 minutes to eliminate redundant sheet queries
+  try {
+    cache.put('STUDENT_' + cleanId, JSON.stringify(student), 600);
+  } catch (cErr) {}
 
   var status = String(student.Status || '').trim();
 

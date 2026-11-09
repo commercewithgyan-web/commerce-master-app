@@ -26,8 +26,7 @@ function apiAddNote_(verifiedUser, payload) {
 
   if (!noteText) throw new Error('Note content cannot be empty');
 
-  var sheet = getSheet_('SHEET_QB', 'Notebook_Notes');
-  sheet.appendRow([
+  appendRow_('SHEET_QB', 'Notebook_Notes', [
     getKolkataTimestamp(),
     String(verifiedUser.id),
     qid,
@@ -499,8 +498,19 @@ function apiGetProgress_(verifiedUser) {
 
   var overallAccuracy = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
 
-  // Chapter weightages from Sheet 1
-  var weightages = getAllRowsAsObjects_('SHEET_SYLLABUS', 'Chapter_Weightage', 50);
+  // Chapter weightages from Sheet 1 (cached in RAM for 24h)
+  var cache = CacheService.getScriptCache();
+  var cachedW = cache.get('CACHE_CHAPTER_WEIGHTAGES');
+  var weightages = null;
+  if (cachedW) {
+    try { weightages = JSON.parse(cachedW); } catch (e) {}
+  }
+  if (!weightages || weightages.length === 0) {
+    weightages = getAllRowsAsObjects_('SHEET_SYLLABUS', 'Chapter_Weightage', 50);
+    try {
+      cache.put('CACHE_CHAPTER_WEIGHTAGES', JSON.stringify(weightages), 86400);
+    } catch (wErr) {}
+  }
   var predictedScore = 0;
   var totalBoardMarks = 80; // CBSE Accountancy Theory
   var chapterReports = [];
@@ -547,8 +557,17 @@ function apiGetProgress_(verifiedUser) {
  * @return {Object}
  */
 function apiGetHomeDashboard_(verifiedUser) {
-  var student = requirePaidStudent_(verifiedUser.id);
   var telegramId = String(verifiedUser.id);
+  var cache = CacheService.getScriptCache();
+  var cacheKey = 'DASHBOARD_' + telegramId;
+  var cached = cache.get(cacheKey);
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch (e) {}
+  }
+
+  var student = requirePaidStudent_(verifiedUser.id);
 
   // Leaderboard record
   var lb = findRow_('SHEET_QB', 'Leaderboard', 'TelegramID', telegramId);
@@ -565,7 +584,7 @@ function apiGetHomeDashboard_(verifiedUser) {
   // Revision Due Count
   var revDue = apiGetRevisionQueue_(verifiedUser);
 
-  return {
+  var result = {
     studentId: student.StudentID,
     name: student.Name,
     classLevel: student.Class,
@@ -583,4 +602,10 @@ function apiGetHomeDashboard_(verifiedUser) {
     revisionDueCount: revDue.length,
     isAdmin: isAdmin_(verifiedUser.id)
   };
+
+  try {
+    cache.put(cacheKey, JSON.stringify(result), 60); // 60s fast RAM cache
+  } catch (cErr) {}
+
+  return result;
 }

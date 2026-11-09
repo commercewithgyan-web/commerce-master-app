@@ -378,7 +378,8 @@ function apiGetDailyQuestion_(verifiedUser, payload) {
 
   // Check cache first
   var cache = CacheService.getScriptCache();
-  var cached = cache.get('DAILY_QUESTIONS_C' + classLevel + '_' + todayStr);
+  var cacheKey = 'DAILY_QUESTIONS_C' + classLevel + '_' + todayStr;
+  var cached = cache.get(cacheKey);
   var questions = [];
 
   if (cached) {
@@ -387,6 +388,11 @@ function apiGetDailyQuestion_(verifiedUser, payload) {
 
   if (questions.length === 0) {
     questions = assembleDailyQuestions_(classLevel, payload.subject);
+    if (questions && questions.length > 0) {
+      try {
+        cache.put(cacheKey, JSON.stringify(questions), 21600); // 6 hours cache
+      } catch (cErr) {}
+    }
   }
 
   // Shuffle question sequence per student using their Telegram ID as seed
@@ -565,6 +571,11 @@ function apiSubmitAnswer_(verifiedUser, payload) {
 
     // Update Leaderboard & Coins (notebook.gs)
     updateStudentCoinsAndLeaderboard_(String(verifiedUser.id), student.Name, student.Class, score, bonusCoins, beatGhostStatus === 'BEAT_RECORD');
+
+    // Invalidate cached dashboard so fresh coins/accuracy show immediately
+    try {
+      CacheService.getScriptCache().remove('DASHBOARD_' + verifiedUser.id);
+    } catch (cErr) {}
 
     return {
       qid: qid,

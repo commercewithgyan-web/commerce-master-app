@@ -18,6 +18,35 @@ var FALLBACK_SHEET_IDS = {
 // Cache opened spreadsheets during execution to prevent redundant openById calls
 var _spreadsheetCache = {};
 
+// Request-level in-memory cache for sheet tab values to prevent redundant range queries
+var _sheetDataCache = {};
+
+/**
+ * Gets all raw 2D array values from a sheet tab in a single batch read.
+ * Cached in RAM during execution to prevent redundant sheet scans.
+ * @param {string} sheetKey
+ * @param {string} tabName
+ * @return {Array<Array<*>>} 2D array [row][col], where row 0 is headers
+ */
+function getTabAllValues_(sheetKey, tabName) {
+  var cacheKey = sheetKey + '::' + tabName;
+  if (_sheetDataCache[cacheKey]) {
+    return _sheetDataCache[cacheKey];
+  }
+  var sheet = getSheet_(sheetKey, tabName);
+  var values = sheet.getDataRange().getValues();
+  _sheetDataCache[cacheKey] = values;
+  return values;
+}
+
+/**
+ * Invalidates execution cache for a specific sheet tab upon modification
+ */
+function invalidateSheetCache_(sheetKey, tabName) {
+  var cacheKey = sheetKey + '::' + tabName;
+  delete _sheetDataCache[cacheKey];
+}
+
 /**
  * Retrieves a Sheet instance by Script Property key and Tab name
  * @param {string} sheetKey - e.g. 'SHEET_SYLLABUS', 'SHEET_QB', 'SHEET_FEE', 'SHEET_TG', 'SHEET_BOOKS'
@@ -70,6 +99,7 @@ function openSpreadsheet_(sheetKey) {
  * @return {number} Appended row number
  */
 function appendRow_(sheetKey, tabName, rowData) {
+  invalidateSheetCache_(sheetKey, tabName);
   var sheet = getSheet_(sheetKey, tabName);
   sheet.appendRow(rowData);
   return sheet.getLastRow();
@@ -90,28 +120,25 @@ function getHeaders_(sheet) {
 
 /**
  * Reads all rows from a sheet as an array of JavaScript objects keyed by header names.
- * Uses range bounding to avoid fetching empty rows.
+ * Uses single batch read from memory cache.
  * @param {string} sheetKey
  * @param {string} tabName
  * @param {number} [maxRows=2000] - Hard safety limit
  * @return {Object[]}
  */
 function getAllRowsAsObjects_(sheetKey, tabName, maxRows) {
-  var sheet = getSheet_(sheetKey, tabName);
-  var lastRow = sheet.getLastRow();
-  var lastCol = sheet.getLastColumn();
+  var allData = getTabAllValues_(sheetKey, tabName);
+  if (!allData || allData.length <= 1) return [];
 
-  if (lastRow <= 1 || lastCol < 1) return [];
-
-  var fetchRows = Math.min(lastRow - 1, maxRows || 2000);
-  var headers = getHeaders_(sheet);
-  var data = sheet.getRange(2, 1, fetchRows, lastCol).getValues();
-
+  var headers = allData[0].map(function(h) { return String(h).trim(); });
+  var limit = Math.min(allData.length - 1, maxRows || 2000);
   var result = [];
-  for (var i = 0; i < data.length; i++) {
-    var rowObj = { _rowNumber: i + 2 };
+
+  for (var i = 1; i <= limit; i++) {
+    var rowValues = allData[i];
+    var rowObj = { _rowNumber: i + 1 };
     for (var j = 0; j < headers.length; j++) {
-      rowObj[headers[j]] = data[i][j];
+      rowObj[headers[j]] = rowValues[j];
     }
     result.push(rowObj);
   }
@@ -119,7 +146,7 @@ function getAllRowsAsObjects_(sheetKey, tabName, maxRows) {
 }
 
 /**
- * Finds the first row matching a column name and value
+ * Finds the first row matching a column name and value via high-speed in-memory scan
  * @param {string} sheetKey
  * @param {string} tabName
  * @param {string} colName - Header column name
@@ -127,26 +154,22 @@ function getAllRowsAsObjects_(sheetKey, tabName, maxRows) {
  * @return {Object|null} Row object with _rowNumber or null
  */
 function findRow_(sheetKey, tabName, colName, value) {
-  var sheet = getSheet_(sheetKey, tabName);
-  var headers = getHeaders_(sheet);
+  var allData = getTabAllValues_(sheetKey, tabName);
+  if (!allData || allData.length <= 1) return null;
+
+  var headers = allData[0].map(function(h) { return String(h).trim(); });
   var colIndex = headers.indexOf(colName);
   if (colIndex === -1) {
-    throw new Error('Column "' + colName + '" not found in tab: ' + tabName);
+    return null;
   }
 
-  var lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return null;
-
-  var colValues = sheet.getRange(2, colIndex + 1, lastRow - 1, 1).getValues();
   var targetStr = String(value).trim().toLowerCase();
-
-  for (var i = 0; i < colValues.length; i++) {
-    if (String(colValues[i][0]).trim().toLowerCase() === targetStr) {
-      var rowNum = i + 2;
-      var rowData = sheet.getRange(rowNum, 1, 1, headers.length).getValues()[0];
-      var obj = { _rowNumber: rowNum };
+  for (var i = 1; i < allData.length; i++) {
+    var rowValues = allData[i];
+    if (String(rowValues[colIndex]).trim().toLowerCase() === targetStr) {
+      var obj = { _rowNumber: i + 1 };
       for (var j = 0; j < headers.length; j++) {
-        obj[headers[j]] = rowData[j];
+        obj[headers[j]] = rowValues[j];
       }
       return obj;
     }
@@ -155,7 +178,7 @@ function findRow_(sheetKey, tabName, colName, value) {
 }
 
 /**
- * Finds all rows matching a column name and value
+ * Finds all rows matching a column name and value via high-speed in-memory scan
  * @param {string} sheetKey
  * @param {string} tabName
  * @param {string} colName
@@ -163,27 +186,24 @@ function findRow_(sheetKey, tabName, colName, value) {
  * @return {Object[]}
  */
 function findRows_(sheetKey, tabName, colName, value) {
-  var sheet = getSheet_(sheetKey, tabName);
-  var headers = getHeaders_(sheet);
+  var allData = getTabAllValues_(sheetKey, tabName);
+  if (!allData || allData.length <= 1) return [];
+
+  var headers = allData[0].map(function(h) { return String(h).trim(); });
   var colIndex = headers.indexOf(colName);
   if (colIndex === -1) {
-    throw new Error('Column "' + colName + '" not found in tab: ' + tabName);
+    return [];
   }
 
-  var lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return [];
-
-  var colValues = sheet.getRange(2, colIndex + 1, lastRow - 1, 1).getValues();
   var targetStr = String(value).trim().toLowerCase();
   var matches = [];
 
-  for (var i = 0; i < colValues.length; i++) {
-    if (String(colValues[i][0]).trim().toLowerCase() === targetStr) {
-      var rowNum = i + 2;
-      var rowData = sheet.getRange(rowNum, 1, 1, headers.length).getValues()[0];
-      var obj = { _rowNumber: rowNum };
+  for (var i = 1; i < allData.length; i++) {
+    var rowValues = allData[i];
+    if (String(rowValues[colIndex]).trim().toLowerCase() === targetStr) {
+      var obj = { _rowNumber: i + 1 };
       for (var j = 0; j < headers.length; j++) {
-        obj[headers[j]] = rowData[j];
+        obj[headers[j]] = rowValues[j];
       }
       matches.push(obj);
     }
@@ -200,6 +220,7 @@ function findRows_(sheetKey, tabName, colName, value) {
  * @param {*} value
  */
 function updateCell_(sheetKey, tabName, row, col, value) {
+  invalidateSheetCache_(sheetKey, tabName);
   var sheet = getSheet_(sheetKey, tabName);
   sheet.getRange(row, col).setValue(value);
 }
@@ -214,8 +235,10 @@ function updateCell_(sheetKey, tabName, row, col, value) {
  * @return {boolean} True if found and updated
  */
 function updateRowByColValue_(sheetKey, tabName, searchCol, searchValue, updateMap) {
+  invalidateSheetCache_(sheetKey, tabName);
   var sheet = getSheet_(sheetKey, tabName);
-  var headers = getHeaders_(sheet);
+  var allData = getTabAllValues_(sheetKey, tabName);
+  var headers = allData && allData.length > 0 ? allData[0].map(function(h) { return String(h).trim(); }) : getHeaders_(sheet);
   var match = findRow_(sheetKey, tabName, searchCol, searchValue);
   if (!match) return false;
 

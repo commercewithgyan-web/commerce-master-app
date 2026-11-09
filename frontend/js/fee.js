@@ -19,16 +19,25 @@ document.addEventListener('DOMContentLoaded', async function() {
     } catch (e) {}
   }
 
+  // 1. Instant 0ms render from cache
+  var cached = API_CLIENT.getCached('getFeeDashboard');
+  if (cached) {
+    renderFeeDashboard(cached);
+  }
+
   try {
+    // 2. Fetch fresh live fee dashboard in background and update
     var data = await API_CLIENT.call('getFeeDashboard');
     if (data) {
       renderFeeDashboard(data);
-    } else {
+    } else if (!cached) {
       renderFeeDashboard(getDefaultFeeData());
     }
   } catch (err) {
-    console.error('Fee dashboard error:', err);
-    renderFeeDashboard(getDefaultFeeData());
+    console.error('Fee dashboard notice:', err);
+    if (!cached) {
+      renderFeeDashboard(getDefaultFeeData());
+    }
   }
 });
 

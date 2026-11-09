@@ -33,17 +33,25 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 
+  // 1. Instant 0ms render from client-side cache
+  var cachedHome = API_CLIENT.getCached('getHomeDashboard');
+  if (cachedHome) {
+    renderHomeDashboard(cachedHome);
+  }
+
   try {
-    // Fetch live dashboard metrics from backend
+    // 2. Fetch fresh live dashboard metrics in background and revalidate
     var data = await API_CLIENT.call('getHomeDashboard');
     renderHomeDashboard(data);
   } catch (err) {
-    console.warn('Using offline cached dashboard data:', err);
-    // Graceful offline state
-    document.getElementById('coinCount').innerText = '120';
-    document.getElementById('streakDisplay').innerText = '🔥 7 Days';
-    document.getElementById('accuracyDisplay').innerText = '82%';
-    document.getElementById('predictedScoreDisplay').innerText = '66/80';
+    console.warn('Dashboard fetch notice:', err);
+    if (!cachedHome) {
+      // Graceful offline fallback
+      document.getElementById('coinCount').innerText = '120';
+      document.getElementById('streakDisplay').innerText = '🔥 7 Days';
+      document.getElementById('accuracyDisplay').innerText = '82%';
+      document.getElementById('predictedScoreDisplay').innerText = '66/80';
+    }
   }
 });
 
