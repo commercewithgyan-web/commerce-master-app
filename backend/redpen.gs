@@ -332,7 +332,9 @@ function wordCheck_(ctx) {
 }
 
 function callGemini_(system, userParts, schema) {
-  var key = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  var props = PropertiesService.getScriptProperties();
+  var key = props.getProperty('GEMINI_KEY') || props.getProperty('GEMINI_API_KEY');
+  if (!key) throw new Error('GEMINI_KEY missing in Script Properties');
   var gen = { temperature: 0.1 };
   if (schema) { gen.responseMimeType = 'application/json'; gen.responseSchema = schema; }
   var payload = {
