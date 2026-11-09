@@ -12,6 +12,9 @@ var isRecording = false;
 var mediaRecorder = null;
 var audioChunks = [];
 var recordStartTime = 0;
+var speechRecognizer = null;
+var liveSpokenTranscript = '';
+var autoStopTimer = null;
 var doubtMessagesMap = {}; // Registry of all rendered doubts and their multi-lens states
 
 var PRESETS_BY_SUBJECT = {
@@ -138,6 +141,7 @@ function getSupportedMimeType() {
 
 /**
  * Starts recording audio via navigator.mediaDevices.getUserMedia
+ * and concurrently runs Web Speech Recognition for real-time transcription.
  */
 async function startVoiceRecording() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -153,6 +157,44 @@ async function startVoiceRecording() {
     mediaRecorder = new MediaRecorder(stream, options);
     audioChunks = [];
     recordStartTime = Date.now();
+    liveSpokenTranscript = '';
+
+    // Hybrid Web Speech API real-time listener (Chrome, Android, iOS Safari)
+    var SpeechRecClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecClass) {
+      try {
+        speechRecognizer = new SpeechRecClass();
+        speechRecognizer.lang = 'en-IN';
+        speechRecognizer.continuous = true;
+        speechRecognizer.interimResults = true;
+        speechRecognizer.maxAlternatives = 1;
+
+        speechRecognizer.onresult = function(event) {
+          var interim = '';
+          var final = '';
+          for (var i = 0; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              final += event.results[i][0].transcript;
+            } else {
+              interim += event.results[i][0].transcript;
+            }
+          }
+          liveSpokenTranscript = (final || interim).trim();
+          var statusText = document.getElementById('recordingStatusText');
+          if (statusText && liveSpokenTranscript) {
+            statusText.innerText = 'Hearing: "' + liveSpokenTranscript + '"';
+          }
+        };
+
+        speechRecognizer.onerror = function(event) {
+          console.warn('SpeechRecognition notice:', event.error);
+        };
+
+        speechRecognizer.start();
+      } catch (e) {
+        console.warn('SpeechRecognition start failed, fallback to audio only:', e);
+      }
+    }
 
     mediaRecorder.ondataavailable = function(e) {
       if (e.data && e.data.size > 0) {
@@ -161,6 +203,7 @@ async function startVoiceRecording() {
     };
 
     mediaRecorder.onstop = async function() {
+      if (autoStopTimer) clearTimeout(autoStopTimer);
       // Release microphone tracks
       stream.getTracks().forEach(function(track) { track.stop(); });
 
@@ -170,27 +213,28 @@ async function startVoiceRecording() {
       var chosenMime = mediaRecorder.mimeType || mimeType || 'audio/webm';
       var audioBlob = new Blob(audioChunks, { type: chosenMime });
 
-      // Minimum duration guard
-      if (durationSec < 1) {
-        appendStudentBubble('🎙️ [Voice note was too short]');
-        appendErrorBubble('Sorry, your voice was not clear. Please speak closer to the mic and ask again!');
-        return;
+      var spokenText = (liveSpokenTranscript || '').trim();
+
+      // Show real spoken words in user bubble
+      if (spokenText) {
+        appendStudentBubble('🎙️ "' + spokenText + '"');
+      } else {
+        appendStudentBubble('🎙️ [' + activeSubject + ' Voice Question: ' + durationSec + 's recorded]');
       }
 
-      appendStudentBubble('🎙️ [' + activeSubject + ' Voice Question: ' + durationSec + 's recorded]');
-      var loadingId = appendLoadingBubble('Listening to your doubt...');
+      var loadingId = appendLoadingBubble('Thinking and crafting 3-lens explanation...');
 
-      // Convert to base64 data
-      var reader = new FileReader();
-      reader.onloadend = async function() {
-        var base64Audio = reader.result.split(',')[1];
+      async function processVoiceQuery(base64Data) {
         try {
-          var res = await API_CLIENT.call('askVoiceDoubt', {
-            audioBase64: base64Audio,
+          var res = await API_CLIENT.call('askDoubt', {
+            subject: activeSubject,
+            question: spokenText,
+            audioBase64: base64Data || '',
             mimeType: chosenMime,
             duration: durationSec,
-            subject: activeSubject
+            lens: 'ALL'
           });
+
           removeLoadingBubble(loadingId);
 
           if (res.isRejected) {
@@ -198,22 +242,38 @@ async function startVoiceRecording() {
             appendErrorBubble(res.message || 'Sorry, your voice was not clear. Please speak closer to the mic and ask again!');
           } else {
             TG_APP.hapticSuccess();
-            if (res.transcribed) {
-              appendTranscriptChip('Transcribed: "' + res.transcribed + '"');
-            }
-            renderMultiLensCard(res, res.transcribed || 'Voice Question');
+            renderMultiLensCard(res, spokenText || res.transcribed || 'Voice Question');
           }
         } catch (err) {
           removeLoadingBubble(loadingId);
           TG_APP.hapticError();
           appendErrorBubble('Unable to connect: ' + (err.message || JSON.stringify(err)));
         }
-      };
-      reader.readAsDataURL(audioBlob);
+      }
+
+      // If spoken words were captured, dispatch immediately without waiting for Base64 conversion!
+      if (spokenText) {
+        processVoiceQuery('');
+      } else {
+        var reader = new FileReader();
+        reader.onloadend = function() {
+          var base64Audio = reader.result.split(',')[1];
+          processVoiceQuery(base64Audio);
+        };
+        reader.readAsDataURL(audioBlob);
+      }
     };
 
     mediaRecorder.start(250);
     isRecording = true;
+
+    // Auto-stop after 6 seconds of recording
+    if (autoStopTimer) clearTimeout(autoStopTimer);
+    autoStopTimer = setTimeout(function() {
+      if (isRecording) {
+        stopVoiceRecording();
+      }
+    }, 6000);
 
     // Visual feedback
     var waveform = document.getElementById('liveWaveform');
@@ -243,6 +303,10 @@ async function startVoiceRecording() {
  * Stops active voice recording
  */
 function stopVoiceRecording() {
+  if (autoStopTimer) clearTimeout(autoStopTimer);
+  if (speechRecognizer) {
+    try { speechRecognizer.stop(); } catch (e) {}
+  }
   if (mediaRecorder && mediaRecorder.state !== 'inactive') {
     mediaRecorder.stop();
   }
@@ -262,6 +326,8 @@ function stopVoiceRecording() {
   }
   if (micIcon) micIcon.innerText = '🎤';
   if (micLabel) micLabel.innerText = 'Tap to Speak';
+  var statusText = document.getElementById('recordingStatusText');
+  if (statusText) statusText.innerText = 'Tap to speak your doubt aloud';
 }
 
 function askPreset(text) {
@@ -413,15 +479,18 @@ function renderMultiLensCard(res, originalQuestion) {
   };
 
   var card = document.createElement('div');
-  card.className = 'card card-violet pop-success';
+  card.className = 'card card-violet pop-success doubt-response-card';
   card.id = msgId;
   card.style.margin = '0';
-  card.style.maxWidth = '92%';
+  card.style.maxWidth = '100%';
+  card.style.overflow = 'visible';
+  card.style.padding = '16px';
+  card.style.boxSizing = 'border-box';
 
   var initialText = formatMarkdownText(doubtMessagesMap[msgId].lenses.STORY);
 
   var html =
-    '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">' +
+    '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">' +
     '  <div style="font-weight:700; font-size:0.85rem; color:#A5B4FC;">💡 ' + subj + ' Explanation</div>' +
     '  <span class="pill pill-gold" style="font-size:0.68rem; padding:2px 8px;">Multi-Lens</span>' +
     '</div>' +
@@ -431,11 +500,11 @@ function renderMultiLensCard(res, originalQuestion) {
        initialText +
     '</div>' +
 
-    // Multi-Lens Response Tabs (3 Clean Toggle Chips)
-    '<div class="lens-chips-bar" id="lensChips_' + msgId + '">' +
-    '  <button class="lens-chip active" id="chip_STORY_' + msgId + '" onclick="switchLens(\'' + msgId + '\', \'STORY\')">💡 Easy Story</button>' +
-    '  <button class="lens-chip" id="chip_EXAM_NOTES_' + msgId + '" onclick="switchLens(\'' + msgId + '\', \'EXAM_NOTES\')">📝 Exam Notes</button>' +
-    '  <button class="lens-chip" id="chip_REAL_EXAMPLE_' + msgId + '" onclick="switchLens(\'' + msgId + '\', \'REAL_EXAMPLE\')">🏢 Real Example</button>' +
+    // Multi-Lens Response Tabs (3 Clean Toggle Chips - Never clipped)
+    '<div class="lens-tabs lens-chips-bar" id="lensChips_' + msgId + '">' +
+    '  <button class="lens-tab lens-chip active" id="chip_STORY_' + msgId + '" onclick="switchLens(\'' + msgId + '\', \'STORY\')">💡 Story</button>' +
+    '  <button class="lens-tab lens-chip" id="chip_EXAM_NOTES_' + msgId + '" onclick="switchLens(\'' + msgId + '\', \'EXAM_NOTES\')">📝 Exam Notes</button>' +
+    '  <button class="lens-tab lens-chip" id="chip_REAL_EXAMPLE_' + msgId + '" onclick="switchLens(\'' + msgId + '\', \'REAL_EXAMPLE\')">🏢 Real Example</button>' +
     '</div>';
 
   if (doubtMessagesMap[msgId].keyRule) {

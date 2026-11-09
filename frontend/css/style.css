@@ -552,39 +552,52 @@ body.light-theme .btn-back {
 }
 
 /* Multi-Lens Response Tabs */
-.lens-chips-bar {
-  display: flex;
-  gap: 6px;
-  padding: 10px 0 6px;
-  margin-top: 10px;
-  border-top: 1px dashed rgba(255, 255, 255, 0.1);
-  overflow-x: auto;
-  scrollbar-width: none;
+.doubt-response-card {
+  overflow: visible !important;
+  padding: 16px !important;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
 }
-.lens-chips-bar::-webkit-scrollbar {
+
+.lens-tabs, .lens-chips-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  margin: 12px 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: visible;
+}
+.lens-chips-bar::-webkit-scrollbar, .lens-tabs::-webkit-scrollbar {
   display: none;
 }
-.lens-chip {
+.lens-tab, .lens-chip {
+  flex: 1 1 30%;
+  min-width: 85px;
+  text-align: center;
+  padding: 8px 4px;
+  font-size: 11px;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
+  justify-content: center;
+  gap: 4px;
   background: rgba(30, 34, 45, 0.85);
   border: 1px solid var(--border-dark);
   border-radius: var(--radius-full);
   color: #94A3B8;
   font-family: var(--font-heading);
-  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s ease;
 }
-.lens-chip:hover {
+.lens-tab:hover, .lens-chip:hover {
   border-color: rgba(212, 175, 55, 0.4);
   color: #FFF;
 }
-.lens-chip.active {
+.lens-tab.active, .lens-chip.active {
   background: #2D124D !important;
   border-color: #D4AF37 !important;
   color: #F8FAFC !important;

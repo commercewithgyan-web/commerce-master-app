@@ -72,3 +72,129 @@ function renderHomeDashboard(data) {
     if (adminBanner) adminBanner.style.display = 'block';
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────
+// 60-SECOND MORNING BOARD TRAP AUDIO PLAYER (SpeechSynthesis / MP3)
+// ─────────────────────────────────────────────────────────────────────
+var isAudioPillPlaying = false;
+var audioPillAudio = null;
+var audioPillInterval = null;
+
+function toggleAudioPill() {
+  if (isAudioPillPlaying) {
+    stopAudioPill();
+  } else {
+    playAudioPill();
+  }
+}
+
+function stopAudioPill() {
+  isAudioPillPlaying = false;
+  TG_APP.hapticLight();
+
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+  if (audioPillAudio) {
+    audioPillAudio.pause();
+    audioPillAudio.currentTime = 0;
+  }
+  if (audioPillInterval) {
+    clearInterval(audioPillInterval);
+    audioPillInterval = null;
+  }
+
+  var btn = document.getElementById('btnPlayAudioPill');
+  if (btn) {
+    btn.innerHTML = '▶ Play';
+    btn.classList.remove('btn-crimson');
+    btn.classList.add('btn-outline');
+  }
+
+  var icon = document.getElementById('audioPillIcon');
+  if (icon) {
+    icon.innerHTML = '🎧';
+    icon.style.transform = 'scale(1)';
+  }
+
+  var bar = document.getElementById('audioPillProgressBar');
+  if (bar) bar.style.width = '0%';
+}
+
+function playAudioPill(audioUrl) {
+  isAudioPillPlaying = true;
+  TG_APP.hapticMedium();
+
+  var btn = document.getElementById('btnPlayAudioPill');
+  if (btn) {
+    btn.innerHTML = '⏹ Stop';
+    btn.classList.remove('btn-outline');
+    btn.classList.add('btn-crimson');
+  }
+
+  var icon = document.getElementById('audioPillIcon');
+  if (icon) {
+    icon.innerHTML = '🔊';
+    icon.style.transform = 'scale(1.1)';
+  }
+
+  var playerBar = document.getElementById('audioPillPlayerBar');
+  if (playerBar) {
+    playerBar.style.display = 'block';
+  }
+
+  var progressBar = document.getElementById('audioPillProgressBar');
+  var timerEl = document.getElementById('audioPillTimer');
+  var startTime = Date.now();
+  var durationSec = 30;
+
+  if (audioPillInterval) clearInterval(audioPillInterval);
+  audioPillInterval = setInterval(function() {
+    var elapsed = Math.floor((Date.now() - startTime) / 1000);
+    var pct = Math.min(100, Math.round((elapsed / durationSec) * 100));
+    if (progressBar) progressBar.style.width = pct + '%';
+    if (timerEl) {
+      var min = Math.floor(elapsed / 60);
+      var sec = elapsed % 60;
+      timerEl.innerText = (min + ':' + (sec < 10 ? '0' : '') + sec) + ' / 0:30';
+    }
+    if (elapsed >= durationSec) {
+      stopAudioPill();
+    }
+  }, 250);
+
+  if (audioUrl) {
+    try {
+      audioPillAudio = new Audio(audioUrl);
+      audioPillAudio.onended = function() { stopAudioPill(); };
+      audioPillAudio.onerror = function() { speakBoardTrapNative(); };
+      audioPillAudio.play();
+      return;
+    } catch (e) {
+      console.warn('Audio URL playback error, falling back to speech synthesis:', e);
+    }
+  }
+
+  speakBoardTrapNative();
+}
+
+function speakBoardTrapNative() {
+  if (typeof window !== 'undefined' && window.speechSynthesis) {
+    const trapScript = "Good morning Champions! Today's 60-second CBSE Board Trap: Interest on a Partner's Loan is a Charge against profit, not an appropriation! Even if the partnership firm suffers a net loss, you must compulsorily pay 6 percent interest per annum and debit it to the Profit and Loss Account, never to the Profit and Loss Appropriation Account!";
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(trapScript);
+    utterance.lang = 'en-IN';
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
+    utterance.onend = function() {
+      stopAudioPill();
+    };
+    utterance.onerror = function(e) {
+      console.warn('SpeechSynthesis error:', e);
+      stopAudioPill();
+    };
+    window.speechSynthesis.speak(utterance);
+  } else {
+    console.warn('SpeechSynthesis not supported on this device');
+  }
+}

@@ -103,10 +103,29 @@ function askDoubtGemini(studentName, subject, question, lens) {
  */
 function apiAskDoubt_(verifiedUser, payload) {
   var student = requirePaidStudent_(verifiedUser.id);
-  var questionText = (payload.question || '').trim();
-  if (!questionText) throw new Error('Question text is required');
-
   var studentName = student.Name || verifiedUser.first_name || 'Student';
+  var questionText = (payload.question || '').trim();
+  var mode = 'text';
+
+  // If question was not transcribed client-side, transcribe from audioBase64
+  if (!questionText && payload.audioBase64) {
+    mode = 'voice_webapp';
+    var rawMimeType = (payload.mimeType || 'audio/webm').split(';')[0].trim().toLowerCase();
+    var transcribeRes = transcribeAndGroundAudio_(payload.audioBase64, rawMimeType, studentName, payload.subject || 'Accountancy');
+    if (transcribeRes.isRejected) {
+      return {
+        isRejected: true,
+        studentName: studentName,
+        message: 'Sorry, your voice was not clear. Please speak closer to the mic and ask again!'
+      };
+    }
+    questionText = transcribeRes.transcribed;
+  } else if (payload.audioBase64) {
+    mode = 'voice_hybrid';
+  }
+
+  if (!questionText) throw new Error('Question text or voice input is required');
+
   var subject = payload.subject || detectCommerceSubject_(questionText, '', '');
   var lens = payload.lens || 'ALL';
 
@@ -119,17 +138,19 @@ function apiAskDoubt_(verifiedUser, payload) {
     studentName,
     questionText,
     result.answer || (result.lenses ? result.lenses.STORY : ''),
-    'text',
-    0,
+    mode,
+    payload.duration || 0,
     subject,
     lens,
     'Answered'
   ]);
 
   return {
+    isRejected: false,
     studentName: studentName,
     subject: subject,
     question: questionText,
+    transcribed: questionText,
     answer: result.answer || (result.lenses ? result.lenses.STORY : ''),
     lenses: result.lenses || {},
     activeLens: result.activeLens || 'STORY',
@@ -152,35 +173,34 @@ function apiAskDoubt_(verifiedUser, payload) {
  */
 function apiAskVoiceDoubt_(verifiedUser, payload) {
   var student = requirePaidStudent_(verifiedUser.id);
-  var base64Audio = payload.audioBase64;
-  if (!base64Audio) throw new Error('Audio data is required');
-
-  // Detect real audio MIME type cleanly
-  var rawMimeType = (payload.mimeType || 'audio/webm').split(';')[0].trim().toLowerCase();
-  var mimeType = rawMimeType;
-  if (mimeType.indexOf('webm') !== -1) mimeType = 'audio/webm';
-  else if (mimeType.indexOf('ogg') !== -1) mimeType = 'audio/ogg';
-  else if (mimeType.indexOf('mp4') !== -1) mimeType = 'audio/mp4';
-  else if (mimeType.indexOf('wav') !== -1) mimeType = 'audio/wav';
-  else if (mimeType.indexOf('mp3') !== -1 || mimeType.indexOf('mpeg') !== -1) mimeType = 'audio/mp3';
-  else if (mimeType.indexOf('aac') !== -1) mimeType = 'audio/aac';
-  else mimeType = 'audio/webm';
-
   var studentName = student.Name || verifiedUser.first_name || 'Student';
   var subject = payload.subject || 'Accountancy';
 
-  // 1. Transcribe audio with Grounding via Multimodal Gemini
-  var transcribeRes = transcribeAndGroundAudio_(base64Audio, mimeType, studentName, subject);
+  var transcribedQuestion = (payload.question || '').trim();
 
-  if (transcribeRes.isRejected) {
+  // If question was not pre-transcribed client-side, transcribe from audioBase64
+  if (!transcribedQuestion && payload.audioBase64) {
+    var rawMimeType = (payload.mimeType || 'audio/webm').split(';')[0].trim().toLowerCase();
+    var transcribeRes = transcribeAndGroundAudio_(payload.audioBase64, rawMimeType, studentName, subject);
+
+    if (transcribeRes.isRejected) {
+      return {
+        isRejected: true,
+        studentName: studentName,
+        message: 'Sorry, your voice was not clear. Please speak closer to the mic and ask again!'
+      };
+    }
+    transcribedQuestion = transcribeRes.transcribed;
+  }
+
+  if (!transcribedQuestion) {
     return {
       isRejected: true,
       studentName: studentName,
-      message: 'Sorry, your voice was not clear. Please speak closer to the mic and ask again!'
+      message: 'Could not hear your question clearly. Please speak closer to the mic or type your doubt!'
     };
   }
 
-  var transcribedQuestion = transcribeRes.transcribed;
   var finalSubject = payload.subject || detectCommerceSubject_(transcribedQuestion, '', '');
 
   // 2. Execute multi-lens generation using askDoubtGemini
