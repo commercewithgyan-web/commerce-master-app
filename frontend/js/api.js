@@ -48,13 +48,19 @@ var API_CLIENT = {
     }
 
     try {
+      var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      var timeoutId = controller ? setTimeout(function() { controller.abort(); }, 18000) : null;
+
       var response = await fetch(this.backendUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'text/plain;charset=utf-8' // Apps Script handles text/plain POST without CORS preflight blocks
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        signal: controller ? controller.signal : undefined
       });
+
+      if (timeoutId) clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error('HTTP Error ' + response.status);

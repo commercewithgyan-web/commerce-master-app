@@ -642,22 +642,204 @@ function shuffleArray_(arr) {
 
 /** Deterministic pseudo-random shuffle seeded per student per day */
 function shuffleArrayWithSeed_(arr, seedStr) {
+  if (!arr || arr.length <= 1) return arr ? arr.slice() : [];
   var copy = arr.slice();
   var seedNum = 0;
-  for (var k = 0; k < seedStr.length; k++) {
-    seedNum = (seedNum * 31 + seedStr.charCodeAt(k)) & 0xFFFFFFFF;
+  var s = String(seedStr || 'default_seed');
+  for (var k = 0; k < s.length; k++) {
+    seedNum = ((seedNum << 5) - seedNum + s.charCodeAt(k)) | 0;
   }
+  seedNum = Math.abs(seedNum);
 
   function seededRandom() {
     seedNum = (seedNum * 9301 + 49297) % 233280;
-    return seedNum / 233280;
+    return Math.abs(seedNum) / 233280;
   }
 
   for (var i = copy.length - 1; i > 0; i--) {
     var j = Math.floor(seededRandom() * (i + 1));
+    j = Math.max(0, Math.min(i, j));
     var temp = copy[i];
     copy[i] = copy[j];
     copy[j] = temp;
   }
   return copy;
+}
+
+/**
+ * Seeds 5 verified CBSE Class 12 Accountancy MCQs into QuestionBank and DailyQuestions for today
+ * Ensures question.html loads real questions instead of failing with 'Could not load today\'s drill'.
+ * @return {number} Count of seeded questions
+ */
+function seedInitialQuestionBankData() {
+  var props = PropertiesService.getScriptProperties();
+  var sheetQbId = props.getProperty('SHEET_QB');
+  if (!sheetQbId) throw new Error('SHEET_QB property is not configured');
+
+  var ss = SpreadsheetApp.openById(sheetQbId);
+  var qbSheet = ss.getSheetByName('QuestionBank');
+  var dqSheet = ss.getSheetByName('DailyQuestions');
+  if (!qbSheet || !dqSheet) throw new Error('QuestionBank or DailyQuestions tab missing in Sheet 2');
+
+  var todayDateStr = getKolkataDate();
+
+  var verifiedQuestions = [
+    {
+      qid: 'Q-0001',
+      classLevel: '12',
+      subject: 'Accountancy',
+      chapter: '1',
+      topic: 'Accounting for Partnership: Basic Concepts',
+      type: 'MCQ',
+      question: 'In the absence of a partnership deed, what is the rate of interest allowed on a partner\'s loan to the firm?',
+      optA: '6% per annum as an appropriation of profit',
+      optB: '6% per annum as a charge against profit',
+      optC: '12% per annum simple interest',
+      optD: 'No interest is allowed',
+      correctIdx: 'B',
+      rubric: '1 mark for selecting 6% p.a. as a charge against profit.',
+      explanation: 'According to Section 13(d) of the Indian Partnership Act, 1932, in the absence of an agreement, a partner is entitled to interest on loan at 6% p.a. It is a charge against profit payable even if the firm incurs a loss.',
+      sharkTankHint: 'Think of partner loan as a debt investor like Shark Tank debt deals — they get paid interest before founders split any profits!',
+      ghostSec: 30
+    },
+    {
+      qid: 'Q-0002',
+      classLevel: '12',
+      subject: 'Accountancy',
+      chapter: '1',
+      topic: 'Interest on Drawings',
+      type: 'MCQ',
+      question: 'A partner withdraws ₹5,000 at the beginning of every month throughout the year. If interest on drawings is charged @ 10% p.a., the total interest will be:',
+      optA: '₹3,000',
+      optB: '₹3,250',
+      optC: '₹2,750',
+      optD: '₹3,500',
+      correctIdx: 'B',
+      rubric: '1 mark for correct calculation using 6.5 months average period.',
+      explanation: 'Total Drawings = ₹5,000 × 12 = ₹60,000. Average period for beginning of every month = (12 + 1)/2 = 6.5 months. Interest = ₹60,000 × 10/100 × 6.5/12 = ₹3,250.',
+      sharkTankHint: 'Monthly SIP withdrawals in business! Average time money stays out of the business is 6.5 months.',
+      ghostSec: 40
+    },
+    {
+      qid: 'Q-0003',
+      classLevel: '12',
+      subject: 'Accountancy',
+      chapter: '1',
+      topic: 'P&L Appropriation Account',
+      type: 'MCQ',
+      question: 'Which of the following items is treated as a CHARGE against profit and NOT an appropriation of profit?',
+      optA: 'Interest on Partner Capital',
+      optB: 'Salary to Active Working Partner',
+      optC: 'Rent paid to a Partner for firm premises',
+      optD: 'Transfer to General Reserve',
+      correctIdx: 'C',
+      rubric: '1 mark for identifying rent to partner as charge against profit.',
+      explanation: 'Rent paid to a partner for using his property is an external business expense (charge against profit) debited to P&L Account, not an appropriation.',
+      sharkTankHint: 'Landlord rent must be paid even if company revenue is zero, whether landlord is a co-founder or outsider!',
+      ghostSec: 35
+    },
+    {
+      qid: 'Q-0004',
+      classLevel: '12',
+      subject: 'Accountancy',
+      chapter: '1',
+      topic: 'Guarantee of Minimum Profit',
+      type: 'MCQ',
+      question: 'X, Y, and Z are partners sharing profits in the ratio 3:2:1. Z is guaranteed a minimum profit of ₹30,000 by X. If the firm earns a net profit of ₹1,20,000, what is X\'s final profit share?',
+      optA: '₹60,000',
+      optB: '₹50,000',
+      optC: '₹40,000',
+      optD: '₹45,000',
+      correctIdx: 'B',
+      rubric: '1 mark for deducting Z\'s ₹10,000 deficiency from X\'s share.',
+      explanation: 'Z\'s share = 1/6 of ₹1,20,000 = ₹20,000. Guaranteed profit = ₹30,000. Deficiency = ₹10,000 borne entirely by X. X\'s original share = 3/6 of ₹1,20,000 = ₹60,000. X\'s final share = ₹60,000 - ₹10,000 = ₹50,000.',
+      sharkTankHint: 'A primary shark giving a personal guarantee to a junior co-founder out of their personal equity cut!',
+      ghostSec: 45
+    },
+    {
+      qid: 'Q-0005',
+      classLevel: '12',
+      subject: 'Accountancy',
+      chapter: '1',
+      topic: 'Past Adjustments',
+      type: 'MCQ',
+      question: 'Interest on capital was omitted to be credited to partners for the year. To rectify this error in the next accounting year, which account is debited/credited through a single adjustment entry?',
+      optA: 'Profit & Loss Suspense Account',
+      optB: 'Profit & Loss Appropriation Account',
+      optC: 'Partners\' Capital or Current Accounts',
+      optD: 'General Reserve Account',
+      correctIdx: 'C',
+      rubric: '1 mark for identifying Partner Capital/Current accounts for single rectifying entry.',
+      explanation: 'Under CBSE standards, past omissions are rectified at the beginning of the next accounting period by passing a single adjustment entry through Partners\' Capital or Current Accounts.',
+      sharkTankHint: 'Internal cap-table rebalancing between partners without re-auditing last year\'s closed books!',
+      ghostSec: 35
+    }
+  ];
+
+  // 1. Check existing in QuestionBank
+  var existingQb = qbSheet.getDataRange().getValues();
+  var existingQids = {};
+  for (var i = 1; i < existingQb.length; i++) {
+    existingQids[String(existingQb[i][0])] = true;
+  }
+
+  verifiedQuestions.forEach(function(q) {
+    if (!existingQids[q.qid]) {
+      qbSheet.appendRow([
+        q.qid,
+        todayDateStr,
+        q.classLevel,
+        q.subject,
+        q.chapter,
+        q.topic,
+        q.type,
+        q.question,
+        q.optA,
+        q.optB,
+        q.optC,
+        q.optD,
+        q.correctIdx,
+        q.rubric,
+        q.explanation,
+        q.sharkTankHint,
+        q.ghostSec,
+        'Manual',
+        'Approved',
+        'high',
+        'Medium'
+      ]);
+      existingQids[q.qid] = true;
+    }
+  });
+
+  // 2. Check existing in DailyQuestions for today
+  var existingDq = dqSheet.getDataRange().getValues();
+  var todaySeeded = false;
+  for (var j = 1; j < existingDq.length; j++) {
+    var dqDate = String(existingDq[j][0]);
+    if (dqDate.indexOf(todayDateStr) !== -1 || dqDate === todayDateStr) {
+      todaySeeded = true;
+      break;
+    }
+  }
+
+  if (!todaySeeded) {
+    verifiedQuestions.forEach(function(q) {
+      dqSheet.appendRow([
+        todayDateStr,
+        q.qid,
+        q.classLevel,
+        q.subject,
+        q.type,
+        q.ghostSec
+      ]);
+    });
+  }
+
+  // Clear stale cache
+  var cache = CacheService.getScriptCache();
+  cache.remove('DAILY_QUESTIONS_C12_' + todayDateStr);
+
+  Logger.log('✅ Seeded ' + verifiedQuestions.length + ' Class 12 Accountancy questions successfully into QuestionBank and DailyQuestions.');
+  return verifiedQuestions.length;
 }

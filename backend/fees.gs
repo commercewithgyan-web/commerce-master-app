@@ -724,10 +724,7 @@ function sendStudentWelcomeMessage_(telegramId, name, studentId, planName, first
  * @return {Object}
  */
 function apiGetFeeDashboard_(verifiedUser) {
-  var student = findRow_('SHEET_FEE', 'Students', 'TelegramID', String(verifiedUser.id));
-  if (!student) {
-    throw new Error('Student profile not found for Telegram ID: ' + verifiedUser.id);
-  }
+  var student = requirePaidStudent_(verifiedUser.id);
 
   var invoices = findRows_('SHEET_FEE', 'Fee_Schedule', 'StudentID', student.StudentID);
   var payments = findRows_('SHEET_FEE', 'Payments', 'StudentID', student.StudentID);

@@ -433,7 +433,7 @@ function renderMultiLensCard(res, originalQuestion) {
 
     // Multi-Lens Response Tabs (3 Clean Toggle Chips)
     '<div class="lens-chips-bar" id="lensChips_' + msgId + '">' +
-    '  <button class="lens-chip active" id="chip_STORY_' + msgId + '" onclick="switchLens(\'' + msgId + '\', \'STORY\')">💡 Simple Story</button>' +
+    '  <button class="lens-chip active" id="chip_STORY_' + msgId + '" onclick="switchLens(\'' + msgId + '\', \'STORY\')">💡 Easy Story</button>' +
     '  <button class="lens-chip" id="chip_EXAM_NOTES_' + msgId + '" onclick="switchLens(\'' + msgId + '\', \'EXAM_NOTES\')">📝 Exam Notes</button>' +
     '  <button class="lens-chip" id="chip_REAL_EXAMPLE_' + msgId + '" onclick="switchLens(\'' + msgId + '\', \'REAL_EXAMPLE\')">🏢 Real Example</button>' +
     '</div>';

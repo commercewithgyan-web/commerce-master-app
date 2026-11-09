@@ -48,9 +48,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 async function loadNotebook() {
   try {
     notebookData = await API_CLIENT.call('getNotebook');
-    renderNotebook(notebookData);
+    if (notebookData) {
+      renderNotebook(notebookData);
+    } else {
+      renderNotebook({ notes: [], mistakes: [], favourites: [], notesCount: 0, mistakesCount: 0, favouritesCount: 0, revisionDueCount: 0 });
+    }
   } catch (err) {
     console.warn('Notebook load error:', err);
+    renderNotebook({ notes: [], mistakes: [], favourites: [], notesCount: 0, mistakesCount: 0, favouritesCount: 0, revisionDueCount: 0 });
   }
 }
 
