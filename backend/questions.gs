@@ -261,7 +261,7 @@ function generateQuestionWithGemini_(classLevel, subject, chapter, topic, diffic
     '  "teacherGhostSeconds": 35\n' +
     '}';
 
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + geminiKey;
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + getGeminiModel_() + ':generateContent?key=' + geminiKey;
   var payload = {
     contents: [{ parts: [{ text: hiddenPrompt }] }],
     generationConfig: {

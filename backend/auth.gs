@@ -73,7 +73,9 @@ function verifyTelegramInitData_(initData) {
   var secretKeyBytes = Utilities.computeHmacSha256Signature(botToken, 'WebAppData');
 
   // Step 2: Computed Hash = HMAC_SHA256(dataCheckString, secretKeyBytes)
-  var calculatedHashBytes = Utilities.computeHmacSha256Signature(dataCheckString, secretKeyBytes);
+  // Both value and key must be Byte[] when passing byte array key
+  var dataCheckBytes = Utilities.newBlob(dataCheckString).getBytes();
+  var calculatedHashBytes = Utilities.computeHmacSha256Signature(dataCheckBytes, secretKeyBytes);
 
   // Convert byte array to hexadecimal string
   var calculatedHash = calculatedHashBytes.map(function(byte) {
@@ -111,6 +113,30 @@ function verifyTelegramInitData_(initData) {
 function requirePaidStudent_(telegramId) {
   if (!telegramId) {
     throw new Error('ACCESS_DENIED: Telegram ID is required');
+  }
+
+  // Admin / Founder bypass: Admin can access student portal for audits and testing
+  var props = PropertiesService.getScriptProperties();
+  var adminId = props.getProperty('ADMIN_ID');
+  if (adminId && String(telegramId) === String(adminId)) {
+    var adminRecord = findRow_('SHEET_FEE', 'Students', 'TelegramID', String(telegramId));
+    if (adminRecord) return adminRecord;
+    return {
+      StudentID: 'ADMIN-001',
+      Name: 'Gyandeep (Admin)',
+      Class: 12,
+      Board: 'CBSE',
+      Phone: '9999999999',
+      TelegramID: String(telegramId),
+      PlanID: 'PLAN-CBSE-COMBINED',
+      PlanName: 'CBSE Master Plan',
+      MonthlyFee: 1500,
+      TotalCourseFee: 18000,
+      TotalPaid: 18000,
+      Balance: 0,
+      Paid: 'YES',
+      Status: 'Active'
+    };
   }
 
   var student = findRow_('SHEET_FEE', 'Students', 'TelegramID', String(telegramId));

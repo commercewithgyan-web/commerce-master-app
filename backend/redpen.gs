@@ -71,7 +71,7 @@ function apiSubmitRedPenCopy_(verifiedUser, payload) {
 
   geminiParts.push({ text: visionPrompt });
 
-  var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + geminiKey;
+  var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + getGeminiModel_() + ':generateContent?key=' + geminiKey;
   var requestPayload = {
     contents: [{ parts: geminiParts }],
     generationConfig: {

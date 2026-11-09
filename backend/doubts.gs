@@ -60,7 +60,7 @@ function handleVoiceDoubt_(msg) {
     var geminiKey = props.getProperty('GEMINI_KEY');
     if (!geminiKey) throw new Error('GEMINI_KEY is missing');
 
-    var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + geminiKey;
+    var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + getGeminiModel_() + ':generateContent?key=' + geminiKey;
     var geminiPayload = {
       contents: [{
         parts: [
@@ -258,7 +258,7 @@ function apiAskVoiceDoubt_(verifiedUser, payload) {
     classLevel: classLevel
   });
 
-  var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + geminiKey;
+  var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + getGeminiModel_() + ':generateContent?key=' + geminiKey;
   var geminiPayload = {
     contents: [{
       parts: [
@@ -377,7 +377,7 @@ function apiAskDoubt_(verifiedUser, payload) {
     '  "followUpSuggestions": ["Explain with simpler example", "Give a practical calculation", "Show journal entry"]\n' +
     '}';
 
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + geminiKey;
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + getGeminiModel_() + ':generateContent?key=' + geminiKey;
   var geminiPayload = {
     contents: [{ parts: [{ text: hiddenPrompt }] }],
     generationConfig: {

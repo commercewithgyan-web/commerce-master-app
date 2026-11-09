@@ -9,6 +9,15 @@
 var TIMEZONE_KOLKATA = 'Asia/Kolkata';
 
 /**
+ * Resolves the active Gemini model name from Script Properties with fallback to 'gemini-3.5-flash-lite'
+ * @return {string}
+ */
+function getGeminiModel_() {
+  var props = PropertiesService.getScriptProperties();
+  return props.getProperty('GEMINI_MODEL') || 'gemini-3.5-flash-lite';
+}
+
+/**
  * Builds a JSON HTTP Response output for Web App endpoints
  * @param {Object} data - Response payload object
  * @param {number} [statusCode=200]

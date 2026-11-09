@@ -110,7 +110,7 @@ function setupTab_Settings_(ss) {
       ['CHANNEL_ID_12', ''],
       ['ADMIN_ID', ''],
       ['ACTIVE_CLASS', '12'],
-      ['GEMINI_MODEL', 'gemini-2.5-flash'],
+      ['GEMINI_MODEL', 'gemini-3.5-flash-lite'],
       ['CURRENT_FISCAL_YEAR', '2026-27'],
       ['MINI_APP_URL', ''],
       ['MAINTENANCE_MODE', 'false']

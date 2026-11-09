@@ -230,7 +230,7 @@ function generateWeeklySummary_(telegramId) {
     '3. Action rule for next week (1 crisp takeaway)\n\n' +
     'Strictly English, warm, energetic, and professional.';
 
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + geminiKey;
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + getGeminiModel_() + ':generateContent?key=' + geminiKey;
   var payload = {
     contents: [{ parts: [{ text: hiddenPrompt }] }],
     generationConfig: { temperature: 0.3 }
