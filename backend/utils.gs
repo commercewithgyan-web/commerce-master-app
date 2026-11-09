@@ -9,12 +9,69 @@
 var TIMEZONE_KOLKATA = 'Asia/Kolkata';
 
 /**
- * Resolves the active Gemini model name from Script Properties with fallback to 'gemini-3.5-flash-lite'
+ * Resolves the active Gemini model name from Script Properties with fallback to 'gemini-3.8-flash'
  * @return {string}
  */
 function getGeminiModel_() {
   var props = PropertiesService.getScriptProperties();
-  return props.getProperty('GEMINI_MODEL') || 'gemini-2.5-flash';
+  return props.getProperty('GEMINI_MODEL') || 'gemini-3.8-flash';
+}
+
+/**
+ * Executes a Gemini API generateContent call across candidate models with automatic fallback.
+ * Solves model deprecation/404s and traffic spikes (503s).
+ * 
+ * @param {Object} payload - Gemini request payload { contents: [...], generationConfig: {...} }
+ * @return {Object} Parsed JSON response from Gemini API
+ */
+function callGeminiGenerateContent_(payload) {
+  var props = PropertiesService.getScriptProperties();
+  var apiKey = props.getProperty("GEMINI_KEY") || props.getProperty("GEMINI_API_KEY");
+  if (!apiKey) throw new Error("GEMINI_KEY missing in Script Properties");
+
+  // Priority order: latest active model, recommended models, legacy fallbacks
+  var candidateModels = [
+    "gemini-3.8-flash",
+    "gemini-3.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-flash-latest",
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro"
+  ];
+
+  // If a custom model is configured in Script Properties, prepend it
+  var customModel = props.getProperty("GEMINI_MODEL");
+  if (customModel && candidateModels.indexOf(customModel) === -1) {
+    candidateModels.unshift(customModel);
+  }
+
+  var lastError = null;
+  for (var i = 0; i < candidateModels.length; i++) {
+    var model = candidateModels[i];
+    var url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + apiKey;
+    try {
+      var response = UrlFetchApp.fetch(url, {
+        method: "POST",
+        contentType: "application/json",
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      });
+      var resCode = response.getResponseCode();
+      var resText = response.getContentText();
+      
+      if (resCode === 200) {
+        return JSON.parse(resText);
+      } else {
+        lastError = "Model " + model + " error " + resCode + ": " + resText;
+        Logger.log(lastError);
+      }
+    } catch (e) {
+      lastError = e.toString();
+    }
+  }
+  throw new Error("Gemini API failed across candidate models: " + lastError);
 }
 
 /**

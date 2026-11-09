@@ -60,8 +60,6 @@ function askDoubtGemini(studentName, subject, question, lens) {
     '  "cbse_trap": "<1-sentence CBSE Exam Trap to avoid>"\n' +
     '}';
 
-  var geminiModel = getGeminiModel_();
-  var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + geminiModel + ':generateContent?key=' + geminiKey;
   var payload = {
     contents: [{ parts: [{ text: systemPrompt }] }],
     generationConfig: {
@@ -70,46 +68,37 @@ function askDoubtGemini(studentName, subject, question, lens) {
     }
   };
 
-  var res = UrlFetchApp.fetch(geminiUrl, {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  });
+  var json = callGeminiGenerateContent_(payload);
+  if (json.candidates && json.candidates[0].content && json.candidates[0].content.parts) {
+    var raw = json.candidates[0].content.parts[0].text;
+    var parsed = JSON.parse(raw);
 
-  if (res.getResponseCode() === 200) {
-    var json = JSON.parse(res.getContentText());
-    if (json.candidates && json.candidates[0].content && json.candidates[0].content.parts) {
-      var raw = json.candidates[0].content.parts[0].text;
-      var parsed = JSON.parse(raw);
+    var storyText = parsed.story || (parsed.lenses ? parsed.lenses.STORY : '') || parsed.answer || '';
+    var notesText = parsed.exam_notes || (parsed.lenses ? parsed.lenses.EXAM_NOTES : '') || '';
+    var realText = parsed.real_example || (parsed.lenses ? parsed.lenses.REAL_EXAMPLE : '') || '';
+    var ruleText = parsed.golden_rule || parsed.keyRule || parsed.keyTakeaway || '';
+    var trapText = parsed.cbse_trap || parsed.cbseTrap || '';
 
-      var storyText = parsed.story || (parsed.lenses ? parsed.lenses.STORY : '') || parsed.answer || '';
-      var notesText = parsed.exam_notes || (parsed.lenses ? parsed.lenses.EXAM_NOTES : '') || '';
-      var realText = parsed.real_example || (parsed.lenses ? parsed.lenses.REAL_EXAMPLE : '') || '';
-      var ruleText = parsed.golden_rule || parsed.keyRule || parsed.keyTakeaway || '';
-      var trapText = parsed.cbse_trap || parsed.cbseTrap || '';
-
-      return {
-        subject: targetSubject,
-        studentName: cleanName,
-        story: storyText,
-        exam_notes: notesText,
-        real_example: realText,
-        golden_rule: ruleText,
-        cbse_trap: trapText,
-        answer: storyText,
-        lenses: {
-          STORY: storyText,
-          EXAM_NOTES: notesText,
-          REAL_EXAMPLE: realText
-        },
-        keyRule: ruleText,
-        cbseTrap: trapText
-      };
-    }
+    return {
+      subject: targetSubject,
+      studentName: cleanName,
+      story: storyText,
+      exam_notes: notesText,
+      real_example: realText,
+      golden_rule: ruleText,
+      cbse_trap: trapText,
+      answer: storyText,
+      lenses: {
+        STORY: storyText,
+        EXAM_NOTES: notesText,
+        REAL_EXAMPLE: realText
+      },
+      keyRule: ruleText,
+      cbseTrap: trapText
+    };
   }
 
-  throw new Error('Gemini API call failed with response code: ' + res.getResponseCode() + ' - ' + res.getContentText());
+  throw new Error('Invalid response structure from Gemini API');
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -382,7 +371,6 @@ function transcribeAndGroundAudio_(base64Audio, mimeType, studentName, subject) 
     'REJECTED_UNCLEAR_AUDIO\n' +
     'Step 2: Otherwise, output ONLY the exact transcribed question spoken by the student. Do not add explanations or commentary.';
 
-  var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + getGeminiModel_() + ':generateContent?key=' + geminiKey;
   var payload = {
     contents: [{
       parts: [
@@ -401,15 +389,8 @@ function transcribeAndGroundAudio_(base64Audio, mimeType, studentName, subject) 
     }
   };
 
-  var res = UrlFetchApp.fetch(geminiUrl, {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  });
-
-  if (res.getResponseCode() === 200) {
-    var json = JSON.parse(res.getContentText());
+  try {
+    var json = callGeminiGenerateContent_(payload);
     if (json.candidates && json.candidates[0].content && json.candidates[0].content.parts) {
       var raw = json.candidates[0].content.parts[0].text.trim();
       var isRejected = !raw ||
@@ -422,6 +403,8 @@ function transcribeAndGroundAudio_(base64Audio, mimeType, studentName, subject) 
         transcribed: isRejected ? '' : raw.replace(/^["']|["']$/g, '').trim()
       };
     }
+  } catch (voiceErr) {
+    Logger.log('Voice transcription note: ' + voiceErr.message);
   }
 
   return { isRejected: true, transcribed: '' };

@@ -126,10 +126,6 @@ function apiSubmitRedPenCopy_(verifiedUser, payload) {
 
 // GATEKEEPER OCR & CLASSIFICATION
 function runGatekeeperClassification_(imageBase64) {
-  const props = PropertiesService.getScriptProperties();
-  const apiKey = props.getProperty("GEMINI_KEY") || props.getProperty("GEMINI_API_KEY");
-  if (!apiKey) throw new Error("GEMINI_KEY missing in Script Properties");
-
   const pageStr = String(imageBase64);
   var mimeType = "image/jpeg";
   const mimeMatch = pageStr.match(/^data:(image\/[a-zA-Z0-9\.\-\+]+);base64,/);
@@ -156,104 +152,87 @@ CRITICAL RULES:
 2. If it is a real handwritten solution, set "isHandwrittenAnswer": true, accurately transcribe the question and answer, and classify the subject and chapter.
 Return strictly valid JSON only.`;
 
-  const candidateModels = [
-    props.getProperty("GEMINI_MODEL"),
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
-    "gemini-2.5-flash"
-  ].filter(Boolean);
-
-  var lastError = null;
-  for (var m = 0; m < candidateModels.length; m++) {
-    var model = candidateModels[m];
-    var url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + apiKey;
-    var payload = {
-      contents: [
-        {
-          parts: [
-            { inline_data: { mime_type: mimeType, data: rawBase64 } },
-            { text: prompt }
-          ]
-        }
-      ],
-      generationConfig: {
-        temperature: 0.1,
-        responseMimeType: "application/json"
+  var payload = {
+    contents: [
+      {
+        parts: [
+          { inline_data: { mime_type: mimeType, data: rawBase64 } },
+          { text: prompt }
+        ]
       }
-    };
-
-    try {
-      var response = UrlFetchApp.fetch(url, {
-        method: "POST",
-        contentType: "application/json",
-        payload: JSON.stringify(payload),
-        muteHttpExceptions: true
-      });
-
-      var resCode = response.getResponseCode();
-      var resBody = response.getContentText();
-      if (resCode === 200) {
-        var parsed = JSON.parse(resBody);
-        if (parsed.candidates && parsed.candidates[0] && parsed.candidates[0].content && parsed.candidates[0].content.parts) {
-          var rawJson = parsed.candidates[0].content.parts[0].text;
-          rawJson = rawJson.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-          return JSON.parse(rawJson);
-        }
-      } else {
-        lastError = "Model " + model + " error " + resCode + ": " + resBody;
-        Logger.log(lastError);
-      }
-    } catch (err) {
-      lastError = err.message;
+    ],
+    generationConfig: {
+      temperature: 0.1,
+      responseMimeType: "application/json"
     }
+  };
+
+  var parsed = callGeminiGenerateContent_(payload);
+  if (!parsed.candidates || !parsed.candidates[0] || !parsed.candidates[0].content || !parsed.candidates[0].content.parts) {
+    throw new Error("Invalid response from Gatekeeper Gemini Vision");
   }
 
-  throw new Error("Gatekeeper Gemini Vision failed across candidate models: " + lastError);
+  var rawJson = parsed.candidates[0].content.parts[0].text;
+  rawJson = rawJson.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+  return JSON.parse(rawJson);
 }
 
 // 3. SURGICAL CBSE EVALUATION PROMPT
 function performDoubleVaultEvaluation_(name, classLvl, sub, ch, question, studentAnswer, chVault, pyqVault) {
-  const apiKey = PropertiesService.getScriptProperties().getProperty("GEMINI_KEY") || PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY");
-  const candidateModels = [
-    PropertiesService.getScriptProperties().getProperty("GEMINI_MODEL"),
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
-    "gemini-2.5-flash"
-  ].filter(Boolean);
+  const prompt = `
+You are Educator Gyan Sir reviewing ${name}'s handwritten answer in Class ${classLvl} ${sub} (${ch}).
+Knowledge Sources: Gyan Sir's Chapter Vault (${chVault}) & CBSE 10-Year PYQ Vault with Official Marking Schemes (${pyqVault}).
 
-  var lastError = null;
-  for (var m = 0; m < candidateModels.length; m++) {
-    var model = candidateModels[m];
-    var url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + apiKey;
-    var payload = {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: "application/json", temperature: 0.15 }
-    };
+QUESTION: "${question}"
+${name}'S HANDWRITTEN ANSWER:
+"${studentAnswer}"
 
-    try {
-      var response = UrlFetchApp.fetch(url, {
-        method: "POST",
-        contentType: "application/json",
-        payload: JSON.stringify(payload),
-        muteHttpExceptions: true
-      });
+INSTRUCTIONS:
+1. Speak warmly and directly to ${name} by name throughout the review.
+2. Check if a similar question appeared in CBSE past board exams (e.g. CBSE 2023, 2020, 2018).
+3. Evaluate Word Count & Formatting:
+   - Did ${name} write an essay instead of concise point-wise bullets?
+   - Did ${name} exceed the CBSE 50-75 words limit for a 3-marker?
+4. Match keywords strictly against CBSE Official Marking Scheme. Deduct marks for missing NCERT keywords.
+5. Provide a 3-bullet Topper Rewrite for full marks.
 
-      var resCode = response.getResponseCode();
-      var resBody = response.getContentText();
-      if (resCode === 200) {
-        var parsed = JSON.parse(resBody);
-        var rawText = parsed.candidates[0].content.parts[0].text;
-        return JSON.parse(rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim());
-      } else {
-        lastError = "Model " + model + " error " + resCode + ": " + resBody;
-        Logger.log(lastError);
-      }
-    } catch (err) {
-      lastError = err.message;
+Return strictly JSON:
+{
+  "score": "X / Y Marks",
+  "boardExamMatch": "CBSE Board Exam 2023 (Set-2) / Past Year Standard Match",
+  "personalGreeting": "Warm encouraging opening addressing ${name}",
+  "wordCountAudit": {
+    "studentWords": 110,
+    "cbseRecommended": "50-75 words",
+    "verdict": "Too long / Perfect / Too brief",
+    "advice": "Why concise bullets save time in 3-markers"
+  },
+  "presentationAudit": {
+    "formatUsed": "Paragraph or Points",
+    "examinerPreference": "Point-wise headings with keywords underlined",
+    "marksLost": "-0.5 Marks"
+  },
+  "lineByLineSurgery": [
+    {
+      "studentLine": "Phrase written by ${name}",
+      "officialNcertKeyword": "Exact keyword required by CBSE",
+      "marksDeducted": "-0.5 Marks",
+      "explanation": "Why this keyword is mandatory in marking scheme"
     }
-  }
+  ],
+  "topperRewrite": "Ideal 3-bullet model answer for 100% full marks",
+  "gyanSirPrescription": "Gyan Sir's exam-hall tip from his class notes"
+}
+`;
 
-  throw new Error("Double-Vault Evaluation failed across candidate models: " + lastError);
+  var payload = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { responseMimeType: "application/json", temperature: 0.15 }
+  };
+
+  var parsed = callGeminiGenerateContent_(payload);
+  var rawText = parsed.candidates[0].content.parts[0].text;
+  return JSON.parse(rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim());
 }
 
 // 4. 48-HOUR AUTO-SYNC TRIGGER (Cron)
