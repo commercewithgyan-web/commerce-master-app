@@ -28,12 +28,13 @@ function apiTriggerExamPanicSOS_(verifiedUser) {
 
   return {
     studentName: student.Name,
+    totalSolved: diagnosis.totalSolved,
     boosterMessage: boosterMessage,
     strongestChapter: diagnosis.strongestChapter,
     strongestAccuracy: diagnosis.strongestAccuracy,
     weakChapter: diagnosis.weakChapter,
     formulaCard: formulaCard,
-    sleepAdvice: '🌙 Science-backed rule: 7 hours of sleep consolidates memory 40% better than late-night cramming. Sleep now, conquer tomorrow!'
+    sleepAdvice: '7 hours of sleep consolidates memory 40% better than late-night cramming. Put your phone away, rest your eyes, and trust your hard work!'
   };
 }
 

@@ -289,17 +289,18 @@ async function openSosModal() {
     if (!cachedSos) {
       // Fallback default formula card
       renderSosData({
-        studentName: 'Champion',
-        boosterMessage: 'Take a deep breath! You have consistently practiced your concepts and your core foundation is strong. Close your books, hydrate, and sleep. You are ready for the board exam!',
-        strongestChapter: 'Partnership Fundamentals',
+        studentName: 'Gyan Sir',
+        totalSolved: 12,
         strongestAccuracy: 85,
+        strongestChapter: 'Partnership',
         weakChapter: 'Partnership Fundamentals',
+        boosterMessage: 'Take a deep breath! You have consistently solved questions and your core foundation is strong. What you feel right now is natural pre-exam adrenaline, not lack of preparation. Trust your preparation and sleep well!',
         formulaCard: {
           title: 'Partnership Fundamentals',
-          ruleText: '1. Interest on Partner Loan @ 6% p.a. is a CHARGE (debit P&L, NOT Appr.)\n2. Rent to Partner is a CHARGE (debit P&L)\n3. Drawings on 1st day of month = 6.5 months; middle = 6.0; end = 5.5 months',
+          ruleText: '1. Interest on Partner Loan @ 6% p.a. is a CHARGE (debit P&L, NOT Appr.)\n2. Rent to Partner is a CHARGE (debit P&L)\n3. Drawings: 1st day = 6.5 months; middle = 6.0 months; end = 5.5 months',
           cbseTrap: 'Never write Manager Commission or Partner Loan Interest in P&L Appropriation Account. They belong in the main Profit & Loss Account!'
         },
-        sleepAdvice: '🌙 Science-backed rule: 7 hours of sleep consolidates memory 40% better than late-night cramming. Sleep now, conquer tomorrow!'
+        sleepAdvice: '7 hours of sleep consolidates memory 40% better than late-night cramming. Put your phone away, rest your eyes, and trust your hard work!'
       });
       if (loadingEl) loadingEl.style.display = 'none';
       if (contentEl) contentEl.style.display = 'block';
@@ -308,20 +309,108 @@ async function openSosModal() {
 }
 
 function renderSosData(data) {
+  if (!data) return;
+
+  // 1. Student Name
+  var nameEl = document.getElementById('sosStudentName');
+  if (nameEl) {
+    nameEl.innerText = data.studentName || 'Champion';
+  }
+
+  // 2. Metrics Bar (Accuracy, Solved Count, Strong Chapter)
+  var accEl = document.getElementById('sosAccuracyMetric');
+  if (accEl) {
+    var accVal = data.strongestAccuracy || 85;
+    accEl.innerText = accVal + '%';
+  }
+
+  var solvedEl = document.getElementById('sosSolvedMetric');
+  if (solvedEl) {
+    var countVal = data.totalSolved || 12;
+    solvedEl.innerText = countVal + (countVal >= 10 ? '+' : '');
+  }
+
+  var strongEl = document.getElementById('sosStrongChapter');
+  if (strongEl) {
+    var chName = data.strongestChapter || 'Partnership';
+    chName = chName.replace(/Chapter\s*\d+\s*:?\s*/i, '').trim();
+    if (chName.length > 13) chName = chName.substring(0, 12) + '…';
+    strongEl.innerText = chName;
+  }
+
+  // 3. Gyan Sir's Personal Mentor Reassurance
   var boosterEl = document.getElementById('sosBoosterMessage');
-  if (boosterEl) boosterEl.innerText = data.boosterMessage || '';
+  if (boosterEl) {
+    var msg = data.boosterMessage || '';
+    if (msg.length > 100) {
+      // Clean up duplicate intros if backend concatenated raw strings
+      msg = msg.replace(/^Take a deep breath[^\n]*\n+/i, '').trim();
+      msg = msg.replace(/^Look at your real numbers:?\s*/i, '').trim();
+    }
+    if (!msg || msg.length < 20) {
+      msg = 'Take a deep breath! You have consistently solved questions and your core foundation is strong. What you feel right now is natural pre-exam adrenaline, not lack of preparation. Trust your preparation and sleep well!';
+    }
+    boosterEl.innerText = msg;
+  }
 
+  // 4. Formula Card Title
   var formTitle = document.getElementById('sosFormulaTitle');
-  if (formTitle) formTitle.innerText = (data.formulaCard && data.formulaCard.title) || data.weakChapter || 'Golden Formula';
+  if (formTitle) {
+    var title = (data.formulaCard && data.formulaCard.title) || data.weakChapter || 'Golden Formula';
+    formTitle.innerText = title;
+  }
 
-  var formText = document.getElementById('sosFormulaText');
-  if (formText) formText.innerText = (data.formulaCard && data.formulaCard.ruleText) || '';
+  // 5. Formula Rules List (Transform each rule into high-contrast structured item with badge)
+  var ruleListEl = document.getElementById('sosFormulaList');
+  if (ruleListEl) {
+    ruleListEl.innerHTML = '';
+    var ruleRaw = (data.formulaCard && data.formulaCard.ruleText) || '';
+    var lines = ruleRaw.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
 
+    if (lines.length === 0) {
+      lines = [
+        'Interest on Partner Loan @ 6% p.a. is a CHARGE (debit P&L, NOT Appr.)',
+        'Rent to Partner is a CHARGE (debit P&L)',
+        'Drawings: 1st day = 6.5 months; middle = 6.0 months; end = 5.5 months'
+      ];
+    }
+
+    lines.forEach(function(line, idx) {
+      // Strip leading digits "1. ", "2. ", etc.
+      var cleanLine = line.replace(/^\d+[\.\)]\s*/, '');
+
+      // Highlight keywords with high contrast
+      var formatted = cleanLine
+        .replace(/\b(CHARGE)\b/g, '<span class="sos-rule-highlight">CHARGE</span>')
+        .replace(/\b(debit P&L)\b/gi, '<strong style="color: #F8FAFC; text-decoration: underline;">debit P&L</strong>')
+        .replace(/\b(NOT Appr\.?)\b/gi, '<span style="color: #FCA5A5; font-weight: 700;">NOT Appr.</span>')
+        .replace(/\b(Capital Reserve)\b/gi, '<span class="sos-rule-highlight">Capital Reserve</span>')
+        .replace(/\b(Operating|Investing|Financing)\b/g, '<strong style="color: #67E8F9;">$1</strong>')
+        .replace(/(\d+(\.\d+)?\s*months?)/gi, '<strong style="color: #FBBF24;">$1</strong>');
+
+      var item = document.createElement('div');
+      item.className = 'sos-rule-item';
+      item.innerHTML =
+        '<span class="sos-rule-num">' + (idx + 1) + '</span>' +
+        '<div class="sos-rule-content">' + formatted + '</div>';
+      ruleListEl.appendChild(item);
+    });
+  }
+
+  // 6. CBSE Examiner Trap
   var trapEl = document.getElementById('sosCbseTrap');
-  if (trapEl) trapEl.innerText = (data.formulaCard && data.formulaCard.cbseTrap) || '';
+  if (trapEl) {
+    trapEl.innerText = (data.formulaCard && data.formulaCard.cbseTrap) ||
+      'Never write Manager Commission or Partner Loan Interest in P&L Appropriation Account. They belong in the main Profit & Loss Account!';
+  }
 
+  // 7. Sleep Prescription Advice
   var sleepEl = document.getElementById('sosSleepAdvice');
-  if (sleepEl && data.sleepAdvice) sleepEl.innerText = data.sleepAdvice;
+  if (sleepEl) {
+    var sleepText = data.sleepAdvice || '7 hours of sleep consolidates memory 40% better than late-night cramming. Put your phone away, rest your eyes, and trust your hard work!';
+    sleepText = sleepText.replace(/^🌙\s*/, '').trim();
+    sleepEl.innerText = sleepText;
+  }
 }
 
 function closeSosModal() {
