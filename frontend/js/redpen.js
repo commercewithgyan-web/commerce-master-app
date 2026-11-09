@@ -113,7 +113,11 @@ document.addEventListener('DOMContentLoaded', function() {
         TG_APP.hapticError();
         if (analysisLoader) analysisLoader.style.display = 'none';
         if (previewCard) previewCard.style.display = 'block';
-        alert('⚠️ Evaluation Notice: ' + (err.message || 'Could not evaluate image. Please try again.'));
+        var errMsg = err.message || String(err);
+        if (errMsg.includes('aborted') || errMsg.includes('longer than 60 seconds')) {
+          errMsg = 'सर्वर ने 60 सेकंड से ज्यादा समय लिया। कृपया नेटवर्क चेक करें और दोबारा प्रयास करें।';
+        }
+        alert('⚠️ Evaluation Notice: ' + errMsg);
       } finally {
         btnAnalyze.innerText = '🔍 Run Gyan Sir\'s 5-Step Copy Analysis';
         btnAnalyze.disabled = false;

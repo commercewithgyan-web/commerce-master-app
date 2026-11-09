@@ -63,8 +63,16 @@ var API_CLIENT = {
 
     try {
       var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-      var timeoutMs = (action === 'submitRedPenCopy' || action === 'runRedPenAnalysis' || action === 'askVoiceDoubt') ? 45000 : 20000;
-      var timeoutId = controller ? setTimeout(function() { controller.abort(); }, timeoutMs) : null;
+      var timeoutMs = (action === 'submitRedPenCopy' || action === 'runRedPenAnalysis' || action === 'askVoiceDoubt') ? 60000 : 25000;
+      var timeoutId = controller ? setTimeout(function() {
+        if (controller.abort) {
+          try {
+            controller.abort("Server took longer than 60 seconds");
+          } catch (e) {
+            controller.abort();
+          }
+        }
+      }, timeoutMs) : null;
 
       var response = await fetch(this.backendUrl, {
         method: 'POST',
@@ -112,6 +120,10 @@ var API_CLIENT = {
 
     } catch (err) {
       console.error('API call failed (' + action + '):', err);
+
+      if (err.name === 'AbortError' || String(err).includes('aborted') || String(err).includes('longer than 60 seconds')) {
+        throw new Error('सर्वर ने 60 सेकंड से ज्यादा समय लिया। कृपया नेटवर्क स्पीड चेक करें और दोबारा प्रयास करें।');
+      }
 
       // Offline answer queuing
       if (action === 'submitAnswer') {
