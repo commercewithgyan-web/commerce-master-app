@@ -687,6 +687,34 @@ body.redpen-page .app-container {
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
+/* Active Subject & Difficulty Pills (Practice Mode) */
+.subject-pill, .diff-pill {
+  padding: 6px 12px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: #94A3B8;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.subject-pill.active, [data-subject].active {
+  background: #3B82F6 !important;
+  color: #FFFFFF !important;
+  border-color: #60A5FA !important;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
+/* Active Difficulty Pill */
+.diff-pill.active, [data-difficulty].active {
+  background: #D4AF37 !important;
+  color: #000000 !important;
+  border-color: #FDE047 !important;
+  font-weight: 700;
+}
+
 /* Header Bar */
 .header-bar {
   display: flex;

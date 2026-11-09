@@ -18,65 +18,125 @@ var state = {
   selectedDifficulty: 'Standard'
 };
 
+let currentSubject = 'Accountancy';
+let currentDifficulty = 'Standard';
+
+// Setup Pill Event Listeners once DOM loads
+function setupFilterPills() {
+  // 1. Subject Pills
+  const subjectPills = document.querySelectorAll('.subject-pill, [data-subject]');
+  subjectPills.forEach(pill => {
+    pill.addEventListener('click', function() {
+      subjectPills.forEach(p => p.classList.remove('active'));
+      this.classList.add('active');
+      currentSubject = this.getAttribute('data-subject') || this.innerText.trim();
+      state.selectedSubject = currentSubject;
+      fetchFilteredQuestion(currentSubject, currentDifficulty);
+    });
+  });
+
+  // 2. Difficulty Pills
+  const diffPills = document.querySelectorAll('.diff-pill, [data-difficulty]');
+  diffPills.forEach(pill => {
+    pill.addEventListener('click', function() {
+      diffPills.forEach(p => p.classList.remove('active'));
+      this.classList.add('active');
+      currentDifficulty = this.getAttribute('data-difficulty') || this.innerText.trim();
+      state.selectedDifficulty = currentDifficulty;
+      fetchFilteredQuestion(currentSubject, currentDifficulty);
+    });
+  });
+}
+
+async function fetchFilteredQuestion(subject, difficulty) {
+  // 1. Show loader or skeleton
+  const qText = document.getElementById('qText');
+  if (qText) qText.innerHTML = `<span class="loading-dots">Fetching ${subject} (${difficulty})...</span>`;
+
+  // 2. Clear options container
+  const optionsContainer = document.getElementById('optionsContainer');
+  if (optionsContainer) optionsContainer.innerHTML = '';
+
+  // 3. Trigger Haptic feedback if Telegram WebApp is active
+  if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+    try {
+      window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+    } catch (e) {}
+  } else if (window.TG_APP && typeof TG_APP.hapticLight === 'function') {
+    TG_APP.hapticLight();
+  }
+
+  // Clear running timer during switch
+  if (state.timerInterval) clearInterval(state.timerInterval);
+
+  try {
+    // Attempt backend fetch if API is hooked:
+    // const res = await API_CLIENT.call('getQuestions', { subject, difficulty });
+    // Or filter instantly from your master/cached question pool:
+    const pool = state.allQuestions && state.allQuestions.length > 0 
+      ? state.allQuestions 
+      : getMasterQuestionBank();
+
+    const filtered = pool.filter(q => {
+      const matchSubj = !subject || (q.subject && q.subject.toLowerCase() === subject.toLowerCase());
+      let matchDiff = true;
+      if (difficulty) {
+        const d = difficulty.toLowerCase();
+        const qd = (q.difficulty || 'standard').toLowerCase();
+        if (d.includes('std') || d.includes('standard')) matchDiff = qd.includes('std') || qd.includes('standard') || qd.includes('easy');
+        else if (d.includes('mod') || d.includes('moderate')) matchDiff = qd.includes('mod') || qd.includes('medium');
+        else if (d.includes('hots') || d.includes('trap')) matchDiff = qd.includes('hots') || qd.includes('hard');
+      }
+      return matchSubj && matchDiff;
+    });
+
+    state.questions = filtered.length > 0 ? filtered : pool.filter(q => !subject || (q.subject && q.subject.toLowerCase() === subject.toLowerCase()));
+    if (!state.questions || state.questions.length === 0) {
+      state.questions = pool;
+    }
+    state.currentIndex = 0;
+
+    // Reset feedback drawer if open
+    const feedbackCard = document.getElementById('feedbackCard');
+    if (feedbackCard) feedbackCard.style.display = 'none';
+
+    renderCurrentQuestion();
+  } catch (err) {
+    console.error('Filter error:', err);
+  }
+}
+
 function selectPracticeSubject(subj) {
+  currentSubject = subj;
   state.selectedSubject = subj;
-  TG_APP.hapticLight();
-
-  var sAcc = document.getElementById('subjAcc');
-  var sBst = document.getElementById('subjBst');
-  var sEco = document.getElementById('subjEco');
-
-  if (sAcc) sAcc.classList.toggle('active', subj === 'Accountancy');
-  if (sBst) sBst.classList.toggle('active', subj === 'Business Studies');
-  if (sEco) sEco.classList.toggle('active', subj === 'Economics');
-
-  filterQuestionsAndRender();
+  const subjectPills = document.querySelectorAll('.subject-pill, [data-subject]');
+  subjectPills.forEach(p => {
+    const val = p.getAttribute('data-subject') || p.innerText.trim();
+    p.classList.toggle('active', val.toLowerCase() === subj.toLowerCase());
+  });
+  fetchFilteredQuestion(currentSubject, currentDifficulty);
 }
 
 function selectPracticeDifficulty(diff) {
+  currentDifficulty = diff;
   state.selectedDifficulty = diff;
-  TG_APP.hapticLight();
-
-  var dStd = document.getElementById('diffStd');
-  var dMod = document.getElementById('diffMod');
-  var dHots = document.getElementById('diffHots');
-
-  if (dStd) dStd.classList.toggle('active', diff === 'Standard');
-  if (dMod) dMod.classList.toggle('active', diff === 'Moderate');
-  if (dHots) dHots.classList.toggle('active', diff === 'HOTS');
-
-  filterQuestionsAndRender();
+  const diffPills = document.querySelectorAll('.diff-pill, [data-difficulty]');
+  diffPills.forEach(p => {
+    const val = p.getAttribute('data-difficulty') || p.innerText.trim();
+    p.classList.toggle('active', val.toLowerCase().includes(diff.toLowerCase()));
+  });
+  fetchFilteredQuestion(currentSubject, currentDifficulty);
 }
 
 function filterQuestionsAndRender() {
-  var pool = state.allQuestions.length > 0 ? state.allQuestions : getMasterQuestionBank();
-  var filtered = pool.filter(function(q) {
-    var matchSubj = !state.selectedSubject || q.subject.toLowerCase() === state.selectedSubject.toLowerCase();
-    var matchDiff = true;
-    if (state.selectedDifficulty === 'Standard') {
-      matchDiff = q.difficulty === 'Standard' || q.difficulty === 'Easy' || !q.difficulty;
-    } else if (state.selectedDifficulty === 'Moderate') {
-      matchDiff = q.difficulty === 'Moderate' || q.difficulty === 'Medium';
-    } else if (state.selectedDifficulty === 'HOTS') {
-      matchDiff = q.difficulty === 'HOTS' || q.difficulty === 'Hard';
-    }
-    return matchSubj && matchDiff;
-  });
-
-  if (filtered.length === 0) {
-    // If no exact difficulty match, fallback to subject match
-    filtered = pool.filter(function(q) {
-      return !state.selectedSubject || q.subject.toLowerCase() === state.selectedSubject.toLowerCase();
-    });
-  }
-
-  state.questions = filtered.length > 0 ? filtered : pool;
-  state.currentIndex = 0;
-  renderCurrentQuestion();
+  fetchFilteredQuestion(currentSubject, currentDifficulty);
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
   TG_APP.hapticLight();
+
+  // Setup Pill click handlers immediately
+  setupFilterPills();
 
   // Initialize Telegram native back button
   if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.BackButton) {
@@ -88,27 +148,24 @@ document.addEventListener('DOMContentLoaded', async function() {
     } catch (e) {}
   }
 
-  // 1. Instant 0ms render from cache
+  // 1. Instant 0ms render from cache or master question bank
   var cachedQ = API_CLIENT.getCached('getDailyQuestion');
   if (cachedQ && Array.isArray(cachedQ) && cachedQ.length > 0) {
     state.allQuestions = cachedQ;
-    filterQuestionsAndRender();
+  } else {
+    state.allQuestions = getMasterQuestionBank();
   }
+  fetchFilteredQuestion(currentSubject, currentDifficulty);
 
   try {
     // 2. Fetch fresh questions in background
     var questions = await API_CLIENT.call('getDailyQuestion');
     if (questions && questions.length > 0) {
       state.allQuestions = questions;
-      filterQuestionsAndRender();
-    } else if (!cachedQ || cachedQ.length === 0) {
-      loadFallbackDrill();
+      fetchFilteredQuestion(currentSubject, currentDifficulty);
     }
   } catch (err) {
     console.error('Error fetching questions:', err);
-    if (!cachedQ || cachedQ.length === 0) {
-      loadFallbackDrill();
-    }
   }
 
   // Next Question Button
@@ -118,7 +175,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       state.currentIndex++;
       renderCurrentQuestion();
     } else {
-      // Completed all 5 questions
+      // Completed all questions in set
       triggerCompletionFlow();
     }
   });
@@ -143,7 +200,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 function loadFallbackDrill() {
   state.allQuestions = getMasterQuestionBank();
-  filterQuestionsAndRender();
+  fetchFilteredQuestion(currentSubject, currentDifficulty);
 }
 
 function getMasterQuestionBank() {
@@ -377,7 +434,19 @@ function getMasterQuestionBank() {
 }
 
 function renderCurrentQuestion() {
+  if (!state.questions || state.questions.length === 0) {
+    var qText = document.getElementById('qText');
+    if (qText) qText.innerText = 'No questions available for this selection.';
+    var container = document.getElementById('optionsContainer');
+    if (container) container.innerHTML = '';
+    return;
+  }
   var q = state.questions[state.currentIndex];
+  if (!q) {
+    state.currentIndex = 0;
+    q = state.questions[0];
+    if (!q) return;
+  }
   state.isAnswered = false;
   state.secondsElapsed = 0;
 
