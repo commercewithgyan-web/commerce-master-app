@@ -33,8 +33,8 @@ function setupTab_MasterSyllabus_(ss) {
 
   // Data validations
   setDropdown_(sheet, 1, ['11', '12']);                                    // Class
-  setDropdown_(sheet, 2, ['Accountancy', 'Business Studies', 'Economics']); // Subject
-  setDropdown_(sheet, 12, ['Not Started', 'In Progress', 'Completed']);    // Status
+  setDropdown_(sheet, 2, ['Accountancy', 'Business Studies', 'Economics', 'Indian Economics', 'Macro Economics', 'Micro Economics', 'Statistics']); // Subject
+  setDropdown_(sheet, 12, ['Active', 'Not Started', 'In Progress', 'Completed']);    // Status
 
   // Column widths
   setColumnWidths_(sheet, {

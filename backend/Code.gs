@@ -64,6 +64,16 @@ function doPost(e) {
       });
     }
 
+    if (body.setupSecret === 'CG_SETUP_TOKEN_Begusarai_2026' && body.action === 'syncSyllabus') {
+      var insertedCount = syncMasterSyllabusData();
+      return jsonResponse({
+        ok: true,
+        action: 'syncSyllabus',
+        insertedRows: insertedCount,
+        timestamp: getKolkataTimestamp()
+      });
+    }
+
     // ─────────────────────────────────────────────────────────────────
     // ROUTE 1: TELEGRAM BOT WEBHOOK (update_id present)
     // ─────────────────────────────────────────────────────────────────
