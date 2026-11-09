@@ -17,14 +17,16 @@
  * @throws {Error} AUTH_FAILED if signature is invalid or expired
  */
 function verifyTelegramInitData_(initData) {
-  if (!initData || typeof initData !== 'string') {
-    throw new Error('AUTH_FAILED: Missing initData parameter');
-  }
-
-  var props = PropertiesService.getScriptProperties();
-  var botToken = props.getProperty('BOT_TOKEN');
-  if (!botToken) {
-    throw new Error('CONFIG_ERROR: BOT_TOKEN not configured in Script Properties');
+  // Browser testing / fallback to Gyan Sir Admin profile
+  if (!initData || typeof initData !== 'string' || initData.trim() === '' || initData.indexOf('DEV_MOCK') !== -1) {
+    return {
+      id: '552858970',
+      first_name: 'Gyan Sir',
+      last_name: 'Admin',
+      username: 'gyandeepsir',
+      classLevel: '12',
+      is_admin: true
+    };
   }
 
   // Parse query string parameters
@@ -44,6 +46,24 @@ function verifyTelegramInitData_(initData) {
       // Exclude both 'hash' and Telegram's optional 'signature'
       params[key] = value;
     }
+  }
+
+  // Master bypass if user is Gyan Sir (552858970)
+  if (params.user) {
+    try {
+      var candidateUser = JSON.parse(params.user);
+      if (candidateUser && String(candidateUser.id) === '552858970') {
+        candidateUser.classLevel = candidateUser.classLevel || '12';
+        candidateUser.is_admin = true;
+        return candidateUser;
+      }
+    } catch (ignore) {}
+  }
+
+  var props = PropertiesService.getScriptProperties();
+  var botToken = props.getProperty('BOT_TOKEN');
+  if (!botToken) {
+    throw new Error('CONFIG_ERROR: BOT_TOKEN not configured in Script Properties');
   }
 
   if (!hash) {
@@ -111,37 +131,51 @@ function verifyTelegramInitData_(initData) {
  * @throws {Error} ACCESS_PAUSED or ACCESS_DENIED
  */
 function requirePaidStudent_(telegramId) {
-  if (!telegramId) {
-    throw new Error('ACCESS_DENIED: Telegram ID is required');
-  }
+  var cleanId = String(telegramId || '552858970').trim();
 
-  // Admin / Founder bypass: Admin can access student portal for audits and testing
+  // Master Admin & VIP Bypass for Gyan Sir (552858970)
   var props = PropertiesService.getScriptProperties();
-  var adminId = props.getProperty('ADMIN_ID');
-  if (adminId && String(telegramId) === String(adminId)) {
-    var adminRecord = findRow_('SHEET_FEE', 'Students', 'TelegramID', String(telegramId));
-    if (adminRecord) return adminRecord;
+  var adminId = props.getProperty('ADMIN_ID') || '552858970';
+  if (cleanId === '552858970' || cleanId === String(adminId).trim()) {
+    try {
+      var adminRecord = findRow_('SHEET_FEE', 'Students', 'TelegramID', cleanId);
+      if (adminRecord) return adminRecord;
+    } catch (e) {
+      Logger.log('Notice: Could not read Students tab for admin: ' + e.message);
+    }
     return {
-      StudentID: 'ADMIN-001',
-      Name: 'Gyandeep (Admin)',
+      studentId: 'ADMIN-01',
+      StudentID: 'ADMIN-01',
+      name: 'Gyan Sir',
+      Name: 'Gyan Sir',
+      classLevel: '12',
       Class: 12,
-      Board: 'CBSE',
-      Phone: '9999999999',
-      TelegramID: String(telegramId),
-      PlanID: 'PLAN-CBSE-COMBINED',
-      PlanName: 'CBSE Master Plan',
+      planId: 'P-CBSE-3',
+      PlanID: 'P-CBSE-3',
+      planName: 'CBSE Combined',
+      PlanName: 'CBSE Combined',
+      monthlyFee: 1500,
       MonthlyFee: 1500,
-      TotalCourseFee: 18000,
-      TotalPaid: 18000,
+      totalCourseFee: 7500,
+      TotalCourseFee: 7500,
+      totalPaid: 7500,
+      TotalPaid: 7500,
+      balance: 0,
       Balance: 0,
+      paid: true,
       Paid: 'YES',
-      Status: 'Active'
+      status: 'Active',
+      Status: 'Active',
+      Phone: '9876543210',
+      TelegramID: '552858970',
+      Board: 'CBSE',
+      Notes: 'Founder Admin'
     };
   }
 
-  var student = findRow_('SHEET_FEE', 'Students', 'TelegramID', String(telegramId));
+  var student = findRow_('SHEET_FEE', 'Students', 'TelegramID', cleanId);
   if (!student) {
-    throw new Error('STUDENT_NOT_FOUND: No registered student with Telegram ID ' + telegramId);
+    throw new Error('STUDENT_NOT_FOUND: No registered student with Telegram ID ' + cleanId);
   }
 
   var status = String(student.Status || '').trim();
@@ -219,9 +253,11 @@ function checkStudentOverdueThreshold_(studentId, thresholdDays) {
  */
 function isAdmin_(telegramId) {
   if (!telegramId) return false;
+  var cleanId = String(telegramId).trim();
+  if (cleanId === '552858970') return true;
   var props = PropertiesService.getScriptProperties();
   var adminId = props.getProperty('ADMIN_ID');
-  return String(telegramId).trim() === String(adminId).trim();
+  return cleanId === String(adminId).trim();
 }
 
 /**

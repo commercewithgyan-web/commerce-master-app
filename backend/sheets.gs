@@ -6,6 +6,15 @@
  * ═══════════════════════════════════════════════════════════════════════
  */
 
+// Hardcoded fallback Sheet IDs if PropertiesService is missing any key
+var FALLBACK_SHEET_IDS = {
+  SHEET_SYLLABUS: '1-LrOhyGDDAwxm-eNF-kJX6JldbllQYulZ9wLo_63hFY',
+  SHEET_QB: '1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs',
+  SHEET_FEE: '1Dka1y2r-2cDjkZxDyJZ__-GOqvNjwIhR9Eurvu3srwI',
+  SHEET_TG: '1KslovmOPwDvCStvjljzhvC4wRpRnTWplcamTq_10pQY',
+  SHEET_BOOKS: '15bM321-hqqvbZRsSKKUfYNwWcOkv9l3EsOAodLZhksQ'
+};
+
 // Cache opened spreadsheets during execution to prevent redundant openById calls
 var _spreadsheetCache = {};
 
@@ -17,7 +26,7 @@ var _spreadsheetCache = {};
  */
 function getSheet_(sheetKey, tabName) {
   var props = PropertiesService.getScriptProperties();
-  var sheetId = props.getProperty(sheetKey);
+  var sheetId = props.getProperty(sheetKey) || FALLBACK_SHEET_IDS[sheetKey];
   if (!sheetId) {
     throw new Error('Config missing for Script Property: ' + sheetKey);
   }
@@ -32,6 +41,25 @@ function getSheet_(sheetKey, tabName) {
     throw new Error('Tab "' + tabName + '" not found in sheet: ' + sheetKey);
   }
   return tab;
+}
+
+/**
+ * Retrieves a Spreadsheet instance by Script Property key
+ * @param {string} sheetKey
+ * @return {GoogleAppsScript.Spreadsheet.Spreadsheet}
+ */
+function openSpreadsheet_(sheetKey) {
+  var props = PropertiesService.getScriptProperties();
+  var sheetId = props.getProperty(sheetKey) || FALLBACK_SHEET_IDS[sheetKey];
+  if (!sheetId) {
+    throw new Error('Config missing for Script Property: ' + sheetKey);
+  }
+
+  if (!_spreadsheetCache[sheetId]) {
+    _spreadsheetCache[sheetId] = SpreadsheetApp.openById(sheetId);
+  }
+
+  return _spreadsheetCache[sheetId];
 }
 
 /**

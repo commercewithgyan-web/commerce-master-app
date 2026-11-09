@@ -94,6 +94,40 @@ function setupTab_Students_(ss) {
   addConditionalFormat_(sheet, 20, 'Inactive', '#FADBD8');
 }
 
+/**
+ * Seeds Gyan Sir's test profile into Sheet 3: Fee Management -> Students
+ * and ensures active founder access.
+ */
+function seedGyanSirStudentData() {
+  var feeSs = openSpreadsheet_('SHEET_FEE');
+  var studentsSheet = feeSs.getSheetByName('Students');
+  if (!studentsSheet) {
+    setupTab_Students_(feeSs);
+    studentsSheet = feeSs.getSheetByName('Students');
+  }
+
+  var row2Data = [
+    'S001', 'Gyan Sir (Test)', 12, 'CBSE', '9876543210', '552858970',
+    'P-CBSE-3', 'CBSE Combined', 1500, '2026-11-01', 1500, 0, '',
+    '2027-03-31', 5, 7500, 7500, 0, '✅', 'Active', 'Founder Admin'
+  ];
+
+  if (studentsSheet.getLastRow() < 2) {
+    studentsSheet.appendRow(row2Data);
+  } else {
+    // If row 2 is empty or S001, update in place
+    var existingId = String(studentsSheet.getRange(2, 1).getValue()).trim();
+    if (!existingId || existingId === 'S001') {
+      studentsSheet.getRange(2, 1, 1, row2Data.length).setValues([row2Data]);
+    } else {
+      studentsSheet.appendRow(row2Data);
+    }
+  }
+
+  Logger.log('✅ Seeded Gyan Sir into 3. Fee Management -> Students (Row 2)');
+  return { ok: true, studentId: 'S001', name: 'Gyan Sir (Test)', telegramId: '552858970' };
+}
+
 /** Tab 3.3: Payments — All payment logs and transactions */
 function setupTab_Payments_(ss) {
   var sheet = createOrGetSheet_(ss, 'Payments');

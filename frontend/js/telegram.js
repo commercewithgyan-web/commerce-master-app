@@ -44,8 +44,8 @@ var TG_APP = {
     if (this.tg && this.tg.initData) {
       return this.tg.initData;
     }
-    // Local development fallback token
-    return 'query_id=DEV_MOCK&user=%7B%22id%22%3A12345678%2C%22first_name%22%3A%22Aarav%22%2C%22last_name%22%3A%22Kumar%22%2C%22username%22%3A%22aarav%22%7D&auth_date=1731110400&hash=mock_dev_hash';
+    // Local development fallback token (Gyan Sir Master Profile)
+    return 'query_id=DEV_MOCK&user=%7B%22id%22%3A552858970%2C%22first_name%22%3A%22Gyan%20Sir%22%2C%22last_name%22%3A%22Admin%22%2C%22username%22%3A%22gyandeepsir%22%7D&auth_date=1731110400&hash=mock_dev_hash';
   },
 
   /**
@@ -55,7 +55,7 @@ var TG_APP = {
     if (this.tg && this.tg.initDataUnsafe && this.tg.initDataUnsafe.user) {
       return this.tg.initDataUnsafe.user;
     }
-    return { id: 12345678, first_name: 'Aarav', last_name: 'Kumar' };
+    return { id: 552858970, first_name: 'Gyan Sir', last_name: 'Admin' };
   },
 
   // ─────────────────────────────────────────────────────────────────

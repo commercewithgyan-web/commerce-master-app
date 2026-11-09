@@ -85,6 +85,17 @@ function handleApiRequest(req) {
       var seeded = seedInitialQuestionBankData();
       return { ok: true, action: 'seedQuestions', count: seeded, timestamp: getKolkataTimestamp() };
     }
+    if (req.action === 'seedGyanSirTestData') {
+      var studentResult = seedGyanSirStudentData();
+      var qCount = seedInitialQuestionBankData();
+      return {
+        ok: true,
+        action: 'seedGyanSirTestData',
+        student: studentResult,
+        questionCount: qCount,
+        timestamp: getKolkataTimestamp()
+      };
+    }
   }
 
   // ROUTE 1: TELEGRAM BOT WEBHOOK (update_id present)
@@ -103,6 +114,14 @@ function handleApiRequest(req) {
   var verifiedUser = resolveVerifiedUser_(req.initData);
 
   var payload = req.payload || {};
+  // Support both nested req.payload and top-level request parameters
+  for (var pKey in req) {
+    if (pKey !== 'action' && pKey !== 'initData' && pKey !== 'payload' && pKey !== 'setupSecret') {
+      if (payload[pKey] === undefined) {
+        payload[pKey] = req[pKey];
+      }
+    }
+  }
   var dataResult;
 
   switch (action) {
@@ -227,12 +246,13 @@ function resolveVerifiedUser_(initData) {
     }
   }
 
-  // Graceful fallback for web preview, audit, or admin testing
+  // Graceful fallback for web preview, audit, or admin testing (Gyan Sir)
   return {
-    id: parseInt(adminId, 10) || 552858970,
-    first_name: 'Gyandeep',
-    last_name: 'Sir',
+    id: '552858970',
+    first_name: 'Gyan Sir',
+    last_name: 'Admin',
     username: 'gyandeepsir',
+    classLevel: '12',
     is_admin: true
   };
 }

@@ -206,7 +206,7 @@ async function startVoiceRecording() {
         } catch (err) {
           removeLoadingBubble(loadingId);
           TG_APP.hapticError();
-          appendErrorBubble('Unable to connect to the study server. Please check your internet connection and try again!');
+          appendErrorBubble('Unable to connect: ' + (err.message || JSON.stringify(err)));
         }
       };
       reader.readAsDataURL(audioBlob);
@@ -296,8 +296,8 @@ async function sendDoubtQuery(text) {
   } catch (err) {
     removeLoadingBubble(loadingId);
     TG_APP.hapticError();
-    // Honest, truthful error handling with ZERO fake mock answers
-    appendErrorBubble('Unable to connect to the study server. Please check your internet connection and try again!');
+    // Honest, truthful diagnostic error display
+    appendErrorBubble('Unable to connect: ' + (err.message || JSON.stringify(err)));
   }
 }
 

@@ -773,6 +773,42 @@ function seedInitialQuestionBankData() {
       explanation: 'Under CBSE standards, past omissions are rectified at the beginning of the next accounting period by passing a single adjustment entry through Partners\' Capital or Current Accounts.',
       sharkTankHint: 'Internal cap-table rebalancing between partners without re-auditing last year\'s closed books!',
       ghostSec: 35
+    },
+    {
+      qid: 'Q-0006',
+      classLevel: '12',
+      subject: 'Business Studies',
+      chapter: '2',
+      topic: 'Principles of Management',
+      type: 'MCQ',
+      question: 'Which principle of management emphasized by Henri Fayol states that an employee should receive orders from only one superior to prevent confusion and conflict?',
+      optA: 'Unity of Direction',
+      optB: 'Unity of Command',
+      optC: 'Scalar Chain',
+      optD: 'Order',
+      correctIdx: 'B',
+      rubric: '1 mark for selecting Unity of Command.',
+      explanation: 'Unity of Command states that an employee should receive instructions and be accountable to only one superior, preventing dual subordination.',
+      sharkTankHint: 'One captain per ship to avoid conflicting orders and operational chaos!',
+      ghostSec: 30
+    },
+    {
+      qid: 'Q-0007',
+      classLevel: '12',
+      subject: 'Business Studies',
+      chapter: '5',
+      topic: 'Organising Process',
+      type: 'MCQ',
+      question: 'Which step in the organizing process involves allocating work among employees and grouping similar activities into departments?',
+      optA: 'Identification and division of work',
+      optB: 'Departmentalisation',
+      optC: 'Assignment of duties',
+      optD: 'Establishing reporting relationships',
+      correctIdx: 'B',
+      rubric: '1 mark for identifying Departmentalisation.',
+      explanation: 'Once work is divided, similar activities are grouped together into departments or divisions, known as Departmentalisation.',
+      sharkTankHint: 'Grouping marketing folks together and coders together so teams run efficiently!',
+      ghostSec: 35
     }
   ];
 

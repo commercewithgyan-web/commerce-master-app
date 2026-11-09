@@ -63,13 +63,22 @@ var API_CLIENT = {
       if (timeoutId) clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error('HTTP Error ' + response.status);
+        var errorBody = '';
+        try {
+          var errJson = await response.json();
+          errorBody = errJson.error || JSON.stringify(errJson);
+        } catch (e) {
+          try {
+            errorBody = await response.text();
+          } catch (e2) {}
+        }
+        throw new Error('HTTP Error ' + response.status + (errorBody ? ': ' + errorBody : ''));
       }
 
       var result = await response.json();
 
       if (!result.ok) {
-        throw new Error(result.error || 'Server returned an error');
+        throw new Error(result.error || ('Server error: ' + JSON.stringify(result)));
       }
 
       // Cache today's questions locally for offline resilience (~15 KB)
