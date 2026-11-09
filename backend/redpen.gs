@@ -447,7 +447,7 @@ function callGemini_(system, userParts, schema) {
 function handleRunRedPenAnalysis(data) {
   var imageBase64 = data.imageBase64 || data.image || (data.pagesBase64 && data.pagesBase64[0]);
   var confirmedText = data.confirmedText || null;
-  var telegramId = data.telegramId || '552858970';
+  var telegramId = data.telegramId || 'GUEST_STUDENT';
   var studentName = data.studentName || 'Champion';
 
   if (!imageBase64) return { ok: false, error: 'No image received' };
@@ -500,7 +500,7 @@ function handleRunRedPenAnalysis(data) {
  */
 function apiSubmitRedPenCopy_(verifiedUser, payload) {
   payload = payload || {};
-  payload.telegramId = String((verifiedUser && verifiedUser.id) || '552858970');
+  payload.telegramId = String((verifiedUser && verifiedUser.id) || 'GUEST_STUDENT');
   payload.studentName = (verifiedUser && verifiedUser.first_name) || 'Champion';
   return handleRunRedPenAnalysis(payload);
 }

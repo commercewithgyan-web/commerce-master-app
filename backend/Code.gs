@@ -263,9 +263,6 @@ function handleApiRequest(req) {
  * @return {Object} Verified user object
  */
 function resolveVerifiedUser_(initData) {
-  var props = PropertiesService.getScriptProperties();
-  var adminId = props.getProperty('ADMIN_ID') || '552858970';
-
   if (initData && typeof initData === 'string' && initData.indexOf('hash=') !== -1 && initData.indexOf('DEV_MOCK') === -1) {
     try {
       return verifyTelegramInitData_(initData);
@@ -274,14 +271,14 @@ function resolveVerifiedUser_(initData) {
     }
   }
 
-  // Graceful fallback for web preview, audit, or admin testing (Gyan Sir)
+  // Fallback for guest student (NEVER admin, NEVER Gyan Sir)
   return {
-    id: '552858970',
-    first_name: 'Gyan Sir',
-    last_name: 'Admin',
-    username: 'gyandeepsir',
+    id: 'GUEST_STUDENT',
+    first_name: 'Student',
+    last_name: '',
+    username: '',
     classLevel: '12',
-    is_admin: true
+    is_admin: false
   };
 }
 

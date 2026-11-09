@@ -922,9 +922,14 @@ function apiGetFeeDashboard_(verifiedUser) {
  * @return {Object}
  */
 function apiGetReceipt_(verifiedUser, payload) {
+  var isAdmin = isAdmin_(verifiedUser && verifiedUser.id);
   var student = findRow_('SHEET_FEE', 'Students', 'TelegramID', String(verifiedUser.id));
   if (!student) {
-    student = { Name: verifiedUser.first_name || 'Gyan Sir', StudentID: 'ADMIN-01' };
+    if (isAdmin) {
+      student = { Name: (verifiedUser && verifiedUser.first_name) || 'Gyan Sir', StudentID: 'ADMIN-01' };
+    } else {
+      student = { Name: (verifiedUser && verifiedUser.first_name) || 'Student', StudentID: 'STU-' + String(verifiedUser.id).slice(-4) };
+    }
   }
 
   var receipt = null;
@@ -946,22 +951,22 @@ function apiGetReceipt_(verifiedUser, payload) {
   var details = null;
   if (receipt) {
     // Security check: ensure receipt belongs to this student
-    if (receipt.StudentID !== student.StudentID && !isAdmin_(verifiedUser.id)) {
+    if (receipt.StudentID !== student.StudentID && !isAdmin) {
       throw new Error('ACCESS_DENIED: Unauthorized receipt access');
     }
     details = {
       receiptNo: receipt.ReceiptNo,
       date: receipt.Date,
       amount: receipt.Amount,
-      studentName: student.Name || 'Gyan Sir',
-      studentId: student.StudentID || 'ADMIN-01',
+      studentName: student.Name || 'Student',
+      studentId: student.StudentID || 'STU-01',
       mode: receipt.Mode || 'UPI',
       forMonth: receipt.ForMonth || 'November 2026',
       center: 'Commerce Gyan Begusarai Center',
       authorizedBy: 'Gyan Kumar (Founder & Educator)',
       status: 'Verified & Credited'
     };
-  } else {
+  } else if (isAdmin) {
     var sample = sampleMap[pId] || {
       receiptNo: payload.receiptNo || 'CG-REC-2026-005',
       date: '01-Nov-2026',
@@ -981,6 +986,8 @@ function apiGetReceipt_(verifiedUser, payload) {
       authorizedBy: 'Gyan Kumar (Founder & Educator)',
       status: 'Verified & Credited'
     };
+  } else {
+    throw new Error('RECEIPT_NOT_FOUND: No receipt found for this request');
   }
 
   var voucherHtml = buildReceiptVoucherHtml_(details);
@@ -1043,8 +1050,8 @@ function buildReceiptVoucherHtml_(d) {
     '  <div class="table">' +
     '    <div class="row"><span class="label">Receipt Number:</span><span class="val" style="color:#FDE047; font-family:monospace;">' + (d.receiptNo || 'CG-REC-2026-001') + '</span></div>' +
     '    <div class="row"><span class="label">Date of Payment:</span><span class="val">' + (d.date || '01-Nov-2026') + '</span></div>' +
-    '    <div class="row"><span class="label">Student Name:</span><span class="val">' + (d.studentName || 'Gyan Sir') + '</span></div>' +
-    '    <div class="row"><span class="label">Student ID:</span><span class="val" style="font-family:monospace;">' + (d.studentId || 'ADMIN-01') + '</span></div>' +
+    '    <div class="row"><span class="label">Student Name:</span><span class="val">' + (d.studentName || 'Student') + '</span></div>' +
+    '    <div class="row"><span class="label">Student ID:</span><span class="val" style="font-family:monospace;">' + (d.studentId || 'STU-01') + '</span></div>' +
     '    <div class="row"><span class="label">Course:</span><span class="val">CBSE Class 12 Master Plan</span></div>' +
     '    <div class="row"><span class="label">Billing Month:</span><span class="val">' + (d.forMonth || 'Tuition Fee') + '</span></div>' +
     '    <div class="row"><span class="label">Payment Mode:</span><span class="val">' + (d.mode || 'UPI (Verified)') + '</span></div>' +
