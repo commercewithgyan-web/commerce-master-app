@@ -637,17 +637,24 @@ function apiGetHomeDashboard_(verifiedUser) {
   // Revision Due Count
   var revDue = apiGetRevisionQueue_(verifiedUser);
 
+  var isGuest = (telegramId === 'GUEST_STUDENT' || student.StudentID === 'GUEST_STUDENT');
+  var displayCoins = coins > 0 ? coins : (isGuest ? 45 : 0);
+  var displayAccuracy = prog.overallAccuracy > 0 ? prog.overallAccuracy : (isGuest ? 75 : 0);
+  var displayScore = (prog.predictedScoreDisplay && prog.predictedScoreDisplay.indexOf('/80') !== -1)
+    ? prog.predictedScoreDisplay
+    : (isGuest ? '68/80' : prog.predictedScoreDisplay);
+
   var result = {
     studentId: student.StudentID,
     name: student.Name,
     classLevel: student.Class,
-    streak: Math.max(1, Math.min(30, Math.floor(prog.totalAttempted / 5))),
-    cgCoins: coins,
-    speedBadges: badges,
-    rank: rank,
-    overallAccuracy: prog.overallAccuracy,
-    predictedScore: prog.predictedScoreDisplay || (prog.predictedBoardScore ? prog.predictedBoardScore + '/80' : 'Calculating after 10 questions'),
-    predictedScoreVal: prog.predictedBoardScore,
+    streak: isGuest ? 3 : Math.max(1, Math.min(30, Math.floor(prog.totalAttempted / 5))),
+    cgCoins: displayCoins,
+    speedBadges: badges || (isGuest ? 1 : 0),
+    rank: rank || 1,
+    overallAccuracy: displayAccuracy,
+    predictedScore: displayScore,
+    predictedScoreVal: prog.predictedBoardScore || (isGuest ? 68 : 0),
     todaySubtopic: {
       chapter: subtopic.chapterName,
       topic: subtopic.subtopicName,

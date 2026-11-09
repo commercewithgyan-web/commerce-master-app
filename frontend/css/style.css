@@ -115,6 +115,42 @@ body.light-theme .nav-item.active {
   color: #6D28D9 !important;
 }
 
+/* Explicit High Contrast for Dark Banner Cards in Light Mode */
+body.light-theme .card-violet,
+body.light-theme .card-gold,
+body.light-theme .card-sos {
+  color: #F8FAFC !important;
+}
+
+body.light-theme .card-violet h1,
+body.light-theme .card-violet h2,
+body.light-theme .card-violet h3,
+body.light-theme .card-gold h1,
+body.light-theme .card-gold h2,
+body.light-theme .card-gold h3,
+body.light-theme .card-sos h1,
+body.light-theme .card-sos h2,
+body.light-theme .card-sos h3,
+body.light-theme #streakDisplay,
+body.light-theme #todayChapterName {
+  color: #F8FAFC !important;
+}
+
+body.light-theme .card-gold .text-secondary,
+body.light-theme .card-violet .text-secondary,
+body.light-theme .card-sos .text-secondary,
+body.light-theme #todaySubtopicName {
+  color: #CBD5E1 !important;
+}
+
+/* Crisp High-Contrast Typography (Audit Bug 3 Fix) */
+.streak-badge, .drill-title, .card-title, .badge {
+  color: #F8FAFC !important; /* Crisp high-contrast white */
+}
+.drill-subtitle, .card-subtitle {
+  color: #94A3B8 !important; /* Legible muted slate */
+}
+
 /* Optional Dark Theme (Obsidian Gold) */
 body.dark-theme {
   background-color: #0B0C10 !important;
