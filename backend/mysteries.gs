@@ -110,31 +110,21 @@ function apiSubmitMysteryVerdict_(verifiedUser, payload) {
  */
 function handleMysteryCommand_(chatId) {
   sendChatAction_(chatId, 'typing');
-  var student = findRow_('SHEET_FEE', 'Students', 'TelegramID', String(chatId));
-  var classLevel = student ? student.Class : 12;
-
-  var mystery = apiGetMystery_({ id: chatId });
-
-  var text =
-    '🕵️ *THE COMMERCE DETECTIVE: SATURDAY AUDIT CRIME SCENE*\n' +
-    '━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-    '📂 *Case Title*: ' + mystery.scenarioTitle + '\n' +
-    '📖 *Chapter Under Investigation*: ' + mystery.chapter + '\n\n' +
-    mystery.storyText + '\n\n' +
-    '🔍 *Who is committing the accounting fraud?*\n';
-
-  mystery.suspects.forEach(function(s, idx) {
-    text += '• [' + (idx + 1) + '] *' + s.name + '*: "' + s.claim + '"\n';
-  });
-
-  text += '\nTap below to enter the Detective Case Room and submit your verdict:';
-
   var props = PropertiesService.getScriptProperties();
   var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://gyandeepkumar.github.io/commerce-master-app';
 
+  var text =
+    '📋 *CASE STUDY LAB: CBSE COMPETENCY PRACTICE*\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
+    'Practice real-world business, accounting & economics scenarios and verify your answers line-by-line against CBSE Marking Schemes.\n\n' +
+    '• 📙 *Business Studies*: Principles, Planning & Case Logic\n' +
+    '• 📘 *Accountancy*: Partnership Laws, AS-3 & Share Capital\n' +
+    '• 📗 *Economics*: Credit Multiplier, Central Bank & Human Capital\n\n' +
+    'Tap below to open the Case Study Lab:';
+
   sendTelegramMessage_(chatId, text, {
     inline_keyboard: [
-      [{ text: '🕵️ Enter Detective Case Room', web_app: { url: miniAppUrl + '#mystery' } }]
+      [{ text: '📋 Open Case Study Lab', web_app: { url: miniAppUrl + '/detective.html' } }]
     ]
   });
 }

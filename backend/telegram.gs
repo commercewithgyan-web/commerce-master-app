@@ -324,7 +324,7 @@ function handleTextMessage_(msg) {
     handleSosCommand_(chatId);
     return;
   }
-  if (text.indexOf('/mystery') === 0) {
+  if (text.indexOf('/mystery') === 0 || text.indexOf('/casestudy') === 0) {
     handleMysteryCommand_(chatId);
     return;
   }
