@@ -232,6 +232,7 @@ function renderFeeDashboard(data) {
       payments.forEach(function(p) {
         var card = document.createElement('div');
         card.className = 'fee-receipt-card';
+        card.style.cursor = 'pointer';
 
         var modeLabel = p.mode || 'UPI';
         var isCash = /cash/i.test(modeLabel);
@@ -253,9 +254,13 @@ function renderFeeDashboard(data) {
           '    <div style="font-size:10.5px; color:#94A3B8; margin-top:2px;">' + modeLabel + '</div>' +
           '  </div>' +
           '  <div>' +
-          '    <button class="btn btn-outline btn-sm" style="font-size:11px; padding:6px 12px;" onclick="viewReceipt(\'' + (p.paymentId || '') + '\', \'' + (p.receiptNo || '') + '\', ' + p.amount + ', \'' + (p.date || '') + '\', \'' + modeLabel.replace(/'/g, '') + '\', \'' + (p.forMonth || '') + '\')">🧾 View Voucher</button>' +
+          '    <button class="btn btn-gold btn-sm" style="font-size:11px; padding:6px 12px;" onclick="event.stopPropagation(); viewReceipt(\'' + (p.paymentId || '') + '\', \'' + (p.receiptNo || '') + '\', ' + p.amount + ', \'' + (p.date || '') + '\', \'' + modeLabel.replace(/'/g, '') + '\', \'' + (p.forMonth || '') + '\')">🧾 View Voucher</button>' +
           '  </div>' +
           '</div>';
+
+        card.onclick = function() {
+          viewReceipt(p.paymentId, p.receiptNo, p.amount, p.date, modeLabel, p.forMonth);
+        };
 
         payContainer.appendChild(card);
       });
@@ -313,47 +318,201 @@ function formatRupee(num) {
 // ─────────────────────────────────────────────────────────────────────
 // DIGITAL RECEIPT VOUCHER CONTROLLER
 // ─────────────────────────────────────────────────────────────────────
+var MASTER_PAYMENT_MAP = {
+  'PAY-2026-11-001': { receiptNo: 'CG-REC-2026-005', date: '01-Nov-2026', amount: 1500, mode: 'UPI (GPay / UTR: 43198829104)', forMonth: 'November 2026' },
+  'PAY-2026-10-001': { receiptNo: 'CG-REC-2026-004', date: '01-Oct-2026', amount: 1500, mode: 'UPI (PhonePe / UTR: 42781923841)', forMonth: 'October 2026' },
+  'PAY-2026-09-001': { receiptNo: 'CG-REC-2026-003', date: '01-Sep-2026', amount: 1500, mode: 'Cash (Begusarai Center / Voucher: CB-09-012)', forMonth: 'September 2026' },
+  'PAY-2026-08-001': { receiptNo: 'CG-REC-2026-002', date: '01-Aug-2026', amount: 1500, mode: 'UPI (Paytm / UTR: 42178912384)', forMonth: 'August 2026' },
+  'PAY-2026-07-001': { receiptNo: 'CG-REC-2026-001', date: '01-Jul-2026', amount: 1500, mode: 'UPI (Admission + Month 1 / UTR: 41829371289)', forMonth: 'July 2026' }
+};
+
+var currentReceiptData = null;
+
 async function viewReceipt(paymentId, receiptNo, amount, date, mode, forMonth) {
   TG_APP.hapticLight();
 
-  // Populate voucher modal
+  // If called with only paymentId (or older button calls), resolve from local master catalog
+  if (!receiptNo && paymentId && MASTER_PAYMENT_MAP[paymentId]) {
+    var item = MASTER_PAYMENT_MAP[paymentId];
+    receiptNo = item.receiptNo;
+    amount = item.amount;
+    date = item.date;
+    mode = item.mode;
+    forMonth = item.forMonth;
+  }
+
+  // Fallback defaults
+  receiptNo = receiptNo || 'CG-REC-2026-005';
+  amount = Number(amount) || 1500;
+  date = date || '01-Nov-2026';
+  mode = mode || 'UPI (GooglePay / Ref: 43198829104)';
+  forMonth = forMonth || 'November 2026';
+
+  var studentName = (window.lastFeeData && window.lastFeeData.name) || 'Gyan Sir';
+  var studentId = (window.lastFeeData && window.lastFeeData.studentId) || 'ADMIN-01';
+
+  currentReceiptData = {
+    paymentId: paymentId,
+    receiptNo: receiptNo,
+    amount: amount,
+    date: date,
+    mode: mode,
+    forMonth: forMonth,
+    studentName: studentName,
+    studentId: studentId
+  };
+
+  // Populate voucher modal fields
   var rNoEl = document.getElementById('voucherReceiptNo');
-  if (rNoEl) rNoEl.innerText = receiptNo || 'CG-REC-2026-005';
+  if (rNoEl) rNoEl.innerText = receiptNo;
 
   var dateEl = document.getElementById('voucherDate');
-  if (dateEl) dateEl.innerText = date || '01-Nov-2026';
+  if (dateEl) dateEl.innerText = date;
+
+  var sNameEl = document.getElementById('voucherStudentName');
+  if (sNameEl) sNameEl.innerText = studentName;
+
+  var sIdEl = document.getElementById('voucherStudentId');
+  if (sIdEl) sIdEl.innerText = studentId;
 
   var monthEl = document.getElementById('voucherMonth');
-  if (monthEl) monthEl.innerText = forMonth || 'November 2026';
+  if (monthEl) monthEl.innerText = forMonth;
 
   var modeEl = document.getElementById('voucherMode');
-  if (modeEl) modeEl.innerText = mode || 'UPI (GooglePay / Ref: 43198829104)';
+  if (modeEl) modeEl.innerText = mode;
 
   var amtEl = document.getElementById('voucherAmount');
-  if (amtEl) amtEl.innerText = formatRupee(amount || 1500) + '.00';
+  if (amtEl) amtEl.innerText = formatRupee(amount) + '.00';
 
   var wordsEl = document.getElementById('voucherAmountWords');
   if (wordsEl) wordsEl.innerText = '(One Thousand Five Hundred Rupees Only)';
 
+  // Open voucher drawer with animation
   var overlay = document.getElementById('receiptModalOverlay');
-  if (overlay) overlay.classList.add('open');
+  if (overlay) {
+    overlay.classList.add('open');
+    overlay.style.display = 'flex';
+    overlay.style.opacity = '1';
+    overlay.style.pointerEvents = 'auto';
+  }
+
+  // Fetch verified backend voucher data in background
+  if (paymentId) {
+    API_CLIENT.call('getReceipt', { paymentId: paymentId }).then(function(live) {
+      if (live) {
+        if (live.receiptNo && rNoEl) rNoEl.innerText = live.receiptNo;
+        if (live.date && dateEl) dateEl.innerText = live.date;
+        if (live.mode && modeEl) modeEl.innerText = live.mode;
+        if (live.studentName && sNameEl) sNameEl.innerText = live.studentName;
+        if (live.studentId && sIdEl) sIdEl.innerText = live.studentId;
+        if (live.voucherHtml) currentReceiptData.voucherHtml = live.voucherHtml;
+        if (live.pdfUrl) currentReceiptData.pdfUrl = live.pdfUrl;
+      }
+    }).catch(function(err) {
+      console.warn('Backend receipt verification notice:', err);
+    });
+  }
 }
 
 function closeReceiptModal() {
   TG_APP.hapticLight();
   var overlay = document.getElementById('receiptModalOverlay');
-  if (overlay) overlay.classList.remove('open');
+  if (overlay) {
+    overlay.classList.remove('open');
+    overlay.style.opacity = '0';
+    overlay.style.pointerEvents = 'none';
+    setTimeout(function() {
+      if (!overlay.classList.contains('open')) {
+        overlay.style.display = 'none';
+      }
+    }, 250);
+  }
 }
 
 function printReceiptVoucher() {
   TG_APP.hapticSuccess();
-  var rNo = document.getElementById('voucherReceiptNo').innerText;
-  var amt = document.getElementById('voucherAmount').innerText;
-  var dt = document.getElementById('voucherDate').innerText;
-  var mode = document.getElementById('voucherMode').innerText;
-  var text = '🏛️ COMMERCE GYAN OFFICIAL FEE RECEIPT\nReceipt: ' + rNo + '\nAmount: ' + amt + '\nDate: ' + dt + '\nMode: ' + mode + '\nStudent: Gyan Sir (ADMIN-01)\nAuthorized: Gyan Kumar (Founder)';
-  
-  navigator.clipboard.writeText(text).then(function() {
-    alert('✅ Receipt Voucher details copied to clipboard!\nYou can also screenshot or print this voucher.');
-  });
+  if (currentReceiptData && currentReceiptData.pdfUrl) {
+    try {
+      var w = window.open(currentReceiptData.pdfUrl, '_blank');
+      if (w) return;
+    } catch (e) {}
+  }
+  window.print();
 }
+
+function copyReceiptSlip() {
+  TG_APP.hapticSuccess();
+  var d = currentReceiptData || {};
+  var rNo = d.receiptNo || 'CG-REC-2026-005';
+  var dt = d.date || '01-Nov-2026';
+  var amt = formatRupee(d.amount || 1500) + '.00';
+  var mode = d.mode || 'UPI (Verified)';
+  var mth = d.forMonth || 'November 2026';
+  var sName = d.studentName || 'Gyan Sir';
+  var sId = d.studentId || 'ADMIN-01';
+
+  var text =
+    '🏛️ COMMERCE GYAN BEGUSARAI\n' +
+    'OFFICIAL TUITION FEE RECEIPT & CLEARANCE SLIP\n' +
+    '═════════════════════════════════════════\n' +
+    'Receipt No   : ' + rNo + '\n' +
+    'Payment Date : ' + dt + '\n' +
+    'Student Name : ' + sName + '\n' +
+    'Student ID   : ' + sId + ' (Class 12 Commerce)\n' +
+    'Course       : CBSE Class 12 Master Plan\n' +
+    'Tuition Month: ' + mth + '\n' +
+    'Payment Mode : ' + mode + '\n' +
+    'Tuition Rate : ₹50 / day (30 Days Tuition Covered)\n' +
+    'Status       : ✅ Verified & Credited to Tuition Account\n' +
+    '═════════════════════════════════════════\n' +
+    'AMOUNT PAID  : ' + amt + '\n' +
+    'In Words     : One Thousand Five Hundred Rupees Only\n' +
+    '═════════════════════════════════════════\n' +
+    'Authorized   : Gyan Kumar (Founder & Educator)\n' +
+    'Center       : Zero Mile / GD College Road, Begusarai\n';
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      showReceiptToast('✅ Official Receipt Slip copied to clipboard!');
+    }).catch(function() {
+      showReceiptToast('Receipt: ' + rNo + ' (' + amt + ')');
+    });
+  } else {
+    showReceiptToast('Receipt: ' + rNo + ' (' + amt + ')');
+  }
+}
+
+function showReceiptToast(msg) {
+  var toast = document.createElement('div');
+  toast.innerText = msg;
+  toast.style.position = 'fixed';
+  toast.style.bottom = '80px';
+  toast.style.left = '50%';
+  toast.style.transform = 'translateX(-50%)';
+  toast.style.background = '#1E1B4B';
+  toast.style.color = '#FDE047';
+  toast.style.border = '1px solid #D4AF37';
+  toast.style.padding = '10px 18px';
+  toast.style.borderRadius = '20px';
+  toast.style.fontSize = '12px';
+  toast.style.fontWeight = '700';
+  toast.style.boxShadow = '0 6px 20px rgba(0,0,0,0.6)';
+  toast.style.zIndex = '9999';
+  toast.style.pointerEvents = 'none';
+  document.body.appendChild(toast);
+  setTimeout(function() {
+    if (toast.parentNode) toast.parentNode.removeChild(toast);
+  }, 3000);
+}
+
+// Modal overlay dismissal on outside click
+document.addEventListener('DOMContentLoaded', function() {
+  var overlay = document.getElementById('receiptModalOverlay');
+  if (overlay) {
+    overlay.addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeReceiptModal();
+      }
+    });
+  }
+});

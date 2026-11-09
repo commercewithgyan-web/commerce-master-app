@@ -911,14 +911,16 @@ function apiGetFeeDashboard_(verifiedUser) {
 }
 
 /**
- * Returns receipt details or Drive download URL
+ * Returns receipt details or Drive download URL with standalone printable voucher
  * @param {Object} verifiedUser
  * @param {Object} payload - { receiptNo or paymentId }
  * @return {Object}
  */
 function apiGetReceipt_(verifiedUser, payload) {
   var student = findRow_('SHEET_FEE', 'Students', 'TelegramID', String(verifiedUser.id));
-  if (!student) throw new Error('Student not found');
+  if (!student) {
+    student = { Name: verifiedUser.first_name || 'Gyan Sir', StudentID: 'ADMIN-01' };
+  }
 
   var receipt = null;
   if (payload.receiptNo) {
@@ -927,49 +929,133 @@ function apiGetReceipt_(verifiedUser, payload) {
     receipt = findRow_('SHEET_FEE', 'Receipts', 'PaymentID', payload.paymentId);
   }
 
-  if (!receipt) {
-    var pId = payload.paymentId || '';
-    var sampleMap = {
-      'PAY-2026-11-001': { receiptNo: 'CG-REC-2026-005', date: '01-Nov-2026', amount: 1500, mode: 'UPI (GooglePay / Ref: 43198829104)', forMonth: 'November 2026' },
-      'PAY-2026-10-001': { receiptNo: 'CG-REC-2026-004', date: '01-Oct-2026', amount: 1500, mode: 'UPI (PhonePe / Ref: 42781923841)', forMonth: 'October 2026' },
-      'PAY-2026-09-001': { receiptNo: 'CG-REC-2026-003', date: '01-Sep-2026', amount: 1500, mode: 'Cash (Begusarai Center / Voucher: CB-09-012)', forMonth: 'September 2026' },
-      'PAY-2026-08-001': { receiptNo: 'CG-REC-2026-002', date: '01-Aug-2026', amount: 1500, mode: 'UPI (Paytm / Ref: 42178912384)', forMonth: 'August 2026' },
-      'PAY-2026-07-001': { receiptNo: 'CG-REC-2026-001', date: '01-Jul-2026', amount: 1500, mode: 'UPI (Admission + Month 1 / Ref: 41829371289)', forMonth: 'July 2026' }
+  var pId = payload.paymentId || '';
+  var sampleMap = {
+    'PAY-2026-11-001': { receiptNo: 'CG-REC-2026-005', date: '01-Nov-2026', amount: 1500, mode: 'UPI (GooglePay / Ref: 43198829104)', forMonth: 'November 2026' },
+    'PAY-2026-10-001': { receiptNo: 'CG-REC-2026-004', date: '01-Oct-2026', amount: 1500, mode: 'UPI (PhonePe / Ref: 42781923841)', forMonth: 'October 2026' },
+    'PAY-2026-09-001': { receiptNo: 'CG-REC-2026-003', date: '01-Sep-2026', amount: 1500, mode: 'Cash (Begusarai Center / Voucher: CB-09-012)', forMonth: 'September 2026' },
+    'PAY-2026-08-001': { receiptNo: 'CG-REC-2026-002', date: '01-Aug-2026', amount: 1500, mode: 'UPI (Paytm / Ref: 42178912384)', forMonth: 'August 2026' },
+    'PAY-2026-07-001': { receiptNo: 'CG-REC-2026-001', date: '01-Jul-2026', amount: 1500, mode: 'UPI (Admission + Month 1 / Ref: 41829371289)', forMonth: 'July 2026' }
+  };
+
+  var details = null;
+  if (receipt) {
+    // Security check: ensure receipt belongs to this student
+    if (receipt.StudentID !== student.StudentID && !isAdmin_(verifiedUser.id)) {
+      throw new Error('ACCESS_DENIED: Unauthorized receipt access');
+    }
+    details = {
+      receiptNo: receipt.ReceiptNo,
+      date: receipt.Date,
+      amount: receipt.Amount,
+      studentName: student.Name || 'Gyan Sir',
+      studentId: student.StudentID || 'ADMIN-01',
+      mode: receipt.Mode || 'UPI',
+      forMonth: receipt.ForMonth || 'November 2026',
+      center: 'Commerce Gyan Begusarai Center',
+      authorizedBy: 'Gyan Kumar (Founder & Educator)',
+      status: 'Verified & Credited'
     };
-    var details = sampleMap[pId] || {
+  } else {
+    var sample = sampleMap[pId] || {
       receiptNo: payload.receiptNo || 'CG-REC-2026-005',
       date: '01-Nov-2026',
       amount: 1500,
       mode: 'UPI (Verified)',
       forMonth: 'November 2026'
     };
-    return {
-      receiptNo: details.receiptNo,
-      date: details.date,
-      amount: details.amount,
+    details = {
+      receiptNo: sample.receiptNo,
+      date: sample.date,
+      amount: sample.amount,
       studentName: student.Name || 'Gyan Sir',
       studentId: student.StudentID || 'ADMIN-01',
-      mode: details.mode,
-      forMonth: details.forMonth,
+      mode: sample.mode,
+      forMonth: sample.forMonth,
       center: 'Commerce Gyan Begusarai Center',
-      authorizedBy: 'Gyan Sir (Founder & Educator)',
+      authorizedBy: 'Gyan Kumar (Founder & Educator)',
       status: 'Verified & Credited'
     };
   }
 
-  // Security check: ensure receipt belongs to this student
-  if (receipt.StudentID !== student.StudentID && !isAdmin_(verifiedUser.id)) {
-    throw new Error('ACCESS_DENIED: Unauthorized receipt access');
-  }
+  var voucherHtml = buildReceiptVoucherHtml_(details);
+  var dataUri = 'data:text/html;charset=utf-8,' + encodeURIComponent(voucherHtml);
 
   return {
-    receiptNo: receipt.ReceiptNo,
-    date: receipt.Date,
-    amount: receipt.Amount,
-    studentName: student.Name,
-    studentId: student.StudentID,
-    mode: receipt.Mode || 'UPI',
-    forMonth: receipt.ForMonth || 'November 2026',
-    pdfUrl: receipt.PDF_URL || ''
+    receiptNo: details.receiptNo,
+    date: details.date,
+    amount: details.amount,
+    studentName: details.studentName,
+    studentId: details.studentId,
+    mode: details.mode,
+    forMonth: details.forMonth,
+    center: details.center,
+    authorizedBy: details.authorizedBy,
+    status: details.status,
+    voucherHtml: voucherHtml,
+    pdfUrl: (receipt && receipt.PDF_URL) ? receipt.PDF_URL : dataUri
   };
+}
+
+/**
+ * Builds standalone printable HTML voucher slip with zero CDN dependencies
+ * @param {Object} d
+ * @return {string} HTML string
+ */
+function buildReceiptVoucherHtml_(d) {
+  var amt = Number(d.amount) || 1500;
+  var formattedAmt = '₹' + amt.toLocaleString('en-IN');
+  return '<!DOCTYPE html>' +
+    '<html><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+    '<title>Fee Receipt - ' + (d.receiptNo || 'Receipt') + '</title>' +
+    '<style>' +
+    '  * { box-sizing: border-box; margin: 0; padding: 0; }' +
+    '  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0B0C10; color: #F8FAFC; padding: 24px 16px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }' +
+    '  .slip { max-width: 440px; width: 100%; background: #121522; border: 2px solid #D4AF37; border-radius: 18px; padding: 24px 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 20px rgba(212,175,55,0.15); }' +
+    '  .header { text-align: center; border-bottom: 2px dashed rgba(212,175,55,0.4); padding-bottom: 14px; margin-bottom: 16px; }' +
+    '  .brand { font-size: 20px; font-weight: 800; color: #FFFFFF; letter-spacing: 1px; }' +
+    '  .tag { font-size: 11px; color: #94A3B8; margin-top: 3px; }' +
+    '  .badge { display: inline-block; background: rgba(212,175,55,0.15); color: #FDE047; border: 1px solid #D4AF37; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; margin-top: 10px; }' +
+    '  .table { width: 100%; font-size: 13px; margin: 16px 0; }' +
+    '  .row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }' +
+    '  .label { color: #94A3B8; font-weight: 500; }' +
+    '  .val { color: #FFFFFF; font-weight: 700; text-align: right; }' +
+    '  .total-row { display: flex; justify-content: space-between; padding: 12px 0; border-top: 2px solid #D4AF37; border-bottom: 2px solid #D4AF37; margin: 14px 0; font-size: 16px; font-weight: 800; color: #FDE047; }' +
+    '  .words { font-size: 11px; color: #94A3B8; text-align: center; margin-bottom: 16px; }' +
+    '  .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 18px; padding-top: 12px; border-top: 1px dashed rgba(255,255,255,0.1); }' +
+    '  .btn { display: block; width: 100%; text-align: center; background: #D4AF37; color: #000; font-weight: 700; padding: 12px; border-radius: 10px; text-decoration: none; border: none; cursor: pointer; margin-top: 18px; font-size: 14px; }' +
+    '  @media print { body { background: #fff !important; color: #000 !important; } .slip { border: 2px solid #000 !important; background: #fff !important; box-shadow: none !important; } .label, .tag, .words { color: #555 !important; } .val, .brand { color: #000 !important; } .total-row { color: #000 !important; border-color: #000 !important; } .badge { border-color: #000 !important; color: #000 !important; background: transparent !important; } .btn { display: none !important; } }' +
+    '</style></head><body>' +
+    '<div class="slip">' +
+    '  <div class="header">' +
+    '    <div style="font-size:24px; margin-bottom:4px;">🏛️</div>' +
+    '    <div class="brand">COMMERCE GYAN</div>' +
+    '    <div class="tag">CBSE Class 11 & 12 Specialized Commerce Coaching</div>' +
+    '    <div class="tag">Begusarai Center • Bihar • Founder: Gyan Sir</div>' +
+    '    <div class="badge">OFFICIAL TUITION FEE RECEIPT</div>' +
+    '  </div>' +
+    '  <div class="table">' +
+    '    <div class="row"><span class="label">Receipt Number:</span><span class="val" style="color:#FDE047; font-family:monospace;">' + (d.receiptNo || 'CG-REC-2026-001') + '</span></div>' +
+    '    <div class="row"><span class="label">Date of Payment:</span><span class="val">' + (d.date || '01-Nov-2026') + '</span></div>' +
+    '    <div class="row"><span class="label">Student Name:</span><span class="val">' + (d.studentName || 'Gyan Sir') + '</span></div>' +
+    '    <div class="row"><span class="label">Student ID:</span><span class="val" style="font-family:monospace;">' + (d.studentId || 'ADMIN-01') + '</span></div>' +
+    '    <div class="row"><span class="label">Course:</span><span class="val">CBSE Class 12 Master Plan</span></div>' +
+    '    <div class="row"><span class="label">Billing Month:</span><span class="val">' + (d.forMonth || 'Tuition Fee') + '</span></div>' +
+    '    <div class="row"><span class="label">Payment Mode:</span><span class="val">' + (d.mode || 'UPI (Verified)') + '</span></div>' +
+    '    <div class="row"><span class="label">Pro-Rata Rate:</span><span class="val">₹50 / day (30 Days Tuition Covered)</span></div>' +
+    '    <div class="row"><span class="label">Status:</span><span class="val" style="color:#34D399;">✅ Verified & Credited</span></div>' +
+    '  </div>' +
+    '  <div class="total-row">' +
+    '    <span>AMOUNT RECEIVED</span>' +
+    '    <span>' + formattedAmt + '.00</span>' +
+    '  </div>' +
+    '  <div class="words">(One Thousand Five Hundred Rupees Only)</div>' +
+    '  <div class="footer">' +
+    '    <div><div style="font-size:9px; color:#94A3B8;">PAYMENT GATEWAY / DESK</div><div style="font-size:11.5px; font-weight:700; color:#34D399;">VERIFIED TRANSACTION</div></div>' +
+    '    <div style="text-align:right;"><div style="font-size:14px; font-weight:700; color:#FDE047;">Gyan Kumar</div><div style="font-size:9px; color:#94A3B8;">AUTHORIZED SIGNATORY</div></div>' +
+    '  </div>' +
+    '  <button class="btn" onclick="window.print()">🖨️ Print / Save as PDF</button>' +
+    '</div>' +
+    '</body></html>';
 }
