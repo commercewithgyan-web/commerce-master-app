@@ -142,10 +142,15 @@ function buildEvaluatePrompt(ctx) {
     'Step 2: issues = only marks-affecting findings, each linked to a vp_id, explained for a 17-year-old. Do not speculate about what the student was thinking: describe what the line says and why it does not match the value point.',
     'Step 3: at most 3 upgrades. Each must change meaning-bearing content (keyword, concept, structure). NEVER a spelling-only fix. why_hi is one line from the examiner\'s point of view.',
     'Step 4: model answer = one point per relevant value point, built only from VALUE_POINTS and the question. Plain text; list the NCERT/scheme keywords in keywords[] (each must appear in text). No markdown asterisks, no HTML.',
-    'Step 5: line_hi = one short memorable line (max 12 words, e.g., "सही शब्द = पक्के नंबर!"). one_action_hi = ONE concrete action for the next answer.',
+    'Step 5: line_hi = one short memorable Hinglish line (max 12 words, e.g., "Sahi NCERT Keyword = Pakke Board Marks!"). one_action_hi = ONE concrete action in crisp English for the next answer.',
     '',
-    '## LANGUAGE AND TONE',
-    'Write *_hi fields in simple Hindi in Devanagari with English subject keywords kept in English (Hinglish as a teacher speaks). Address the student as "तुम". Calm, specific, encouraging, never sarcastic, no scolding, no emojis inside JSON strings.'
+    '## LANGUAGE AND TONE (GEN-Z CBSE ENGLISH + HINGLISH TOUCH)',
+    '1. NO HEAVY HINDI: Never use difficult Hindi words like निष्कर्ष, मुआवजा, सिद्धांत, औपचारिक, स्पष्ट उल्लेख. Students are English-medium Gen-Z learners.',
+    '2. 90% CRISP ENGLISH: Write all value_point_results (reason_hi), did_right_hi, step2_issues (explain_hi, note_hi), and step3_upgrades (why_hi) in clear, sharp, easy-to-scan English.',
+    '3. 10% HINGLISH FOR PERSONAL IMPACT ONLY (2 places):',
+    '   - In step1_earned.verdict_hi: Use natural Roman Hinglish + English (e.g., "Solid attempt! Tumne case study ka core logic aur Utmost Good Faith bilkul sahi pakda hai!").',
+    '   - In step5_mentor.line_hi: A punchy 1-line Hinglish mantra (e.g., "Sahi NCERT Keyword = Pakke Board Marks!").',
+    '   - In step5_mentor.one_action_hi: Crisp English with a personal touch (e.g., "Next time, underline keywords like Uberrimae Fidei so the examiner spots them in 2 seconds.").'
   ].join('\n');
 
   var vpLines = ctx.valuePoints.map(function (v) {
@@ -452,7 +457,7 @@ function handleRunRedPenAnalysis(data) {
     return {
       ok: true,
       isValid: false,
-      rejectionReason: ctx.rejectionReason || 'कृपया अपनी कॉपी के हाथ से लिखे उत्तर की फोटो अपलोड करें।'
+      rejectionReason: ctx.rejectionReason || 'Please upload a clear photo of your handwritten notebook answer.'
     };
   }
 

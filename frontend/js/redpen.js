@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (rejectionCard) rejectionCard.style.display = 'none';
       if (analysisLoader) analysisLoader.style.display = 'block';
 
-      btnAnalyze.innerText = '⏳ ज्ञान सर कॉपी चेक कर रहे हैं...';
+      btnAnalyze.innerText = '⏳ Gyan Sir is evaluating your copy...';
       btnAnalyze.disabled = true;
 
       var studentName = "Champion";
@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
           TG_APP.hapticError();
           if (analysisLoader) analysisLoader.style.display = 'none';
           if (previewCard) previewCard.style.display = 'block';
-          showRejectionNotice(res.rejectionReason || res.rejectionMessage || '⚠️ कृपया अपनी कॉपी के हाथ से लिखे उत्तर की फोटो अपलोड करें।');
+          showRejectionNotice(res.rejectionReason || res.rejectionMessage || '⚠️ Please upload a clear photo of your handwritten notebook answer.');
         } else {
           TG_APP.hapticSuccess();
           renderUniversalRedPenReport(res, studentName);
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (previewCard) previewCard.style.display = 'block';
         var errMsg = err.message || String(err);
         if (errMsg.includes('aborted') || errMsg.includes('longer than 60 seconds')) {
-          errMsg = 'सर्वर ने 60 सेकंड से ज्यादा समय लिया। कृपया नेटवर्क चेक करें और दोबारा प्रयास करें।';
+          errMsg = 'Server took longer than 60 seconds. Please check your network and try again.';
         }
         alert('⚠️ Evaluation Notice: ' + errMsg);
       } finally {
@@ -291,12 +291,12 @@ function renderUniversalRedPenReport(data, studentName) {
   var wordCheck = computed.word_check || { count: 0, limit: null, status: 'not_checked' };
   var wordChipText = 'Word Count: ' + wordCheck.count + ' words';
   if (wordCheck.limit && wordCheck.limit.length >= 2) {
-    wordChipText += ' (CBSE सीमा: ' + wordCheck.limit[0] + '–' + wordCheck.limit[1] + ')';
+    wordChipText += ' (CBSE Target: ' + wordCheck.limit[0] + '–' + wordCheck.limit[1] + ' words)';
   }
 
   // ── 1. Top Card: Score + Verdict + What You Did Right First ───────
   var step1 = r.step1_earned || {};
-  var verdictText = step1.verdict_hi || 'तुमने उत्तर लिखने का बहुत अच्छा प्रयास किया है।';
+  var verdictText = step1.verdict_hi || 'Solid attempt! Let\'s analyze what worked and where you can gain marks.';
 
   var didRightHtml = '';
   var didRightList = step1.did_right_hi || [];
@@ -326,13 +326,13 @@ function renderUniversalRedPenReport(data, studentName) {
   var card1Html =
     '<div class="eval-step-card">' +
       '<div class="step-header step-1-header">' +
-        '<span>🔍 Step 1: सवाल का एनालिसिस & तुमने क्या सही किया</span>' +
+        '<span>🔍 Step 1: Question Breakdown & What You Did Right</span>' +
       '</div>' +
-      '<div class="verdict-box">🗣️ <strong>ज्ञान सर:</strong> ' + escapeHtml(verdictText) + '</div>' +
+      '<div class="verdict-box">🗣️ <strong>Gyan Sir:</strong> ' + escapeHtml(verdictText) + '</div>' +
       '<div style="margin-bottom: 10px;">' +
         '<span class="word-count-chip">📝 ' + escapeHtml(wordChipText) + '</span>' +
       '</div>' +
-      (didRightHtml ? '<div style="margin-bottom: 12px;"><div style="font-size: 12px; font-weight: 700; color: #34D399; margin-bottom: 6px; text-transform: uppercase;">मुख्य ताकतें (Strengths):</div>' + didRightHtml + '</div>' : '') +
+      (didRightHtml ? '<div style="margin-bottom: 12px;"><div style="font-size: 12px; font-weight: 700; color: #34D399; margin-bottom: 6px; text-transform: uppercase;">Key Strengths (तुमने क्या सही लिखा):</div>' + didRightHtml + '</div>' : '') +
       (vpResultsHtml ? '<div><div style="font-size: 12px; font-weight: 700; color: #38BDF8; margin-bottom: 6px; text-transform: uppercase;">CBSE Value Points Breakdown:</div>' + vpResultsHtml + '</div>' : '') +
     '</div>';
 
@@ -349,9 +349,9 @@ function renderUniversalRedPenReport(data, studentName) {
         '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">' +
           '<span style="font-size: 11px; font-weight: 700; color: #EF4444; text-transform: uppercase;">[' + escapeHtml(iss.vp_id || '') + ' • ' + escapeHtml(iss.issue_type || 'Conceptual') + ']</span>' +
         '</div>' +
-        (iss.student_line ? '<div style="font-size: 12.5px; color: #FCA5A5; margin-bottom: 4px;"><strong>❌ तुम्हारी लाइन:</strong> "' + escapeHtml(iss.student_line) + '"</div>' : '') +
+        (iss.student_line ? '<div style="font-size: 12.5px; color: #FCA5A5; margin-bottom: 4px;"><strong>❌ What You Wrote:</strong> "' + escapeHtml(iss.student_line) + '"</div>' : '') +
         '<div class="flaw-text">⚠️ ' + escapeHtml(iss.explain_hi || '') + '</div>' +
-        (iss.ncert_keyword ? '<div style="font-size: 12px; color: #FBBF24; margin-top: 4px;"><strong>📌 आवश्यक NCERT कीवर्ड:</strong> <span style="text-decoration: underline;">' + escapeHtml(iss.ncert_keyword) + '</span></div>' : '') +
+        (iss.ncert_keyword ? '<div style="font-size: 12px; color: #FBBF24; margin-top: 4px;"><strong>📌 Key NCERT Term:</strong> <span style="text-decoration: underline;">' + escapeHtml(iss.ncert_keyword) + '</span></div>' : '') +
       '</div>';
   }
 
@@ -361,7 +361,7 @@ function renderUniversalRedPenReport(data, studentName) {
     var alt = alerts[a];
     alertsHtml +=
       '<div class="alert-card">' +
-        '<div style="font-weight: 700; font-size: 12px; margin-bottom: 3px;">⚠️ ध्यान दो (बोर्ड में नंबर नहीं कटे) • [' + escapeHtml(alt.type || 'Alert') + ']</div>' +
+        '<div style="font-weight: 700; font-size: 12px; margin-bottom: 3px;">⚠️ Notice (0 Marks Lost in CBSE) • [' + escapeHtml(alt.type || 'Alert') + ']</div>' +
         (alt.student_line ? '<div style="font-size: 12px; color: #FDE047; opacity: 0.9; margin-bottom: 2px;"><em>"' + escapeHtml(alt.student_line) + '"</em></div>' : '') +
         '<div style="font-size: 12px; color: #FEF08A;">' + escapeHtml(alt.note_hi || '') + '</div>' +
       '</div>';
@@ -369,16 +369,16 @@ function renderUniversalRedPenReport(data, studentName) {
 
   if (issues.length === 0 && alerts.length === 0) {
     if (marksEarned >= maxMarks) {
-      issuesHtml = '<div style="color: #34D399; font-size: 13.5px; text-align: center; padding: 12px; font-weight: 700;">💯 पूर्ण अंक! कोई मार्क्स काटने वाली वैचारिक गलती नहीं मिली।</div>';
+      issuesHtml = '<div style="color: #34D399; font-size: 13.5px; text-align: center; padding: 12px; font-weight: 700;">💯 Full Marks! No marks-affecting conceptual issues found.</div>';
     } else {
-      issuesHtml = '<div class="mistake-box"><div class="flaw-text">⚠️ CBSE मार्किंग स्कीम के अनुसार भाषा और कीवर्ड्स में सुधार की ज़रूरत है (विस्तृत मॉडल उत्तर नीचे देखें)।</div></div>';
+      issuesHtml = '<div class="mistake-box"><div class="flaw-text">⚠️ Needs improvement against CBSE marking scheme keywords. See model answer below.</div></div>';
     }
   }
 
   var card2Html =
     '<div class="eval-step-card">' +
       '<div class="step-header step-2-header">' +
-        '<span>❌ Step 2: मार्क्स कटने वाले मुद्दे vs ध्यान देने योग्य बातें</span>' +
+        '<span>❌ Step 2: Marks-Affecting Issues vs Zero-Mark Alerts</span>' +
       '</div>' +
       issuesHtml +
       alertsHtml +
@@ -392,18 +392,18 @@ function renderUniversalRedPenReport(data, studentName) {
     upgradesHtml +=
       '<div class="correction-row">' +
         (up.student_line ? '<div><span class="was-text">❌ "' + escapeHtml(up.student_line) + '"</span></div>' : '') +
-        '<div style="margin-top: 5px;"><span class="should-be-text">✅ बेहतर तरीका: "' + escapeHtml(up.better_line || '') + '"</span></div>' +
-        (up.why_hi ? '<div class="why-box">💡 <strong>क्यों?</strong> ' + escapeHtml(up.why_hi) + (up.vp_id ? ' <span style="opacity: 0.7;">[' + escapeHtml(up.vp_id) + ']</span>' : '') + '</div>' : '') +
+        '<div style="margin-top: 5px;"><span class="should-be-text">✅ Topper Phrasing: "' + escapeHtml(up.better_line || '') + '"</span></div>' +
+        (up.why_hi ? '<div class="why-box">💡 <strong>Why (Examiner\'s Lens):</strong> ' + escapeHtml(up.why_hi) + (up.vp_id ? ' <span style="opacity: 0.7;">[' + escapeHtml(up.vp_id) + ']</span>' : '') + '</div>' : '') +
       '</div>';
   }
   if (upgrades.length === 0) {
-    upgradesHtml = '<div style="color: #34D399; font-size: 13.5px; text-align: center; padding: 10px;">🌟 वाक्य संरचना और मुख्य तकनीकी शब्दावली बिल्कुल सही है।</div>';
+    upgradesHtml = '<div style="color: #34D399; font-size: 13.5px; text-align: center; padding: 10px;">🌟 Phrasing and NCERT technical terms are on point!</div>';
   }
 
   var card3Html =
     '<div class="eval-step-card">' +
       '<div class="step-header step-3-header">' +
-        '<span>✍️ Step 3: ऐसे नहीं, ऐसे लिखा जाना चाहिए था (Sentence Upgrades)</span>' +
+        '<span>✍️ Step 3: "Aise Nahi, Aise Likhte" (Sentence Upgrades)</span>' +
       '</div>' +
       upgradesHtml +
     '</div>';
@@ -427,11 +427,11 @@ function renderUniversalRedPenReport(data, studentName) {
   var card4Html =
     '<div class="eval-step-card">' +
       '<div class="step-header step-4-header">' +
-        '<span>🏆 Step 4: CBSE 100/100 परफेक्ट मॉडल उत्तर</span>' +
+        '<span>🏆 Step 4: CBSE 100/100 Model Solution</span>' +
       '</div>' +
       '<details class="model-details" open>' +
         '<summary class="model-summary">' +
-          '<span>💡 पहले खुद सोचो, फिर मॉडल उत्तर देखो</span>' +
+          '<span>💡 Tap to Expand: 100/100 Model Answer with Keywords</span>' +
           '<span>▼</span>' +
         '</summary>' +
         '<div class="model-solution-box">' +
@@ -442,17 +442,17 @@ function renderUniversalRedPenReport(data, studentName) {
 
   // ── 5. Step 5: Gyan Sir's Punchline & One Action ───────────────────
   var mentor = r.step5_mentor || {};
-  var punchline = mentor.line_hi || 'सही शब्द = पक्के नंबर!';
-  var oneAction = mentor.one_action_hi || 'अगली कॉपी में सभी मुख्य NCERT कीवर्ड्स को अंडरलाइन करो।';
+  var punchline = mentor.line_hi || 'Sahi NCERT Keyword = Pakke Board Marks!';
+  var oneAction = mentor.one_action_hi || 'Next time, underline core NCERT keywords so the examiner spots them immediately.';
 
   var card5Html =
     '<div class="step-5-card">' +
       '<div style="font-size: 15px; font-weight: 800; color: #FDE047; margin-bottom: 6px;">💪 ' + escapeHtml(punchline) + '</div>' +
-      '<div style="font-size: 13.5px; color: #F8FAFC;">🎯 <strong>अगला कदम:</strong> ' + escapeHtml(oneAction) + '</div>' +
+      '<div style="font-size: 13.5px; color: #F8FAFC;">🎯 <strong>Next Action:</strong> ' + escapeHtml(oneAction) + '</div>' +
     '</div>';
 
   // "Check Another Copy" Button
-  var checkAnotherBtn = '<button type="button" class="btn-check-another" id="btnCheckAnother">📸 एक और कॉपी चेक करें</button>';
+  var checkAnotherBtn = '<button type="button" class="btn-check-another" id="btnCheckAnother">📸 Check Another Copy</button>';
 
   // Assemble Full Report
   resultCard.innerHTML =
