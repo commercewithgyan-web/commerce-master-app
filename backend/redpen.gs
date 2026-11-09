@@ -4,10 +4,11 @@
  */
 
 var CANDIDATE_MODELS = [
+  'gemini-3.0-flash',
+  'gemini-flash-latest',
+  'gemini-2.5-pro',
   'gemini-2.0-flash',
-  'gemini-1.5-flash',
-  'gemini-3.8-flash',
-  'gemini-2.5-flash'
+  'gemini-1.5-flash'
 ];
 
 var RULE_CONFIG = {
@@ -328,37 +329,113 @@ function wordCheck_(ctx) {
   return { count: n, limit: limit, status: status };
 }
 
+function cleanJsonResponseText_(text) {
+  if (!text) return '{}';
+  var cleaned = String(text).trim();
+  cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+  if (!cleaned.startsWith('{') && !cleaned.startsWith('[')) {
+    var firstBrace = cleaned.indexOf('{');
+    var firstBracket = cleaned.indexOf('[');
+    var startIdx = -1;
+    if (firstBrace !== -1 && firstBracket !== -1) {
+      startIdx = Math.min(firstBrace, firstBracket);
+    } else if (firstBrace !== -1) {
+      startIdx = firstBrace;
+    } else if (firstBracket !== -1) {
+      startIdx = firstBracket;
+    }
+    if (startIdx !== -1) {
+      var lastBrace = cleaned.lastIndexOf('}');
+      var lastBracket = cleaned.lastIndexOf(']');
+      var endIdx = Math.max(lastBrace, lastBracket);
+      if (endIdx > startIdx) {
+        cleaned = cleaned.slice(startIdx, endIdx + 1);
+      }
+    }
+  }
+  return cleaned;
+}
+
 function callGemini_(system, userParts, schema) {
   var props = PropertiesService.getScriptProperties();
   var key = props.getProperty('GEMINI_KEY') || props.getProperty('GEMINI_API_KEY');
   if (!key) throw new Error('GEMINI_KEY missing in Script Properties');
-  var gen = { temperature: 0.1 };
-  if (schema) { gen.responseMimeType = 'application/json'; gen.responseSchema = schema; }
-  var payload = {
-    systemInstruction: { parts: [{ text: system }] },
-    contents: [{ role: 'user', parts: userParts }],
-    generationConfig: gen
-  };
 
-  var lastErr = '';
-  for (var i = 0; i < CANDIDATE_MODELS.length; i++) {
-    var model = CANDIDATE_MODELS[i];
+  var models = CANDIDATE_MODELS.slice();
+  var customModel = props.getProperty('GEMINI_MODEL');
+  if (customModel && models.indexOf(customModel) === -1) {
+    models.unshift(customModel);
+  }
+
+  var errorLogs = [];
+
+  for (var i = 0; i < models.length; i++) {
+    var model = models[i];
     var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + key;
+
+    var gen = { temperature: 0.1 };
+    if (schema) {
+      gen.responseMimeType = 'application/json';
+      gen.responseSchema = schema;
+    }
+    var payload = {
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: 'user', parts: userParts }],
+      generationConfig: gen
+    };
+
     try {
       var res = UrlFetchApp.fetch(url, {
-        method: 'post', contentType: 'application/json',
-        payload: JSON.stringify(payload), muteHttpExceptions: true
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
       });
-      if (res.getResponseCode() === 200) {
-        var body = JSON.parse(res.getContentText());
-        return body.candidates[0].content.parts[0].text;
+      var code = res.getResponseCode();
+      var text = res.getContentText();
+
+      if (code === 200) {
+        var body = JSON.parse(text);
+        if (body.candidates && body.candidates[0] && body.candidates[0].content && body.candidates[0].content.parts) {
+          return cleanJsonResponseText_(body.candidates[0].content.parts[0].text);
+        }
       }
-      lastErr = 'Model ' + model + ' HTTP ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 200);
+
+      // If schema causes HTTP 400 (e.g. INVALID_ARGUMENT due to schema syntax in v1beta), fallback to json mode without schema
+      if (code === 400 && schema) {
+        var fallbackGen = { temperature: 0.1, responseMimeType: 'application/json' };
+        var schemaInstruction = '\n\nIMPORTANT: Return strictly valid JSON conforming to this specification:\n' + JSON.stringify(schema);
+        var fallbackPayload = {
+          systemInstruction: { parts: [{ text: system + schemaInstruction }] },
+          contents: [{ role: 'user', parts: userParts }],
+          generationConfig: fallbackGen
+        };
+
+        var fallbackRes = UrlFetchApp.fetch(url, {
+          method: 'post',
+          contentType: 'application/json',
+          payload: JSON.stringify(fallbackPayload),
+          muteHttpExceptions: true
+        });
+        var fallbackCode = fallbackRes.getResponseCode();
+        var fallbackText = fallbackRes.getContentText();
+
+        if (fallbackCode === 200) {
+          var fbBody = JSON.parse(fallbackText);
+          if (fbBody.candidates && fbBody.candidates[0] && fbBody.candidates[0].content && fbBody.candidates[0].content.parts) {
+            return cleanJsonResponseText_(fbBody.candidates[0].content.parts[0].text);
+          }
+        }
+        errorLogs.push('[' + model + ' (schema-fallback)]: HTTP ' + fallbackCode + ': ' + fallbackText.slice(0, 160));
+      } else {
+        errorLogs.push('[' + model + ']: HTTP ' + code + ': ' + text.slice(0, 160));
+      }
     } catch (e) {
-      lastErr = 'Model ' + model + ' Exception: ' + e.message;
+      errorLogs.push('[' + model + ']: Exception: ' + e.message);
     }
   }
-  throw new Error('Gemini API failed across candidate models: ' + lastErr);
+
+  throw new Error('Gemini API failed across candidate models:\n' + errorLogs.join('\n'));
 }
 
 /** Main Endpoint Handler */

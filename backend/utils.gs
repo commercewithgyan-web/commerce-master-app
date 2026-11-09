@@ -9,12 +9,12 @@
 var TIMEZONE_KOLKATA = 'Asia/Kolkata';
 
 /**
- * Resolves the active Gemini model name from Script Properties with fallback to 'gemini-3.8-flash'
+ * Resolves the active Gemini model name from Script Properties with fallback to 'gemini-3.0-flash'
  * @return {string}
  */
 function getGeminiModel_() {
   var props = PropertiesService.getScriptProperties();
-  return props.getProperty('GEMINI_MODEL') || 'gemini-3.8-flash';
+  return props.getProperty('GEMINI_MODEL') || 'gemini-3.0-flash';
 }
 
 /**
@@ -31,11 +31,11 @@ function callGeminiGenerateContent_(payload) {
 
   // Priority order: latest active model, recommended models, legacy fallbacks
   var candidateModels = [
+    "gemini-3.0-flash",
+    "gemini-flash-latest",
     "gemini-2.0-flash",
     "gemini-1.5-flash",
-    "gemini-3.8-flash",
-    "gemini-2.5-flash",
-    "gemini-1.5-pro"
+    "gemini-2.5-pro"
   ];
 
   // If a custom model is configured in Script Properties, prepend it
@@ -44,7 +44,7 @@ function callGeminiGenerateContent_(payload) {
     candidateModels.unshift(customModel);
   }
 
-  var lastError = null;
+  var errorLogs = [];
   for (var i = 0; i < candidateModels.length; i++) {
     var model = candidateModels[i];
     var url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + apiKey;
@@ -61,14 +61,13 @@ function callGeminiGenerateContent_(payload) {
       if (resCode === 200) {
         return JSON.parse(resText);
       } else {
-        lastError = "Model " + model + " error " + resCode + ": " + resText;
-        Logger.log(lastError);
+        errorLogs.push("Model " + model + " error " + resCode + ": " + resText.slice(0, 160));
       }
     } catch (e) {
-      lastError = e.toString();
+      errorLogs.push("Model " + model + " exception: " + e.message);
     }
   }
-  throw new Error("Gemini API failed across candidate models: " + lastError);
+  throw new Error("Gemini API failed across candidate models:\n" + errorLogs.join("\n"));
 }
 
 /**
