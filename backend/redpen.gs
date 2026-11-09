@@ -96,10 +96,10 @@ function handleRunRedPenAnalysis(data) {
       classification.subject || 'Commerce',
       classification.chapterName || 'Handwritten Answer',
       driveUrl,
-      evaluation.boardContext || evaluation.boardExamMatch || 'PYQ Match',
-      (evaluation.surgicalComparisons || []).map(function(s) { return s.whatYouWrote; }).join('; '),
-      evaluation.motivationalCloser || evaluation.gyanSirPrescription || '',
       evaluation.score || '',
+      (evaluation.step2_mistakesAndOmissions || []).map(function(m) { return m.flaw; }).join('; '),
+      evaluation.step5_motivationalCloser || '',
+      '',
       'Analyzed'
     ]);
   } catch (sheetErr) {
@@ -177,45 +177,67 @@ Return strictly valid JSON only.`;
   return JSON.parse(rawJson);
 }
 
-// 3. SURGICAL CBSE EVALUATION PROMPT (ONE-ON-ONE MENTOR DESK)
+// 3. 5-STEP PEDAGOGICAL CBSE EVALUATION PROMPT
 function performDoubleVaultEvaluation_(name, classLvl, sub, ch, question, studentAnswer, chVault, pyqVault) {
   const prompt = `
-You are Educator Gyan Sir sitting across a study table, reviewing ${name}'s handwritten Class ${classLvl} ${sub} answer (${ch}).
-Knowledge Vaults: NCERT Official Text + CBSE 10-Year Past Paper Marking Schemes.
+You are Educator Gyan Sir reviewing ${name}'s handwritten answer in Class ${classLvl} ${sub} (${ch}).
+Knowledge Vaults: Official NCERT Text + CBSE Past Year Marking Schemes.
 
-QUESTION: "${question}"
-${name}'S HANDWRITTEN ANSWER:
+QUESTION ATTEMPTED: "${question}"
+${name}'S WRITTEN ANSWER:
 "${studentAnswer}"
 
-INSTRUCTIONS (SPEAK IN WARM, DIRECT HINGLISH):
-1. OPENING: Speak directly to ${name} like a teacher calling them to the desk:
-   "इधर आओ ${name}, अपनी कॉपी सामने रखो! तुमने कोशिश बहुत अच्छी की है, लेकिन ध्यान से देखो कि 3 में से जो नंबर कटे हैं वो कहाँ और क्यों कटे:"
-2. THE "Aise Nahi, Aise Likhte" COMPARISON:
-   For every flaw found, provide:
-   - What the student wrote (Tumne kya likha)
-   - What mistake occurred / What was missed (Galti kya hui & Kya point chhod diya)
-   - The Better Topper Rewrite: "अगर तुम ऐसे नहीं, ऐसे लिखते तो ज्यादा बेटर होता..."
-3. PRESENTATION & WORD LIMIT ADVICE:
-   Point out if they wrote a long essay instead of point-wise bullets.
-4. WARM MOTIVATIONAL CLOSER:
-   End with 2 lines of pure teacher warmth:
-   "परेशान बिल्कुल मत होना ${name}! गलतियाँ अभी पकड़ में आ रही हैं तो बोर्ड एग्जाम में 100/100 पक्के होंगे। अगली कॉपी में इसे सुधार कर दिखाओ, मुझे तुम पर पूरा भरोसा है! शाबाश! 🔥"
+ENFORCE GYAN SIR'S EXACT 5-STEP REVIEW IN NATURAL HINGLISH:
+
+STEP 1 — QUESTION ANALYSIS:
+- Analyze what the CBSE board question actually demanded.
+- Mention expected Marks (e.g., 3 Marks), word limit (e.g., 50-75 words), and chapter.
+
+STEP 2 — POINT OUT SPECIFIC MISTAKES & OMISSIONS:
+- Clearly list every factual mistake, wrong terminology, or omitted NCERT point in bullet points.
+- State exact marks deducted for each.
+- Use warm Hinglish tone like talking face-to-face.
+
+STEP 3 — HOW IT SHOULD HAVE BEEN WRITTEN (Aise Nahi, Aise Likhte):
+- Directly compare what ${name} wrote vs how a teacher would rephrase that specific line.
+- Quote the exact student text, then show the ideal version.
+
+STEP 4 — COMPLETE 100/100 CBSE TOPPER MODEL ANSWER:
+- Provide the COMPLETE, perfect solution for this entire question from start to finish.
+- Write it strictly line-by-line, point-by-point.
+- Surround EVERY critical NCERT keyword in <mark class="highlight-keyword">Keyword</mark> tags so the student can copy it into their notebook!
+
+STEP 5 — WARM MOTIVATIONAL CLOSER:
+- 2 encouraging sentences in natural Hinglish motivating ${name} that mistakes caught now guarantee a 100/100 on board exam day.
+- Include 🔥 emoji.
 
 Return strictly valid JSON:
 {
   "score": "2.0 / 3.0 Marks",
-  "boardContext": "CBSE Board Exam 2020 & 2023 Standard Question",
-  "deskGreeting": "इधर आओ ${name}, अपनी कॉपी सामने रखो! तुमने कोशिश बहुत अच्छी की है, लेकिन ध्यान से देखो कि जो नंबर कटे हैं वो कहाँ और क्यों कटे:",
-  "surgicalComparisons": [
+  "step1_questionAnalysis": {
+    "questionSummary": "Brief summary of what was asked",
+    "boardMarksAndLimit": "3 Marks | CBSE Recommended: 50-75 words",
+    "whatExaminerWanted": "What the examiner expected to see"
+  },
+  "step2_mistakesAndOmissions": [
     {
-      "whatYouWrote": "Exact line written by ${name}",
-      "mistakeAndMissedPoint": "What mistake happened and what key NCERT concept was omitted",
-      "betterWayToWrite": "अगर तुम ऐसे नहीं, ऐसे लिखते तो ज्यादा बेटर होता: (Exact ideal sentence with keywords)",
-      "marksImpact": "-0.5 Marks"
+      "flaw": "Description of mistake or missing point in Hinglish",
+      "deduction": "-0.5 Marks"
     }
   ],
-  "presentationAdvice": "पैराग्राफ के बजाय ऐसे 3 बुलेट पॉइंट्स में लिखो ताकि एग्जामिनर को कीवर्ड ढूँढने में आसानी हो।",
-  "motivationalCloser": "परेशान बिल्कुल मत होना ${name}! गलतियाँ अभी पकड़ में आ रही हैं तो बोर्ड एग्जाम में 100/100 पक्के होंगे। मुझे तुम पर पूरा भरोसा है, शाबाश! 🔥"
+  "step3_howToRephrase": [
+    {
+      "whatYouWrote": "Exact text the student wrote",
+      "howToRephrase": "Better way to write it with NCERT keywords"
+    }
+  ],
+  "step4_completeModelSolution": [
+    {
+      "heading": "1. Point Heading",
+      "bodyWithHighlightedKeywords": "Explanation containing <mark class='highlight-keyword'>Keyword</mark>..."
+    }
+  ],
+  "step5_motivationalCloser": "Warm Hinglish 2-line motivational message for ${name}"
 }
 `;
 

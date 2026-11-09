@@ -138,6 +138,213 @@ h1, h2, h3, h4 {
   padding: 16px;
 }
 
+/* Red-Pen Page: Edge-to-Edge Full-Width Override */
+body.redpen-page {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow-x: hidden !important;
+  background-color: #0B0E14 !important;
+}
+
+body.redpen-page .app-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 8px 10px 90px 10px !important;
+  box-sizing: border-box !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   5-STEP PEDAGOGICAL RED-PEN EVALUATION CARDS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Score Header Strip */
+.redpen-score-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #151922 0%, #1A1F2E 100%);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  border-radius: 14px;
+}
+
+.redpen-score-header .subject-tag {
+  font-size: 13px;
+  font-weight: 700;
+  color: #38BDF8;
+  letter-spacing: 0.3px;
+}
+
+.redpen-score-header .score-badge {
+  font-size: 15px;
+  font-weight: 800;
+  color: #34D399;
+  background: #064E3B;
+  padding: 5px 14px;
+  border-radius: 8px;
+  font-family: var(--font-mono);
+}
+
+/* Generic Step Card */
+.eval-step-card {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: #151922 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 14px !important;
+  padding: 14px 16px !important;
+  margin-bottom: 12px !important;
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
+  margin-bottom: 10px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 8px;
+}
+
+/* Step 1: Question Analysis — Sky Blue */
+.step-1-header { color: #38BDF8 !important; }
+
+.step1-detail {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #CBD5E1;
+  margin: 4px 0;
+}
+
+.step1-detail strong {
+  color: #E2E8F0;
+}
+
+/* Step 2: Mistakes & Omissions — Red */
+.step-2-header { color: #EF4444 !important; }
+
+.mistake-box {
+  background: rgba(239, 68, 68, 0.08);
+  border-left: 3px solid #EF4444;
+  padding: 10px 12px;
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 10px;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.mistake-box .flaw-text {
+  color: #FCA5A5;
+  font-weight: 600;
+}
+
+.mistake-box .deduction-tag {
+  display: inline-block;
+  color: #EF4444;
+  font-size: 11.5px;
+  font-weight: 700;
+  margin-top: 4px;
+  font-family: var(--font-mono);
+}
+
+/* Step 3: How to Rephrase — Amber */
+.step-3-header { color: #F59E0B !important; }
+
+.correction-row {
+  margin-bottom: 14px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.correction-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+.was-text {
+  color: #F87171;
+  text-decoration: line-through;
+}
+
+.should-be-text {
+  color: #34D399;
+  font-weight: 600;
+}
+
+/* Step 4: Topper Model Answer — Emerald */
+.step-4-header { color: #10B981 !important; }
+
+.model-solution-box {
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.model-point {
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #F1F5F9;
+}
+
+.model-point:last-child {
+  margin-bottom: 0;
+}
+
+.model-point .point-heading {
+  font-weight: 700;
+  color: #F8FAFC;
+  margin-bottom: 3px;
+}
+
+.highlight-keyword {
+  background: rgba(212, 175, 55, 0.2);
+  color: #FDE047;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border-bottom: 2px solid #D4AF37;
+}
+
+/* Step 5: Motivational Closer — Gold/Violet */
+.step-5-card {
+  background: rgba(45, 18, 77, 0.5) !important;
+  border: 1px dashed #D4AF37 !important;
+  color: #FDE047 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-align: center;
+  padding: 16px !important;
+  border-radius: 12px !important;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+/* "Check Another Copy" Button */
+.btn-check-another {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #F8FAFC;
+  background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
 /* Cards (Zomato/CRED Rounded Elevations) */
 .card {
   background-color: var(--bg-card-dark);
@@ -1579,7 +1786,9 @@ body.light-theme .btn-back {
   line-height: 1.5;
 }
 
-/* ONE-ON-ONE MENTOR DESK STYLING */
+/* ═══════════════════════════════════════════════════════════════
+   LEGACY MENTOR DESK STYLING (kept for backward compatibility)
+   ═══════════════════════════════════════════════════════════════ */
 .desk-greeting {
   font-size: 14px;
   line-height: 1.6;
@@ -1596,66 +1805,6 @@ body.light-theme .btn-back {
   margin-bottom: 14px;
   position: relative;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-}
-
-.label-wrong {
-  font-size: 11px;
-  font-weight: 700;
-  color: #F87171;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.you-wrote p {
-  color: #EF4444;
-  text-decoration: line-through;
-  font-size: 13.5px;
-  margin: 4px 0 10px;
-  line-height: 1.5;
-}
-
-.label-warn {
-  font-size: 11px;
-  font-weight: 700;
-  color: #FBBF24;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.missed-point p {
-  color: #F59E0B;
-  font-size: 13.5px;
-  margin: 4px 0 10px;
-  line-height: 1.5;
-}
-
-.label-better {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #34D399;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.better-way p {
-  color: #10B981;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 1.5;
-  margin: 4px 0 0;
-}
-
-.penalty-tag {
-  display: inline-block;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #F87171;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 6px;
-  margin-top: 10px;
 }
 
 .mentor-boost {
