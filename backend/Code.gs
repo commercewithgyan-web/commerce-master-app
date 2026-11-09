@@ -49,6 +49,11 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
+    // Direct 200 OK for Telegram Webhook (prevents 302 redirect loops & infinite 11-minute retries)
+    if (requestData && requestData.update_id) {
+      return handleTelegramWebhook_(requestData);
+    }
+
     var result = handleApiRequest(requestData);
     return ContentService.createTextOutput(JSON.stringify(result))
       .setMimeType(ContentService.MimeType.JSON);
@@ -93,6 +98,27 @@ function handleApiRequest(req) {
         action: 'seedGyanSirTestData',
         student: studentResult,
         questionCount: qCount,
+        timestamp: getKolkataTimestamp()
+      };
+    }
+    if (req.action === 'flushTelegramWebhook') {
+      var props = PropertiesService.getScriptProperties();
+      var activeUrl = props.getProperty('WEBAPP_URL') || 'https://script.google.com/macros/s/AKfycbywJKoynUbc2fY7caEx9hZ-FARG71J9v1F6uXaL5z7XxBS_NKhwFiKCZIVeaYVJ0QS4jQ/exec';
+      // Drop all pending stuck updates from Telegram servers immediately
+      var delRes = callTelegramApi_('deleteWebhook', { drop_pending_updates: true });
+      // Re-register webhook with drop_pending_updates
+      var setRes = callTelegramApi_('setWebhook', {
+        url: activeUrl,
+        allowed_updates: ['message', 'callback_query'],
+        drop_pending_updates: true
+      });
+      var infoRes = callTelegramApi_('getWebhookInfo', {});
+      return {
+        ok: true,
+        action: 'flushTelegramWebhook',
+        deletedWebhook: delRes,
+        reRegisteredWebhook: setRes,
+        currentWebhookInfo: infoRes,
         timestamp: getKolkataTimestamp()
       };
     }
@@ -273,7 +299,7 @@ function handleTelegramWebhook_(update) {
     Logger.log('🔁 Duplicate update skipped: ' + updateId);
     return HtmlService.createHtmlOutput('OK');
   }
-  cache.put(cacheKey, 'processed', 600); // 10-minute cache TTL
+  cache.put(cacheKey, 'processed', 86400); // 24-HOUR cache TTL (prevents 11-min expiration retry loops!)
 
   try {
     // Route to telegram.gs update handler
