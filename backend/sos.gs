@@ -76,51 +76,26 @@ function handleSosCommand_(chatId) {
 }
 
 /**
- * Extracts strongest and weak chapters for a student
+ * Extracts strongest and weak chapters for a student via canonical Academic Profile
  * @param {string|number} telegramId
  * @return {Object}
  */
 function getStudentMasteryDiagnosis_(telegramId) {
-  var answers = findRows_('SHEET_QB', 'StudentAnswers', 'TelegramID', String(telegramId));
-  var qBank = getAllRowsAsObjects_('SHEET_QB', 'QuestionBank', 1000);
-  var qMap = {};
-  qBank.forEach(function(q) { qMap[q.QID] = q; });
-
-  var chapterStats = {};
-
-  answers.forEach(function(a) {
-    var q = qMap[a.QID];
-    var ch = q ? (q.Chapter || 'Partnership Fundamentals') : 'Partnership Fundamentals';
-    if (!chapterStats[ch]) chapterStats[ch] = { correct: 0, total: 0 };
-    chapterStats[ch].total++;
-    if (parseInt(a.Score, 10) > 0) chapterStats[ch].correct++;
-  });
-
-  var strongestCh = 'Partnership Fundamentals';
-  var highestAcc = 85;
-  var weakCh = 'Forfeiture Pro-Rata & Re-issue';
-  var lowestAcc = 100;
-
-  for (var chName in chapterStats) {
-    var s = chapterStats[chName];
-    if (s.total >= 2) {
-      var acc = Math.round((s.correct / s.total) * 100);
-      if (acc > highestAcc) {
-        highestAcc = acc;
-        strongestCh = 'Chapter ' + chName;
-      }
-      if (acc < lowestAcc) {
-        lowestAcc = acc;
-        weakCh = 'Chapter ' + chName;
-      }
-    }
+  if (typeof getStudentAcademicProfile_ === 'function') {
+    var prof = getStudentAcademicProfile_(telegramId);
+    return {
+      totalSolved: prof.totalAttempted,
+      strongestChapter: prof.strongestChapter || 'Partnership Fundamentals',
+      strongestAccuracy: prof.strongestAccuracy || 85,
+      weakChapter: prof.weakestChapter || 'Accounting for Share Capital'
+    };
   }
 
   return {
-    totalSolved: Math.max(12, answers.length),
-    strongestChapter: strongestCh,
-    strongestAccuracy: highestAcc,
-    weakChapter: weakCh
+    totalSolved: 12,
+    strongestChapter: 'Partnership Fundamentals',
+    strongestAccuracy: 85,
+    weakChapter: 'Accounting for Share Capital'
   };
 }
 

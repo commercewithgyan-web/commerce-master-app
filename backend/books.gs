@@ -248,9 +248,9 @@ function calculateBalanceSheet_() {
     }
   });
 
-  // 2. CURRENT ASSETS: Cash in Hand + Bank/UPI Balance + Receivables
+  // 2. CURRENT ASSETS: Cumulative Cash in Hand + Bank/UPI Balance + Receivables
   var cashDrawer = getCashDrawerBalance_();
-  var cashInHand = cashDrawer.physicalCashToCount;
+  var cashInHand = typeof getCumulativeCashInHand_ === 'function' ? getCumulativeCashInHand_() : (cashDrawer.physicalCashToCount || 0);
   var bankBalance = getCalculatedBankBalance_();
   var feeReceivables = calculateTotalFeeReceivables_();
 
@@ -396,12 +396,16 @@ function getCalculatedBankBalance_() {
     if (r.Key === 'OpeningBank') openBal = parseFloat(r.Value) || 0;
   });
 
-  // Payments received via UPI/Bank
+  // Payments received via UPI/Bank (verified only)
   var payments = getAllRowsAsObjects_('SHEET_FEE', 'Payments', 2000);
   var bankInflow = 0;
   payments.forEach(function(p) {
     var mode = String(p.Mode || '').toLowerCase();
-    if (mode === 'upi' || mode === 'bank') bankInflow += (parseFloat(p.Amount) || 0);
+    var status = String(p.Status || p.ReceiptSent || '').toUpperCase();
+    var isVerified = !p.Status || status.indexOf('VERIFIED') !== -1 || status.indexOf('PAID') !== -1 || status.indexOf('✅') !== -1;
+    if ((mode === 'upi' || mode === 'bank') && isVerified) {
+      bankInflow += (parseFloat(p.Amount) || 0);
+    }
   });
 
   // Expenses paid from UPI/HDFC
@@ -421,8 +425,8 @@ function calculateTotalFeeReceivables_() {
   var invoices = getAllRowsAsObjects_('SHEET_FEE', 'Fee_Schedule', 2000);
   var receivables = 0;
   invoices.forEach(function(inv) {
-    var s = String(inv.Status || '').toLowerCase();
-    if (s === 'due' || s === 'overdue' || s === 'partial') {
+    var s = String(inv.Status || '').trim().toUpperCase();
+    if (s === 'DUE' || s === 'OVERDUE' || s === 'PARTIAL') {
       receivables += (parseFloat(inv.Balance) || 0);
     }
   });
@@ -506,18 +510,27 @@ function apiGetBooksDashboard_(verifiedUser) {
   };
 }
 
-function apiRecordExpense_(payload) {
+function apiRecordExpense_(verifiedUser, payload) {
+  requireAdmin_(verifiedUser && verifiedUser.id);
   return recordExpense_(payload);
 }
 
-function apiGetMonthlyPL_(payload) {
-  return calculateMonthlyPL_(payload.month, payload.year);
+function apiGetMonthlyPL_(verifiedUser, payload) {
+  requireAdmin_(verifiedUser && verifiedUser.id);
+  return calculateMonthlyPL_(payload && payload.month, payload && payload.year);
 }
 
-function apiGetBalanceSheet_(payload) {
+function apiGetBalanceSheet_(verifiedUser, payload) {
+  requireAdmin_(verifiedUser && verifiedUser.id);
   return calculateBalanceSheet_();
 }
 
-function apiGetRatios_(payload) {
+function apiGetRatios_(verifiedUser, payload) {
+  requireAdmin_(verifiedUser && verifiedUser.id);
   return calculateRatios_();
+}
+
+function apiGetCashDrawerBalance_(verifiedUser) {
+  requireAdmin_(verifiedUser && verifiedUser.id);
+  return getCashDrawerBalance_();
 }

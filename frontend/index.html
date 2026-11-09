@@ -22,8 +22,11 @@
           <h2 id="userName" style="font-size: 1.15rem;">Student</h2>
         </div>
       </div>
-      <div class="pill pill-gold" id="coinPill">
-        <span>🪙</span> <span class="mono" id="coinCount">0</span>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button class="pill" id="themeToggleBtn" onclick="toggleTheme()" style="cursor: pointer; background: rgba(109, 40, 217, 0.12); border: 1px solid rgba(109, 40, 217, 0.3); font-size: 13px; padding: 6px 10px; color: inherit;" title="Toggle Light/Dark Theme">🌙</button>
+        <div class="pill pill-gold" id="coinPill">
+          <span>🪙</span> <span class="mono" id="coinCount">0</span>
+        </div>
       </div>
     </header>
 
@@ -204,7 +207,7 @@
     </div>
   </div>
 
-  <!-- Bottom Navigation Bar -->
+  <!-- 5-Tab Bottom Navigation Bar (Claude Audit Spec) -->
   <nav class="bottom-nav">
     <a href="index.html" class="nav-item active">
       <span class="nav-icon">🏠</span>
@@ -212,19 +215,19 @@
     </a>
     <a href="question.html" class="nav-item">
       <span class="nav-icon">⚡</span>
-      <span>Daily MCQ</span>
+      <span>Practice</span>
+    </a>
+    <a href="redpen.html?v=3.2.0" class="nav-item nav-center-highlight">
+      <span class="nav-icon">✍️</span>
+      <span>Check</span>
     </a>
     <a href="notebook.html" class="nav-item">
       <span class="nav-icon">📓</span>
-      <span>Notebook</span>
-    </a>
-    <a href="progress.html" class="nav-item">
-      <span class="nav-icon">📈</span>
-      <span>Progress</span>
+      <span>Mistakes</span>
     </a>
     <a href="fee.html?v=2.5.0" class="nav-item">
-      <span class="nav-icon">💰</span>
-      <span>Fee</span>
+      <span class="nav-icon">👤</span>
+      <span>Me</span>
     </a>
   </nav>
 

@@ -532,11 +532,11 @@ function apiSubmitAnswer_(verifiedUser, payload) {
     if (isCorrect) {
       if (timeTakenSeconds <= teacherGhostSec) {
         beatGhostStatus = 'BEAT_RECORD';
-        bonusCoins = 20; // +20 bonus CG coins
+        bonusCoins = 10; // +5 base + 5 speed bonus
         triggerConfetti = true;
       } else {
         beatGhostStatus = 'REGULAR';
-        bonusCoins = 10;
+        bonusCoins = 5; // +5 base coins
       }
     }
 

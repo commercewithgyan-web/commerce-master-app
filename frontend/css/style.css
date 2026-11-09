@@ -71,24 +71,87 @@ body {
 }
 
 /* Light Mode Support */
+/* Light Mode (Lilac & Blush Premium Theme — G1) */
 body.light-theme {
-  background-color: var(--bg-light);
-  color: var(--text-light-primary);
+  background-color: #FAF8FC !important;
+  color: #0F172A !important;
 }
 
 body.light-theme .card {
-  background-color: var(--bg-card-light);
-  border-color: var(--border-light);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  background-color: #FFFFFF !important;
+  border-color: #E4DCF2 !important;
+  box-shadow: 0 4px 20px rgba(109, 40, 217, 0.05) !important;
+  color: #0F172A !important;
 }
 
 body.light-theme .text-secondary {
-  color: var(--text-light-secondary);
+  color: #475569 !important;
 }
 
 body.light-theme .bottom-nav {
-  background-color: rgba(255, 255, 255, 0.9);
-  border-top-color: var(--border-light);
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-top-color: #E4DCF2 !important;
+}
+
+body.light-theme .tile-title, 
+body.light-theme .snapshot-title, 
+body.light-theme .ghost-hint-title, 
+body.light-theme .hub-tile-title {
+  color: #0F172A !important;
+}
+
+body.light-theme .tile-subtitle, 
+body.light-theme .snapshot-subtitle, 
+body.light-theme .ghost-hint-subtitle, 
+body.light-theme .hub-tile-subtitle {
+  color: #64748B !important;
+}
+
+body.light-theme .nav-item {
+  color: #64748B !important;
+}
+
+body.light-theme .nav-item.active {
+  color: #6D28D9 !important;
+}
+
+/* Optional Dark Theme (Obsidian Gold) */
+body.dark-theme {
+  background-color: #0B0C10 !important;
+  color: #F8FAFC !important;
+}
+
+body.dark-theme .card {
+  background-color: #14171F !important;
+  border-color: #272B36 !important;
+  color: #F8FAFC !important;
+}
+
+body.dark-theme .bottom-nav {
+  background-color: rgba(11, 12, 16, 0.95) !important;
+  border-top-color: #272B36 !important;
+}
+
+/* 5-Tab Center Highlight Button (✍️ Check) */
+.nav-item.nav-center-highlight {
+  position: relative !important;
+  top: -8px !important;
+  background: linear-gradient(135deg, #6D28D9 0%, #4C1D95 100%) !important;
+  color: #FFFFFF !important;
+  border: 2px solid #D4AF37 !important;
+  border-radius: 9999px !important;
+  padding: 8px 16px !important;
+  box-shadow: 0 4px 16px rgba(109, 40, 217, 0.4), 0 0 10px rgba(212, 175, 55, 0.3) !important;
+  font-weight: 700 !important;
+}
+
+.nav-item.nav-center-highlight .nav-icon {
+  font-size: 1.3rem !important;
+  line-height: 1 !important;
+}
+
+.nav-item.nav-center-highlight:active {
+  transform: scale(0.95) !important;
 }
 
 /* Typography */

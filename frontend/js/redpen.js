@@ -403,7 +403,7 @@ function renderUniversalRedPenReport(data, studentName) {
   var card3Html =
     '<div class="eval-step-card">' +
       '<div class="step-header step-3-header">' +
-        '<span>✍️ Step 3: "Aise Nahi, Aise Likhte" (Sentence Upgrades)</span>' +
+        '<span>✍️ Step 3: "Aise Nahi, Aise Likho" (Sentence Upgrades)</span>' +
       '</div>' +
       upgradesHtml +
     '</div>';

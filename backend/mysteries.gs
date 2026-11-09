@@ -77,7 +77,7 @@ function apiSubmitMysteryVerdict_(verifiedUser, payload) {
     var badgeAwarded = null;
 
     if (isCorrect) {
-      bonusCoins = 25;
+      bonusCoins = 10; // +10 CG Coins for verified Case Study solve
       badgeAwarded = '🕵️ Detective Investigator';
 
       // Update student coins and badges in Leaderboard

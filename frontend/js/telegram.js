@@ -16,22 +16,33 @@ var TG_APP = {
         this.tg.expand();
         this.tg.enableClosingConfirmation();
 
-        // Match Deep Obsidian (#0B0C10)
-        if (this.tg.setHeaderColor) {
-          this.tg.setHeaderColor('#0B0C10');
-        }
-        if (this.tg.setBackgroundColor) {
-          this.tg.setBackgroundColor('#0B0C10');
-        }
-
-        // Apply dark/light theme class to body
-        if (this.tg.colorScheme === 'light') {
+        // Theme Initialization: Default to Light / Lilac & Blush Premium Theme (G1)
+        var savedTheme = localStorage.getItem('cg_theme');
+        if (savedTheme === 'dark') {
+          document.body.classList.add('dark-theme');
+          document.body.classList.remove('light-theme');
+          if (this.tg.setHeaderColor) this.tg.setHeaderColor('#0B0C10');
+          if (this.tg.setBackgroundColor) this.tg.setBackgroundColor('#0B0C10');
+        } else {
           document.body.classList.add('light-theme');
+          document.body.classList.remove('dark-theme');
+          if (this.tg.setHeaderColor) this.tg.setHeaderColor('#FAF8FC');
+          if (this.tg.setBackgroundColor) this.tg.setBackgroundColor('#FAF8FC');
         }
 
         Logger.log('Telegram WebApp initialized. User ID: ' + (this.tg.initDataUnsafe && this.tg.initDataUnsafe.user ? this.tg.initDataUnsafe.user.id : 'Anonymous'));
       } catch (e) {
         console.warn('Telegram WebApp init error:', e);
+      }
+    } else {
+      // Browser preview theme setup
+      var saved = localStorage.getItem('cg_theme');
+      if (saved === 'dark') {
+        document.body.classList.add('dark-theme');
+        document.body.classList.remove('light-theme');
+      } else {
+        document.body.classList.add('light-theme');
+        document.body.classList.remove('dark-theme');
       }
     }
   },
@@ -44,8 +55,7 @@ var TG_APP = {
     if (this.tg && this.tg.initData) {
       return this.tg.initData;
     }
-    // Local development fallback token (Gyan Sir Master Profile)
-    return 'query_id=DEV_MOCK&user=%7B%22id%22%3A552858970%2C%22first_name%22%3A%22Gyan%20Sir%22%2C%22last_name%22%3A%22Admin%22%2C%22username%22%3A%22gyandeepsir%22%7D&auth_date=1731110400&hash=mock_dev_hash';
+    return '';
   },
 
   /**
@@ -55,7 +65,7 @@ var TG_APP = {
     if (this.tg && this.tg.initDataUnsafe && this.tg.initDataUnsafe.user) {
       return this.tg.initDataUnsafe.user;
     }
-    return { id: 552858970, first_name: 'Gyan Sir', last_name: 'Admin' };
+    return { id: 'GUEST_STUDENT', first_name: 'Student', last_name: '' };
   },
 
   // ─────────────────────────────────────────────────────────────────
@@ -91,6 +101,26 @@ var TG_APP = {
       try { this.tg.HapticFeedback.notificationOccurred('warning'); } catch (e) {}
     }
   }
+};
+
+window.toggleTheme = function() {
+  var isDark = document.body.classList.contains('dark-theme');
+  if (isDark) {
+    document.body.classList.remove('dark-theme');
+    document.body.classList.add('light-theme');
+    localStorage.setItem('cg_theme', 'light');
+    if (TG_APP.tg && TG_APP.tg.setHeaderColor) TG_APP.tg.setHeaderColor('#FAF8FC');
+    if (TG_APP.tg && TG_APP.tg.setBackgroundColor) TG_APP.tg.setBackgroundColor('#FAF8FC');
+  } else {
+    document.body.classList.remove('light-theme');
+    document.body.classList.add('dark-theme');
+    localStorage.setItem('cg_theme', 'dark');
+    if (TG_APP.tg && TG_APP.tg.setHeaderColor) TG_APP.tg.setHeaderColor('#0B0C10');
+    if (TG_APP.tg && TG_APP.tg.setBackgroundColor) TG_APP.tg.setBackgroundColor('#0B0C10');
+  }
+  TG_APP.hapticLight();
+  var btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.innerText = isDark ? '🌙' : '☀️';
 };
 
 // Auto-initialize on load

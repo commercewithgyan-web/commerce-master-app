@@ -107,9 +107,9 @@ function seedGyanSirStudentData() {
   }
 
   var row2Data = [
-    'S001', 'Gyan Sir (Test)', 12, 'CBSE', '9876543210', '552858970',
+    'S001', 'Test Student (Demo)', 12, 'CBSE', '9876543210', '999999999',
     'P-CBSE-3', 'CBSE Combined', 1500, '2026-11-01', 1500, 0, '',
-    '2027-03-31', 5, 7500, 7500, 0, '✅', 'Active', 'Founder Admin'
+    '2027-03-31', 5, 7500, 7500, 0, '✅', 'Active', 'Demo Student Account'
   ];
 
   if (studentsSheet.getLastRow() < 2) {
@@ -124,8 +124,8 @@ function seedGyanSirStudentData() {
     }
   }
 
-  Logger.log('✅ Seeded Gyan Sir into 3. Fee Management -> Students (Row 2)');
-  return { ok: true, studentId: 'S001', name: 'Gyan Sir (Test)', telegramId: '552858970' };
+  Logger.log('✅ Seeded Test Student into 3. Fee Management -> Students (Row 2)');
+  return { ok: true, studentId: 'S001', name: 'Test Student (Demo)', telegramId: '999999999' };
 }
 
 /** Tab 3.3: Payments — All payment logs and transactions */

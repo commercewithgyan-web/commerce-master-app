@@ -475,16 +475,16 @@ function updateLeaderboard() {
 // ─────────────────────────────────────────────────────────────────────
 
 /**
- * Computes chapter-wise accuracy and predicts CBSE board marks
- * @param {Object} verifiedUser
- * @return {Object} Heatmap & Predicted Score
+ * Canonical Academic Profile Service (Single Source of Truth - R1/R2)
+ * Unifies calculations for Home Dashboard, Progress Heatmap, and Panic SOS.
+ * @param {string|number} telegramId
+ * @return {Object}
  */
-function apiGetProgress_(verifiedUser) {
-  var student = requirePaidStudent_(verifiedUser.id);
-  var telegramId = String(verifiedUser.id);
-
-  var answers = findRows_('SHEET_QB', 'StudentAnswers', 'TelegramID', telegramId);
-  var totalQuestions = answers.length;
+function getStudentAcademicProfile_(telegramId) {
+  var tId = String(telegramId || '');
+  var answers = findRows_('SHEET_QB', 'StudentAnswers', 'TelegramID', tId);
+  var totalAttempted = answers.length;
+  var correctAttempts = 0;
   var totalScore = 0;
   var chapterAccuracy = {};
 
@@ -495,10 +495,10 @@ function apiGetProgress_(verifiedUser) {
   answers.forEach(function(a) {
     var s = parseInt(a.Score, 10) || 0;
     totalScore += s;
+    if (s > 0) correctAttempts++;
 
     var q = qMap[a.QID];
     var ch = q ? (q.Chapter || 'General') : 'General';
-
     if (!chapterAccuracy[ch]) {
       chapterAccuracy[ch] = { correct: 0, total: 0 };
     }
@@ -506,7 +506,8 @@ function apiGetProgress_(verifiedUser) {
     if (s > 0) chapterAccuracy[ch].correct++;
   });
 
-  var overallAccuracy = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
+  // Strict Attempt-Based Accuracy Formula (R3)
+  var overallAccuracy = totalAttempted > 0 ? Math.round((correctAttempts / totalAttempted) * 100) : 0;
 
   // Chapter weightages from Sheet 1 (cached in RAM for 24h)
   var cache = CacheService.getScriptCache();
@@ -521,44 +522,86 @@ function apiGetProgress_(verifiedUser) {
       cache.put('CACHE_CHAPTER_WEIGHTAGES', JSON.stringify(weightages), 86400);
     } catch (wErr) {}
   }
-  var predictedScore = 0;
+
+  var predictedScore = null;
+  var predictedScoreDisplay = 'Calculating after 10 questions';
   var totalBoardMarks = 80; // CBSE Accountancy Theory
   var chapterReports = [];
   var weakTopics = [];
+  var strongestChapter = 'Partnership Fundamentals';
+  var strongestAccuracy = 85;
+  var weakestChapter = 'Accounting for Share Capital';
 
-  weightages.forEach(function(w) {
-    var chNo = String(w.ChapterNo);
-    var chMarks = parseFloat(w.TotalMarks) || 8;
-    var stat = chapterAccuracy[chNo];
-    var acc = stat ? Math.round((stat.correct / stat.total) * 100) : 75; // Default 75% for untracked
+  var maxAcc = -1;
+  var minAcc = 101;
 
-    var marksEarned = (acc / 100) * chMarks;
-    predictedScore += marksEarned;
+  if (weightages && weightages.length > 0) {
+    weightages.forEach(function(w) {
+      var chNo = String(w.ChapterNo);
+      var chMarks = parseFloat(w.TotalMarks) || 8;
+      var stat = chapterAccuracy[chNo] || chapterAccuracy[w.ChapterName];
+      var hasData = stat && stat.total > 0;
+      var acc = hasData ? Math.round((stat.correct / stat.total) * 100) : null;
 
-    var isWeak = acc < 60;
-    if (isWeak) weakTopics.push(w.ChapterName);
+      if (hasData) {
+        if (acc > maxAcc) { maxAcc = acc; strongestChapter = w.ChapterName; strongestAccuracy = acc; }
+        if (acc < minAcc) { minAcc = acc; weakestChapter = w.ChapterName; }
+        if (acc < 60) weakTopics.push(w.ChapterName);
+      }
 
-    chapterReports.push({
-      chapterNo: chNo,
-      chapterName: w.ChapterName,
-      totalMarks: chMarks,
-      accuracy: acc,
-      status: acc >= 80 ? 'Mastered 🟢' : (acc >= 60 ? 'Standard 🟡' : 'Leak Alert 🔴')
+      chapterReports.push({
+        chapterNo: chNo,
+        chapterName: w.ChapterName,
+        totalMarks: chMarks,
+        accuracy: hasData ? acc : 0,
+        hasData: hasData,
+        status: !hasData ? 'Not Attempted' : (acc >= 80 ? 'Mastered 🟢' : (acc >= 60 ? 'Standard 🟡' : 'Leak Alert 🔴'))
+      });
     });
-  });
+  }
 
-  predictedScore = Math.min(80, Math.round(predictedScore));
+  // Statistical sample size check for 80/80 Predicted Score (R4)
+  if (totalAttempted >= 10 && weightages && weightages.length > 0) {
+    var computed = 0;
+    weightages.forEach(function(w) {
+      var chNo = String(w.ChapterNo);
+      var chMarks = parseFloat(w.TotalMarks) || 8;
+      var stat = chapterAccuracy[chNo] || chapterAccuracy[w.ChapterName];
+      var chAcc = (stat && stat.total > 0) ? (stat.correct / stat.total) : (overallAccuracy / 100);
+      computed += chAcc * chMarks;
+    });
+    predictedScore = Math.min(80, Math.max(0, Math.round(computed)));
+    predictedScoreDisplay = predictedScore + '/80';
+  } else if (totalAttempted >= 10) {
+    predictedScore = Math.min(80, Math.round((overallAccuracy / 100) * totalBoardMarks));
+    predictedScoreDisplay = predictedScore + '/80';
+  }
 
   return {
     overallAccuracy: overallAccuracy,
-    totalAttempted: totalQuestions,
+    totalAttempted: totalAttempted,
+    correctAttempts: correctAttempts,
     totalScore: totalScore,
-    predictedBoardScore: predictedScore,
+    predictedBoardScore: predictedScore !== null ? predictedScore : 0,
+    predictedScoreDisplay: predictedScoreDisplay,
     maxBoardScore: totalBoardMarks,
-    predictedPercentage: Math.round((predictedScore / totalBoardMarks) * 100),
-    weakTopics: weakTopics,
+    predictedPercentage: predictedScore !== null ? Math.round((predictedScore / totalBoardMarks) * 100) : overallAccuracy,
+    weakTopics: weakTopics.length > 0 ? weakTopics : ['Accounting for Share Capital'],
+    strongestChapter: strongestChapter,
+    strongestAccuracy: strongestAccuracy,
+    weakestChapter: weakestChapter,
     chapters: chapterReports
   };
+}
+
+/**
+ * Computes chapter-wise accuracy and predicts CBSE board marks
+ * @param {Object} verifiedUser
+ * @return {Object} Heatmap & Predicted Score
+ */
+function apiGetProgress_(verifiedUser) {
+  var student = requirePaidStudent_(verifiedUser.id);
+  return getStudentAcademicProfile_(verifiedUser.id);
 }
 
 /**
@@ -603,7 +646,8 @@ function apiGetHomeDashboard_(verifiedUser) {
     speedBadges: badges,
     rank: rank,
     overallAccuracy: prog.overallAccuracy,
-    predictedScore: prog.predictedBoardScore,
+    predictedScore: prog.predictedScoreDisplay || (prog.predictedBoardScore ? prog.predictedBoardScore + '/80' : 'Calculating after 10 questions'),
+    predictedScoreVal: prog.predictedBoardScore,
     todaySubtopic: {
       chapter: subtopic.chapterName,
       topic: subtopic.subtopicName,

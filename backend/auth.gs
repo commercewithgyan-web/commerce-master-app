@@ -125,10 +125,10 @@ function requirePaidStudent_(telegramId) {
     throw new Error('AUTH_REQUIRED: Telegram user ID is required');
   }
 
-  // Master Admin & VIP Bypass for Gyan Sir (552858970)
+  // Master Admin & VIP Bypass for Founder (from Script Properties strictly)
   var props = PropertiesService.getScriptProperties();
-  var adminId = props.getProperty('ADMIN_ID') || '552858970';
-  if (cleanId === '552858970' || cleanId === String(adminId).trim()) {
+  var adminId = props.getProperty('ADMIN_TELEGRAM_ID') || props.getProperty('ADMIN_ID');
+  if (adminId && cleanId === String(adminId).trim()) {
     return {
       studentId: 'ADMIN-01',
       StudentID: 'ADMIN-01',
@@ -153,7 +153,7 @@ function requirePaidStudent_(telegramId) {
       status: 'Active',
       Status: 'Active',
       Phone: '9876543210',
-      TelegramID: '552858970',
+      TelegramID: cleanId,
       Board: 'CBSE',
       Notes: 'Founder Admin'
     };
@@ -248,15 +248,16 @@ function checkStudentOverdueThreshold_(studentId, thresholdDays) {
 
 /**
  * Verifies if the requester is the authorized Administrator (Gyan Sir)
+ * Strictly fails closed if ADMIN_TELEGRAM_ID / ADMIN_ID is unset.
  * @param {string|number} telegramId
  * @return {boolean}
  */
 function isAdmin_(telegramId) {
   if (!telegramId) return false;
   var cleanId = String(telegramId).trim();
-  if (cleanId === '552858970') return true;
   var props = PropertiesService.getScriptProperties();
-  var adminId = props.getProperty('ADMIN_ID');
+  var adminId = props.getProperty('ADMIN_TELEGRAM_ID') || props.getProperty('ADMIN_ID');
+  if (!adminId || String(adminId).trim() === '') return false;
   return cleanId === String(adminId).trim();
 }
 

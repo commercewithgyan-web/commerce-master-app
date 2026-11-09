@@ -20,6 +20,20 @@
       <div class="pill pill-gold" id="liveCoinsPill">🪙 <span class="mono" id="currentCoins">0</span></div>
     </header>
 
+    <!-- 3 Subject Practice Pills (Audit Spec) -->
+    <div style="display: flex; gap: 8px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 2px;">
+      <button class="pill pill-subject active" id="subjAcc" onclick="selectPracticeSubject('Accountancy')" style="cursor: pointer; border: 1px solid rgba(212, 175, 55, 0.4); font-size: 11.5px; font-weight: 700;">📘 Accountancy</button>
+      <button class="pill pill-subject" id="subjBst" onclick="selectPracticeSubject('Business Studies')" style="cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.15); font-size: 11.5px; font-weight: 700;">📙 Business Studies</button>
+      <button class="pill pill-subject" id="subjEco" onclick="selectPracticeSubject('Economics')" style="cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.15); font-size: 11.5px; font-weight: 700;">📗 Economics</button>
+    </div>
+
+    <!-- Difficulty Tier Selector -->
+    <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+      <button class="pill pill-diff active" id="diffStd" onclick="selectPracticeDifficulty('Standard')" style="flex: 1; text-align: center; justify-content: center; cursor: pointer; font-size: 11px; padding: 6px 4px;">⭐ Standard</button>
+      <button class="pill pill-diff" id="diffMod" onclick="selectPracticeDifficulty('Moderate')" style="flex: 1; text-align: center; justify-content: center; cursor: pointer; font-size: 11px; padding: 6px 4px;">⚡ Moderate</button>
+      <button class="pill pill-diff" id="diffHots" onclick="selectPracticeDifficulty('HOTS')" style="flex: 1; text-align: center; justify-content: center; cursor: pointer; font-size: 11px; padding: 6px 4px;">🔥 HOTS Trap</button>
+    </div>
+
     <!-- Ghost Timer Speed Challenge Aura -->
     <div class="ghost-timer-wrap pulse-gold" id="ghostTimerCard">
       <div style="display: flex; align-items: center; gap: 8px;">
@@ -85,13 +99,28 @@
     </div>
   </div>
 
-  <!-- Persistent Bottom Navigation Bar -->
+  <!-- 5-Tab Bottom Navigation Bar (Claude Audit Spec) -->
   <nav class="bottom-nav">
-    <a href="index.html" class="nav-item"><span class="icon" style="font-size: 1.25rem;">🏠</span><span class="label">Home</span></a>
-    <a href="question.html" class="nav-item active"><span class="icon" style="font-size: 1.25rem;">⚡</span><span class="label">Daily MCQ</span></a>
-    <a href="notebook.html" class="nav-item"><span class="icon" style="font-size: 1.25rem;">📓</span><span class="label">Notebook</span></a>
-    <a href="progress.html" class="nav-item"><span class="icon" style="font-size: 1.25rem;">📈</span><span class="label">Progress</span></a>
-    <a href="fee.html?v=2.5.0" class="nav-item"><span class="icon" style="font-size: 1.25rem;">💰</span><span class="label">Fee</span></a>
+    <a href="index.html" class="nav-item">
+      <span class="nav-icon">🏠</span>
+      <span>Home</span>
+    </a>
+    <a href="question.html" class="nav-item active">
+      <span class="nav-icon">⚡</span>
+      <span>Practice</span>
+    </a>
+    <a href="redpen.html?v=3.2.0" class="nav-item nav-center-highlight">
+      <span class="nav-icon">✍️</span>
+      <span>Check</span>
+    </a>
+    <a href="notebook.html" class="nav-item">
+      <span class="nav-icon">📓</span>
+      <span>Mistakes</span>
+    </a>
+    <a href="fee.html?v=2.5.0" class="nav-item">
+      <span class="nav-icon">👤</span>
+      <span>Me</span>
+    </a>
   </nav>
 
   <script src="js/telegram.js"></script>

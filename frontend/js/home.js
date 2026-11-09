@@ -87,7 +87,11 @@ function renderHomeDashboard(data) {
   document.getElementById('coinCount').innerText = data.cgCoins || 0;
   document.getElementById('streakDisplay').innerText = '🔥 ' + (data.streak || 1) + ' Days';
   document.getElementById('accuracyDisplay').innerText = (data.overallAccuracy || 75) + '%';
-  document.getElementById('predictedScoreDisplay').innerText = (data.predictedScore || 65) + '/80';
+  var predScoreStr = String(data.predictedScore || '68/80');
+  if (predScoreStr.indexOf('/80') === -1 && predScoreStr.indexOf('Calculating') === -1) {
+    predScoreStr = predScoreStr + '/80';
+  }
+  document.getElementById('predictedScoreDisplay').innerText = predScoreStr;
 
   // Today's Subtopic Card
   if (data.todaySubtopic) {

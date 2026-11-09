@@ -7,13 +7,73 @@
  */
 
 var state = {
+  allQuestions: [],
   questions: [],
   currentIndex: 0,
   secondsElapsed: 0,
   timerInterval: null,
   isAnswered: false,
-  currentCoins: 0
+  currentCoins: 0,
+  selectedSubject: 'Accountancy',
+  selectedDifficulty: 'Standard'
 };
+
+function selectPracticeSubject(subj) {
+  state.selectedSubject = subj;
+  TG_APP.hapticLight();
+
+  var sAcc = document.getElementById('subjAcc');
+  var sBst = document.getElementById('subjBst');
+  var sEco = document.getElementById('subjEco');
+
+  if (sAcc) sAcc.classList.toggle('active', subj === 'Accountancy');
+  if (sBst) sBst.classList.toggle('active', subj === 'Business Studies');
+  if (sEco) sEco.classList.toggle('active', subj === 'Economics');
+
+  filterQuestionsAndRender();
+}
+
+function selectPracticeDifficulty(diff) {
+  state.selectedDifficulty = diff;
+  TG_APP.hapticLight();
+
+  var dStd = document.getElementById('diffStd');
+  var dMod = document.getElementById('diffMod');
+  var dHots = document.getElementById('diffHots');
+
+  if (dStd) dStd.classList.toggle('active', diff === 'Standard');
+  if (dMod) dMod.classList.toggle('active', diff === 'Moderate');
+  if (dHots) dHots.classList.toggle('active', diff === 'HOTS');
+
+  filterQuestionsAndRender();
+}
+
+function filterQuestionsAndRender() {
+  var pool = state.allQuestions.length > 0 ? state.allQuestions : getMasterQuestionBank();
+  var filtered = pool.filter(function(q) {
+    var matchSubj = !state.selectedSubject || q.subject.toLowerCase() === state.selectedSubject.toLowerCase();
+    var matchDiff = true;
+    if (state.selectedDifficulty === 'Standard') {
+      matchDiff = q.difficulty === 'Standard' || q.difficulty === 'Easy' || !q.difficulty;
+    } else if (state.selectedDifficulty === 'Moderate') {
+      matchDiff = q.difficulty === 'Moderate' || q.difficulty === 'Medium';
+    } else if (state.selectedDifficulty === 'HOTS') {
+      matchDiff = q.difficulty === 'HOTS' || q.difficulty === 'Hard';
+    }
+    return matchSubj && matchDiff;
+  });
+
+  if (filtered.length === 0) {
+    // If no exact difficulty match, fallback to subject match
+    filtered = pool.filter(function(q) {
+      return !state.selectedSubject || q.subject.toLowerCase() === state.selectedSubject.toLowerCase();
+    });
+  }
+
+  state.questions = filtered.length > 0 ? filtered : pool;
+  state.currentIndex = 0;
+  renderCurrentQuestion();
+}
 
 document.addEventListener('DOMContentLoaded', async function() {
   TG_APP.hapticLight();
@@ -31,16 +91,16 @@ document.addEventListener('DOMContentLoaded', async function() {
   // 1. Instant 0ms render from cache
   var cachedQ = API_CLIENT.getCached('getDailyQuestion');
   if (cachedQ && Array.isArray(cachedQ) && cachedQ.length > 0) {
-    state.questions = cachedQ;
-    renderCurrentQuestion();
+    state.allQuestions = cachedQ;
+    filterQuestionsAndRender();
   }
 
   try {
     // 2. Fetch fresh questions in background
     var questions = await API_CLIENT.call('getDailyQuestion');
     if (questions && questions.length > 0) {
-      state.questions = questions;
-      renderCurrentQuestion();
+      state.allQuestions = questions;
+      filterQuestionsAndRender();
     } else if (!cachedQ || cachedQ.length === 0) {
       loadFallbackDrill();
     }
@@ -82,9 +142,15 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 function loadFallbackDrill() {
-  state.questions = [
+  state.allQuestions = getMasterQuestionBank();
+  filterQuestionsAndRender();
+}
+
+function getMasterQuestionBank() {
+  return [
+    // ─── 📘 ACCOUNTANCY (Class 12) ──────────────────────────
     {
-      qid: 'Q-0001',
+      qid: 'Q-ACC-01',
       questionNumber: 1,
       classLevel: '12',
       subject: 'Accountancy',
@@ -99,12 +165,12 @@ function loadFallbackDrill() {
       ],
       teacherGhostSeconds: 30,
       sharkTankHint: 'Think of partner loan as a debt investor like Shark Tank debt deals — they get paid interest before founders split any profits!',
-      difficulty: 'Medium',
+      difficulty: 'Standard',
       correctIdx: 'B',
       explanation: 'According to Section 13(d) of the Indian Partnership Act, 1932, in the absence of an agreement, a partner is entitled to interest on loan at 6% p.a. It is a charge against profit payable even if the firm incurs a loss.'
     },
     {
-      qid: 'Q-0002',
+      qid: 'Q-ACC-02',
       questionNumber: 2,
       classLevel: '12',
       subject: 'Accountancy',
@@ -119,12 +185,12 @@ function loadFallbackDrill() {
       ],
       teacherGhostSeconds: 40,
       sharkTankHint: 'Monthly SIP withdrawals in business! Average time money stays out of the business is 6.5 months.',
-      difficulty: 'Medium',
+      difficulty: 'Moderate',
       correctIdx: 'B',
       explanation: 'Total Drawings = ₹5,000 × 12 = ₹60,000. Average period for beginning of every month = (12 + 1)/2 = 6.5 months. Interest = ₹60,000 × 10/100 × 6.5/12 = ₹3,250.'
     },
     {
-      qid: 'Q-0003',
+      qid: 'Q-ACC-03',
       questionNumber: 3,
       classLevel: '12',
       subject: 'Accountancy',
@@ -139,12 +205,12 @@ function loadFallbackDrill() {
       ],
       teacherGhostSeconds: 35,
       sharkTankHint: 'Landlord rent must be paid even if company revenue is zero, whether landlord is a co-founder or outsider!',
-      difficulty: 'Medium',
+      difficulty: 'Standard',
       correctIdx: 'C',
       explanation: 'Rent paid to a partner for using his property is an external business expense (charge against profit) debited to P&L Account, not an appropriation.'
     },
     {
-      qid: 'Q-0004',
+      qid: 'Q-ACC-04',
       questionNumber: 4,
       classLevel: '12',
       subject: 'Accountancy',
@@ -159,12 +225,12 @@ function loadFallbackDrill() {
       ],
       teacherGhostSeconds: 45,
       sharkTankHint: 'A primary shark giving a personal guarantee to a junior co-founder out of their personal equity cut!',
-      difficulty: 'Medium',
+      difficulty: 'Moderate',
       correctIdx: 'B',
       explanation: 'Z\'s share = 1/6 of ₹1,20,000 = ₹20,000. Guaranteed profit = ₹30,000. Deficiency = ₹10,000 borne entirely by X. X\'s original share = 3/6 of ₹1,20,000 = ₹60,000. X\'s final share = ₹60,000 - ₹10,000 = ₹50,000.'
     },
     {
-      qid: 'Q-0005',
+      qid: 'Q-ACC-05',
       questionNumber: 5,
       classLevel: '12',
       subject: 'Accountancy',
@@ -179,13 +245,135 @@ function loadFallbackDrill() {
       ],
       teacherGhostSeconds: 35,
       sharkTankHint: 'Internal cap-table rebalancing between partners without re-auditing last year\'s closed books!',
-      difficulty: 'Medium',
+      difficulty: 'HOTS',
       correctIdx: 'C',
       explanation: 'Under CBSE standards, past omissions are rectified at the beginning of the next accounting period by passing a single adjustment entry through Partners\' Capital or Current Accounts.'
+    },
+
+    // ─── 📙 BUSINESS STUDIES (Class 12) ────────────────────
+    {
+      qid: 'Q-BST-01',
+      questionNumber: 1,
+      classLevel: '12',
+      subject: 'Business Studies',
+      chapter: 'Principles of Management',
+      topic: 'Taylor\'s Scientific Management',
+      question: 'Which technique of scientific management introduced by F.W. Taylor aims at differentiating between efficient and inefficient workers by offering two different wage rates?',
+      options: [
+        { label: 'A', text: 'Functional Foremanship', originalIdx: 'A' },
+        { label: 'B', text: 'Differential Piece Wage System', originalIdx: 'B' },
+        { label: 'C', text: 'Method Study', originalIdx: 'C' },
+        { label: 'D', text: 'Standardisation and Simplification', originalIdx: 'D' }
+      ],
+      teacherGhostSeconds: 25,
+      sharkTankHint: 'Performance-linked sales commission: hit the target and unlock higher tier payout!',
+      difficulty: 'Standard',
+      correctIdx: 'B',
+      explanation: 'Taylor introduced the Differential Piece Wage System to strongly incentivize workers to produce standard output by rewarding efficiency and penalizing inefficiency.'
+    },
+    {
+      qid: 'Q-BST-02',
+      questionNumber: 2,
+      classLevel: '12',
+      subject: 'Business Studies',
+      chapter: 'Principles of Management',
+      topic: 'Fayol\'s Principles',
+      question: 'A manufacturing company produces both passenger cars and commercial trucks under one general manager who directs marketing for both lines together. Which principle of Fayol is violated?',
+      options: [
+        { label: 'A', text: 'Unity of Command', originalIdx: 'A' },
+        { label: 'B', text: 'Unity of Direction', originalIdx: 'B' },
+        { label: 'C', text: 'Division of Work', originalIdx: 'C' },
+        { label: 'D', text: 'Order', originalIdx: 'D' }
+      ],
+      teacherGhostSeconds: 35,
+      sharkTankHint: 'One head, one plan for a group of activities having the same objective (car division vs truck division).',
+      difficulty: 'Moderate',
+      correctIdx: 'B',
+      explanation: 'Unity of Direction requires one head and one plan for a group of activities having the same objective, preventing overlap between distinct product divisions.'
+    },
+    {
+      qid: 'Q-BST-03',
+      questionNumber: 3,
+      classLevel: '12',
+      subject: 'Business Studies',
+      chapter: 'Financial Management',
+      topic: 'Trading on Equity',
+      question: 'Trading on Equity results in an increase in Earning Per Share (EPS) for equity shareholders ONLY WHEN:',
+      options: [
+        { label: 'A', text: 'Return on Investment (ROI) is greater than the rate of interest on debt', originalIdx: 'A' },
+        { label: 'B', text: 'Rate of interest on debt is greater than Return on Investment (ROI)', originalIdx: 'B' },
+        { label: 'C', text: 'Tax rate is zero', originalIdx: 'C' },
+        { label: 'D', text: 'Total debt is equal to total equity capital', originalIdx: 'D' }
+      ],
+      teacherGhostSeconds: 40,
+      sharkTankHint: 'Leveraged buyout: borrowing at 8% to earn 15% leaves a juicy spread for the equity owner!',
+      difficulty: 'HOTS',
+      correctIdx: 'A',
+      explanation: 'Favorable financial leverage (Trading on Equity) magnifies shareholder return only when ROI > Cost of Debt. If ROI < Cost of Debt, EPS decreases (unfavorable leverage).'
+    },
+
+    // ─── 📗 ECONOMICS (Class 12) ───────────────────────────
+    {
+      qid: 'Q-ECO-01',
+      questionNumber: 1,
+      classLevel: '12',
+      subject: 'Economics',
+      chapter: 'National Income and Related Aggregates',
+      topic: 'Real vs Nominal GDP',
+      question: 'Why is Real GDP considered a better indicator of economic welfare compared to Nominal GDP?',
+      options: [
+        { label: 'A', text: 'It includes non-monetary transactions and barter trade', originalIdx: 'A' },
+        { label: 'B', text: 'It evaluates output at constant base-year prices, eliminating inflation distortions', originalIdx: 'B' },
+        { label: 'C', text: 'It accounts for income inequality and distribution among citizens', originalIdx: 'C' },
+        { label: 'D', text: 'It is always mathematically higher than Nominal GDP', originalIdx: 'D' }
+      ],
+      teacherGhostSeconds: 25,
+      sharkTankHint: 'Comparing real unit volume sold versus price hikes disguising revenue growth!',
+      difficulty: 'Standard',
+      correctIdx: 'B',
+      explanation: 'Real GDP measures physical volume of output valued at constant base-year prices, so any increase reflects genuine growth in goods and services rather than mere price rise.'
+    },
+    {
+      qid: 'Q-ECO-02',
+      questionNumber: 2,
+      classLevel: '12',
+      subject: 'Economics',
+      chapter: 'Money and Banking',
+      topic: 'Credit Multiplier',
+      question: 'If the Legal Reserve Ratio (LRR) set by the central bank is 20%, what is the value of the money multiplier and total credit created from an initial deposit of ₹1,000?',
+      options: [
+        { label: 'A', text: 'Multiplier = 2, Total Credit = ₹2,000', originalIdx: 'A' },
+        { label: 'B', text: 'Multiplier = 5, Total Credit = ₹5,000', originalIdx: 'B' },
+        { label: 'C', text: 'Multiplier = 10, Total Credit = ₹10,000', originalIdx: 'C' },
+        { label: 'D', text: 'Multiplier = 4, Total Credit = ₹4,000', originalIdx: 'D' }
+      ],
+      teacherGhostSeconds: 30,
+      sharkTankHint: 'Fractional reserve banking velocity: 1/0.2 = 5x multiplier!',
+      difficulty: 'Moderate',
+      correctIdx: 'B',
+      explanation: 'Money Multiplier = 1 / LRR = 1 / 0.20 = 5. Total Credit Creation = Initial Deposit × Multiplier = ₹1,000 × 5 = ₹5,000.'
+    },
+    {
+      qid: 'Q-ECO-03',
+      questionNumber: 3,
+      classLevel: '12',
+      subject: 'Economics',
+      chapter: 'Government Budget and the Economy',
+      topic: 'Budget Receipts',
+      question: 'Sale of government equity shares in public sector undertakings (Disinvestment) is classified under the Union Budget as:',
+      options: [
+        { label: 'A', text: 'Revenue Receipt, because it is regular income for the government', originalIdx: 'A' },
+        { label: 'B', text: 'Capital Receipt, because it reduces the financial assets of the government', originalIdx: 'B' },
+        { label: 'C', text: 'Capital Expenditure, because government receives funds', originalIdx: 'C' },
+        { label: 'D', text: 'Recovery of Loans', originalIdx: 'D' }
+      ],
+      teacherGhostSeconds: 35,
+      sharkTankHint: 'Liquidating equity in an asset generates cash, but reduces balance sheet ownership!',
+      difficulty: 'HOTS',
+      correctIdx: 'B',
+      explanation: 'Capital receipts either create liabilities or cause reduction in government assets. Disinvestment sells state-owned assets, hence reducing assets of the government.'
     }
   ];
-  state.currentIndex = 0;
-  renderCurrentQuestion();
 }
 
 function renderCurrentQuestion() {

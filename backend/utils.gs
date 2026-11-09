@@ -146,14 +146,42 @@ function getKolkataDate(d) {
 }
 
 /**
- * Parses a date or returns current date if invalid
- * @param {string|Date} dateInput
+ * Safely parses any date string, Google Sheets serial number, or Date instance into Date
+ * Robustly parses Indian 'dd/MM/yyyy', 'dd-MM-yyyy', and ISO formats.
+ * @param {string|number|Date} dateInput
  * @return {Date}
  */
 function parseDateOrToday_(dateInput) {
   if (!dateInput) return new Date();
   if (dateInput instanceof Date) return dateInput;
-  var parsed = new Date(dateInput);
+
+  // Handle Google Sheets numeric serial dates (e.g. 46334)
+  if (typeof dateInput === 'number' && !isNaN(dateInput)) {
+    return new Date((dateInput - 25569) * 86400 * 1000);
+  }
+
+  var str = String(dateInput).trim();
+  if (!str) return new Date();
+
+  // Handle dd/MM/yyyy or dd-MM-yyyy format
+  var dmyMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (dmyMatch) {
+    var day = parseInt(dmyMatch[1], 10);
+    var month = parseInt(dmyMatch[2], 10) - 1;
+    var year = parseInt(dmyMatch[3], 10);
+    return new Date(year, month, day);
+  }
+
+  // Handle yyyy-MM-dd format
+  var ymdMatch = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if (ymdMatch) {
+    var y = parseInt(ymdMatch[1], 10);
+    var m = parseInt(ymdMatch[2], 10) - 1;
+    var d = parseInt(ymdMatch[3], 10);
+    return new Date(y, m, d);
+  }
+
+  var parsed = new Date(str);
   return isNaN(parsed.getTime()) ? new Date() : parsed;
 }
 

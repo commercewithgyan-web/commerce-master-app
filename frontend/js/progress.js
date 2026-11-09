@@ -65,9 +65,15 @@ function getDefaultProgressData() {
 function renderProgress(data) {
   if (!data) return;
 
-  document.getElementById('overallAccuracyBadge').innerText = (data.overallAccuracy || 75) + '% Accuracy';
-  document.getElementById('predScoreLarge').innerText = data.predictedBoardScore || 68;
-  document.getElementById('predPercentage').innerText = (data.predictedPercentage || 85) + '%';
+  document.getElementById('overallAccuracyBadge').innerText = (data.overallAccuracy !== undefined ? data.overallAccuracy : 75) + '% Accuracy';
+
+  if (data.totalAttempted !== undefined && data.totalAttempted < 10) {
+    document.getElementById('predScoreLarge').innerText = '--';
+    document.getElementById('predPercentage').innerText = 'Calculating after 10 questions';
+  } else {
+    document.getElementById('predScoreLarge').innerText = data.predictedBoardScore || 68;
+    document.getElementById('predPercentage').innerText = (data.predictedPercentage || 85) + '%';
+  }
 
   // Marks Leak Alert (Pillar 7)
   if (data.weakTopics && data.weakTopics.length > 0) {

@@ -452,6 +452,19 @@ function handleRunRedPenAnalysis(data) {
 
   if (!imageBase64) return { ok: false, error: 'No image received' };
 
+  // Enforce 3 free copy checks per student per day (Law 1: Zero Marginal Cost Quota Protection)
+  var todayStr = getKolkataDate();
+  var cache = CacheService.getScriptCache();
+  var quotaKey = 'REDPEN_QUOTA_' + telegramId + '_' + todayStr;
+  var usedToday = parseInt(cache.get(quotaKey) || '0', 10);
+  if (!isAdmin_(telegramId) && usedToday >= 3) {
+    return {
+      ok: true,
+      isValid: false,
+      rejectionReason: 'Daily Red-Pen Limit Reached (3/3 copies evaluated today). Your daily quota resets at midnight. Review your previous copies in your Notebook!'
+    };
+  }
+
   var ctx = runGatekeeperAndBuildCtx_(imageBase64, confirmedText);
   if (!ctx.isHandwritten) {
     return {
@@ -466,8 +479,13 @@ function handleRunRedPenAnalysis(data) {
   var raw = JSON.parse(callGemini_(prompt.system, [{ text: prompt.user }], schema));
   var scored = validateAndScore(raw, ctx);
 
-  // Background logging & drive save
+  // Background logging, drive save, and award +20 CG Coins
   try {
+    cache.put(quotaKey, String(usedToday + 1), 86400);
+    if (typeof updateStudentCoinsAndLeaderboard_ === 'function' && telegramId !== 'GUEST_STUDENT') {
+      updateStudentCoinsAndLeaderboard_(String(telegramId), studentName, 12, Math.round(scored.result.computed.marks_earned || 0), 20, false);
+    }
+
     var driveUrl = saveRedPenImageToDrive_(imageBase64, telegramId);
     var subId = 'RP-' + Date.now();
     appendRow_('SHEET_QB', 'RedPen_Submissions', [

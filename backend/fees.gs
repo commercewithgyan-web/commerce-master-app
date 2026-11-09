@@ -508,6 +508,48 @@ function generateReceiptPdf_(data) {
 // ─────────────────────────────────────────────────────────────────────
 
 /**
+ * Computes cumulative physical cash in hand across all history + OpeningCash.
+ * Strictly used for the Balance Sheet (Current Assets: Cash in Hand).
+ * @return {number}
+ */
+function getCumulativeCashInHand_() {
+  // 1. Opening Cash Balance from Opening_Balances tab
+  var openingBalances = getAllRowsAsObjects_('SHEET_BOOKS', 'Opening_Balances', 20);
+  var openingCash = 0;
+  for (var k = 0; k < openingBalances.length; k++) {
+    if (String(openingBalances[k].Key) === 'OpeningCash') {
+      openingCash = parseFloat(openingBalances[k].Value) || 0;
+      break;
+    }
+  }
+
+  // 2. All Cash Inflows (Historical)
+  var payments = getAllRowsAsObjects_('SHEET_FEE', 'Payments', 2000);
+  var totalCashInflow = 0;
+  for (var i = 0; i < payments.length; i++) {
+    var p = payments[i];
+    var pMode = String(p.Mode || '').trim().toLowerCase();
+    if (pMode === 'cash') {
+      totalCashInflow += (parseFloat(p.Amount) || 0);
+    }
+  }
+
+  // 3. All Cash Outflows (Historical)
+  var expenses = getAllRowsAsObjects_('SHEET_BOOKS', 'Expenses', 2000);
+  var totalCashOutflow = 0;
+  for (var j = 0; j < expenses.length; j++) {
+    var e = expenses[j];
+    var eMode = String(e.Mode || '').trim().toLowerCase();
+    var ePaidFrom = String(e.PaidFrom || '').trim().toLowerCase();
+    if (eMode === 'cash' || ePaidFrom === 'cash') {
+      totalCashOutflow += (parseFloat(e.Amount) || 0);
+    }
+  }
+
+  return Math.round((openingCash + totalCashInflow - totalCashOutflow) * 100) / 100;
+}
+
+/**
  * Reconciles the offline physical cash drawer for today.
  * Sums cash fees collected minus cash expenses paid out.
  * @return {Object} Cash drawer audit breakdown

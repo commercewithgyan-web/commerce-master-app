@@ -362,8 +362,8 @@ async function sendDoubtQuery(text) {
   } catch (err) {
     removeLoadingBubble(loadingId);
     TG_APP.hapticError();
-    // Honest, truthful diagnostic error display
-    appendErrorBubble('Unable to connect: ' + (err.message || JSON.stringify(err)));
+    // Honest, truthful diagnostic error display with 1-tap retry (D4)
+    appendErrorBubble('Unable to connect: ' + (err.message || JSON.stringify(err)), text);
   }
 }
 
@@ -430,22 +430,36 @@ function removeLoadingBubble(id) {
 }
 
 /**
- * Appends honest error bubble (no fake Accountancy fallbacks)
+ * Appends honest error bubble with 1-tap retry button (D4)
  * @param {string} msg
+ * @param {string} [failedText]
  */
-function appendErrorBubble(msg) {
+function appendErrorBubble(msg, failedText) {
   var container = document.getElementById('chatMessages');
   var card = document.createElement('div');
   card.className = 'card';
   card.style.margin = '0';
   card.style.maxWidth = '90%';
   card.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+
+  var retryBtnHtml = failedText
+    ? '<button class="btn btn-outline btn-sm" style="margin-top:10px; border-color:rgba(212,175,55,0.6); color:#FDE047; width:auto; padding:6px 14px; font-weight:700;" onclick="retryDoubtQuery(' + JSON.stringify(failedText).replace(/"/g, '&quot;') + ')">🔄 Tap to Retry</button>'
+    : '';
+
   card.innerHTML =
     '<div style="font-weight:700; font-size:0.85rem; color:#F87171; margin-bottom:4px;">⚠️ Notice</div>' +
-    '<p class="serif text-sm" style="line-height:1.5; color:#E2E8F0;">' + msg + '</p>';
+    '<p class="serif text-sm" style="line-height:1.5; color:#E2E8F0;">' + msg + '</p>' +
+    retryBtnHtml;
   container.appendChild(card);
   container.scrollTop = container.scrollHeight;
 }
+
+window.retryDoubtQuery = function(text) {
+  if (text) {
+    TG_APP.hapticLight();
+    sendDoubtQuery(text);
+  }
+};
 
 /**
  * Renders the Multi-Lens Response Card with interactive Lens Chips

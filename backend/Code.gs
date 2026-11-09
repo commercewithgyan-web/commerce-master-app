@@ -7,32 +7,22 @@
  */
 
 /**
- * Health check endpoint (GET) — Law C-2: GET performs zero state mutations
+ * Health check endpoint (GET) — Pure status probe, zero parameter inspection, zero key leaks
  */
 function doGet(e) {
-  if (e && e.parameter && e.parameter.setupSecret === 'CG_SETUP_TOKEN_Begusarai_2026') {
-    var props = PropertiesService.getScriptProperties();
-    return jsonResponse({
-      ok: true,
-      keys: props.getKeys(),
-      timestamp: getKolkataTimestamp()
-    });
-  }
-
   return jsonResponse({
-    status: 'ok',
-    service: 'Commerce Master App Microservices',
-    version: '2.3',
+    status: 'online',
+    service: 'Commerce Gyan Microservices',
+    version: '2.0',
     board: 'CBSE Class 11 & 12 Commerce',
-    institution: 'Commerce Gyan',
+    institution: 'Commerce Gyan, Begusarai',
     timestamp: getKolkataTimestamp()
   });
 }
 
 /**
  * Primary API & Webhook Dispatcher (POST)
- * Routes either Telegram Webhook updates, Mini App authenticated requests,
- * or secure system setup requests.
+ * Routes either Telegram Webhook updates or Mini App authenticated requests.
  */
 function doPost(e) {
   try {
@@ -66,64 +56,11 @@ function doPost(e) {
 }
 
 /**
- * Routes API requests, setup requests, or Telegram updates
+ * Routes API requests or Telegram updates
  * @param {Object} req
  * @return {Object}
  */
 function handleApiRequest(req) {
-  // ROUTE 0: SECURE SYSTEM SETUP & MAINTENANCE
-  if (req.setupSecret === 'CG_SETUP_TOKEN_Begusarai_2026') {
-    if (req.action === 'setScriptProperties') {
-      var props = PropertiesService.getScriptProperties();
-      if (req.properties && typeof req.properties === 'object') {
-        for (var k in req.properties) {
-          props.setProperty(k, String(req.properties[k]));
-        }
-      }
-      return { ok: true, savedKeys: Object.keys(req.properties || {}), allKeys: props.getKeys() };
-    }
-    if (req.action === 'syncSyllabus') {
-      var insertedCount = syncMasterSyllabusData();
-      return { ok: true, action: 'syncSyllabus', insertedRows: insertedCount, timestamp: getKolkataTimestamp() };
-    }
-    if (req.action === 'seedQuestions') {
-      var seeded = seedInitialQuestionBankData();
-      return { ok: true, action: 'seedQuestions', count: seeded, timestamp: getKolkataTimestamp() };
-    }
-    if (req.action === 'seedGyanSirTestData') {
-      var studentResult = seedGyanSirStudentData();
-      var qCount = seedInitialQuestionBankData();
-      return {
-        ok: true,
-        action: 'seedGyanSirTestData',
-        student: studentResult,
-        questionCount: qCount,
-        timestamp: getKolkataTimestamp()
-      };
-    }
-    if (req.action === 'flushTelegramWebhook') {
-      var props = PropertiesService.getScriptProperties();
-      var activeUrl = props.getProperty('WEBAPP_URL') || 'https://script.google.com/macros/s/AKfycbywJKoynUbc2fY7caEx9hZ-FARG71J9v1F6uXaL5z7XxBS_NKhwFiKCZIVeaYVJ0QS4jQ/exec';
-      // Drop all pending stuck updates from Telegram servers immediately
-      var delRes = callTelegramApi_('deleteWebhook', { drop_pending_updates: true });
-      // Re-register webhook with drop_pending_updates
-      var setRes = callTelegramApi_('setWebhook', {
-        url: activeUrl,
-        allowed_updates: ['message', 'callback_query'],
-        drop_pending_updates: true
-      });
-      var infoRes = callTelegramApi_('getWebhookInfo', {});
-      return {
-        ok: true,
-        action: 'flushTelegramWebhook',
-        deletedWebhook: delRes,
-        reRegisteredWebhook: setRes,
-        currentWebhookInfo: infoRes,
-        timestamp: getKolkataTimestamp()
-      };
-    }
-  }
-
   // ROUTE 1: TELEGRAM BOT WEBHOOK (update_id present)
   if (req.update_id) {
     handleTelegramWebhook_(req);
@@ -136,7 +73,7 @@ function handleApiRequest(req) {
     return { ok: false, error: 'Missing action parameter in request' };
   }
 
-  // Resolve verified user (Supports Telegram signed initData and web preview fallback)
+  // Resolve verified user (Supports Telegram signed initData and guest fallback)
   var verifiedUser = resolveVerifiedUser_(req.initData);
 
   var payload = req.payload || {};
@@ -222,28 +159,28 @@ function handleApiRequest(req) {
       break;
 
     case 'recordExpense':
-      requireAdmin_(verifiedUser.id);
-      dataResult = apiRecordExpense_(payload);
+      requireAdmin_(verifiedUser && verifiedUser.id);
+      dataResult = apiRecordExpense_(verifiedUser, payload);
       break;
 
     case 'getMonthlyPL':
-      requireAdmin_(verifiedUser.id);
-      dataResult = apiGetMonthlyPL_(payload);
+      requireAdmin_(verifiedUser && verifiedUser.id);
+      dataResult = apiGetMonthlyPL_(verifiedUser, payload);
       break;
 
     case 'getBalanceSheet':
-      requireAdmin_(verifiedUser.id);
-      dataResult = apiGetBalanceSheet_(payload);
+      requireAdmin_(verifiedUser && verifiedUser.id);
+      dataResult = apiGetBalanceSheet_(verifiedUser, payload);
       break;
 
     case 'getRatios':
-      requireAdmin_(verifiedUser.id);
-      dataResult = apiGetRatios_(payload);
+      requireAdmin_(verifiedUser && verifiedUser.id);
+      dataResult = apiGetRatios_(verifiedUser, payload);
       break;
 
     case 'getCashDrawerBalance':
-      requireAdmin_(verifiedUser.id);
-      dataResult = apiGetCashDrawerBalance_();
+      requireAdmin_(verifiedUser && verifiedUser.id);
+      dataResult = apiGetCashDrawerBalance_(verifiedUser);
       break;
 
     default:
