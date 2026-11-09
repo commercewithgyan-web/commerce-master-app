@@ -1190,3 +1190,205 @@ body.light-theme .btn-back {
   color: #CBD5E1;
   line-height: 1.5;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   TUITION FEE LEDGER & PRO-RATA ENGINE (fee.html)
+   ═══════════════════════════════════════════════════════════════════════ */
+.fee-metric-tile {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+}
+
+.fee-receipt-card {
+  background: linear-gradient(145deg, #151824 0%, #0D101A 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.fee-receipt-card:active {
+  transform: scale(0.99);
+}
+
+.fee-receipt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.fee-receipt-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 13px;
+  color: #FFFFFF;
+}
+
+.fee-receipt-amount {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 800;
+  color: #34D399;
+}
+
+.fee-receipt-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text-dark-secondary);
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+.fee-receipt-mode-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #E2E8F0;
+}
+
+/* Day-by-Day Study Attendance Log */
+.study-ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 4px;
+}
+
+.study-ledger-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+}
+
+.study-ledger-row:last-child {
+  border-bottom: none;
+}
+
+.study-ledger-date {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: #F8FAFC;
+  width: 110px;
+  flex-shrink: 0;
+  font-size: 11.5px;
+}
+
+.study-ledger-activity {
+  flex: 1;
+  color: var(--text-dark-secondary);
+  font-size: 11px;
+  padding: 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.study-ledger-cost {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: #FBBF24;
+  text-align: right;
+  flex-shrink: 0;
+  font-size: 11.5px;
+}
+
+.study-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #34D399;
+}
+
+/* Official Digital Fee Receipt Voucher Modal */
+.receipt-voucher-box {
+  background: #0E111B;
+  border: 1.5px solid #D4AF37;
+  border-radius: 18px;
+  padding: 20px 18px;
+  color: #F8FAFC;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(212, 175, 55, 0.15);
+  box-sizing: border-box;
+}
+
+.receipt-voucher-header {
+  text-align: center;
+  border-bottom: 2px dashed rgba(212, 175, 55, 0.4);
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+}
+
+.receipt-voucher-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: 0.5px;
+}
+
+.receipt-voucher-sub {
+  font-size: 11px;
+  color: #94A3B8;
+  margin-top: 3px;
+}
+
+.receipt-voucher-table {
+  width: 100%;
+  margin: 12px 0;
+  font-size: 12.5px;
+}
+
+.receipt-voucher-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.receipt-voucher-label {
+  color: #94A3B8;
+  font-weight: 500;
+}
+
+.receipt-voucher-value {
+  color: #FFFFFF;
+  font-weight: 700;
+  text-align: right;
+}
+
+.receipt-voucher-total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1.5px solid rgba(212, 175, 55, 0.4);
+  border-bottom: 1.5px solid rgba(212, 175, 55, 0.4);
+  margin: 10px 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #FDE047;
+}
+
+.receipt-voucher-signature {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}

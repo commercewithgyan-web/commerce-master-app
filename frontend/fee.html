@@ -22,34 +22,99 @@
       <div class="pill pill-green" id="feeStatusPill">Active</div>
     </header>
 
-    <!-- Section 1 & 2: Plan & Payment Summary Card -->
-    <div class="card card-gold">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-        <span class="pill pill-gold" id="planNameBadge">CBSE Combined</span>
-        <span class="mono" style="font-size: 0.85rem;" id="monthlyFeeBadge">₹1,500/mo</span>
+    <!-- 1. Student Enrollment & Academic Identity Card -->
+    <div class="card" style="background: linear-gradient(145deg, #181428 0%, #0F111D 100%); border: 1.5px solid rgba(212, 175, 55, 0.4); margin-bottom: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div>
+          <span class="pill pill-gold" style="font-size: 10px; margin-bottom: 4px;" id="planNameBadge">CBSE Combined</span>
+          <h3 style="font-size: 1.15rem; color: #FFFFFF; margin: 4px 0 2px;" id="studentNameDisplay">Gyan Sir</h3>
+          <div class="text-xs text-secondary">Student ID: <span class="mono" id="studentIdDisplay" style="color: #F8FAFC;">ADMIN-01</span> • Class 12 Commerce</div>
+        </div>
+        <div style="text-align: right;">
+          <div class="pill pill-green" id="feeStatusPill">Paid in Full ✅</div>
+          <div class="text-xs text-secondary" style="margin-top: 6px;">📅 Joined: <strong style="color: #F8FAFC;" id="joinedDateDisplay">01-Jul-2026</strong></div>
+        </div>
       </div>
-      <div style="margin-bottom: 14px;">
-        <div class="text-xs text-secondary">TOTAL COURSE FEE</div>
-        <div class="mono" style="font-size: 1.5rem; font-weight: 700;" id="totalCourseFeeDisplay">₹18,000</div>
-      </div>
-      <!-- Progress Bar -->
-      <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 9999px; margin-bottom: 8px; overflow: hidden;">
-        <div id="feeProgressBar" style="width: 50%; height: 100%; background: linear-gradient(90deg, #10B981, #D4AF37); border-radius: 9999px;"></div>
-      </div>
-      <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
-        <span style="color: #34D399;">Paid: <strong class="mono" id="totalPaidDisplay">₹9,000</strong></span>
-        <span style="color: #F87171;">Balance: <strong class="mono" id="balanceDisplay">₹9,000</strong></span>
+
+      <!-- Quick Study & Enrollment Metrics Ribbon -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: rgba(0,0,0,0.3); padding: 8px 6px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); text-align: center;">
+        <div>
+          <div style="font-size: 1.15rem; font-weight: 800; color: #FBBF24;" class="mono" id="daysElapsedDisplay">131</div>
+          <div style="font-size: 9px; font-weight: 700; color: #94A3B8; text-transform: uppercase;">Days Enrolled</div>
+        </div>
+        <div>
+          <div style="font-size: 1.15rem; font-weight: 800; color: #34D399;" class="mono" id="daysStudiedDisplay">98</div>
+          <div style="font-size: 9px; font-weight: 700; color: #94A3B8; text-transform: uppercase;">Days Studied</div>
+        </div>
+        <div>
+          <div style="font-size: 1.15rem; font-weight: 800; color: #A5B4FC;" class="mono" id="studyStreakDisplay">14d 🔥</div>
+          <div style="font-size: 9px; font-weight: 700; color: #94A3B8; text-transform: uppercase;">Active Streak</div>
+        </div>
       </div>
     </div>
 
-    <!-- Section 3 & 7: Next Due & Pay Now (UPI) -->
-    <div class="card card-violet" id="nextDueCard">
+    <!-- 2. Commercial Pro-Rata & Financial Settlement Ledger -->
+    <div class="card card-gold" style="margin-bottom: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(212, 175, 55, 0.25);">
+        <div style="font-size: 0.78rem; font-weight: 800; color: #FDE047; letter-spacing: 0.5px;">⚖️ PRO-RATA ACCOUNTANCY LEDGER</div>
+        <span class="mono text-xs" style="color: #D4AF37;" id="dailyProRataBadge">Rate: ₹50.00 / day</span>
+      </div>
+
+      <!-- 4-Box Financial Grid -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 10px; padding: 10px;">
+          <div class="text-xs" style="color: #6EE7B7; font-weight: 600; text-transform: uppercase;">Total Paid to Date</div>
+          <div class="mono" style="font-size: 1.35rem; font-weight: 800; color: #34D399;" id="totalPaidDisplay">₹7,500</div>
+          <div style="font-size: 10px; color: #94A3B8; margin-top: 2px;">
+            UPI: <strong style="color: #E2E8F0;" id="paidUpiDisplay">₹6,000</strong> • Cash: <strong style="color: #E2E8F0;" id="paidCashDisplay">₹1,500</strong>
+          </div>
+        </div>
+
+        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 10px; padding: 10px;">
+          <div class="text-xs" style="color: #FDE68A; font-weight: 600; text-transform: uppercase;">Pro-Rata Consumed</div>
+          <div class="mono" style="font-size: 1.35rem; font-weight: 800; color: #FBBF24;" id="proRataConsumedDisplay">₹6,550</div>
+          <div style="font-size: 10px; color: #94A3B8; margin-top: 2px;" id="proRataConsumedNote">
+            131 Days × ₹50/day
+          </div>
+        </div>
+
+        <div style="background: rgba(79, 70, 229, 0.08); border: 1px solid rgba(79, 70, 229, 0.25); border-radius: 10px; padding: 10px;">
+          <div class="text-xs" style="color: #A5B4FC; font-weight: 600; text-transform: uppercase;">Advance / Surplus Credit</div>
+          <div class="mono" style="font-size: 1.35rem; font-weight: 800; color: #C7D2FE;" id="proRataAdvanceDisplay">+₹950</div>
+          <div style="font-size: 10px; color: #94A3B8; margin-top: 2px;">
+            Paid through <strong style="color: #E2E8F0;" id="paidThroughDisplay">30-Nov</strong> (21d left)
+          </div>
+        </div>
+
+        <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 10px;">
+          <div class="text-xs" style="color: #CBD5E1; font-weight: 600; text-transform: uppercase;">Remaining Course Fee</div>
+          <div class="mono" style="font-size: 1.35rem; font-weight: 800; color: #FFFFFF;" id="remainingAnnualDisplay">₹10,500</div>
+          <div style="font-size: 10px; color: #94A3B8; margin-top: 2px;">
+            Annual ₹18k (Term 1 ₹0 Due)
+          </div>
+        </div>
+      </div>
+
+      <!-- Term 1 Paid Bar -->
+      <div style="margin-bottom: 4px;">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+          <span style="color: #E2E8F0;">Term 1 Commitment (Jul–Nov 2026): <strong style="color:#34D399;">100% Cleared</strong></span>
+          <span class="mono" style="color: #34D399; font-weight: 700;">₹7,500 / ₹7,500</span>
+        </div>
+        <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 9999px; overflow: hidden;">
+          <div id="feeProgressBar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #10B981, #D4AF37); border-radius: 9999px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3 & 7: Next Due & Pay Advance -->
+    <div class="card card-violet" id="nextDueCard" style="display: none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <span class="pill pill-violet">NEXT DUE INVOICE</span>
+        <span class="pill pill-violet">UPCOMING INVOICE</span>
         <span class="mono text-gold text-sm" id="nextDueAmount">₹1,500</span>
       </div>
-      <div style="font-size: 0.95rem; font-weight: 600; margin-bottom: 4px;" id="nextDueMonth">Month of November 2026</div>
-      <div class="text-xs text-secondary" style="margin-bottom: 14px;">Due Date: <span class="mono" id="nextDueDate">05-Nov-2026</span></div>
+      <div style="font-size: 0.95rem; font-weight: 600; margin-bottom: 4px;" id="nextDueMonth">Month of December 2026</div>
+      <div class="text-xs text-secondary" style="margin-bottom: 14px;">Due Date: <span class="mono" id="nextDueDate">05-Dec-2026</span></div>
       
       <!-- UPI Pay Button -->
       <a href="upi://pay?pa=gyandeep@upi&pn=Commerce%20Gyan&cu=INR" class="btn btn-primary" id="btnPayUpi">
@@ -57,30 +122,134 @@
       </a>
     </div>
 
-    <!-- Section 4: 12-Month Invoices Breakdown -->
+    <!-- Section 4: Day-by-Day Study Attendance & Pro-Rata Consumption Log -->
     <div class="card">
-      <h3 style="font-size: 0.95rem; margin-bottom: 12px;">📑 Monthly Invoice Schedule</h3>
-      <div id="invoicesList" style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <div>
+          <h3 style="font-size: 0.95rem; color: #FFFFFF; margin: 0;">📅 Day-by-Day Study Attendance Log</h3>
+          <div class="text-xs text-secondary" style="margin-top: 2px;">Daily study ledger & pro-rata tuition utilization</div>
+        </div>
+        <span class="pill pill-gold" style="font-size: 10px;">₹50 / Day</span>
+      </div>
+      <div id="studyLedgerList" class="study-ledger-table">
         <!-- Injected via fee.js -->
-        <div class="text-xs text-secondary">Loading invoices...</div>
+        <div class="text-xs text-secondary" style="text-align: center; padding: 12px;">Loading study records...</div>
       </div>
     </div>
 
-    <!-- Section 5 & 6: Payment History & Receipts -->
+    <!-- Section 5: Payment Receipts & Vouchers -->
     <div class="card">
-      <h3 style="font-size: 0.95rem; margin-bottom: 12px;">🧾 Payment Receipts</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div>
+          <h3 style="font-size: 0.95rem; color: #FFFFFF; margin: 0;">🧾 Verified Payment Receipts</h3>
+          <div class="text-xs text-secondary" style="margin-top: 2px;">Official UPI & Cash transaction vouchers</div>
+        </div>
+        <span class="pill pill-green" style="font-size: 10px;">5 Receipts</span>
+      </div>
       <div id="paymentsList" style="display: flex; flex-direction: column; gap: 8px;">
         <!-- Injected via fee.js -->
         <div class="text-xs text-secondary">Loading receipts...</div>
       </div>
     </div>
 
-    <!-- Section 8: Support Desk -->
-    <div class="card" style="text-align: center; background: var(--bg-surface-dark);">
-      <div class="text-xs text-secondary" style="margin-bottom: 4px;">NEED BILLING ASSISTANCE?</div>
-      <div style="font-size: 0.88rem; font-weight: 600; margin-bottom: 10px;">Contact Founder & Educator Gyan Sir</div>
+    <!-- Section 6: 12-Month Invoices Breakdown -->
+    <div class="card">
+      <h3 style="font-size: 0.95rem; margin-bottom: 4px; color: #FFFFFF;">📑 Monthly Invoice Schedule</h3>
+      <div class="text-xs text-secondary" style="margin-bottom: 12px;">12-Month session billing ledger</div>
+      <div id="invoicesList" style="display: flex; flex-direction: column; gap: 8px;">
+        <!-- Injected via fee.js -->
+        <div class="text-xs text-secondary">Loading invoices...</div>
+      </div>
+    </div>
+
+    <!-- Section 7: Support Desk -->
+    <div class="card" style="text-align: center; background: var(--bg-surface-dark); border: 1px solid rgba(255,255,255,0.08);">
+      <div class="text-xs text-secondary" style="margin-bottom: 4px;">NEED BILLING ASSISTANCE OR PHYSICAL RECEIPT?</div>
+      <div style="font-size: 0.9rem; font-weight: 700; margin-bottom: 12px; color: #FFFFFF;">Contact Founder & Educator Gyan Sir</div>
       <a href="https://t.me/commercegyan" class="btn btn-outline btn-sm">💬 Chat on Telegram</a>
     </div>
+
+  </div>
+
+  <!-- Digital Receipt Voucher Modal Drawer -->
+  <div class="modal-overlay" id="receiptModalOverlay">
+    <div class="modal-drawer" style="max-height: 90vh; overflow-y: auto; background: #0E111B; border-top: 2px solid #D4AF37; padding: 20px 18px 36px;">
+      <div class="drawer-pill" style="margin-bottom: 14px; background: rgba(255,255,255,0.2);"></div>
+      
+      <div class="receipt-voucher-box">
+        <div class="receipt-voucher-header">
+          <div style="font-size: 1.3rem; margin-bottom: 4px;">🏛️</div>
+          <div class="receipt-voucher-title">COMMERCE GYAN</div>
+          <div class="receipt-voucher-sub">CBSE Class 11 & 12 Specialized Commerce Coaching</div>
+          <div class="receipt-voucher-sub">Begusarai Center • Bihar • Founder: Gyan Sir</div>
+          <div class="pill pill-gold" style="font-size: 10px; margin-top: 8px;">OFFICIAL TUITION FEE RECEIPT</div>
+        </div>
+
+        <div class="receipt-voucher-table">
+          <div class="receipt-voucher-row">
+            <span class="receipt-voucher-label">Receipt Number:</span>
+            <span class="receipt-voucher-value mono text-gold" id="voucherReceiptNo">CG-REC-2026-005</span>
+          </div>
+          <div class="receipt-voucher-row">
+            <span class="receipt-voucher-label">Date of Payment:</span>
+            <span class="receipt-voucher-value" id="voucherDate">01-Nov-2026</span>
+          </div>
+          <div class="receipt-voucher-row">
+            <span class="receipt-voucher-label">Student Name:</span>
+            <span class="receipt-voucher-value" id="voucherStudentName">Gyan Sir</span>
+          </div>
+          <div class="receipt-voucher-row">
+            <span class="receipt-voucher-label">Student ID:</span>
+            <span class="receipt-voucher-value mono" id="voucherStudentId">ADMIN-01</span>
+          </div>
+          <div class="receipt-voucher-row">
+            <span class="receipt-voucher-label">Course Enrolled:</span>
+            <span class="receipt-voucher-value">CBSE Combined Commerce</span>
+          </div>
+          <div class="receipt-voucher-row">
+            <span class="receipt-voucher-label">Billing Period:</span>
+            <span class="receipt-voucher-value" id="voucherMonth">November 2026</span>
+          </div>
+          <div class="receipt-voucher-row">
+            <span class="receipt-voucher-label">Payment Mode:</span>
+            <span class="receipt-voucher-value" id="voucherMode">UPI (GooglePay / Ref: 43198829104)</span>
+          </div>
+          <div class="receipt-voucher-row">
+            <span class="receipt-voucher-label">Status:</span>
+            <span class="receipt-voucher-value" style="color: #34D399;">✅ Verified & Credited</span>
+          </div>
+        </div>
+
+        <div class="receipt-voucher-total-row">
+          <span>AMOUNT RECEIVED</span>
+          <span id="voucherAmount">₹1,500.00</span>
+        </div>
+        <div style="font-size: 11px; color: #94A3B8; text-align: center; margin-bottom: 12px;" id="voucherAmountWords">
+          (One Thousand Five Hundred Rupees Only)
+        </div>
+
+        <div class="receipt-voucher-signature">
+          <div>
+            <div style="font-size: 10px; color: #94A3B8;">PAYMENT GATEWAY / DESK</div>
+            <div style="font-size: 12px; font-weight: 700; color: #34D399;">VERIFIED TRANSACTION</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-family: var(--font-serif); font-size: 15px; color: #D4AF37; font-weight: 700;">Gyan Kumar</div>
+            <div style="font-size: 9.5px; color: #94A3B8;">AUTHORIZED SIGNATORY</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 16px;">
+        <button class="btn btn-gold" style="flex: 1;" onclick="printReceiptVoucher()">
+          <span>📥</span> Save Receipt
+        </button>
+        <button class="btn btn-outline" style="width: auto; padding: 12px 18px;" onclick="closeReceiptModal()">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
 
   </div>
 
