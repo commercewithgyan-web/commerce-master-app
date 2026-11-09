@@ -87,6 +87,11 @@ function handleRunRedPenAnalysis(data) {
   // Background logging to sheet
   try {
     var subId = 'RP-' + Date.now();
+    var loggedScore = evaluation.scoreDisplay || evaluation.score || ((evaluation.awardedScore || '2.0') + ' / ' + (evaluation.totalMarks || '3.0') + ' Marks');
+    var loggedMistakes = (evaluation.step2_mistakesAndOmissions || []).map(function(m) { 
+      return (m.factualMistake || m.flaw || '') + (m.marksDeducted ? ' (' + m.marksDeducted + ')' : ''); 
+    }).join('; ');
+
     appendRow_('SHEET_QB', 'RedPen_Submissions', [
       subId,
       getKolkataTimestamp(),
@@ -96,8 +101,8 @@ function handleRunRedPenAnalysis(data) {
       classification.subject || 'Commerce',
       classification.chapterName || 'Handwritten Answer',
       driveUrl,
-      evaluation.score || '',
-      (evaluation.step2_mistakesAndOmissions || []).map(function(m) { return m.flaw; }).join('; '),
+      loggedScore,
+      loggedMistakes,
       evaluation.step5_motivationalCloser || '',
       '',
       'Analyzed'
@@ -177,67 +182,61 @@ Return strictly valid JSON only.`;
   return JSON.parse(rawJson);
 }
 
-// 3. 5-STEP PEDAGOGICAL CBSE EVALUATION PROMPT
+// 3. STRICT FORENSIC CBSE EVALUATION PROMPT (ZERO FALSE PRAISE)
 function performDoubleVaultEvaluation_(name, classLvl, sub, ch, question, studentAnswer, chVault, pyqVault) {
   const prompt = `
-You are Educator Gyan Sir reviewing ${name}'s handwritten answer in Class ${classLvl} ${sub} (${ch}).
-Knowledge Vaults: Official NCERT Text + CBSE Past Year Marking Schemes.
+You are Gyan Sir, a STRICT, NO-NONSENSE CBSE Commerce Head Examiner.
+Evaluate this student's handwritten answer against the NCERT textbook & official CBSE marking scheme.
 
-QUESTION ATTEMPTED: "${question}"
-${name}'S WRITTEN ANSWER:
+QUESTION: "${question}"
+STUDENT'S WRITTEN ANSWER:
 "${studentAnswer}"
 
-ENFORCE GYAN SIR'S EXACT 5-STEP REVIEW IN NATURAL HINGLISH:
-
-STEP 1 — QUESTION ANALYSIS:
-- Analyze what the CBSE board question actually demanded.
-- Mention expected Marks (e.g., 3 Marks), word limit (e.g., 50-75 words), and chapter.
-
-STEP 2 — POINT OUT SPECIFIC MISTAKES & OMISSIONS:
-- Clearly list every factual mistake, wrong terminology, or omitted NCERT point in bullet points.
-- State exact marks deducted for each.
-- Use warm Hinglish tone like talking face-to-face.
-
-STEP 3 — HOW IT SHOULD HAVE BEEN WRITTEN (Aise Nahi, Aise Likhte):
-- Directly compare what ${name} wrote vs how a teacher would rephrase that specific line.
-- Quote the exact student text, then show the ideal version.
-
-STEP 4 — COMPLETE 100/100 CBSE TOPPER MODEL ANSWER:
-- Provide the COMPLETE, perfect solution for this entire question from start to finish.
-- Write it strictly line-by-line, point-by-point.
-- Surround EVERY critical NCERT keyword in <mark class="highlight-keyword">Keyword</mark> tags so the student can copy it into their notebook!
-
-STEP 5 — WARM MOTIVATIONAL CLOSER:
-- 2 encouraging sentences in natural Hinglish motivating ${name} that mistakes caught now guarantee a 100/100 on board exam day.
-- Include 🔥 emoji.
+STRICT EXAMINATION RULES:
+1. NEVER BE OVERLY POLITE OR FLATTERING. Do not say "Good job" or "Koi galti nahi mili" if the answer is not 100% perfect.
+2. MATHEMATICAL INTEGRITY: If total marks are 3.0 and you award 2.0, you MUST explicitly provide exactly 1.0 marks worth of specific deductions in "step2_mistakesAndOmissions". The sum of marks deducted must exactly equal (totalMarks - awardedScore).
+3. LOOK AT THE ACTUAL HANDWRITING:
+   - Check spelling: Did they write "principal" instead of "principle"?
+   - Check law/acts: Did they mix up Partnership Act 1932 with Statutory Corporations?
+   - Check missing NCERT terminology: Did they miss "Uberrimae fidei", "Material facts", "Special Act of Parliament"?
+4. PROVIDE THE EXACT COMPARISON:
+   - "originalFlawed": exact flawed sentence from their copy.
+   - "whyItIsWrong": exact reason why CBSE deducts marks.
+   - "correctedVersion": the exact sentence they SHOULD have written to get full marks.
 
 Return strictly valid JSON:
 {
-  "score": "2.0 / 3.0 Marks",
+  "totalMarks": "3.0",
+  "awardedScore": "2.0",
+  "scoreDisplay": "2.0 / 3.0 Marks",
+  "boardContext": "CBSE Board Exam Pattern Match",
   "step1_questionAnalysis": {
-    "questionSummary": "Brief summary of what was asked",
-    "boardMarksAndLimit": "3 Marks | CBSE Recommended: 50-75 words",
-    "whatExaminerWanted": "What the examiner expected to see"
+    "expectedDemand": "State statutory corporation features and insurance principle with correct legal definitions",
+    "cbseRecommendedLimit": "50-75 words (3 Marks)",
+    "questionSummary": "Summary of question attempted"
   },
   "step2_mistakesAndOmissions": [
     {
-      "flaw": "Description of mistake or missing point in Hinglish",
-      "deduction": "-0.5 Marks"
+      "studentLine": "Quote the flawed line from copy",
+      "factualMistake": "Explain the exact mistake (e.g., mixed Partnership 1932 with Statutory Corp / spelling principal)",
+      "omittedNcertKeyword": "Exact missing keyword",
+      "marksDeducted": "-0.5 Marks"
     }
   ],
   "step3_howToRephrase": [
     {
-      "whatYouWrote": "Exact text the student wrote",
-      "howToRephrase": "Better way to write it with NCERT keywords"
+      "originalFlawed": "Quote original line",
+      "correctedVersion": "Exact teacher-corrected sentence with keywords bolded"
     }
   ],
   "step4_completeModelSolution": [
     {
-      "heading": "1. Point Heading",
-      "bodyWithHighlightedKeywords": "Explanation containing <mark class='highlight-keyword'>Keyword</mark>..."
+      "pointNumber": "1.",
+      "heading": "Exact CBSE Heading",
+      "idealText": "Complete point with <mark class='highlight-keyword'>Core Keywords</mark> highlighted"
     }
   ],
-  "step5_motivationalCloser": "Warm Hinglish 2-line motivational message for ${name}"
+  "step5_motivationalCloser": "2-sentence strict but encouraging teacher advice to eliminate these errors before the board exam"
 }
 `;
 
