@@ -3,10 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Red-Pen Snapshot — Commerce Gyan</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/style.css?v=2.5.0">
+  <link rel="stylesheet" href="css/animations.css?v=2.5.0">
 </head>
 <body>
   <div class="app-container">
@@ -65,32 +68,39 @@
       </label>
     </div>
 
-    <!-- Diagnostic Feedback Card (Hidden until analyzed) -->
-    <div class="card" id="reportCard" style="display: none;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span class="pill pill-gold">EXAMINER EVALUATION</span>
-          <span class="pill pill-violet" id="subjectBadge" style="display: none;">Accountancy</span>
-        </div>
-        <div class="mono text-emerald" style="font-size: 1.2rem; font-weight: 700;" id="marksDisplay"></div>
+    <!-- Evaluation Result Section (Double-Vault AI Evaluator) -->
+    <div id="resultCard" class="result-card" style="display: none;">
+      <!-- Board Match Banner -->
+      <div class="board-match-banner">
+        <span class="icon">🎯</span>
+        <span id="resBoardMatch">CBSE Board Exam Match</span>
       </div>
 
-      <!-- 1. Flawless Elements -->
-      <div style="margin-bottom: 12px;">
-        <div style="font-weight: 700; font-size: 0.88rem; color: #34D399; margin-bottom: 4px;">🟢 Flawless Elements (+Marks):</div>
-        <ul id="flawlessList" style="padding-left: 20px; font-size: 0.85rem; color: #CBD5E1; line-height: 1.5;"></ul>
+      <div class="result-header">
+        <span class="badge-subject" id="resSubject">Class 12 BST</span>
+        <div class="score-pill" id="resScore">0 / 4 Marks</div>
       </div>
 
-      <!-- 2. Traps Caught -->
-      <div style="margin-bottom: 12px;">
-        <div style="font-weight: 700; font-size: 0.88rem; color: #F87171; margin-bottom: 4px;">🔴 Examiner Traps Caught (Deductions):</div>
-        <ul id="trapsList" style="padding-left: 20px; font-size: 0.85rem; color: #FCA5A5; line-height: 1.5;"></ul>
+      <div class="mentor-greeting" id="resGreeting"></div>
+
+      <!-- Word Count & Presentation Box -->
+      <div class="card-presentation-audit">
+        <h4>⏱️ Word Limit & Presentation Audit:</h4>
+        <p id="resWordAudit"></p>
+        <p id="resFormatAudit"></p>
       </div>
 
-      <!-- 3. Prescription -->
-      <div style="padding: 12px; background: rgba(79, 70, 229, 0.15); border-left: 3px solid var(--primary-violet); border-radius: 4px;">
-        <div style="font-weight: 700; font-size: 0.85rem; color: #818CF8; margin-bottom: 4px;">📝 Topper Prescription:</div>
-        <div class="serif text-xs" style="color: #E2E8F0; line-height: 1.5;" id="prescriptionText"></div>
+      <!-- Line-by-Line Red Pen Corrections -->
+      <div class="card-surgery">
+        <h4>🔴 Red-Pen Surgical Corrections:</h4>
+        <div id="resSurgeryList"></div>
+      </div>
+
+      <!-- Topper Rewrite -->
+      <div class="card-prescription">
+        <h4>🏆 CBSE Model Topper Rewrite:</h4>
+        <p class="prescription-text" id="resTopperRewrite"></p>
+        <div class="gyan-tip" id="resGyanTip"></div>
       </div>
     </div>
 
@@ -119,8 +129,8 @@
     </a>
   </nav>
 
-  <script src="js/telegram.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/redpen.js"></script>
+  <script src="js/telegram.js?v=2.5.0"></script>
+  <script src="js/api.js?v=2.5.0"></script>
+  <script src="js/redpen.js?v=2.5.0"></script>
 </body>
 </html>

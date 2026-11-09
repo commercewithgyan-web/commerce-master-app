@@ -1,8 +1,8 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
  * COMMERCE MASTER APP v2.3 — RED-PEN CONTROLLER (redpen.js)
- * Client-Side HTML5 Canvas Compression Engine (1280px / 70% JPEG)
- * and Real Gemini 2.5 Flash Vision Forensic Evaluation.
+ * Client-Side HTML5 Canvas Compression Engine (1280px / 70% JPEG),
+ * Double-Vault Gatekeeper OCR & Forensic CBSE Examiner Evaluation.
  * ═══════════════════════════════════════════════════════════════════════
  */
 
@@ -42,29 +42,39 @@ document.addEventListener('DOMContentLoaded', function() {
       btnAnalyze.innerText = '⏳ Analyzing Handwriting & Formatting...';
       btnAnalyze.disabled = true;
 
-      // Hide previous reports or rejection cards during analysis
-      var reportCard = document.getElementById('reportCard');
+      // Hide previous cards during analysis
+      var resultCard = document.getElementById('resultCard');
       var rejectionCard = document.getElementById('rejectionCard');
-      if (reportCard) reportCard.style.display = 'none';
+      if (resultCard) resultCard.style.display = 'none';
       if (rejectionCard) rejectionCard.style.display = 'none';
 
+      var studentName = "Gyan Sir";
+      var telegramId = "552858970";
       try {
-        var res = await API_CLIENT.call('submitRedPenCopy', {
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+          studentName = window.Telegram.WebApp.initDataUnsafe.user.first_name || "Champion";
+          telegramId = String(window.Telegram.WebApp.initDataUnsafe.user.id || "552858970");
+        }
+      } catch (tgErr) {}
+
+      try {
+        var res = await API_CLIENT.call('runRedPenAnalysis', {
           imageBase64: compressedBase64,
-          pagesBase64: [compressedBase64]
+          studentName: studentName,
+          telegramId: telegramId
         });
 
         if (!res) {
           throw new Error('No evaluation received from server.');
         }
 
-        // Forensic check: Validate if image is actually a handwritten notebook solution
-        if (res.isValidHandwriting === false) {
+        // Gatekeeper Check: Validate if image is genuine handwritten solution
+        if (res.isValid === false || res.isValidHandwriting === false) {
           TG_APP.hapticError();
-          showRejectionNotice(res.rejectionMessage || '⚠️ This is not a handwritten register solution! It looks like a screenshot or printed page. Please upload a clear photo of your handwritten notebook answer.');
+          showRejectionNotice(res.rejectionReason || res.rejectionMessage || '⚠️ This is not a handwritten register solution! Please upload a clear photo of your handwritten notebook answer.');
         } else {
           TG_APP.hapticSuccess();
-          renderRedPenReport(res);
+          renderDoubleVaultReport(res, studentName);
         }
       } catch (err) {
         console.error('RedPen OCR error:', err);
@@ -79,8 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
- * Compresses raw high-res photo using HTML5 canvas
- * Clamps width to max 1280px at 70% JPEG quality (~200 KB)
+ * Compresses raw photo using HTML5 canvas to max 1280px / 70% JPEG (~200 KB)
  */
 function compressImageClientSide(file) {
   var reader = new FileReader();
@@ -125,8 +134,8 @@ function compressImageClientSide(file) {
       if (sizeBadge) sizeBadge.innerText = '✅ Photo Ready (' + sizeKB + ' KB)';
 
       // Hide older outputs on new upload
-      var reportCard = document.getElementById('reportCard');
-      if (reportCard) reportCard.style.display = 'none';
+      var resultCard = document.getElementById('resultCard');
+      if (resultCard) resultCard.style.display = 'none';
 
       var rejectionCard = document.getElementById('rejectionCard');
       if (rejectionCard) rejectionCard.style.display = 'none';
@@ -140,11 +149,10 @@ function compressImageClientSide(file) {
 
 /**
  * Displays rejection card when uploaded image is a screenshot or not handwritten
- * @param {string} message
  */
 function showRejectionNotice(message) {
-  var reportCard = document.getElementById('reportCard');
-  if (reportCard) reportCard.style.display = 'none';
+  var resultCard = document.getElementById('resultCard');
+  if (resultCard) resultCard.style.display = 'none';
 
   var rejectionCard = document.getElementById('rejectionCard');
   if (rejectionCard) {
@@ -158,76 +166,106 @@ function showRejectionNotice(message) {
 }
 
 /**
- * Renders verified handwritten evaluation report
- * @param {Object} data
+ * Renders Double-Vault Forensic CBSE Evaluation Report
  */
-function renderRedPenReport(data) {
+function renderDoubleVaultReport(data, studentName) {
   var rejectionCard = document.getElementById('rejectionCard');
   if (rejectionCard) rejectionCard.style.display = 'none';
 
-  var reportCard = document.getElementById('reportCard');
-  if (!reportCard) return;
+  var resultCard = document.getElementById('resultCard');
+  if (!resultCard) return;
 
-  reportCard.style.display = 'block';
-  reportCard.classList.add('pop-success');
+  var evalData = data.evaluation || data;
+  var cls = data.classification || {};
 
-  // Subject Badge
-  var subjectBadge = document.getElementById('subjectBadge');
-  if (subjectBadge) {
-    if (data.detectedSubject) {
-      subjectBadge.innerText = data.detectedSubject;
-      subjectBadge.style.display = 'inline-block';
-    } else {
-      subjectBadge.style.display = 'none';
-    }
+  // 1. Board Match Banner
+  var boardMatchEl = document.getElementById('resBoardMatch');
+  if (boardMatchEl) {
+    boardMatchEl.innerText = evalData.boardExamMatch || "CBSE Board Pattern Match";
   }
 
-  // Score display
-  var displayScore = data.score || (data.estimatedMarks !== undefined ? (data.estimatedMarks + ' / ' + (data.maxMarks || 6.0) + ' Marks') : 'Evaluated');
-  var marksEl = document.getElementById('marksDisplay');
-  if (marksEl) marksEl.innerText = displayScore;
+  // 2. Header: Subject Badge & Score Pill
+  var subEl = document.getElementById('resSubject');
+  if (subEl) {
+    var classPrefix = cls.classLevel ? ('Class ' + cls.classLevel + ' ') : 'Class 12 ';
+    var subj = cls.subject || data.detectedSubject || 'Commerce';
+    var ch = cls.chapterName ? (' • ' + cls.chapterName) : '';
+    subEl.innerText = classPrefix + subj + ch;
+  }
 
-  // Flawless elements
-  var flawlessList = document.getElementById('flawlessList');
-  if (flawlessList) {
-    flawlessList.innerHTML = '';
-    var flawlessItems = data.flawlessElements || [];
-    if (flawlessItems.length === 0) {
-      var li = document.createElement('li');
-      li.innerText = 'Handwriting is clear and solution steps are legible.';
-      flawlessList.appendChild(li);
+  var scoreEl = document.getElementById('resScore');
+  if (scoreEl) {
+    scoreEl.innerText = evalData.score || "0 / 4 Marks";
+  }
+
+  // 3. Mentor Greeting
+  var greetingEl = document.getElementById('resGreeting');
+  if (greetingEl) {
+    greetingEl.innerText = evalData.personalGreeting || ("Excellent effort, " + (studentName || "Champion") + "! Here is Gyan Sir's surgical CBSE board review:");
+  }
+
+  // 4. Word Count & Presentation Audit
+  var wordEl = document.getElementById('resWordAudit');
+  if (wordEl && evalData.wordCountAudit) {
+    wordEl.innerHTML = '<strong>Word Count:</strong> ' + (evalData.wordCountAudit.studentWords || 0) + ' words (CBSE Guide: ' + (evalData.wordCountAudit.cbseRecommended || '50-75 words') + '). <em>' + (evalData.wordCountAudit.advice || '') + '</em>';
+  }
+
+  var formatEl = document.getElementById('resFormatAudit');
+  if (formatEl && evalData.presentationAudit) {
+    formatEl.innerHTML = '<strong>Format:</strong> ' + (evalData.presentationAudit.formatUsed || 'Paragraph') + '. <em>' + (evalData.presentationAudit.examinerPreference || 'Point-wise headings with keywords underlined') + '</em> (' + (evalData.presentationAudit.marksLost || '0 Marks') + ')';
+  }
+
+  // 5. Line-by-Line Red Pen Surgical Corrections
+  var surgeryContainer = document.getElementById('resSurgeryList');
+  if (surgeryContainer) {
+    surgeryContainer.innerHTML = '';
+    var items = evalData.lineByLineSurgery || [];
+    if (items.length === 0) {
+      surgeryContainer.innerHTML = '<div style="font-size:12.5px; color:#34D399; padding:8px 0;">✅ Flawless NCERT keyword alignment! Zero deductions.</div>';
     } else {
-      flawlessItems.forEach(function(item) {
-        var li = document.createElement('li');
-        li.innerText = item;
-        flawlessList.appendChild(li);
+      items.forEach(function(item) {
+        var sDiv = document.createElement('div');
+        sDiv.className = 'surgery-item';
+        sDiv.innerHTML =
+          '<div class="surgery-student-line">❌ <em>"' + escapeHtml(item.studentLine || '') + '"</em></div>' +
+          '<div class="surgery-ncert-keyword">✨ <strong>NCERT Keyword:</strong> ' + escapeHtml(item.officialNcertKeyword || '') + ' <span class="surgery-deduction">(' + escapeHtml(item.marksDeducted || '-0.5') + ')</span></div>' +
+          '<div class="surgery-explanation">' + escapeHtml(item.explanation || '') + '</div>';
+        surgeryContainer.appendChild(sDiv);
       });
     }
   }
 
-  // Traps caught
-  var trapsList = document.getElementById('trapsList');
-  if (trapsList) {
-    trapsList.innerHTML = '';
-    var trapItems = data.trapsCaught || [];
-    if (trapItems.length === 0) {
-      var li = document.createElement('li');
-      li.innerText = 'No major CBSE presentation traps detected.';
-      trapsList.appendChild(li);
-    } else {
-      trapItems.forEach(function(item) {
-        var li = document.createElement('li');
-        li.innerText = item;
-        trapsList.appendChild(li);
-      });
-    }
+  // 6. Topper Rewrite & Gyan Sir Prescription
+  var topperEl = document.getElementById('resTopperRewrite');
+  if (topperEl) {
+    topperEl.innerHTML = formatMarkdown(evalData.topperRewrite || 'Follow standard 3-bullet model answer structure.');
   }
 
-  // Prescription
-  var prescEl = document.getElementById('prescriptionText');
-  if (prescEl) {
-    prescEl.innerText = data.prescription || 'Maintain clean double-underline borders and complete all question parts.';
+  var gyanTipEl = document.getElementById('resGyanTip');
+  if (gyanTipEl) {
+    gyanTipEl.innerHTML = '<strong>💡 Gyan Sir\'s Exam-Hall Prescription:</strong> ' + escapeHtml(evalData.gyanSirPrescription || 'Underline keywords and leave 1 line between points.');
   }
 
-  reportCard.scrollIntoView({ behavior: 'smooth' });
+  resultCard.style.display = 'block';
+  resultCard.classList.add('pop-success');
+  resultCard.scrollIntoView({ behavior: 'smooth' });
+}
+
+function formatMarkdown(text) {
+  if (!text) return '';
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n\s*-\s*/g, '<br>• ')
+    .replace(/\n\s*\d+\.\s*/g, '<br>1. ')
+    .replace(/\n/g, '<br>');
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }

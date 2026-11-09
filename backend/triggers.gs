@@ -148,8 +148,12 @@ function setupTriggers() {
     .create();
   Logger.log('  ✅ [Sun 11:00 AM] sendParentReports');
 
+  // 14. Every 48 Hours (03:00 AM) — Reconcile Notebook Registry & Double-Vault Sync
+  setupAutoSyncTrigger();
+  Logger.log('  ✅ [Every 48 Hours 03:00 AM] autoReconcileNotebookRegistry');
+
   Logger.log('\n═══════════════════════════════════════════════');
-  Logger.log('✅ ALL 13 PRODUCTION CRONS CONFIGURED SUCCESSFULLY');
+  Logger.log('✅ ALL 14 PRODUCTION CRONS CONFIGURED SUCCESSFULLY');
   Logger.log('═══════════════════════════════════════════════');
 }
 
