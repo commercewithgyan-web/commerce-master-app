@@ -27,39 +27,37 @@ function askDoubtGemini(studentName, subject, question, lens) {
   if (!geminiKey) throw new Error('GEMINI_KEY is missing');
 
   var targetSubject = subject || 'Accountancy';
-  var requestedLens = (lens || 'ALL').toUpperCase();
+  var cleanName = (studentName || 'Champ').trim().split(' ')[0] || 'Champ';
 
   var systemPrompt =
-    'You are Gyan Sir\'s elite Commerce Study Buddy for ' + studentName + '.\n' +
+    'You are Gyan Sir, the warm, elite, and inspiring CBSE Commerce mentor for Class 11 & 12 students.\n' +
+    'STUDENT NAME: ' + cleanName + '\n' +
     'SUBJECT: ' + targetSubject + '\n' +
-    'STUDENT QUESTION: "' + question + '"\n' +
-    'REQUESTED LENS: ' + requestedLens + ' (Options: ALL, STORY, EXAM_NOTES, REAL_EXAMPLE)\n\n' +
+    'STUDENT QUESTION: "' + question + '"\n\n' +
     'STRICT PEDAGOGICAL BOUNDARIES:\n' +
-    '1. SUBJECT IS BUSINESS STUDIES (BST):\n' +
-    '   - Focus on Management Principles, Functions, and Headings.\n' +
-    '   - STRICT PROHIBITION: NEVER mention "Narration", "Journal Entry", "Debit", or "Credit". Business Studies has ZERO journal entries and ZERO narrations.\n' +
-    '2. SUBJECT IS ECONOMICS:\n' +
-    '   - Focus on Economic concepts, schedules, and curves. No accounting debits/credits.\n' +
-    '3. SUBJECT IS ACCOUNTANCY:\n' +
-    '   - Focus on Journal formats, ledgers, and Accounting Standards.\n\n' +
-    'LENS EXECUTION RULES:\n' +
-    '- If LENS == "STORY": Explain using an everyday Indian analogy (street food, cricket, pocket money) under 100 words.\n' +
-    '- If LENS == "EXAM_NOTES": Give a 3-bullet CBSE board exam point-wise answer with bold keywords ready to copy into a student register.\n' +
-    '- If LENS == "REAL_EXAMPLE": Explain how real companies (Tata, Zomato, boAt) apply this exact concept in business under 100 words.\n' +
-    '- If LENS == "ALL": Generate all 3 lenses simultaneously in the JSON output.\n\n' +
+    '1. If SUBJECT is Business Studies (BST):\n' +
+    '   - Focus strictly on Management Principles, Functions, Headings, and Subheadings.\n' +
+    '   - STRICT PROHIBITION: NEVER mention "Narration", "Journal Entry", "Debit", or "Credit". BST has ZERO journal entries and ZERO narrations.\n' +
+    '2. If SUBJECT is Economics:\n' +
+    '   - Focus strictly on Economic concepts, schedules, formulas ($E_d$, MPC, etc.), and curves. No accounting ledger rules.\n' +
+    '3. If SUBJECT is Accountancy:\n' +
+    '   - Focus strictly on Accounting Standards, Double Entry principles, Journal entries with narrations, and Ledger postings.\n\n' +
+    'MANDATORY PERSONAL TONE & STRUCTURE INSTRUCTIONS:\n' +
+    '- "story": MUST start with: "Hey ' + cleanName + '! Don\'t stress about this at all—let\'s crack it in 30 seconds just like we do in class!" followed by an engaging everyday Indian analogy (street food, cricket, pocket money, Netflix, Shark Tank) under 110 words.\n' +
+    '- "exam_notes": MUST start with: "Here are your exact CBSE full-marks register notes, ' + cleanName + ':\n" followed by 3 numbered bullet points using **bold keywords** ready for copying directly into the student\'s revision register.\n' +
+    '- "real_example": MUST start with: "Let\'s see how real Indian businesses use this, ' + cleanName + ':\n" followed by a real corporate example (Tata, Zomato, Reliance, boAt) under 100 words.\n' +
+    '- "golden_rule": 1 crisp golden rule to memorize under 15 words.\n' +
+    '- "cbse_trap": 1 common CBSE examiner trap to avoid under 15 words.\n\n' +
     'OUTPUT SPECIFICATION:\n' +
-    'Return STRICT JSON:\n' +
+    'Return STRICT JSON with these exact keys:\n' +
     '{\n' +
     '  "subject": "' + targetSubject + '",\n' +
-    '  "activeLens": "' + (requestedLens === 'ALL' ? 'STORY' : requestedLens) + '",\n' +
-    '  "answer": "<Full explanation for the requested lens, or STORY if ALL>",\n' +
-    '  "lenses": {\n' +
-    '    "STORY": "<everyday Indian analogy under 100 words>",\n' +
-    '    "EXAM_NOTES": "<3-bullet CBSE board exam point-wise answer with bold keywords>",\n' +
-    '    "REAL_EXAMPLE": "<real-world corporate example (Tata, Zomato, boAt) under 100 words>"\n' +
-    '  },\n' +
-    '  "keyRule": "<1 crisp golden rule to memorize under 12 words>",\n' +
-    '  "cbseTrap": "<1 common CBSE examiner trap to avoid under 15 words>"\n' +
+    '  "student_name": "' + cleanName + '",\n' +
+    '  "story": "<Warm, personal story addressing ' + cleanName + '...>",\n' +
+    '  "exam_notes": "<Exact CBSE register notes with **bold keywords**...>",\n' +
+    '  "real_example": "<Real Indian corporate example...>",\n' +
+    '  "golden_rule": "<1-sentence CBSE Golden Rule>",\n' +
+    '  "cbse_trap": "<1-sentence CBSE Exam Trap to avoid>"\n' +
     '}';
 
   var geminiModel = getGeminiModel_();
@@ -83,7 +81,31 @@ function askDoubtGemini(studentName, subject, question, lens) {
     var json = JSON.parse(res.getContentText());
     if (json.candidates && json.candidates[0].content && json.candidates[0].content.parts) {
       var raw = json.candidates[0].content.parts[0].text;
-      return JSON.parse(raw);
+      var parsed = JSON.parse(raw);
+
+      var storyText = parsed.story || (parsed.lenses ? parsed.lenses.STORY : '') || parsed.answer || '';
+      var notesText = parsed.exam_notes || (parsed.lenses ? parsed.lenses.EXAM_NOTES : '') || '';
+      var realText = parsed.real_example || (parsed.lenses ? parsed.lenses.REAL_EXAMPLE : '') || '';
+      var ruleText = parsed.golden_rule || parsed.keyRule || parsed.keyTakeaway || '';
+      var trapText = parsed.cbse_trap || parsed.cbseTrap || '';
+
+      return {
+        subject: targetSubject,
+        studentName: cleanName,
+        story: storyText,
+        exam_notes: notesText,
+        real_example: realText,
+        golden_rule: ruleText,
+        cbse_trap: trapText,
+        answer: storyText,
+        lenses: {
+          STORY: storyText,
+          EXAM_NOTES: notesText,
+          REAL_EXAMPLE: realText
+        },
+        keyRule: ruleText,
+        cbseTrap: trapText
+      };
     }
   }
 
@@ -146,17 +168,23 @@ function apiAskDoubt_(verifiedUser, payload) {
   ]);
 
   return {
+    ok: true,
     isRejected: false,
     studentName: studentName,
     subject: subject,
     question: questionText,
     transcribed: questionText,
-    answer: result.answer || (result.lenses ? result.lenses.STORY : ''),
+    story: result.story,
+    exam_notes: result.exam_notes,
+    real_example: result.real_example,
+    golden_rule: result.golden_rule,
+    cbse_trap: result.cbse_trap,
     lenses: result.lenses || {},
-    activeLens: result.activeLens || 'STORY',
-    keyTakeaway: result.keyRule,
-    keyRule: result.keyRule,
-    cbseTrap: result.cbseTrap
+    answer: result.story || (result.lenses ? result.lenses.STORY : ''),
+    activeLens: 'story',
+    keyTakeaway: result.golden_rule,
+    keyRule: result.golden_rule,
+    cbseTrap: result.cbse_trap
   };
 }
 
@@ -221,16 +249,23 @@ function apiAskVoiceDoubt_(verifiedUser, payload) {
   ]);
 
   return {
+    ok: true,
     isRejected: false,
     studentName: studentName,
     subject: finalSubject,
+    question: transcribedQuestion,
     transcribed: transcribedQuestion,
-    answer: result.answer || (result.lenses ? result.lenses.STORY : ''),
+    story: result.story,
+    exam_notes: result.exam_notes,
+    real_example: result.real_example,
+    golden_rule: result.golden_rule,
+    cbse_trap: result.cbse_trap,
     lenses: result.lenses || {},
-    activeLens: result.activeLens || 'STORY',
-    keyTakeaway: result.keyRule,
-    keyRule: result.keyRule,
-    cbseTrap: result.cbseTrap
+    answer: result.story || (result.lenses ? result.lenses.STORY : ''),
+    activeLens: 'story',
+    keyTakeaway: result.golden_rule,
+    keyRule: result.golden_rule,
+    cbseTrap: result.cbse_trap
   };
 }
 

@@ -517,41 +517,56 @@ body.light-theme .btn-back {
   z-index: 100;
   background: var(--bg-dark);
 }
-.subject-selector-bar::-webkit-scrollbar {
+/* Top Subject Pills & Multi-Lens Tabs (Strict 3-Column Grid) */
+.subject-pills, .subject-selector-bar, .lens-tabs, .lens-chips-bar {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 10px 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+.subject-pills::-webkit-scrollbar, .subject-selector-bar::-webkit-scrollbar,
+.lens-chips-bar::-webkit-scrollbar, .lens-tabs::-webkit-scrollbar {
   display: none;
 }
-.subject-toggle-pill {
-  flex: 1;
-  min-width: 105px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 12px;
+
+.subject-pill, .subject-toggle-pill, .lens-tab, .lens-chip {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 8px 6px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-sizing: border-box !important;
   background: var(--bg-surface-dark);
   border: 1px solid var(--border-dark);
-  border-radius: var(--radius-full);
   color: var(--text-dark-secondary);
-  font-family: var(--font-heading);
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.subject-toggle-pill:hover {
+
+.subject-pill:hover, .subject-toggle-pill:hover, .lens-tab:hover, .lens-chip:hover {
   border-color: rgba(212, 175, 55, 0.5);
   color: #FFF;
 }
-.subject-toggle-pill.active {
+
+.subject-pill.active, .subject-toggle-pill.active, .lens-tab.active, .lens-chip.active {
   background: #2D124D !important;
   border-color: #D4AF37 !important;
   color: #F8FAFC !important;
-  box-shadow: 0 2px 14px rgba(212, 175, 55, 0.3);
+  box-shadow: 0 2px 14px rgba(212, 175, 55, 0.3) !important;
   transform: translateY(-1px);
 }
 
-/* Multi-Lens Response Tabs */
 .doubt-response-card {
   overflow: visible !important;
   padding: 16px !important;
@@ -559,53 +574,12 @@ body.light-theme .btn-back {
   max-width: 100% !important;
 }
 
-.lens-tabs, .lens-chips-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  width: 100%;
-  margin: 12px 0;
-  padding: 0;
-  box-sizing: border-box;
-  overflow: visible;
-}
-.lens-chips-bar::-webkit-scrollbar, .lens-tabs::-webkit-scrollbar {
-  display: none;
-}
-.lens-tab, .lens-chip {
-  flex: 1 1 30%;
-  min-width: 85px;
-  text-align: center;
-  padding: 8px 4px;
-  font-size: 11px;
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  background: rgba(30, 34, 45, 0.85);
-  border: 1px solid var(--border-dark);
-  border-radius: var(--radius-full);
-  color: #94A3B8;
-  font-family: var(--font-heading);
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s ease;
-}
-.lens-tab:hover, .lens-chip:hover {
-  border-color: rgba(212, 175, 55, 0.4);
-  color: #FFF;
-}
-.lens-tab.active, .lens-chip.active {
-  background: #2D124D !important;
-  border-color: #D4AF37 !important;
-  color: #F8FAFC !important;
-  box-shadow: 0 0 12px rgba(212, 175, 55, 0.25);
-  transform: translateY(-1px);
-}
 .lens-content-box {
   line-height: 1.6;
+  color: #E2E8F0;
+  font-size: 0.92rem;
+  transition: opacity 0.15s ease;
+}
   color: #E2E8F0;
   font-size: 0.92rem;
   transition: opacity 0.2s ease;

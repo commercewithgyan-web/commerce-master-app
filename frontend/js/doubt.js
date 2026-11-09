@@ -481,37 +481,48 @@ function renderMultiLensCard(res, originalQuestion) {
   var card = document.createElement('div');
   card.className = 'card card-violet pop-success doubt-response-card';
   card.id = msgId;
-  card.style.margin = '0';
-  card.style.maxWidth = '100%';
-  card.style.overflow = 'visible';
-  card.style.padding = '16px';
-  card.style.boxSizing = 'border-box';
 
-  var initialText = formatMarkdownText(doubtMessagesMap[msgId].lenses.STORY);
+  // Normalize lens data
+  var lensData = {
+    story: res.story || (res.lenses ? res.lenses.STORY : '') || res.answer || '',
+    exam_notes: res.exam_notes || (res.lenses ? res.lenses.EXAM_NOTES : '') || '',
+    real_example: res.real_example || (res.lenses ? res.lenses.REAL_EXAMPLE : '') || '',
+    golden_rule: res.golden_rule || res.keyRule || res.keyTakeaway || '',
+    cbse_trap: res.cbse_trap || res.cbseTrap || '',
+    subject: subj,
+    question: originalQuestion
+  };
+
+  card.dataset.lenses = JSON.stringify(lensData);
+  card.dataset.activeLens = 'story';
+  doubtMessagesMap[msgId] = lensData;
+
+  var initialHtml = formatMarkdown(lensData.story);
 
   var html =
+    // Card Title Row
     '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">' +
-    '  <div style="font-weight:700; font-size:0.85rem; color:#A5B4FC;">💡 ' + subj + ' Explanation</div>' +
+    '  <div style="font-weight:700; font-size:0.88rem; color:#A5B4FC;">💡 ' + subj + ' Explanation</div>' +
     '  <span class="pill pill-gold" style="font-size:0.68rem; padding:2px 8px;">Multi-Lens</span>' +
     '</div>' +
 
-    // Dynamic Lens Content Container
-    '<div id="lensContent_' + msgId + '" class="lens-content-box">' +
-       initialText +
+    // Top Lens Switcher Tabs (Strict 3-Column Grid right below title)
+    '<div class="lens-tabs" id="lensTabs_' + msgId + '">' +
+    '  <button class="lens-tab active" id="tab_story_' + msgId + '" onclick="switchLensTab(\'' + msgId + '\', \'story\')">💡 Story</button>' +
+    '  <button class="lens-tab" id="tab_exam_notes_' + msgId + '" onclick="switchLensTab(\'' + msgId + '\', \'exam_notes\')">📝 Exam Notes</button>' +
+    '  <button class="lens-tab" id="tab_real_example_' + msgId + '" onclick="switchLensTab(\'' + msgId + '\', \'real_example\')">🏢 Real Example</button>' +
     '</div>' +
 
-    // Multi-Lens Response Tabs (3 Clean Toggle Chips - Never clipped)
-    '<div class="lens-tabs lens-chips-bar" id="lensChips_' + msgId + '">' +
-    '  <button class="lens-tab lens-chip active" id="chip_STORY_' + msgId + '" onclick="switchLens(\'' + msgId + '\', \'STORY\')">💡 Story</button>' +
-    '  <button class="lens-tab lens-chip" id="chip_EXAM_NOTES_' + msgId + '" onclick="switchLens(\'' + msgId + '\', \'EXAM_NOTES\')">📝 Exam Notes</button>' +
-    '  <button class="lens-tab lens-chip" id="chip_REAL_EXAMPLE_' + msgId + '" onclick="switchLens(\'' + msgId + '\', \'REAL_EXAMPLE\')">🏢 Real Example</button>' +
+    // Dynamic Lens Content Container
+    '<div id="lensBody_' + msgId + '" class="lens-content-box" style="margin-top:10px;">' +
+       initialHtml +
     '</div>';
 
-  if (doubtMessagesMap[msgId].keyRule) {
-    html += '<div class="pill pill-gold" style="margin-top:8px; margin-bottom:4px;">⭐ Golden Rule: ' + doubtMessagesMap[msgId].keyRule + '</div>';
+  if (lensData.golden_rule) {
+    html += '<div class="pill pill-gold" style="margin-top:10px; margin-bottom:4px; font-size:0.75rem;">⭐ Golden Rule: ' + formatMarkdown(lensData.golden_rule) + '</div>';
   }
-  if (doubtMessagesMap[msgId].cbseTrap) {
-    html += '<div class="text-xs text-crimson" style="margin-top:4px; margin-bottom:8px;">⚠️ CBSE Trap: ' + doubtMessagesMap[msgId].cbseTrap + '</div>';
+  if (lensData.cbse_trap) {
+    html += '<div class="text-xs text-crimson" style="margin-top:4px; margin-bottom:8px; font-size:0.75rem;">⚠️ CBSE Trap: ' + formatMarkdown(lensData.cbse_trap) + '</div>';
   }
 
   html +=
@@ -525,103 +536,81 @@ function renderMultiLensCard(res, originalQuestion) {
 }
 
 /**
- * Dynamically switches the active lens view for a given card
+ * Instantly switches active lens mode from card.dataset.lenses with ZERO lag
  * @param {string} msgId
- * @param {string} lens - 'STORY' | 'EXAM_NOTES' | 'REAL_EXAMPLE'
+ * @param {string} lensKey - 'story' | 'exam_notes' | 'real_example'
  */
-async function switchLens(msgId, lens) {
-  var data = doubtMessagesMap[msgId];
-  if (!data || data.activeLens === lens) return;
+function switchLensTab(msgId, lensKey) {
+  var card = document.getElementById(msgId);
+  if (!card) return;
 
-  TG_APP.hapticSelection();
-  data.activeLens = lens;
+  // 1. Tactile haptic feedback on tab switch!
+  TG_APP.hapticLight();
 
-  var contentEl = document.getElementById('lensContent_' + msgId);
-  var chipStory = document.getElementById('chip_STORY_' + msgId);
-  var chipExam = document.getElementById('chip_EXAM_NOTES_' + msgId);
-  var chipReal = document.getElementById('chip_REAL_EXAMPLE_' + msgId);
-
-  // Update chip styles
-  if (chipStory) chipStory.classList.toggle('active', lens === 'STORY');
-  if (chipExam) chipExam.classList.toggle('active', lens === 'EXAM_NOTES');
-  if (chipReal) chipReal.classList.toggle('active', lens === 'REAL_EXAMPLE');
-
-  // If this specific lens content is not cached yet, fetch it on-demand
-  if (!data.lenses[lens]) {
-    if (contentEl) {
-      contentEl.style.opacity = '0.5';
-      contentEl.innerHTML = '<p class="serif text-xs text-secondary">Generating ' + (lens === 'EXAM_NOTES' ? 'Exam Notes' : 'Real-World Example') + '...</p>';
-    }
-
-    try {
-      var res = await API_CLIENT.call('askDoubt', {
-        question: data.question,
-        subject: data.subject,
-        lens: lens
-      });
-      data.lenses[lens] = res.answer || (res.lenses ? res.lenses[lens] : '');
-    } catch (e) {
-      data.lenses[lens] = 'Unable to load this lens at this moment. Please tap another lens!';
-    }
+  // 2. Read stored JSON object from card dataset
+  var data = {};
+  try {
+    data = JSON.parse(card.dataset.lenses || '{}');
+  } catch (e) {
+    data = doubtMessagesMap[msgId] || {};
   }
 
-  // Fade in the new content
-  if (contentEl) {
-    contentEl.style.opacity = '0';
-    setTimeout(function() {
-      contentEl.innerHTML = formatMarkdownText(data.lenses[lens]);
-      contentEl.style.opacity = '1';
-    }, 120);
+  card.dataset.activeLens = lensKey;
+
+  // 3. Update tab active styles
+  var tabStory = document.getElementById('tab_story_' + msgId);
+  var tabNotes = document.getElementById('tab_exam_notes_' + msgId);
+  var tabReal = document.getElementById('tab_real_example_' + msgId);
+
+  if (tabStory) tabStory.classList.toggle('active', lensKey === 'story');
+  if (tabNotes) tabNotes.classList.toggle('active', lensKey === 'exam_notes');
+  if (tabReal) tabReal.classList.toggle('active', lensKey === 'real_example');
+
+  // 4. Instant switch without any network lag
+  var bodyEl = document.getElementById('lensBody_' + msgId);
+  if (bodyEl) {
+    var rawText = data[lensKey] || 'Explanation for this perspective is being generated...';
+    bodyEl.innerHTML = formatMarkdown(rawText);
   }
 }
 
+// Backward compatibility alias for any caller using switchLens
+function switchLens(msgId, lens) {
+  var mapKey = (lens === 'EXAM_NOTES' ? 'exam_notes' : (lens === 'REAL_EXAMPLE' ? 'real_example' : 'story'));
+  switchLensTab(msgId, mapKey);
+}
+
 /**
- * Simple markdown-to-HTML parser for bullet lists, bold text, and linebreaks
- * @param {string} mdText
+ * Clean markdown-to-HTML formatter parsing **bold**, *italic*, numbered lists, and bullets
+ * @param {string} text
  * @return {string}
  */
-function formatMarkdownText(mdText) {
-  if (!mdText) return '';
-  var raw = String(mdText).trim();
+function formatMarkdown(text) {
+  if (!text) return '';
+  var str = String(text).trim();
 
-  // Escape HTML tags to prevent XSS
-  var escaped = raw
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  // Bold **text** -> <strong>text</strong>
+  str = str.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
-  // Bold **text**
-  escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  // Italic *text* -> <em>text</em>
+  str = str.replace(/(^|[^\*])\*([^\*\n]+)\*([^\*]|$)/g, '$1<em>$2</em>$3');
 
-  // Bullet items starting with * or - or •
-  var lines = escaped.split('\n');
-  var formattedLines = [];
-  var inList = false;
+  // Numbered points e.g. 1. **Nature of Item**: ...
+  str = str.replace(/^[\t ]*(\d+)\.[\t ]+(.+)$/gm, '<div style="margin-left: 4px; margin-bottom: 6px; display: flex; align-items: flex-start; gap: 8px;"><span style="color: #A5B4FC; font-weight: 700;">$1.</span><span>$2</span></div>');
 
-  lines.forEach(function(line) {
-    var trimmed = line.trim();
-    if (/^[\*\-•]\s+/.test(trimmed)) {
-      if (!inList) {
-        formattedLines.push('<ul>');
-        inList = true;
-      }
-      formattedLines.push('<li>' + trimmed.replace(/^[\*\-•]\s+/, '') + '</li>');
-    } else {
-      if (inList) {
-        formattedLines.push('</ul>');
-        inList = false;
-      }
-      if (trimmed) {
-        formattedLines.push('<p style="margin-bottom:6px;">' + trimmed + '</p>');
-      }
-    }
-  });
+  // Bullet items e.g. • or - or *
+  str = str.replace(/^[\t ]*[\-\•][\t ]+(.+)$/gm, '<div style="margin-left: 4px; margin-bottom: 6px; display: flex; align-items: flex-start; gap: 8px;"><span style="color: #D4AF37; font-weight: bold;">•</span><span>$1</span></div>');
 
-  if (inList) {
-    formattedLines.push('</ul>');
-  }
+  // Convert newlines to breaks
+  str = str.replace(/\n\n+/g, '<br><br>');
+  str = str.replace(/\n/g, '<br>');
 
-  return formattedLines.join('');
+  return str;
+}
+
+// Backward compatibility alias for formatMarkdownText
+function formatMarkdownText(text) {
+  return formatMarkdown(text);
 }
 
 /**
@@ -630,17 +619,23 @@ function formatMarkdownText(mdText) {
  */
 async function saveActiveLensToNotes(msgId) {
   TG_APP.hapticLight();
-  var data = doubtMessagesMap[msgId];
-  if (!data) return;
+  var card = document.getElementById(msgId);
+  var data = {};
+  try {
+    data = JSON.parse((card && card.dataset.lenses) || '{}');
+  } catch (e) {
+    data = doubtMessagesMap[msgId] || {};
+  }
 
-  var lensName = data.activeLens === 'EXAM_NOTES' ? 'Exam Notes' : (data.activeLens === 'REAL_EXAMPLE' ? 'Corporate Example' : 'Simple Story');
-  var textToSave = data.lenses[data.activeLens];
+  var activeLens = (card && card.dataset.activeLens) || 'story';
+  var lensName = activeLens === 'exam_notes' ? 'Exam Notes' : (activeLens === 'real_example' ? 'Real Example' : 'Story');
+  var textToSave = data[activeLens] || '';
 
   try {
     await API_CLIENT.call('addNote', {
-      title: data.subject + ' (' + lensName + '): ' + data.question.substring(0, 40) + '...',
+      title: (data.subject || activeSubject) + ' (' + lensName + '): ' + (data.question || 'Doubt').substring(0, 40) + '...',
       note: textToSave,
-      topic: data.subject
+      topic: data.subject || activeSubject
     });
     alert('✅ Saved ' + lensName + ' to your Personal Notebook!');
   } catch (e) {
