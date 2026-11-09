@@ -61,17 +61,23 @@ document.addEventListener('DOMContentLoaded', async function() {
   } catch (err) {
     console.warn('Dashboard fetch notice:', err);
     if (!cachedHome) {
-      // Graceful offline fallback
-      document.getElementById('coinCount').innerText = '120';
-      document.getElementById('streakDisplay').innerText = '🔥 7 Days';
-      document.getElementById('accuracyDisplay').innerText = '82%';
-      document.getElementById('predictedScoreDisplay').innerText = '66/80';
+      // Graceful offline fallback bound to student single source of truth
+      document.getElementById('coinCount').innerText = localStorage.getItem('cg_coins') || '0';
+      document.getElementById('streakDisplay').innerText = '🔥 ' + (localStorage.getItem('cg_streak') || '1') + ' Day';
+      document.getElementById('accuracyDisplay').innerText = (localStorage.getItem('cg_accuracy') || '85') + '%';
+      document.getElementById('predictedScoreDisplay').innerText = (localStorage.getItem('cg_predicted') || '68') + '/80';
     }
   }
 });
 
 function renderHomeDashboard(data) {
   if (!data) return;
+
+  // Persist single source of truth to localStorage
+  if (data.cgCoins !== undefined) localStorage.setItem('cg_coins', data.cgCoins);
+  if (data.streak !== undefined) localStorage.setItem('cg_streak', data.streak);
+  if (data.overallAccuracy !== undefined) localStorage.setItem('cg_accuracy', data.overallAccuracy);
+  if (data.predictedScore !== undefined) localStorage.setItem('cg_predicted', data.predictedScore);
 
   // Header & Coins
   if (data.name) {
@@ -89,10 +95,17 @@ function renderHomeDashboard(data) {
     document.getElementById('todaySubtopicName').innerText = data.todaySubtopic.topic;
   }
 
-  // Admin / Founder Console Banner
-  if (data.isAdmin) {
-    var adminBanner = document.getElementById('adminPanelBanner');
-    if (adminBanner) adminBanner.style.display = 'block';
+  // Admin / Founder Console Banner (Strict Role-Gating: Gyan Sir 552858970 ONLY)
+  var adminBanner = document.getElementById('adminPanelBanner');
+  if (adminBanner) {
+    var isGyanSir = false;
+    try {
+      var tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) || {};
+      if (String(tgUser.id) === '552858970' || (data.isAdmin === true && String(data.studentId) === 'ADMIN-01' && String(tgUser.id) === '552858970')) {
+        isGyanSir = true;
+      }
+    } catch (e) {}
+    adminBanner.style.display = isGyanSir ? 'block' : 'none';
   }
 }
 

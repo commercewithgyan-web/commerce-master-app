@@ -93,8 +93,8 @@ function renderProgress(data) {
 
       item.innerHTML =
         '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px;">' +
-        '  <strong style="font-size:0.88rem; color:#FFFFFF; flex:1;">Ch ' + ch.chapterNo + ': ' + ch.chapterName + '</strong>' +
-        '  <span class="mono text-xs" style="color:' + barColor + '; font-weight:700; flex-shrink:0;">' + ch.accuracy + '% (' + ch.totalMarks + 'M)</span>' +
+        '  <strong style="font-size:0.88rem; color:#F8FAFC; font-weight:700; flex:1;">Ch ' + ch.chapterNo + ': ' + ch.chapterName + ' - ' + ch.accuracy + '%</strong>' +
+        '  <span class="mono text-xs" style="color:' + barColor + '; font-weight:700; flex-shrink:0; background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px;">' + ch.totalMarks + 'M</span>' +
         '</div>' +
         '<div style="background:rgba(255,255,255,0.08); height:6px; border-radius:9999px; overflow:hidden;">' +
         '  <div style="width:' + ch.accuracy + '%; height:100%; background:' + barColor + '; border-radius:9999px;"></div>' +

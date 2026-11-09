@@ -217,6 +217,7 @@ function handleApiRequest(req) {
       break;
 
     case 'getBooksDashboard':
+      requireAdmin_(verifiedUser && verifiedUser.id);
       dataResult = apiGetBooksDashboard_(verifiedUser);
       break;
 

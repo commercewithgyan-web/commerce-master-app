@@ -724,14 +724,62 @@ function sendStudentWelcomeMessage_(telegramId, name, studentId, planName, first
  * @return {Object}
  */
 function apiGetFeeDashboard_(verifiedUser) {
-  var student = requirePaidStudent_(verifiedUser.id);
-  var studentId = student.StudentID || student.studentId || 'ADMIN-01';
+  var telegramId = String((verifiedUser && verifiedUser.id) || '');
+  var isAdmin = isAdmin_(telegramId);
+
+  var student = null;
+  try {
+    student = requirePaidStudent_(telegramId);
+  } catch (err) {
+    if (!isAdmin) {
+      // Clean zero-due onboarding profile for student not found in Students sheet
+      return {
+        isRegistered: false,
+        studentId: 'STUDENT',
+        name: (verifiedUser && verifiedUser.first_name) || 'Student',
+        joinedDate: 'Current Session',
+        admissionRef: 'ACTIVE',
+        planName: 'CBSE Commerce Course',
+        monthlyFee: 0,
+        dailyProRataRate: 0,
+        totalCourseFee: 0,
+        termCourseFee: 0,
+        totalPaid: 0,
+        paidUpi: 0,
+        paidCash: 0,
+        balance: 0,
+        currentTermBalance: 0,
+        remainingAnnualBalance: 0,
+        daysElapsed: 0,
+        activeStudyDays: 0,
+        studyStreak: 1,
+        proRataConsumed: 0,
+        proRataAdvanceBalance: 0,
+        paidThroughDate: 'Current',
+        daysRemainingInPaidCycle: 0,
+        paidStatus: 'YES',
+        accountStatus: 'Active',
+        nextDue: null,
+        dailyUsageLog: [],
+        invoices: [],
+        paymentHistory: [],
+        message: 'No active fee dues recorded'
+      };
+    }
+  }
+
+  var studentId = student ? (student.StudentID || student.studentId) : (isAdmin ? 'ADMIN-01' : 'STUDENT');
+
+  // Strictly enforce role-gating: Non-admins can NEVER query or view ADMIN-01 records!
+  if (!isAdmin && (studentId === 'ADMIN-01' || studentId === 'ADMIN')) {
+    studentId = 'STUDENT';
+  }
 
   var invoices = findRows_('SHEET_FEE', 'Fee_Schedule', 'StudentID', studentId);
   var payments = findRows_('SHEET_FEE', 'Payments', 'StudentID', studentId);
 
-  // If student is ADMIN-01 or S001, cross-check alternative ID
-  if (invoices.length === 0 && payments.length === 0) {
+  // If student is ADMIN-01 and an admin, allow alternative ID check
+  if (isAdmin && invoices.length === 0 && payments.length === 0) {
     var altId = studentId === 'ADMIN-01' ? 'S001' : 'ADMIN-01';
     invoices = findRows_('SHEET_FEE', 'Fee_Schedule', 'StudentID', altId);
     payments = findRows_('SHEET_FEE', 'Payments', 'StudentID', altId);
@@ -740,8 +788,8 @@ function apiGetFeeDashboard_(verifiedUser) {
   // Sort payments reverse chronological
   payments.reverse();
 
-  // If payments empty, seed realistic verified ledger history
-  if (payments.length === 0) {
+  // ONLY seed sample data if user is an authorized admin
+  if (isAdmin && payments.length === 0) {
     payments = [
       {
         PaymentID: 'PAY-2026-11-001',
@@ -751,58 +799,15 @@ function apiGetFeeDashboard_(verifiedUser) {
         ForMonth: 'November 2026',
         ReceiptNo: 'CG-REC-2026-005',
         ReceiptSent: '✅'
-      },
-      {
-        PaymentID: 'PAY-2026-10-001',
-        Date: '01-Oct-2026',
-        Amount: 1500,
-        Mode: 'UPI (PhonePe / UTR: 42781923841)',
-        ForMonth: 'October 2026',
-        ReceiptNo: 'CG-REC-2026-004',
-        ReceiptSent: '✅'
-      },
-      {
-        PaymentID: 'PAY-2026-09-001',
-        Date: '01-Sep-2026',
-        Amount: 1500,
-        Mode: 'Cash (Begusarai Center / Voucher: CB-09-012)',
-        ForMonth: 'September 2026',
-        ReceiptNo: 'CG-REC-2026-003',
-        ReceiptSent: '✅'
-      },
-      {
-        PaymentID: 'PAY-2026-08-001',
-        Date: '01-Aug-2026',
-        Amount: 1500,
-        Mode: 'UPI (Paytm / UTR: 42178912384)',
-        ForMonth: 'August 2026',
-        ReceiptNo: 'CG-REC-2026-002',
-        ReceiptSent: '✅'
-      },
-      {
-        PaymentID: 'PAY-2026-07-001',
-        Date: '01-Jul-2026',
-        Amount: 1500,
-        Mode: 'UPI (Admission + Month 1 / UTR: 41829371289)',
-        ForMonth: 'July 2026',
-        ReceiptNo: 'CG-REC-2026-001',
-        ReceiptSent: '✅'
       }
     ];
   }
 
-  // If invoices empty, seed full 12-month schedule
-  if (invoices.length === 0) {
+  // ONLY seed schedule if user is an authorized admin
+  if (isAdmin && invoices.length === 0) {
     invoices = [
-      { InvoiceNo: 'INV-2026-07', Month: 'July 2026', DueDate: '10-Jul-2026', Amount: 1500, Paid: 1500, Balance: 0, Status: 'Paid' },
-      { InvoiceNo: 'INV-2026-08', Month: 'August 2026', DueDate: '10-Aug-2026', Amount: 1500, Paid: 1500, Balance: 0, Status: 'Paid' },
-      { InvoiceNo: 'INV-2026-09', Month: 'September 2026', DueDate: '10-Sep-2026', Amount: 1500, Paid: 1500, Balance: 0, Status: 'Paid' },
-      { InvoiceNo: 'INV-2026-10', Month: 'October 2026', DueDate: '10-Oct-2026', Amount: 1500, Paid: 1500, Balance: 0, Status: 'Paid' },
       { InvoiceNo: 'INV-2026-11', Month: 'November 2026', DueDate: '10-Nov-2026', Amount: 1500, Paid: 1500, Balance: 0, Status: 'Paid' },
-      { InvoiceNo: 'INV-2026-12', Month: 'December 2026', DueDate: '05-Dec-2026', Amount: 1500, Paid: 0, Balance: 1500, Status: 'Upcoming' },
-      { InvoiceNo: 'INV-2027-01', Month: 'January 2027', DueDate: '05-Jan-2027', Amount: 1500, Paid: 0, Balance: 1500, Status: 'Scheduled' },
-      { InvoiceNo: 'INV-2027-02', Month: 'February 2027', DueDate: '05-Feb-2027', Amount: 1500, Paid: 0, Balance: 1500, Status: 'Scheduled' },
-      { InvoiceNo: 'INV-2027-03', Month: 'March 2027', DueDate: '05-Mar-2027', Amount: 1500, Paid: 0, Balance: 1500, Status: 'Scheduled' }
+      { InvoiceNo: 'INV-2026-12', Month: 'December 2026', DueDate: '05-Dec-2026', Amount: 1500, Paid: 0, Balance: 1500, Status: 'Upcoming' }
     ];
   }
 

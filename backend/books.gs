@@ -491,7 +491,8 @@ function closeMonth() {
 // 6. MINI APP ADMIN BOOKS API HANDLERS
 // ─────────────────────────────────────────────────────────────────────
 
-function apiGetBooksDashboard_() {
+function apiGetBooksDashboard_(verifiedUser) {
+  requireAdmin_(verifiedUser && verifiedUser.id);
   var pl = calculateMonthlyPL_();
   var bs = calculateBalanceSheet_();
   var ratios = calculateRatios_();

@@ -17,15 +17,15 @@
  * @throws {Error} AUTH_FAILED if signature is invalid or expired
  */
 function verifyTelegramInitData_(initData) {
-  // Browser testing / fallback to Gyan Sir Admin profile
+  // Browser testing / fallback to student guest profile (NEVER admin)
   if (!initData || typeof initData !== 'string' || initData.trim() === '' || initData.indexOf('DEV_MOCK') !== -1) {
     return {
-      id: '552858970',
-      first_name: 'Gyan Sir',
-      last_name: 'Admin',
-      username: 'gyandeepsir',
+      id: 'GUEST_STUDENT',
+      first_name: 'Student',
+      last_name: '',
+      username: '',
       classLevel: '12',
-      is_admin: true
+      is_admin: false
     };
   }
 
@@ -46,18 +46,6 @@ function verifyTelegramInitData_(initData) {
       // Exclude both 'hash' and Telegram's optional 'signature'
       params[key] = value;
     }
-  }
-
-  // Master bypass if user is Gyan Sir (552858970)
-  if (params.user) {
-    try {
-      var candidateUser = JSON.parse(params.user);
-      if (candidateUser && String(candidateUser.id) === '552858970') {
-        candidateUser.classLevel = candidateUser.classLevel || '12';
-        candidateUser.is_admin = true;
-        return candidateUser;
-      }
-    } catch (ignore) {}
   }
 
   var props = PropertiesService.getScriptProperties();
@@ -115,6 +103,7 @@ function verifyTelegramInitData_(initData) {
 
   try {
     var userObj = JSON.parse(params.user);
+    userObj.is_admin = isAdmin_(userObj.id);
     return userObj;
   } catch (e) {
     throw new Error('AUTH_FAILED: Could not parse user JSON in initData');
@@ -131,7 +120,10 @@ function verifyTelegramInitData_(initData) {
  * @throws {Error} ACCESS_PAUSED or ACCESS_DENIED
  */
 function requirePaidStudent_(telegramId) {
-  var cleanId = String(telegramId || '552858970').trim();
+  var cleanId = String(telegramId || '').trim();
+  if (!cleanId) {
+    throw new Error('AUTH_REQUIRED: Telegram user ID is required');
+  }
 
   // Master Admin & VIP Bypass for Gyan Sir (552858970)
   var props = PropertiesService.getScriptProperties();

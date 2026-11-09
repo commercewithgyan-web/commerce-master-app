@@ -255,7 +255,7 @@ function revealMarkingScheme(c) {
           '<span style="font-size: 1.3rem;">📋</span>' +
           '<strong style="font-size: 1rem; color: #FDE047;">Official CBSE Marking Scheme</strong>' +
         '</div>' +
-        '<span class="pill pill-green">+25 CG Coins</span>' +
+        '<span class="pill pill-green">CBSE 4-Mark Breakdown</span>' +
       '</div>' +
 
       '<!-- Step 1: Concept Identification -->' +

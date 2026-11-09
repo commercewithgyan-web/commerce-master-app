@@ -42,101 +42,77 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 function getDefaultFeeData() {
+  var tgUser = {};
+  try {
+    tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) || {};
+  } catch (e) {}
+
   return {
-    studentId: 'ADMIN-01',
-    name: 'Gyan Sir',
-    joinedDate: '01-Jul-2026',
-    admissionRef: 'ADM-2026-001',
-    planName: 'CBSE Combined',
-    monthlyFee: 1500,
-    dailyProRataRate: 50.00,
-    totalCourseFee: 18000,
-    termCourseFee: 7500,
-    totalPaid: 7500,
-    paidUpi: 6000,
-    paidCash: 1500,
+    studentId: tgUser.id ? ('S-' + String(tgUser.id).slice(-4)) : 'STUDENT',
+    name: tgUser.first_name || 'Student',
+    joinedDate: 'Current Session',
+    admissionRef: 'ACTIVE',
+    planName: 'CBSE Commerce Course',
+    monthlyFee: 0,
+    dailyProRataRate: 0,
+    totalCourseFee: 0,
+    termCourseFee: 0,
+    totalPaid: 0,
+    paidUpi: 0,
+    paidCash: 0,
     balance: 0,
     currentTermBalance: 0,
-    remainingAnnualBalance: 10500,
-    daysElapsed: 131,
-    activeStudyDays: 98,
-    studyStreak: 14,
-    proRataConsumed: 6550,
-    proRataAdvanceBalance: 950,
-    paidThroughDate: '30-Nov-2026',
-    daysRemainingInPaidCycle: 21,
+    remainingAnnualBalance: 0,
+    daysElapsed: 0,
+    activeStudyDays: 0,
+    studyStreak: 1,
+    proRataConsumed: 0,
+    proRataAdvanceBalance: 0,
+    paidThroughDate: 'Current',
+    daysRemainingInPaidCycle: 0,
     paidStatus: 'YES',
     accountStatus: 'Active',
-    nextDue: {
-      invoiceNo: 'INV-2026-12',
-      month: 'December 2026',
-      dueDate: '05-Dec-2026',
-      amount: 1500,
-      balance: 1500,
-      status: 'Upcoming'
-    },
-    dailyUsageLog: [
-      { date: '09-Nov-2026 (Today)', activity: '⚡ 5 MCQs • 🎙️ 1 Voice Doubt Asked', value: 50, studied: true },
-      { date: '08-Nov-2026', activity: '⚡ 5 MCQs • 📓 1 Note Saved in Vault', value: 50, studied: true },
-      { date: '07-Nov-2026', activity: '⚡ 5 MCQs • 📈 Board Heatmap Checked', value: 50, studied: true },
-      { date: '06-Nov-2026', activity: '⚡ 4 MCQs • 🎙️ 1 Voice Doubt Asked', value: 50, studied: true },
-      { date: '05-Nov-2026', activity: '⚡ 5 MCQs • 📓 2 Formula Cards Studied', value: 50, studied: true },
-      { date: '04-Nov-2026', activity: '⚪ Sunday Rest & Revision Day', value: 50, studied: false },
-      { date: '03-Nov-2026', activity: '⚡ 5 MCQs • 🚨 Exam SOS Card Reviewed', value: 50, studied: true },
-      { date: '02-Nov-2026', activity: '⚡ 5 MCQs • 🎙️ Doubt Solved', value: 50, studied: true },
-      { date: '01-Nov-2026', activity: '⚡ 5 MCQs • 💳 Nov Tuition Settled', value: 50, studied: true },
-      { date: '31-Oct-2026', activity: '⚡ 5 MCQs • 📓 Register Notes Revised', value: 50, studied: true }
-    ],
-    invoices: [
-      { invoiceNo: 'INV-2026-07', month: 'July 2026', dueDate: '10-Jul-2026', amount: 1500, paid: 1500, balance: 0, status: 'Paid' },
-      { invoiceNo: 'INV-2026-08', month: 'August 2026', dueDate: '10-Aug-2026', amount: 1500, paid: 1500, balance: 0, status: 'Paid' },
-      { invoiceNo: 'INV-2026-09', month: 'September 2026', dueDate: '10-Sep-2026', amount: 1500, paid: 1500, balance: 0, status: 'Paid' },
-      { invoiceNo: 'INV-2026-10', month: 'October 2026', dueDate: '10-Oct-2026', amount: 1500, paid: 1500, balance: 0, status: 'Paid' },
-      { invoiceNo: 'INV-2026-11', month: 'November 2026', dueDate: '10-Nov-2026', amount: 1500, paid: 1500, balance: 0, status: 'Paid' },
-      { invoiceNo: 'INV-2026-12', month: 'December 2026', dueDate: '05-Dec-2026', amount: 1500, paid: 0, balance: 1500, status: 'Upcoming' },
-      { invoiceNo: 'INV-2027-01', month: 'January 2027', dueDate: '05-Jan-2027', amount: 1500, paid: 0, balance: 1500, status: 'Scheduled' },
-      { invoiceNo: 'INV-2027-02', month: 'February 2027', dueDate: '05-Feb-2027', amount: 1500, paid: 0, balance: 1500, status: 'Scheduled' },
-      { invoiceNo: 'INV-2027-03', month: 'March 2027', dueDate: '05-Mar-2027', amount: 1500, paid: 0, balance: 1500, status: 'Scheduled' }
-    ],
-    paymentHistory: [
-      { paymentId: 'PAY-2026-11-001', date: '01-Nov-2026', amount: 1500, mode: 'UPI (GPay / UTR: 43198829104)', forMonth: 'November 2026', receiptNo: 'CG-REC-2026-005', receiptSent: '✅' },
-      { paymentId: 'PAY-2026-10-001', date: '01-Oct-2026', amount: 1500, mode: 'UPI (PhonePe / UTR: 42781923841)', forMonth: 'October 2026', receiptNo: 'CG-REC-2026-004', receiptSent: '✅' },
-      { paymentId: 'PAY-2026-09-001', date: '01-Sep-2026', amount: 1500, mode: 'Cash (Begusarai Center / Voucher: CB-09-012)', forMonth: 'September 2026', receiptNo: 'CG-REC-2026-003', receiptSent: '✅' },
-      { paymentId: 'PAY-2026-08-001', date: '01-Aug-2026', amount: 1500, mode: 'UPI (Paytm / UTR: 42178912384)', forMonth: 'August 2026', receiptNo: 'CG-REC-2026-002', receiptSent: '✅' },
-      { paymentId: 'PAY-2026-07-001', date: '01-Jul-2026', amount: 1500, mode: 'UPI (Admission + Month 1 / UTR: 41829371289)', forMonth: 'July 2026', receiptNo: 'CG-REC-2026-001', receiptSent: '✅' }
-    ]
+    nextDue: null,
+    dailyUsageLog: [],
+    invoices: [],
+    paymentHistory: []
   };
 }
 
 function renderFeeDashboard(data) {
   if (!data) return;
 
+  var tgUser = {};
+  try {
+    tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) || {};
+  } catch (e) {}
+
   // 1. Enrollment Profile Details
   var nameEl = document.getElementById('studentNameDisplay');
-  if (nameEl) nameEl.innerText = data.name || 'Gyan Sir';
+  if (nameEl) nameEl.innerText = data.name || (tgUser.first_name || 'Student');
 
   var idEl = document.getElementById('studentIdDisplay');
-  if (idEl) idEl.innerText = data.studentId || 'ADMIN-01';
+  if (idEl) idEl.innerText = data.studentId || 'STUDENT';
 
   var planEl = document.getElementById('planNameBadge');
-  if (planEl) planEl.innerText = data.planName || 'CBSE Combined';
+  if (planEl) planEl.innerText = data.planName || 'CBSE Commerce Course';
 
   var joinedEl = document.getElementById('joinedDateDisplay');
-  if (joinedEl) joinedEl.innerText = data.joinedDate || '01-Jul-2026';
+  if (joinedEl) joinedEl.innerText = data.joinedDate || 'Current Session';
 
   var daysEl = document.getElementById('daysElapsedDisplay');
-  if (daysEl) daysEl.innerText = data.daysElapsed || 131;
+  if (daysEl) daysEl.innerText = data.daysElapsed || 0;
 
   var studiedEl = document.getElementById('daysStudiedDisplay');
-  if (studiedEl) studiedEl.innerText = data.activeStudyDays || 98;
+  if (studiedEl) studiedEl.innerText = data.activeStudyDays || 0;
 
   var streakEl = document.getElementById('studyStreakDisplay');
-  if (streakEl) streakEl.innerText = (data.studyStreak || 14) + 'd 🔥';
+  if (streakEl) streakEl.innerText = (data.studyStreak || 1) + 'd 🔥';
 
   // 2. Status Pill
   var statusPill = document.getElementById('feeStatusPill');
   if (statusPill) {
-    if (data.balance <= 0) {
+    if ((data.balance || 0) <= 0) {
       statusPill.innerText = 'Paid in Full ✅';
       statusPill.className = 'pill pill-green';
     } else if (data.accountStatus === 'Grace') {
@@ -150,34 +126,34 @@ function renderFeeDashboard(data) {
 
   // 3. Financial Metrics & Pro-Rata Ledger
   var dailyRateEl = document.getElementById('dailyProRataBadge');
-  if (dailyRateEl) dailyRateEl.innerText = 'Rate: ₹' + (data.dailyProRataRate || 50).toFixed(2) + ' / day';
+  if (dailyRateEl) dailyRateEl.innerText = 'Rate: ₹' + (data.dailyProRataRate || 0).toFixed(2) + ' / day';
 
   var totalPaidEl = document.getElementById('totalPaidDisplay');
-  if (totalPaidEl) totalPaidEl.innerText = formatRupee(data.totalPaid || 7500);
+  if (totalPaidEl) totalPaidEl.innerText = formatRupee(data.totalPaid || 0);
 
   var paidUpiEl = document.getElementById('paidUpiDisplay');
-  if (paidUpiEl) paidUpiEl.innerText = formatRupee(data.paidUpi || 6000);
+  if (paidUpiEl) paidUpiEl.innerText = formatRupee(data.paidUpi || 0);
 
   var paidCashEl = document.getElementById('paidCashDisplay');
-  if (paidCashEl) paidCashEl.innerText = formatRupee(data.paidCash || 1500);
+  if (paidCashEl) paidCashEl.innerText = formatRupee(data.paidCash || 0);
 
   var proRataEl = document.getElementById('proRataConsumedDisplay');
-  if (proRataEl) proRataEl.innerText = formatRupee(data.proRataConsumed || 6550);
+  if (proRataEl) proRataEl.innerText = formatRupee(data.proRataConsumed || 0);
 
   var proRataNoteEl = document.getElementById('proRataConsumedNote');
-  if (proRataNoteEl) proRataNoteEl.innerText = (data.daysElapsed || 131) + ' Days × ₹' + (data.dailyProRataRate || 50) + '/day';
+  if (proRataNoteEl) proRataNoteEl.innerText = (data.daysElapsed || 0) + ' Days × ₹' + (data.dailyProRataRate || 0) + '/day';
 
   var advanceEl = document.getElementById('proRataAdvanceDisplay');
   if (advanceEl) {
-    var advVal = data.proRataAdvanceBalance !== undefined ? data.proRataAdvanceBalance : 950;
+    var advVal = data.proRataAdvanceBalance !== undefined ? data.proRataAdvanceBalance : 0;
     advanceEl.innerText = (advVal >= 0 ? '+' : '-') + formatRupee(Math.abs(advVal));
   }
 
   var throughEl = document.getElementById('paidThroughDisplay');
-  if (throughEl) throughEl.innerText = data.paidThroughDate || '30-Nov-2026';
+  if (throughEl) throughEl.innerText = data.paidThroughDate || 'Current';
 
   var remainingEl = document.getElementById('remainingAnnualDisplay');
-  if (remainingEl) remainingEl.innerText = formatRupee(data.remainingAnnualBalance || 10500);
+  if (remainingEl) remainingEl.innerText = formatRupee(data.remainingAnnualBalance || 0);
 
   // Term 1 Progress Bar
   var feeBar = document.getElementById('feeProgressBar');

@@ -53,6 +53,7 @@ function askDoubtGemini(studentName, subject, question, lens) {
     '{\n' +
     '  "subject": "' + targetSubject + '",\n' +
     '  "student_name": "' + cleanName + '",\n' +
+    '  "topic_title": "<3-4 word clean topic name e.g. Gaining Ratio Calculation>",\n' +
     '  "story": "<Warm, personal story addressing ' + cleanName + '...>",\n' +
     '  "exam_notes": "<Exact CBSE register notes with **bold keywords**...>",\n' +
     '  "real_example": "<Real Indian corporate example...>",\n' +
@@ -78,10 +79,12 @@ function askDoubtGemini(studentName, subject, question, lens) {
     var realText = parsed.real_example || (parsed.lenses ? parsed.lenses.REAL_EXAMPLE : '') || '';
     var ruleText = parsed.golden_rule || parsed.keyRule || parsed.keyTakeaway || '';
     var trapText = parsed.cbse_trap || parsed.cbseTrap || '';
+    var topicTitle = parsed.topic_title || extractTopicTitle_(question);
 
     return {
       subject: targetSubject,
       studentName: cleanName,
+      topicTitle: topicTitle,
       story: storyText,
       exam_notes: notesText,
       real_example: realText,
@@ -142,25 +145,34 @@ function apiAskDoubt_(verifiedUser, payload) {
 
   var result = askDoubtGemini(studentName, subject, questionText, lens);
 
-  // Log to Sheet 2 Doubts
-  appendRow_('SHEET_QB', 'Doubts', [
-    getKolkataTimestamp(),
-    String(verifiedUser.id),
-    studentName,
-    questionText,
-    result.answer || (result.lenses ? result.lenses.STORY : ''),
-    mode,
-    payload.duration || 0,
-    subject,
-    lens,
-    'Answered'
-  ]);
+  // Duplicate check: prevent duplicate doubt insertion within 60 seconds
+  var cache = CacheService.getScriptCache();
+  var cleanQ = (questionText || '').toLowerCase().trim();
+  var dupKey = 'DOUBT_LOG_' + verifiedUser.id + '_' + Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, cleanQ)).slice(0, 16);
+  if (!cache.get(dupKey)) {
+    cache.put(dupKey, '1', 60);
+    appendRow_('SHEET_QB', 'Doubts', [
+      getKolkataTimestamp(),
+      String(verifiedUser.id),
+      studentName,
+      questionText,
+      result.answer || (result.lenses ? result.lenses.STORY : ''),
+      mode,
+      payload.duration || 0,
+      subject,
+      lens,
+      'Answered'
+    ]);
+  } else {
+    Logger.log('Duplicate doubt suppressed within 60s for student ' + verifiedUser.id);
+  }
 
   return {
     ok: true,
     isRejected: false,
     studentName: studentName,
     subject: subject,
+    topicTitle: result.topicTitle || extractTopicTitle_(questionText),
     question: questionText,
     transcribed: questionText,
     story: result.story,
@@ -223,25 +235,34 @@ function apiAskVoiceDoubt_(verifiedUser, payload) {
   // 2. Execute multi-lens generation using askDoubtGemini
   var result = askDoubtGemini(studentName, finalSubject, transcribedQuestion, 'ALL');
 
-  // 3. Log to Sheet 2
-  appendRow_('SHEET_QB', 'Doubts', [
-    getKolkataTimestamp(),
-    String(verifiedUser.id),
-    studentName,
-    transcribedQuestion,
-    result.answer || (result.lenses ? result.lenses.STORY : ''),
-    'voice_webapp',
-    payload.duration || 0,
-    finalSubject,
-    'ALL_LENSES',
-    'Answered'
-  ]);
+  // 3. Log to Sheet 2 with 60-second duplicate protection
+  var cache = CacheService.getScriptCache();
+  var cleanVoiceQ = (transcribedQuestion || '').toLowerCase().trim();
+  var voiceDupKey = 'DOUBT_LOG_' + verifiedUser.id + '_' + Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, cleanVoiceQ)).slice(0, 16);
+  if (!cache.get(voiceDupKey)) {
+    cache.put(voiceDupKey, '1', 60);
+    appendRow_('SHEET_QB', 'Doubts', [
+      getKolkataTimestamp(),
+      String(verifiedUser.id),
+      studentName,
+      transcribedQuestion,
+      result.answer || (result.lenses ? result.lenses.STORY : ''),
+      'voice_webapp',
+      payload.duration || 0,
+      finalSubject,
+      'ALL_LENSES',
+      'Answered'
+    ]);
+  } else {
+    Logger.log('Duplicate voice doubt suppressed within 60s for student ' + verifiedUser.id);
+  }
 
   return {
     ok: true,
     isRejected: false,
     studentName: studentName,
     subject: finalSubject,
+    topicTitle: result.topicTitle || extractTopicTitle_(transcribedQuestion),
     question: transcribedQuestion,
     transcribed: transcribedQuestion,
     story: result.story,
@@ -445,4 +466,16 @@ function detectCommerceSubject_(text, explicitSubject, chapter) {
   if (accRegex.test(combined)) return 'Accountancy';
 
   return 'Accountancy'; // Default fallback
+}
+
+/**
+ * Extracts a clean 3-4 word topic title from a student question
+ * @param {string} question
+ * @return {string}
+ */
+function extractTopicTitle_(question) {
+  if (!question) return 'Core Concept';
+  var clean = String(question).replace(/^(sir|please|can you explain|what is|how to calculate|difference between|explain|tell me)\s+/i, '').trim();
+  var words = clean.split(/\s+/).slice(0, 4).join(' ');
+  return words ? (words.charAt(0).toUpperCase() + words.slice(1)) : 'Core Concept';
 }

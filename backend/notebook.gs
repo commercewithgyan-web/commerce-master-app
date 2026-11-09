@@ -26,6 +26,16 @@ function apiAddNote_(verifiedUser, payload) {
 
   if (!noteText) throw new Error('Note content cannot be empty');
 
+  // Prevent duplicate note append within 60 seconds
+  var cache = CacheService.getScriptCache();
+  var noteHash = Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, String(verifiedUser.id) + title + noteText.slice(0, 60))).slice(0, 16);
+  var dupKey = 'NOTE_DUP_' + noteHash;
+  if (cache.get(dupKey)) {
+    Logger.log('Duplicate note ignored within 60s for ' + student.Name);
+    return { success: true, message: 'Note already saved to your Personal Notebook' };
+  }
+  cache.put(dupKey, '1', 60);
+
   appendRow_('SHEET_QB', 'Notebook_Notes', [
     getKolkataTimestamp(),
     String(verifiedUser.id),
