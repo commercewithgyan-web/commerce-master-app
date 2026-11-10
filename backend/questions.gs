@@ -119,7 +119,7 @@ function getMasterRepoSheetName_(subject, classLevel) {
 
 function getMasterVaultQuestionsByTab_(targetSheetName, includeAllStatuses) {
   var cache = CacheService.getScriptCache();
-  var cacheKey = 'MV_TAB_V2_' + targetSheetName + (includeAllStatuses ? '_ALL' : '_APP');
+  var cacheKey = 'MV_TAB_V3_' + targetSheetName + (includeAllStatuses ? '_ALL' : '_APP');
   var cached = cache.get(cacheKey);
   if (cached) {
     try { return JSON.parse(cached); } catch (e) {}
@@ -154,7 +154,8 @@ function getMasterVaultQuestionsByTab_(targetSheetName, includeAllStatuses) {
       if (qid.toLowerCase() === 'qid' || qText.toLowerCase() === 'questiontext') continue;
 
       var status = String(r[19] || '').trim().toLowerCase();
-      var isApproved = (status === 'approved' || status === 'active');
+      // Only teacher-reviewed rows are live. 'Active' was the old AI-insert default and is NOT reviewed.
+      var isApproved = (status === 'approved');
       if (!includeAllStatuses && !isApproved) continue;
 
       var qType = String(r[6] || 'MCQ').trim();
@@ -265,36 +266,8 @@ function handleGetPracticeQuestions_(data) {
     });
   }
 
-  // Fallback to draft vault rows if approved pool is currently empty
-  if (questions.length === 0) {
-    var draftRows = getMasterVaultQuestionsByTab_(targetSheetName, true);
-    for (var j = 0; j < draftRows.length; j++) {
-      var dq = draftRows[j];
-      var isDraftMcq = dq.QuestionType.toUpperCase().indexOf('MCQ') !== -1 ||
-                       (dq.OptionA && dq.OptionA !== '-' && dq.OptionB && dq.OptionB !== '-');
-      if (!isDraftMcq) continue;
-      questions.push({
-        id: dq.QID,
-        canonicalTopicId: dq.CanonicalSubtopicID,
-        subject: subject,
-        chapterNo: dq.Chapter,
-        chapterName: dq.ChapterName,
-        topic: dq.Topic || dq.Subtopic || dq.ChapterName || 'Core Concept',
-        subtopic: dq.Subtopic,
-        difficulty: dq.Difficulty,
-        text: dq.Question,
-        options: [dq.OptionA, dq.OptionB, dq.OptionC || 'Option C', dq.OptionD || 'Option D'],
-        correctIndex: dq.CorrectIndexNum,
-        markingScheme: dq.Rubric,
-        explanation: dq.Explanation,
-        trapAlert: dq.TrapAlert || dq.SharkTankHint || 'Watch out for CBSE conceptual traps.',
-        sharkTankHint: dq.SharkTankHint,
-        teacherGhostSeconds: dq.TeacherGhostSeconds
-      });
-      if (questions.length >= 5) break;
-    }
-  }
-
+  // No draft fallback: unreviewed rows must never reach students.
+  // An empty list lets the Mini App show its built-in practice set.
   return questions;
 }
 
@@ -578,8 +551,8 @@ function updateMasterVaultStatusByQid_(qid, newStatus) {
         if (String(qids[i][0] || '').trim() === String(qid).trim()) {
           sheet.getRange(MASTER_VAULT_START_ROW + i, 46).setValue(newStatus);
           var cache = CacheService.getScriptCache();
-          cache.remove('MV_TAB_V2_' + tabName + '_APP');
-          cache.remove('MV_TAB_V2_' + tabName + '_ALL');
+          cache.remove('MV_TAB_V3_' + tabName + '_APP');
+          cache.remove('MV_TAB_V3_' + tabName + '_ALL');
           return true;
         }
       }

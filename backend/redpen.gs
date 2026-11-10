@@ -68,7 +68,8 @@ function runGatekeeperAndBuildCtx_(imageBase64, confirmedStudentText) {
     '1. If it is NOT a handwritten commerce answer (e.g. screenshot/blank), set isHandwritten=false.',
     '2. Identify subjectCode from: ACC11, ACC12, BST11, BST12, ECO11_MICRO, ECO12_MACRO, IED12, STAT11.',
     '3. Transcribe the student text verbatim (do NOT fix spelling or numbers).',
-    '4. Construct the CBSE Value Points (VP1, VP2, VP3...) whose marks sum up to maxMarks (default 3 if not visible).'
+    '4. Construct the CBSE Value Points (VP1, VP2, VP3...) whose marks sum up to maxMarks (default 3 if not visible).',
+    '5. If a Commerce Gyan Question ID is written or printed on the page (pattern like 11ACC-CH07-008 or 12BST-CH02-014), copy it exactly into qidOnPage. Otherwise set qidOnPage to "". Never guess an ID.'
   ].join('\n');
 
   var schema = {
@@ -81,6 +82,7 @@ function runGatekeeperAndBuildCtx_(imageBase64, confirmedStudentText) {
       questionType: { type: 'STRING', enum: ['1M', 'SA1', 'SA2', 'LA', 'NUM', 'CASE'] },
       maxMarks: { type: 'NUMBER' },
       questionText: { type: 'STRING' },
+      qidOnPage: { type: 'STRING' },
       studentText: { type: 'STRING' },
       valuePoints: {
         type: 'ARRAY',
@@ -109,8 +111,71 @@ function runGatekeeperAndBuildCtx_(imageBase64, confirmedStudentText) {
   if (confirmedStudentText) {
     raw.studentText = confirmedStudentText;
   }
-  raw.schemeStatus = 'OFFICIAL';
+  // Value points above are built by the AI from the photo. They become OFFICIAL
+  // only when attachOfficialScheme_() replaces them with the sheet's Column P.
+  raw.schemeStatus = 'AI_GENERATED';
   return raw;
+}
+
+/* ---------- OFFICIAL SCHEME FROM MASTER VAULT (Column AP) ---------- */
+
+/**
+ * Splits a marking scheme such as
+ * "1.5 marks for entry (a); 1.5 marks for entry (b); 1 mark for entry (c)"
+ * into value points. Returns [] when no "<n> mark(s) for ..." step is found.
+ * @param {string} schemeText
+ * @return {Object[]} [{ id, label, marks, type, keywords }]
+ */
+function parseMarkingScheme_(schemeText) {
+  var text = String(schemeText || '');
+  var re = /(\d+(?:\.\d+)?)\s*marks?\s+for\s+/gi;
+  var hits = [];
+  var m;
+  while ((m = re.exec(text)) !== null) {
+    hits.push({ marks: Number(m[1]), labelStart: m.index + m[0].length, matchStart: m.index });
+  }
+
+  var points = [];
+  for (var i = 0; i < hits.length; i++) {
+    var end = (i + 1 < hits.length) ? hits[i + 1].matchStart : text.length;
+    var label = text.substring(hits[i].labelStart, end).replace(/[\s;,.]+$/, '').trim();
+    if (!label || !(hits[i].marks > 0)) continue;
+    points.push({ id: 'VP' + (points.length + 1), label: label, marks: hits[i].marks, type: 'point', keywords: [] });
+  }
+  return points;
+}
+
+/**
+ * Swaps the AI-built value points for the sheet's official scheme when the
+ * question can be identified by QID, is Approved, and its scheme adds up to Marks.
+ * Leaves ctx untouched (schemeStatus stays AI_GENERATED) in every other case.
+ * @param {Object} ctx Gatekeeper context
+ * @param {string} qidHint QID sent by the Mini App, if any
+ * @return {Object} ctx
+ */
+function attachOfficialScheme_(ctx, qidHint) {
+  var qid = String(qidHint || ctx.qidOnPage || '').trim().toUpperCase();
+  if (!/^1[12][A-Z]+-CH\d+-\d+$/.test(qid)) return ctx;
+
+  var q = null;
+  try { q = findQuestionAcrossVaults_(qid); } catch (e) { Logger.log('RedPen vault lookup note: ' + e); }
+  if (!q || !q.Rubric) return ctx;
+  if (String(q.ApprovalStatus || '').toLowerCase() !== 'approved') return ctx;
+
+  var points = parseMarkingScheme_(q.Rubric);
+  var total = points.reduce(function (sum, p) { return sum + p.marks; }, 0);
+  var maxMarks = Number(q.Marks) || 0;
+  if (!points.length || !maxMarks || Math.abs(total - maxMarks) > 0.001) {
+    Logger.log('RedPen: scheme for ' + qid + ' adds up to ' + total + ' but Marks = ' + maxMarks + '. Using AI value points.');
+    return ctx;
+  }
+
+  ctx.qid = qid;
+  ctx.valuePoints = points;
+  ctx.maxMarks = maxMarks;
+  ctx.questionText = q.Question || ctx.questionText;
+  ctx.schemeStatus = 'OFFICIAL';
+  return ctx;
 }
 
 /* ---------- CLAUDE'S EVALUATION PROMPT & VALIDATOR ---------- */
@@ -473,6 +538,8 @@ function handleRunRedPenAnalysis(data) {
       rejectionReason: ctx.rejectionReason || 'Please upload a clear photo of your handwritten notebook answer.'
     };
   }
+
+  ctx = attachOfficialScheme_(ctx, data.qid);
 
   var prompt = buildEvaluatePrompt(ctx);
   var schema = redpenResponseSchema();
