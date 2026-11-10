@@ -56,19 +56,19 @@ function runAllCommerceTests() {
   Logger.log('\n📋 Running Test Group 3: Anti-Cheating Dynamic Shuffler...');
   var dummyQ = {
     QID: 'Q-9999',
-    OptA: 'Apples',
-    OptB: 'Bananas',
-    OptC: 'Cherries',
-    OptD: 'Dates',
-    CorrectIdx: 'C'
+    OptionA: 'Apples',
+    OptionB: 'Bananas',
+    OptionC: 'Cherries',
+    OptionD: 'Dates',
+    CorrectIndex: 'C'
   };
 
-  var shuffleA = shuffleOptionsForStudent_(dummyQ, 1001);
-  var shuffleB = shuffleOptionsForStudent_(dummyQ, 2002);
+  // v2.4 contract: { options: [text x4], optionMap: { originalKey: displayIndex } }
+  var shuffleA = shuffleOptionsForStudent_(dummyQ);
 
-  assert('Options correctly mapped to A, B, C, D labels', shuffleA.options.length === 4 && shuffleA.options[0].label === 'A', 'Labels mismatch');
-  assert('Correct display index tracks original CorrectIdx (C)', shuffleA.options.find(function(o) { return o.label === shuffleA.correctDisplayIdx; }).originalKey === 'C', 'Correct option lost during shuffle');
-  assert('Seed determinism: student 1001 gets consistent shuffle', JSON.stringify(shuffleA) === JSON.stringify(shuffleOptionsForStudent_(dummyQ, 1001)), 'Inconsistent deterministic shuffle');
+  assert('Shuffle returns all 4 option texts', shuffleA.options.length === 4 && shuffleA.options.slice().sort().join('|') === 'Apples|Bananas|Cherries|Dates', 'Got: ' + JSON.stringify(shuffleA.options));
+  assert('optionMap tracks original correct key (C)', shuffleA.options[shuffleA.optionMap.C] === 'Cherries', 'Correct option lost during shuffle');
+  assert('optionMap covers A, B, C, D exactly once', [shuffleA.optionMap.A, shuffleA.optionMap.B, shuffleA.optionMap.C, shuffleA.optionMap.D].sort().join('') === '0123', 'Got: ' + JSON.stringify(shuffleA.optionMap));
 
   // ── TEST 4: CONTENT-AWARE COLUMN BUDGETING ──
   Logger.log('\n📋 Running Test Group 4: Autonomous Watcher Layout Tree...');
@@ -119,25 +119,16 @@ function runAllCommerceTests() {
   var chunks = chunkText_('A'.repeat(5000), 4000);
   assert('Splits 5000 chars into chunks <= 4000', chunks.length === 2 && chunks[0].length <= 4000, 'Chunking failed');
 
-  // ── TEST 7: VOICE DOUBT STRICT TRANSCRIPTION GROUNDING ──
-  Logger.log('\n📋 Running Test Group 7: Voice Doubt Transcription Grounding...');
-  var promptCtx = { name: 'Aarav', classLevel: 12 };
-  var voicePrompt = buildELI10VoicePrompt_(promptCtx);
-  assert('Voice prompt enforces Step 1 Transcribe', voicePrompt.indexOf('Step 1 — Transcribe') !== -1, 'Missing Step 1');
-  assert('Voice prompt enforces Step 2 Rejection string', voicePrompt.indexOf('Sorry Aarav, I could not hear your voice clearly. Please speak again!') !== -1, 'Missing Step 2 rejection');
-  assert('Voice prompt forbids guessing weak topics', voicePrompt.indexOf('NEVER hallucinate, guess topics') !== -1, 'Missing anti-hallucination directive');
-
-  var mockGroundedOutput = 
-    '[TRANSCRIPT]: What is Debenture?\n' +
-    '[EXPLANATION]: Hey Aarav! Think of a debenture like taking an IOU slip from your friendly neighborhood shopkeeper. The company borrows money from you and promises to repay with fixed interest, whether they make a profit or not!\n' +
-    '[KEY_RULE]: Debenture is loan capital, not ownership.\n' +
-    '[CBSE_TRAP]: Debenture interest is a charge against profit, not an appropriation.';
-
-  var parsedTags = parseVoiceExplanationTags_(mockGroundedOutput, 'Aarav');
-  assert('Extracts exact transcript', parsedTags.transcript === 'What is Debenture?', 'Got: ' + parsedTags.transcript);
-  assert('Grounded strictly on Debenture without partnership', parsedTags.explanation.indexOf('debenture') !== -1 && parsedTags.explanation.indexOf('Goodwill') === -1, 'Hallucination in explanation');
-  assert('Extracts key rule', parsedTags.keyRule.indexOf('loan capital') !== -1, 'Key rule failed');
-  assert('Extracts CBSE trap', parsedTags.cbseTrap.indexOf('charge against profit') !== -1, 'Trap failed');
+  // ── TEST 7: DOUBT ENGINE SUBJECT ISOLATION & TOPIC TITLES ──
+  // (buildELI10VoicePrompt_ / parseVoiceExplanationTags_ were removed in the multi-lens doubt rewrite)
+  Logger.log('\n📋 Running Test Group 7: Doubt Engine Subject Isolation...');
+  assert('Debenture question routes to Accountancy', detectCommerceSubject_('What is Debenture?') === 'Accountancy', 'Got: ' + detectCommerceSubject_('What is Debenture?'));
+  assert('Fayol question routes to Business Studies', detectCommerceSubject_('Explain Fayol unity of command') === 'Business Studies', 'Got: ' + detectCommerceSubject_('Explain Fayol unity of command'));
+  assert('Elasticity question routes to Economics', detectCommerceSubject_('What is price elasticity of demand?') === 'Economics', 'Got: ' + detectCommerceSubject_('What is price elasticity of demand?'));
+  assert('Explicit subject overrides keywords', detectCommerceSubject_('What is Debenture?', 'BST') === 'Business Studies', 'Explicit subject ignored');
+  assert('Unknown text falls back to Accountancy', detectCommerceSubject_('hello sir') === 'Accountancy', 'Fallback failed');
+  assert('Topic title strips filler and caps at 4 words', extractTopicTitle_('what is goodwill in partnership firm accounts') === 'Goodwill in partnership firm', 'Got: ' + extractTopicTitle_('what is goodwill in partnership firm accounts'));
+  assert('Empty question gives default topic title', extractTopicTitle_('') === 'Core Concept', 'Got: ' + extractTopicTitle_(''));
 
   // ── SUMMARY ──
   Logger.log('\n═══════════════════════════════════════════════');
