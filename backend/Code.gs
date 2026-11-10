@@ -96,6 +96,10 @@ function handleApiRequest(req) {
       dataResult = apiGetDailyQuestion_(verifiedUser, payload);
       break;
 
+    case 'getPracticeQuestions':
+      dataResult = handleGetPracticeQuestions_(payload);
+      break;
+
     case 'submitAnswer':
       dataResult = apiSubmitAnswer_(verifiedUser, payload);
       break;

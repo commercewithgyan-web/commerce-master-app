@@ -890,3 +890,95 @@ function seedInitialQuestionBankData() {
   Logger.log('✅ Seeded ' + verifiedQuestions.length + ' Class 12 Accountancy questions successfully into QuestionBank and DailyQuestions.');
   return verifiedQuestions.length;
 }
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * PRACTICE QUESTIONS API HANDLER
+ * ─────────────────────────────────────────────────────────────────────
+ */
+function handleGetPracticeQuestions_(data) {
+  var subject = (data && data.subject) || "Accountancy";
+  var diff = (data && data.difficulty) || "STANDARD";
+
+  try {
+    var ss = SpreadsheetApp.openById("1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs"); // Sheet 2: Question Bank
+    var sheet = ss.getSheetByName("QuestionBank");
+    if (!sheet) return { ok: false, error: "QuestionBank sheet not found" };
+
+    var rows = sheet.getDataRange().getValues();
+    if (!rows || rows.length <= 1) return { ok: true, questions: [] };
+
+    var headers = rows[0].map(function(h) { return String(h).trim().toLowerCase(); });
+    var subjCol = headers.indexOf('subject');
+    var topicCol = headers.indexOf('topic');
+    var questionCol = headers.indexOf('question');
+    if (questionCol === -1) questionCol = headers.indexOf('text');
+    var optACol = headers.indexOf('opta');
+    var optBCol = headers.indexOf('optb');
+    var optCCol = headers.indexOf('optc');
+    var optDCol = headers.indexOf('optd');
+    var correctCol = headers.indexOf('correctidx');
+    if (correctCol === -1) correctCol = headers.indexOf('correctindex');
+    var explCol = headers.indexOf('explanation');
+    var trapCol = headers.indexOf('sharktank_hint');
+    if (trapCol === -1) trapCol = headers.indexOf('trapalert');
+
+    // Default column indices if headers missing
+    if (subjCol === -1) subjCol = 1; // Col B
+    if (topicCol === -1) topicCol = 2;
+    if (questionCol === -1) questionCol = 3;
+    if (optACol === -1) optACol = 4;
+    if (optBCol === -1) optBCol = 5;
+    if (optCCol === -1) optCCol = 6;
+    if (optDCol === -1) optDCol = 7;
+    if (correctCol === -1) correctCol = 8;
+    if (explCol === -1) explCol = 9;
+    if (trapCol === -1) trapCol = 10;
+
+    var filtered = [];
+
+    for (var i = 1; i < rows.length; i++) {
+      var r = rows[i];
+      // Match Col B, Col D, or detected subject column
+      var rowSubj = String(r[subjCol] || r[3] || r[1] || '').trim().toLowerCase();
+      var targetSubj = subject.trim().toLowerCase();
+
+      if (rowSubj === targetSubj || (rowSubj && targetSubj && (rowSubj.indexOf(targetSubj) !== -1 || targetSubj.indexOf(rowSubj) !== -1))) {
+        var correctVal = r[correctCol];
+        var correctIdxNum = 0;
+        if (typeof correctVal === 'number') {
+          correctIdxNum = correctVal;
+        } else if (typeof correctVal === 'string') {
+          var cStr = correctVal.trim().toUpperCase();
+          if (cStr === 'A') correctIdxNum = 0;
+          else if (cStr === 'B') correctIdxNum = 1;
+          else if (cStr === 'C') correctIdxNum = 2;
+          else if (cStr === 'D') correctIdxNum = 3;
+          else correctIdxNum = parseInt(cStr, 10) || 0;
+        }
+
+        filtered.push({
+          id: String(r[0] || ('Q-' + i)),
+          subject: String(r[subjCol] || subject),
+          topic: String(r[topicCol] || 'Core Concept'),
+          text: String(r[questionCol] || r[7] || r[3] || ''),
+          options: [
+            String(r[optACol] !== undefined && r[optACol] !== '' ? r[optACol] : (r[8] || 'Option A')),
+            String(r[optBCol] !== undefined && r[optBCol] !== '' ? r[optBCol] : (r[9] || 'Option B')),
+            String(r[optCCol] !== undefined && r[optCCol] !== '' ? r[optCCol] : (r[10] || 'Option C')),
+            String(r[optDCol] !== undefined && r[optDCol] !== '' ? r[optDCol] : (r[11] || 'Option D'))
+          ],
+          correctIndex: correctIdxNum,
+          explanation: String(r[explCol] !== undefined && r[explCol] !== '' ? r[explCol] : (r[14] || r[9] || 'Remember NCERT core definitions.')),
+          trapAlert: String(r[trapCol] !== undefined && r[trapCol] !== '' ? r[trapCol] : (r[15] || r[10] || 'Remember NCERT core definitions.'))
+        });
+      }
+      if (filtered.length >= 5) break;
+    }
+
+    return { ok: true, questions: filtered };
+  } catch (err) {
+    Logger.log('handleGetPracticeQuestions_ error: ' + err.toString());
+    return { ok: false, error: err.toString() };
+  }
+}

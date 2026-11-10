@@ -22,16 +22,16 @@
 
     <!-- Subject Row -->
     <div class="pills-row" style="display: flex; gap: 8px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 2px;">
-      <button class="subject-pill active" data-subject="Accountancy" id="subjAcc">📘 ACCOUNTANCY</button>
-      <button class="subject-pill" data-subject="Business Studies" id="subjBst">📙 BUSINESS STUDIES</button>
-      <button class="subject-pill" data-subject="Economics" id="subjEco">📗 ECONOMICS</button>
+      <button class="pill pill-subject subject-pill active" data-subject="Accountancy" id="subj-acc" onclick="selectPracticeSubject('Accountancy')">📘 ACCOUNTANCY</button>
+      <button class="pill pill-subject subject-pill" data-subject="Business Studies" id="subj-bst" onclick="selectPracticeSubject('Business Studies')">📙 BUSINESS STUDIES</button>
+      <button class="pill pill-subject subject-pill" data-subject="Economics" id="subj-eco" onclick="selectPracticeSubject('Economics')">📗 ECONOMICS</button>
     </div>
 
     <!-- Difficulty Row -->
     <div class="pills-row" style="display: flex; gap: 6px; margin-bottom: 14px;">
-      <button class="diff-pill active" data-difficulty="Standard" id="diffStd">⭐ STANDARD</button>
-      <button class="diff-pill" data-difficulty="Moderate" id="diffMod">⚡ MODERATE</button>
-      <button class="diff-pill" data-difficulty="HOTS Trap" id="diffHots">🔥 HOTS TRAP</button>
+      <button class="pill pill-diff diff-pill active" data-difficulty="STANDARD" id="diff-standard" onclick="selectPracticeDifficulty('STANDARD')">⭐ STANDARD</button>
+      <button class="pill pill-diff diff-pill" data-difficulty="MODERATE" id="diff-moderate" onclick="selectPracticeDifficulty('MODERATE')">⚡ MODERATE</button>
+      <button class="pill pill-diff diff-pill" data-difficulty="HOTS TRAP" id="diff-hots" onclick="selectPracticeDifficulty('HOTS TRAP')">🔥 HOTS TRAP</button>
     </div>
 
     <!-- Ghost Timer Speed Challenge Aura -->
@@ -49,20 +49,22 @@
       </div>
     </div>
 
-    <!-- Question Card -->
-    <div class="card" id="questionCard">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-        <span class="pill pill-violet" id="qTopicPill">Partnership Accounts</span>
-        <button class="btn btn-outline btn-sm" id="btnSharkTank" style="display: none;">🦈 Shark Tank Hint</button>
-      </div>
+    <!-- Question Card Container -->
+    <div id="questionCardContainer" class="question-card">
+      <div class="card" id="questionCard">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span class="pill pill-violet" id="qTopicPill">Partnership Accounts</span>
+          <button class="btn btn-outline btn-sm" id="btnSharkTank" style="display: none;">🦈 Shark Tank Hint</button>
+        </div>
 
-      <h2 id="qText" style="font-size: 1.05rem; line-height: 1.5; margin-bottom: 20px; font-weight: 600;">
-        Loading question...
-      </h2>
+        <h2 id="qText" style="font-size: 1.05rem; line-height: 1.5; margin-bottom: 20px; font-weight: 600;">
+          Loading question...
+        </h2>
 
-      <!-- Options Container -->
-      <div id="optionsContainer">
-        <!-- Injected dynamically via question.js -->
+        <!-- Options Container -->
+        <div id="optionsContainer">
+          <!-- Injected dynamically via question.js -->
+        </div>
       </div>
     </div>
 

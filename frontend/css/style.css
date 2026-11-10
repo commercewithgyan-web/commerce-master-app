@@ -688,7 +688,7 @@ body.redpen-page .app-container {
 }
 
 /* Active Subject & Difficulty Pills (Practice Mode) */
-.subject-pill, .diff-pill {
+.subject-pill, .diff-pill, .pill-subject, .pill-diff {
   padding: 6px 12px;
   border-radius: 9999px;
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -700,7 +700,7 @@ body.redpen-page .app-container {
   transition: all 0.2s ease;
 }
 
-.subject-pill.active, [data-subject].active {
+.subject-pill.active, .pill-subject.active, [data-subject].active {
   background: #3B82F6 !important;
   color: #FFFFFF !important;
   border-color: #60A5FA !important;
@@ -708,7 +708,7 @@ body.redpen-page .app-container {
 }
 
 /* Active Difficulty Pill */
-.diff-pill.active, [data-difficulty].active {
+.diff-pill.active, .pill-diff.active, [data-difficulty].active {
   background: #D4AF37 !important;
   color: #000000 !important;
   border-color: #FDE047 !important;
