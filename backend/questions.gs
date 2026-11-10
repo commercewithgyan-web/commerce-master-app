@@ -893,92 +893,178 @@ function seedInitialQuestionBankData() {
 
 /**
  * ─────────────────────────────────────────────────────────────────────
- * PRACTICE QUESTIONS API HANDLER
+ * PRACTICE QUESTIONS API HANDLER (MASTER REPOSITORY INTEGRATION)
  * ─────────────────────────────────────────────────────────────────────
  */
+const MASTER_REPO_ID = "1FMk5KBCaEBLj7rwmGI9lIEpM02aGWrC-6tD8GXApDCY";
+
+function getMasterRepoSheetName_(subject, classLevel) {
+  var cls = String(classLevel || '12');
+  var subj = String(subject || '').toLowerCase();
+
+  if (subj.indexOf('business') !== -1 || subj.indexOf('bst') !== -1) {
+    return cls.indexOf('11') !== -1 ? '11_BST' : '12_BST';
+  } else if (subj.indexOf('account') !== -1 || subj.indexOf('acc') !== -1) {
+    return cls.indexOf('11') !== -1 ? '11_ACC' : '12_ACC';
+  } else if (subj.indexOf('eco') !== -1) {
+    return cls.indexOf('11') !== -1 ? '11_ECO_MICRO' : '12_ECO_MACRO';
+  } else if (subj.indexOf('stat') !== -1) {
+    return '11_STAT';
+  }
+  return cls.indexOf('11') !== -1 ? '11_ACC' : '12_ACC';
+}
+
 function handleGetPracticeQuestions_(data) {
   var subject = (data && data.subject) || "Accountancy";
   var diff = (data && data.difficulty) || "STANDARD";
+  var classLevel = (data && data.classLevel) || "12";
+  var targetSheetName = getMasterRepoSheetName_(subject, classLevel);
 
+  var questions = [];
+
+  // 1. Read from Master Question Repository (1FMk5KBCaEBLj7rwmGI9lIEpM02aGWrC-6tD8GXApDCY)
   try {
-    var ss = SpreadsheetApp.openById("1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs"); // Sheet 2: Question Bank
-    var sheet = ss.getSheetByName("QuestionBank");
-    if (!sheet) return { ok: false, error: "QuestionBank sheet not found" };
+    var masterSs = SpreadsheetApp.openById(MASTER_REPO_ID);
+    if (masterSs) {
+      var targetSheet = masterSs.getSheetByName(targetSheetName);
+      if (targetSheet) {
+        var masterRows = targetSheet.getDataRange().getValues();
+        // Master Repo 20 columns:
+        // A(0): QID, B(1): Canonical_Topic_ID, C(2): ChapterNo, D(3): ChapterName,
+        // E(4): Topic, F(5): Subtopic, G(6): QuestionType, H(7): Marks, I(8): Difficulty,
+        // J(9): QuestionText, K(10): OptA, L(11): OptB, M(12): OptC, N(13): OptD,
+        // O(14): CorrectAnswer, P(15): Official_CBSE_Marking_Scheme, Q(16): Explanation_NCERT,
+        // R(17): Trap_Alert, S(18): RealWorld_SharkTank_Hint, T(19): Status
 
-    var rows = sheet.getDataRange().getValues();
-    if (!rows || rows.length <= 1) return { ok: true, questions: [] };
+        for (var i = 1; i < masterRows.length; i++) {
+          var row = masterRows[i];
+          var qText = String(row[9] || '').trim();
+          var optA = String(row[10] || '').trim();
+          var optB = String(row[11] || '').trim();
+          var optC = String(row[12] || '').trim();
+          var optD = String(row[13] || '').trim();
+          var rowId = String(row[0] || '').trim();
 
-    var headers = rows[0].map(function(h) { return String(h).trim().toLowerCase(); });
-    var subjCol = headers.indexOf('subject');
-    var topicCol = headers.indexOf('topic');
-    var questionCol = headers.indexOf('question');
-    if (questionCol === -1) questionCol = headers.indexOf('text');
-    var optACol = headers.indexOf('opta');
-    var optBCol = headers.indexOf('optb');
-    var optCCol = headers.indexOf('optc');
-    var optDCol = headers.indexOf('optd');
-    var correctCol = headers.indexOf('correctidx');
-    if (correctCol === -1) correctCol = headers.indexOf('correctindex');
-    var explCol = headers.indexOf('explanation');
-    var trapCol = headers.indexOf('sharktank_hint');
-    if (trapCol === -1) trapCol = headers.indexOf('trapalert');
+          // Skip header or KPI rows
+          if (rowId.toLowerCase() === 'qid' || qText.toLowerCase() === 'questiontext' || qText.toLowerCase() === 'question') {
+            continue;
+          }
 
-    // Default column indices if headers missing
-    if (subjCol === -1) subjCol = 1; // Col B
-    if (topicCol === -1) topicCol = 2;
-    if (questionCol === -1) questionCol = 3;
-    if (optACol === -1) optACol = 4;
-    if (optBCol === -1) optBCol = 5;
-    if (optCCol === -1) optCCol = 6;
-    if (optDCol === -1) optDCol = 7;
-    if (correctCol === -1) correctCol = 8;
-    if (explCol === -1) explCol = 9;
-    if (trapCol === -1) trapCol = 10;
+          // Ensure it's an actual question row with text and options
+          if (qText && optA && optB) {
+            var correctVal = row[14];
+            var correctIdxNum = 0;
+            if (typeof correctVal === 'number') {
+              correctIdxNum = correctVal;
+            } else if (typeof correctVal === 'string') {
+              var cStr = correctVal.trim().toUpperCase();
+              if (cStr === 'A' || cStr.indexOf('(A)') !== -1 || cStr.indexOf('A.') !== -1) correctIdxNum = 0;
+              else if (cStr === 'B' || cStr.indexOf('(B)') !== -1 || cStr.indexOf('B.') !== -1) correctIdxNum = 1;
+              else if (cStr === 'C' || cStr.indexOf('(C)') !== -1 || cStr.indexOf('C.') !== -1) correctIdxNum = 2;
+              else if (cStr === 'D' || cStr.indexOf('(D)') !== -1 || cStr.indexOf('D.') !== -1) correctIdxNum = 3;
+              else correctIdxNum = parseInt(cStr, 10) || 0;
+            }
 
-    var filtered = [];
-
-    for (var i = 1; i < rows.length; i++) {
-      var r = rows[i];
-      // Match Col B, Col D, or detected subject column
-      var rowSubj = String(r[subjCol] || r[3] || r[1] || '').trim().toLowerCase();
-      var targetSubj = subject.trim().toLowerCase();
-
-      if (rowSubj === targetSubj || (rowSubj && targetSubj && (rowSubj.indexOf(targetSubj) !== -1 || targetSubj.indexOf(rowSubj) !== -1))) {
-        var correctVal = r[correctCol];
-        var correctIdxNum = 0;
-        if (typeof correctVal === 'number') {
-          correctIdxNum = correctVal;
-        } else if (typeof correctVal === 'string') {
-          var cStr = correctVal.trim().toUpperCase();
-          if (cStr === 'A') correctIdxNum = 0;
-          else if (cStr === 'B') correctIdxNum = 1;
-          else if (cStr === 'C') correctIdxNum = 2;
-          else if (cStr === 'D') correctIdxNum = 3;
-          else correctIdxNum = parseInt(cStr, 10) || 0;
+            questions.push({
+              id: String(row[0] || ('Q-' + (i + 1))),
+              subject: subject,
+              topic: String(row[4] || row[5] || row[3] || 'Core Concept'),
+              text: qText,
+              options: [optA, optB, optC || 'Option C', optD || 'Option D'],
+              correctIndex: correctIdxNum,
+              explanation: String(row[16] || row[15] || 'Remember NCERT core definitions.'),
+              trapAlert: String(row[17] || row[18] || 'Remember NCERT core definitions.'),
+              difficulty: String(row[8] || 'Standard')
+            });
+          }
+          if (questions.length >= 5) break;
         }
-
-        filtered.push({
-          id: String(r[0] || ('Q-' + i)),
-          subject: String(r[subjCol] || subject),
-          topic: String(r[topicCol] || 'Core Concept'),
-          text: String(r[questionCol] || r[7] || r[3] || ''),
-          options: [
-            String(r[optACol] !== undefined && r[optACol] !== '' ? r[optACol] : (r[8] || 'Option A')),
-            String(r[optBCol] !== undefined && r[optBCol] !== '' ? r[optBCol] : (r[9] || 'Option B')),
-            String(r[optCCol] !== undefined && r[optCCol] !== '' ? r[optCCol] : (r[10] || 'Option C')),
-            String(r[optDCol] !== undefined && r[optDCol] !== '' ? r[optDCol] : (r[11] || 'Option D'))
-          ],
-          correctIndex: correctIdxNum,
-          explanation: String(r[explCol] !== undefined && r[explCol] !== '' ? r[explCol] : (r[14] || r[9] || 'Remember NCERT core definitions.')),
-          trapAlert: String(r[trapCol] !== undefined && r[trapCol] !== '' ? r[trapCol] : (r[15] || r[10] || 'Remember NCERT core definitions.'))
-        });
       }
-      if (filtered.length >= 5) break;
     }
-
-    return { ok: true, questions: filtered };
-  } catch (err) {
-    Logger.log('handleGetPracticeQuestions_ error: ' + err.toString());
-    return { ok: false, error: err.toString() };
+  } catch (mErr) {
+    Logger.log('Master Repo read notice: ' + mErr.toString());
   }
+
+  // If questions found in Master Repo, return them
+  if (questions.length > 0) {
+    return { ok: true, questions: questions, source: 'MASTER_REPO', sheet: targetSheetName };
+  }
+
+  // 2. Fallback to Sheet 2 QuestionBank (1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs)
+  try {
+    var ss = SpreadsheetApp.openById("1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs");
+    var sheet = ss.getSheetByName("QuestionBank");
+    if (sheet) {
+      var rows = sheet.getDataRange().getValues();
+      if (rows && rows.length > 1) {
+        var headers = rows[0].map(function(h) { return String(h).trim().toLowerCase(); });
+        var subjCol = headers.indexOf('subject');
+        var topicCol = headers.indexOf('topic');
+        var questionCol = headers.indexOf('question');
+        if (questionCol === -1) questionCol = headers.indexOf('text');
+        var optACol = headers.indexOf('opta');
+        var optBCol = headers.indexOf('optb');
+        var optCCol = headers.indexOf('optc');
+        var optDCol = headers.indexOf('optd');
+        var correctCol = headers.indexOf('correctidx');
+        if (correctCol === -1) correctCol = headers.indexOf('correctindex');
+        var explCol = headers.indexOf('explanation');
+        var trapCol = headers.indexOf('sharktank_hint');
+        if (trapCol === -1) trapCol = headers.indexOf('trapalert');
+
+        if (subjCol === -1) subjCol = 1;
+        if (topicCol === -1) topicCol = 2;
+        if (questionCol === -1) questionCol = 3;
+        if (optACol === -1) optACol = 4;
+        if (optBCol === -1) optBCol = 5;
+        if (optCCol === -1) optCCol = 6;
+        if (optDCol === -1) optDCol = 7;
+        if (correctCol === -1) correctCol = 8;
+        if (explCol === -1) explCol = 9;
+        if (trapCol === -1) trapCol = 10;
+
+        for (var j = 1; j < rows.length; j++) {
+          var r = rows[j];
+          var rowSubj = String(r[subjCol] || r[3] || r[1] || '').trim().toLowerCase();
+          var targetSubj = subject.trim().toLowerCase();
+
+          if (rowSubj === targetSubj || (rowSubj && targetSubj && (rowSubj.indexOf(targetSubj) !== -1 || targetSubj.indexOf(rowSubj) !== -1))) {
+            var correctVal2 = r[correctCol];
+            var correctIdxNum2 = 0;
+            if (typeof correctVal2 === 'number') {
+              correctIdxNum2 = correctVal2;
+            } else if (typeof correctVal2 === 'string') {
+              var cStr2 = correctVal2.trim().toUpperCase();
+              if (cStr2 === 'A') correctIdxNum2 = 0;
+              else if (cStr2 === 'B') correctIdxNum2 = 1;
+              else if (cStr2 === 'C') correctIdxNum2 = 2;
+              else if (cStr2 === 'D') correctIdxNum2 = 3;
+              else correctIdxNum2 = parseInt(cStr2, 10) || 0;
+            }
+
+            questions.push({
+              id: String(r[0] || ('Q-' + j)),
+              subject: String(r[subjCol] || subject),
+              topic: String(r[topicCol] || 'Core Concept'),
+              text: String(r[questionCol] || r[7] || r[3] || ''),
+              options: [
+                String(r[optACol] !== undefined && r[optACol] !== '' ? r[optACol] : (r[8] || 'Option A')),
+                String(r[optBCol] !== undefined && r[optBCol] !== '' ? r[optBCol] : (r[9] || 'Option B')),
+                String(r[optCCol] !== undefined && r[optCCol] !== '' ? r[optCCol] : (r[10] || 'Option C')),
+                String(r[optDCol] !== undefined && r[optDCol] !== '' ? r[optDCol] : (r[11] || 'Option D'))
+              ],
+              correctIndex: correctIdxNum2,
+              explanation: String(r[explCol] !== undefined && r[explCol] !== '' ? r[explCol] : (r[14] || r[9] || 'Remember NCERT core definitions.')),
+              trapAlert: String(r[trapCol] !== undefined && r[trapCol] !== '' ? r[trapCol] : (r[15] || r[10] || 'Remember NCERT core definitions.'))
+            });
+          }
+          if (questions.length >= 5) break;
+        }
+      }
+    }
+  } catch (err) {
+    Logger.log('Sheet 2 QuestionBank read notice: ' + err.toString());
+  }
+
+  return { ok: true, questions: questions };
 }

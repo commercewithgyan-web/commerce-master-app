@@ -6,12 +6,11 @@
  * ═══════════════════════════════════════════════════════════════════════
  */
 
-// Safe browser logger fallback (Audit Bug 1 Fix)
-const Logger = window.Logger || {
-  log: (...args) => console.log("[TG]", ...args),
-  warn: (...args) => console.warn("[TG]", ...args),
-  error: (...args) => console.error("[TG]", ...args)
-};
+// Safe browser logger fallback & Desktop / Mac Mini preview mode check
+const Logger = window.Logger || console;
+if (!window.Telegram?.WebApp?.initData) {
+  console.log("Running in Desktop / Mac Mini Preview Mode");
+}
 
 var TG_APP = {
   tg: (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null,
