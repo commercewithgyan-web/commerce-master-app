@@ -57,6 +57,9 @@ function invalidateSheetCache_(sheetKey, tabName) {
 function getSheet_(sheetKey, tabName) {
   var props = PropertiesService.getScriptProperties();
   var sheetId = props.getProperty(sheetKey) || FALLBACK_SHEET_IDS[sheetKey];
+  if (sheetId === '1FMk5KBCaEBLj7rwmGI9lIEpM02aGWrc-6tD8GXApDCY') {
+    sheetId = FALLBACK_SHEET_IDS.SHEET_MASTER_REPO;
+  }
   if (!sheetId) {
     throw new Error('Config missing for Script Property: ' + sheetKey);
   }
@@ -81,6 +84,9 @@ function getSheet_(sheetKey, tabName) {
 function openSpreadsheet_(sheetKey) {
   var props = PropertiesService.getScriptProperties();
   var sheetId = props.getProperty(sheetKey) || FALLBACK_SHEET_IDS[sheetKey];
+  if (sheetId === '1FMk5KBCaEBLj7rwmGI9lIEpM02aGWrc-6tD8GXApDCY') {
+    sheetId = FALLBACK_SHEET_IDS.SHEET_MASTER_REPO;
+  }
   if (!sheetId) {
     throw new Error('Config missing for Script Property: ' + sheetKey);
   }

@@ -89,6 +89,9 @@ async function callBackendApi(action, payload) {
     if (result && result.data && result.data.questions) {
       return { ok: true, questions: result.data.questions };
     }
+    if (result && Array.isArray(result.data)) {
+      return { ok: true, questions: result.data };
+    }
     return result;
   } catch (err) {
     console.error("callBackendApi error:", err);

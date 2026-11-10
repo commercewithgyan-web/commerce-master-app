@@ -1,24 +1,13 @@
 /**
- * ═══════════════════════════════════════════════════════════════════════
- * COMMERCE MASTER APP v2.3 — QUESTION BANK & GHOST CHALLENGES (questions.gs)
- * Pre-Class Subtopic Dispatcher, 70/30 Cumulative Pacing, Gemini Question
- * Generator with Human Approval Gate, Ghost Timer Speed Challenges (+20 CG Coins),
- * Fisher-Yates Anti-Cheating Shuffler, and 15-Minute Edit Lock.
- * ═══════════════════════════════════════════════════════════════════════
+ * ============================================================================
+ * COMMERCE MASTER APP v2.4 — QUESTION BANK & GHOST CHALLENGES (questions.gs)
+ * Pre-Class Subtopic Dispatcher, 70/30 Cumulative Pacing, Master Question
+ * Repository Vault Reader (AA6:AT across all 8 Subject Tabs), Topic-Sharded
+ * CacheService Pre-Warming (<100KB safe), Fisher-Yates Anti-Cheating Shuffler,
+ * and Ghost Timer Speed Challenges (+20 CG Coins).
+ * ============================================================================
  */
 
-// ─────────────────────────────────────────────────────────────────────
-// 1. PRE-CLASS SUBTOPIC DISPATCHER (/settopic)
-// ─────────────────────────────────────────────────────────────────────
-
-/**
- * Sets today's active subtopic for the 7:30 PM test package
- * @param {string|number} classLevel - 11 or 12
- * @param {string} subject - Accountancy | Business Studies | Economics
- * @param {string|number} chapterNo
- * @param {string|number} subtopicId
- * @return {Object} Locked topic details
- */
 function setActiveSubtopic_(classLevel, subject, chapterNo, subtopicId) {
   var syllabus = getAllRowsAsObjects_('SHEET_SYLLABUS', 'Master_Syllabus', 1000);
   var matchedSubtopic = null;
@@ -45,7 +34,6 @@ function setActiveSubtopic_(classLevel, subject, chapterNo, subtopicId) {
   var topicName = matchedSubtopic ? matchedSubtopic.Subtopic : ('Chapter ' + chapterNo + ' Focus');
   var chapterName = matchedSubtopic ? matchedSubtopic.ChapterName : ('Chapter ' + chapterNo);
 
-  // Store in CacheService and Settings tab
   var cache = CacheService.getScriptCache();
   var lockData = {
     classLevel: classLevel,
@@ -57,9 +45,8 @@ function setActiveSubtopic_(classLevel, subject, chapterNo, subtopicId) {
     lockedAt: getKolkataTimestamp()
   };
 
-  cache.put('ACTIVE_SUBTOPIC_' + classLevel, JSON.stringify(lockData), 86400); // 24-hr cache
+  cache.put('ACTIVE_SUBTOPIC_' + classLevel, JSON.stringify(lockData), 86400);
 
-  // Update Settings tab for persistence
   updateRowByColValue_('SHEET_TG', 'Settings', 'Key', 'ACTIVE_SUBTOPIC_' + classLevel, {
     Value: JSON.stringify(lockData)
   });
@@ -68,11 +55,6 @@ function setActiveSubtopic_(classLevel, subject, chapterNo, subtopicId) {
   return lockData;
 }
 
-/**
- * Gets the current active subtopic for tonight's delivery
- * @param {string|number} classLevel
- * @return {Object}
- */
 function getActiveSubtopic_(classLevel) {
   var cache = CacheService.getScriptCache();
   var cached = cache.get('ACTIVE_SUBTOPIC_' + classLevel);
@@ -89,185 +71,360 @@ function getActiveSubtopic_(classLevel) {
     } catch (e) {}
   }
 
-  // Fallback defaults
   return {
     classLevel: classLevel,
-    subject: 'Accountancy',
-    chapterNo: '1',
-    canonicalId: '12_ACC_CH1_ST1',
-    chapterName: 'Accounting for Partnership Firms - Fundamentals',
-    subtopicName: 'Profit and Loss Appropriation & Interest on Capital'
+    subject: classLevel == 12 ? 'Business Studies' : 'Accountancy',
+    chapterNo: 1,
+    canonicalId: classLevel == 12 ? 'C12-BST-B1-CH01-T01-S01' : 'C11-ACC-B1-CH01-T01-S01',
+    chapterName: 'Chapter 1',
+    subtopicName: 'General Fundamentals',
+    lockedAt: getKolkataTimestamp()
   };
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// 2. 70/30 CUMULATIVE PACING & DAILY PACKAGE ASSEMBLER
-// ─────────────────────────────────────────────────────────────────────
+const MASTER_REPO_ID = '1FMk5KBCaEBLj7rwmGI9lIEpM02aGWrC-6tD8GXApDCY';
+const MASTER_VAULT_START_ROW = 6;
+const MASTER_VAULT_START_COL = 27; // Column AA
+const MASTER_VAULT_NUM_COLS = 20;  // Columns AA..AT
 
-/**
- * Assembles today's 5-question drill based on 70/30 cumulative pacing:
- * - 70% Fresh Focus (3-4 questions from today's active subtopic)
- * - 30% Cumulative Retention (1-2 questions from prior subtopics of this chapter)
- * 
- * Only Approved questions are served to students (Law H-1).
- * 
- * @param {string|number} classLevel - 11 or 12
- * @param {string} [subject]
- * @return {Object[]} Array of 5 approved questions
- */
-function assembleDailyQuestions_(classLevel, subject) {
-  var subtopicInfo = getActiveSubtopic_(classLevel);
-  var targetSubject = subject || subtopicInfo.subject || 'Accountancy';
+function getMasterRepoSheetName_(subject, classLevel) {
+  var cls = String(classLevel || '12');
+  var isClass11 = cls.indexOf('11') !== -1;
+  var subj = String(subject || '').toLowerCase();
 
-  var allQuestions = getAllRowsAsObjects_('SHEET_QB', 'QuestionBank', 2000);
+  if (subj.indexOf('business') !== -1 || subj.indexOf('bst') !== -1) {
+    return isClass11 ? '11_BST' : '12_BST';
+  }
+  if (subj.indexOf('account') !== -1 || subj.indexOf('acc') !== -1) {
+    return isClass11 ? '11_ACC' : '12_ACC';
+  }
+  if (subj.indexOf('stat') !== -1) {
+    return '11_STAT';
+  }
+  if (subj.indexOf('indian') !== -1 || subj.indexOf('ied') !== -1 || subj.indexOf('development') !== -1) {
+    return '12_ECO_IED';
+  }
+  if (subj.indexOf('micro') !== -1) {
+    return '11_ECO_MICRO';
+  }
+  if (subj.indexOf('macro') !== -1) {
+    return '12_ECO_MACRO';
+  }
+  if (subj.indexOf('eco') !== -1) {
+    return isClass11 ? '11_ECO_MICRO' : '12_ECO_MACRO';
+  }
 
-  // Filter only Approved questions for this class and subject
-  var approvedPool = allQuestions.filter(function(q) {
-    return String(q.Class) === String(classLevel) &&
-           String(q.Subject).toLowerCase() === String(targetSubject).toLowerCase() &&
-           String(q.ApprovalStatus || '').trim().toLowerCase() === 'approved';
-  });
+  return isClass11 ? '11_ACC' : '12_ACC';
+}
 
-  // Separate into Today's Fresh Subtopic vs Cumulative Prior Subtopics
-  var freshPool = [];
-  var cumulativePool = [];
+function getMasterVaultQuestionsByTab_(targetSheetName, includeAllStatuses) {
+  var cache = CacheService.getScriptCache();
+  var cacheKey = 'MV_TAB_V2_' + targetSheetName + (includeAllStatuses ? '_ALL' : '_APP');
+  var cached = cache.get(cacheKey);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (e) {}
+  }
 
-  var currentChapter = String(subtopicInfo.chapterNo || '1');
-  var currentTopic = String(subtopicInfo.subtopicName || '').toLowerCase();
-
-  approvedPool.forEach(function(q) {
-    var qChapter = String(q.Chapter || '');
-    var qTopic = String(q.Topic || '').toLowerCase();
-
-    if (qChapter === currentChapter && (qTopic.indexOf(currentTopic) !== -1 || currentTopic.indexOf(qTopic) !== -1)) {
-      freshPool.push(q);
-    } else {
-      cumulativePool.push(q);
+  var parsedQuestions = [];
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var repoId = props.getProperty('SHEET_MASTER_REPO') || MASTER_REPO_ID;
+    if (repoId === '1FMk5KBCaEBLj7rwmGI9lIEpM02aGWrc-6tD8GXApDCY') {
+      repoId = MASTER_REPO_ID;
     }
-  });
 
-  var selected = [];
+    var masterSs = SpreadsheetApp.openById(repoId);
+    var targetSheet = masterSs ? masterSs.getSheetByName(targetSheetName) : null;
+    if (!targetSheet) return [];
 
-  // Pick up to 3-4 questions (70%) from freshPool
-  freshPool = shuffleArray_(freshPool);
-  var freshCount = Math.min(3, freshPool.length);
-  for (var i = 0; i < freshCount; i++) {
-    selected.push(freshPool[i]);
-  }
+    var maxRows = targetSheet.getMaxRows();
+    if (maxRows < MASTER_VAULT_START_ROW) return [];
 
-  // Backfill 1-2 questions (30%) from cumulativePool
-  cumulativePool = shuffleArray_(cumulativePool);
-  var needed = 5 - selected.length;
-  for (var j = 0; j < needed && j < cumulativePool.length; j++) {
-    selected.push(cumulativePool[j]);
-  }
+    var numRowsToScan = Math.min(maxRows - MASTER_VAULT_START_ROW + 1, 1500);
+    var vaultRows = targetSheet.getRange(MASTER_VAULT_START_ROW, MASTER_VAULT_START_COL, numRowsToScan, MASTER_VAULT_NUM_COLS).getValues();
 
-  // If pool is still short of 5, fallback to remaining approved pool
-  if (selected.length < 5) {
-    for (var k = 0; k < approvedPool.length && selected.length < 5; k++) {
-      if (selected.indexOf(approvedPool[k]) === -1) {
-        selected.push(approvedPool[k]);
+    var isClass11 = targetSheetName.indexOf('11_') === 0;
+    var defaultClass = isClass11 ? '11' : '12';
+
+    for (var i = 0; i < vaultRows.length; i++) {
+      var r = vaultRows[i];
+      var qid = String(r[0] || '').trim();
+      var qText = String(r[9] || '').trim();
+      if (!qid && !qText) continue;
+      if (qid.toLowerCase() === 'qid' || qText.toLowerCase() === 'questiontext') continue;
+
+      var status = String(r[19] || '').trim().toLowerCase();
+      var isApproved = (status === 'approved' || status === 'active');
+      if (!includeAllStatuses && !isApproved) continue;
+
+      var qType = String(r[6] || 'MCQ').trim();
+      var marks = Number(r[7]) || (qType.toUpperCase().indexOf('MCQ') !== -1 ? 1 : 4);
+      var difficulty = String(r[8] || 'Standard').trim();
+      var optA = String(r[10] || '').trim();
+      var optB = String(r[11] || '').trim();
+      var optC = String(r[12] || '').trim();
+      var optD = String(r[13] || '').trim();
+      var correctRaw = String(r[14] || '').trim();
+
+      var correctLetter = 'A';
+      var correctIndex = 0;
+      var cUpper = correctRaw.toUpperCase();
+      if (cUpper === 'A' || cUpper.indexOf('(A)') === 0 || cUpper === '0') {
+        correctLetter = 'A';
+        correctIndex = 0;
+      } else if (cUpper === 'B' || cUpper.indexOf('(B)') === 0 || cUpper === '1') {
+        correctLetter = 'B';
+        correctIndex = 1;
+      } else if (cUpper === 'C' || cUpper.indexOf('(C)') === 0 || cUpper === '2') {
+        correctLetter = 'C';
+        correctIndex = 2;
+      } else if (cUpper === 'D' || cUpper.indexOf('(D)') === 0 || cUpper === '3') {
+        correctLetter = 'D';
+        correctIndex = 3;
       }
-    }
-  }
 
-  // If still completely empty (initial setup), return built-in curriculum seed questions
-  if (selected.length === 0) {
-    selected = getEmergencySeedQuestions_(classLevel, targetSubject);
-  }
+      var diffUpper = difficulty.toUpperCase();
+      var ghostSeconds = (diffUpper.indexOf('HOTS') !== -1 || diffUpper.indexOf('HARD') !== -1) ? 45 : 35;
 
-  return selected;
-}
-
-/**
- * 6:00 AM Cron: Fills DailyQuestions tab for today and pre-warms RAM cache
- */
-function fillDailyQuestions() {
-  Logger.log('🌅 Running 06:00 AM Daily Questions Assembler...');
-  var todayStr = getKolkataDate();
-
-  [11, 12].forEach(function(classLevel) {
-    try {
-      var questions = assembleDailyQuestions_(classLevel, 'Accountancy');
-      var sheet = getSheet_('SHEET_QB', 'DailyQuestions');
-
-      questions.forEach(function(q) {
-        sheet.appendRow([
-          todayStr,
-          q.QID,
-          classLevel,
-          q.Subject || 'Accountancy',
-          q.Type || 'MCQ',
-          q.Teacher_Ghost_Seconds || 35
-        ]);
+      parsedQuestions.push({
+        QID: qid || (targetSheetName + '-' + (i + 1)),
+        CanonicalSubtopicID: String(r[1] || '').trim(),
+        Class: defaultClass,
+        Subject: targetSheetName,
+        Chapter: String(r[2] || '').trim(),
+        ChapterName: String(r[3] || '').trim(),
+        Topic: String(r[4] || '').trim(),
+        Subtopic: String(r[5] || '').trim(),
+        QuestionType: qType,
+        Marks: marks,
+        Difficulty: difficulty,
+        Question: qText,
+        OptionA: optA,
+        OptionB: optB,
+        OptionC: optC,
+        OptionD: optD,
+        CorrectIndex: correctLetter,
+        CorrectIndexNum: correctIndex,
+        CorrectAnswerText: correctRaw,
+        Rubric: String(r[15] || '1 mark').trim(),
+        Explanation: String(r[16] || r[15] || 'Remember NCERT core definitions.').trim(),
+        TrapAlert: String(r[17] || '').trim(),
+        SharkTankHint: String(r[18] || '').trim(),
+        ApprovalStatus: isApproved ? 'Approved' : String(r[19] || 'Draft').trim(),
+        TeacherGhostSeconds: ghostSeconds
       });
-
-      // Pre-warm CacheService (Law 11.2.3)
-      var cache = CacheService.getScriptCache();
-      cache.put('DAILY_QUESTIONS_C' + classLevel + '_' + todayStr, JSON.stringify(questions), 86400);
-
-      Logger.log('  ✅ Assembled & Cached ' + questions.length + ' questions for Class ' + classLevel);
-    } catch (e) {
-      logError_('fillDailyQuestions_Class' + classLevel, e);
     }
-  });
+
+    var serialized = JSON.stringify(parsedQuestions);
+    if (serialized.length < 90000) {
+      cache.put(cacheKey, serialized, 900);
+    }
+  } catch (err) {
+    Logger.log('Error in getMasterVaultQuestionsByTab_(' + targetSheetName + '): ' + err);
+  }
+
+  return parsedQuestions;
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// 3. GEMINI 2.5 FLASH QUESTION GENERATOR (with Human Approval Gate)
-// ─────────────────────────────────────────────────────────────────────
+function handleGetPracticeQuestions_(data) {
+  var subject = (data && data.subject) || 'Accountancy';
+  var diff = String((data && data.difficulty) || 'ALL').toUpperCase();
+  var classLevel = (data && data.classLevel) || '12';
+  var targetSheetName = getMasterRepoSheetName_(subject, classLevel);
 
-/**
- * Generates an exam-standard CBSE Commerce MCQ using Gemini 2.5 Flash Free Tier
- * Questions are saved strictly with ApprovalStatus = "AI_Draft" (Law H-1).
- * Never automatically served without human review.
- * 
- * @param {string|number} classLevel
- * @param {string} subject
- * @param {string} chapter
- * @param {string} topic
- * @param {string} [difficulty='Medium']
- * @return {Object} Generated draft question object
- */
+  var vaultRows = getMasterVaultQuestionsByTab_(targetSheetName, false);
+  var questions = [];
+
+  for (var i = 0; i < vaultRows.length; i++) {
+    var q = vaultRows[i];
+    var isMcq = q.QuestionType.toUpperCase().indexOf('MCQ') !== -1 ||
+                (q.OptionA && q.OptionA !== '-' && q.OptionB && q.OptionB !== '-');
+    if (!isMcq) continue;
+
+    if (diff !== 'ALL' && diff !== 'STANDARD' && q.Difficulty.toUpperCase().indexOf(diff) === -1) {
+      continue;
+    }
+
+    questions.push({
+      id: q.QID,
+      canonicalTopicId: q.CanonicalSubtopicID,
+      subject: subject,
+      chapterNo: q.Chapter,
+      chapterName: q.ChapterName,
+      topic: q.Topic || q.Subtopic || q.ChapterName || 'Core Concept',
+      subtopic: q.Subtopic,
+      difficulty: q.Difficulty,
+      text: q.Question,
+      options: [q.OptionA, q.OptionB, q.OptionC || 'Option C', q.OptionD || 'Option D'],
+      correctIndex: q.CorrectIndexNum,
+      markingScheme: q.Rubric,
+      explanation: q.Explanation,
+      trapAlert: q.TrapAlert || q.SharkTankHint || 'Watch out for CBSE conceptual traps.',
+      sharkTankHint: q.SharkTankHint,
+      teacherGhostSeconds: q.TeacherGhostSeconds
+    });
+  }
+
+  // Fallback to draft vault rows if approved pool is currently empty
+  if (questions.length === 0) {
+    var draftRows = getMasterVaultQuestionsByTab_(targetSheetName, true);
+    for (var j = 0; j < draftRows.length; j++) {
+      var dq = draftRows[j];
+      var isDraftMcq = dq.QuestionType.toUpperCase().indexOf('MCQ') !== -1 ||
+                       (dq.OptionA && dq.OptionA !== '-' && dq.OptionB && dq.OptionB !== '-');
+      if (!isDraftMcq) continue;
+      questions.push({
+        id: dq.QID,
+        canonicalTopicId: dq.CanonicalSubtopicID,
+        subject: subject,
+        chapterNo: dq.Chapter,
+        chapterName: dq.ChapterName,
+        topic: dq.Topic || dq.Subtopic || dq.ChapterName || 'Core Concept',
+        subtopic: dq.Subtopic,
+        difficulty: dq.Difficulty,
+        text: dq.Question,
+        options: [dq.OptionA, dq.OptionB, dq.OptionC || 'Option C', dq.OptionD || 'Option D'],
+        correctIndex: dq.CorrectIndexNum,
+        markingScheme: dq.Rubric,
+        explanation: dq.Explanation,
+        trapAlert: dq.TrapAlert || dq.SharkTankHint || 'Watch out for CBSE conceptual traps.',
+        sharkTankHint: dq.SharkTankHint,
+        teacherGhostSeconds: dq.TeacherGhostSeconds
+      });
+      if (questions.length >= 5) break;
+    }
+  }
+
+  return questions;
+}
+
+function assembleDailyQuestions_(classLevel, subject) {
+  var active = getActiveSubtopic_(classLevel);
+  var targetSheetName = getMasterRepoSheetName_(subject || active.subject, classLevel);
+
+  var vaultMcqs = getMasterVaultQuestionsByTab_(targetSheetName, false).filter(function(q) {
+    return q.QuestionType.toUpperCase().indexOf('MCQ') !== -1 ||
+           (q.OptionA && q.OptionA !== '-' && q.OptionB && q.OptionB !== '-');
+  });
+
+  var legacyPool = [];
+  try {
+    var qbData = getSheetData_('SHEET_QB', 'QuestionBank');
+    legacyPool = qbData.filter(function(row) {
+      return String(row.Class) === String(classLevel) &&
+             String(row.Subject).toLowerCase() === String(subject || active.subject).toLowerCase() &&
+             (row.ApprovalStatus === 'Approved' || row.ApprovalStatus === 'APPROVED' || !row.ApprovalStatus);
+    });
+  } catch (e) {}
+
+  var pool = vaultMcqs.concat(legacyPool);
+  if (pool.length === 0) return [];
+
+  var freshPool = pool.filter(function(row) {
+    var idMatch = row.CanonicalSubtopicID && String(row.CanonicalSubtopicID) === String(active.canonicalId);
+    var topicMatch = row.Topic && String(row.Topic).toLowerCase() === String(active.subtopicName).toLowerCase();
+    var subtopicMatch = row.Subtopic && String(row.Subtopic).toLowerCase() === String(active.subtopicName).toLowerCase();
+    return idMatch || topicMatch || subtopicMatch;
+  });
+
+  var retentionPool = pool.filter(function(row) {
+    var isSameChapter = String(row.Chapter) === String(active.chapterNo);
+    var isNotFresh = !freshPool.some(function(f) { return f.QID === row.QID; });
+    return isSameChapter && isNotFresh;
+  });
+
+  freshPool = shuffleArray_(freshPool);
+  retentionPool = shuffleArray_(retentionPool);
+
+  var freshTarget = Math.min(freshPool.length, 3);
+  if (freshPool.length >= 4 && retentionPool.length >= 1) freshTarget = 4;
+
+  var selectedFresh = freshPool.slice(0, freshTarget);
+  var retentionTarget = 5 - selectedFresh.length;
+  var selectedRetention = retentionPool.slice(0, retentionTarget);
+
+  var finalSelection = selectedFresh.concat(selectedRetention);
+
+  if (finalSelection.length < 5) {
+    var usedQIDs = {};
+    finalSelection.forEach(function(q) { usedQIDs[q.QID] = true; });
+    var remaining = pool.filter(function(q) { return !usedQIDs[q.QID]; });
+    remaining = shuffleArray_(remaining);
+    finalSelection = finalSelection.concat(remaining.slice(0, 5 - finalSelection.length));
+  }
+
+  return finalSelection;
+}
+
+function fillDailyQuestions(classLevel, subject) {
+  classLevel = classLevel || 12;
+  subject = subject || 'Accountancy';
+  var questions = assembleDailyQuestions_(classLevel, subject);
+  if (questions.length === 0) return 'No questions found';
+
+  var todayStr = getKolkataDate();
+  var sheet = getSheet_('SHEET_QB', 'DailyPackage');
+
+  questions.forEach(function(q, idx) {
+    sheet.appendRow([
+      todayStr,
+      classLevel,
+      subject,
+      idx + 1,
+      q.QID,
+      q.Question,
+      q.OptionA,
+      q.OptionB,
+      q.OptionC,
+      q.OptionD,
+      q.CorrectIndex,
+      q.Rubric || '1 mark',
+      q.Explanation,
+      q.SharkTankHint || q.TrapAlert || '',
+      q.TeacherGhostSeconds || 35
+    ]);
+  });
+
+  var cacheKey = 'DAILY_PKG_' + todayStr + '_' + classLevel;
+  CacheService.getScriptCache().put(cacheKey, JSON.stringify(questions), 21600);
+
+  return 'Populated ' + questions.length + ' questions for ' + todayStr;
+}
+
+function getSecret_(key) {
+  return PropertiesService.getScriptProperties().getProperty(key);
+}
+
 function generateQuestionWithGemini_(classLevel, subject, chapter, topic, difficulty) {
-  var props = PropertiesService.getScriptProperties();
-  var geminiKey = props.getProperty('GEMINI_KEY');
-  if (!geminiKey) throw new Error('GEMINI_KEY is missing');
+  var apiKey = getSecret_('GEMINI_API_KEY');
+  if (!apiKey) throw new Error('GEMINI_API_KEY non-existent in Script Properties');
 
-  difficulty = difficulty || 'Medium';
+  difficulty = difficulty || 'Standard';
 
-  var hiddenPrompt =
-    'You are Gyan Sir, a world-class CBSE Commerce teacher. Generate exactly ONE exam-standard CBSE Class ' + classLevel + ' ' + subject + ' question.\n' +
+  var promptText =
+    'You are a senior CBSE Commerce content author for Commerce Gyan. Generate 1 high-quality Multiple Choice Question (MCQ) for CBSE Class ' + classLevel + ' ' + subject + '.\n' +
     'Chapter: ' + chapter + '\n' +
     'Subtopic: ' + topic + '\n' +
-    'Difficulty Tier: ' + difficulty + '\n\n' +
-    'REQUIREMENTS:\n' +
-    '1. Strictly follow NCERT and CBSE 2025-26 official marking scheme.\n' +
-    '2. For Accountancy: include realistic partnership or share figures, exact rupee calculations, and CBSE traps.\n' +
-    '3. Provide 4 crisp options (A, B, C, D) with exactly one correct option.\n' +
-    '4. Provide teacher ghost solve time (e.g. 35 seconds for typical MCQ, 45 seconds for calculations).\n' +
-    '5. Shark Tank / Real-world insight hint for pop-culture demystification.\n' +
-    '6. Return STRICT valid JSON with zero surrounding markdown:\n' +
+    'Difficulty level: ' + difficulty + '\n\n' +
+    'Return JSON STRICTLY matching this schema with no markdown code fences:\n' +
     '{\n' +
-    '  "question": "question text",\n' +
-    '  "optA": "Option A text",\n' +
-    '  "optB": "Option B text",\n' +
-    '  "optC": "Option C text",\n' +
-    '  "optD": "Option D text",\n' +
+    '  "question": "Question text here",\n' +
+    '  "optA": "Option A",\n' +
+    '  "optB": "Option B",\n' +
+    '  "optC": "Option C",\n' +
+    '  "optD": "Option D",\n' +
     '  "correctIdx": "A",\n' +
-    '  "explanation": "Clear step-by-step CBSE explanation",\n' +
-    '  "rubric": "Step marks breakdown",\n' +
-    '  "sharkTankHint": "Everyday or business analogy",\n' +
+    '  "rubric": "1 mark for correct selection",\n' +
+    '  "explanation": "Detailed step-by-step NCERT conceptual explanation",\n' +
+    '  "trapAlert": "Specific CBSE board exam trap to avoid",\n' +
+    '  "sharkTankHint": "Punchy real-world Indian business insight",\n' +
     '  "teacherGhostSeconds": 35\n' +
     '}';
 
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + getGeminiModel_() + ':generateContent?key=' + geminiKey;
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
   var payload = {
-    contents: [{ parts: [{ text: hiddenPrompt }] }],
-    generationConfig: {
-      temperature: 0.2,
-      responseMimeType: 'application/json'
-    }
+    contents: [{ parts: [{ text: promptText }] }],
+    generationConfig: { responseMimeType: 'application/json' }
   };
 
   var options = {
@@ -277,17 +434,14 @@ function generateQuestionWithGemini_(classLevel, subject, chapter, topic, diffic
     muteHttpExceptions: true
   };
 
-  // 3 Retries with exponential backoff
   var resData = null;
   for (var attempt = 1; attempt <= 3; attempt++) {
     try {
       var response = UrlFetchApp.fetch(url, options);
-      if (response.getResponseCode() === 200) {
-        var json = JSON.parse(response.getContentText());
-        var rawText = json.candidates[0].content.parts[0].text;
-        resData = JSON.parse(rawText);
-        break;
-      }
+      var json = JSON.parse(response.getContentText());
+      var rawText = json.candidates[0].content.parts[0].text;
+      resData = JSON.parse(rawText);
+      break;
     } catch (e) {
       if (attempt === 3) throw e;
       Utilities.sleep(1000 * attempt);
@@ -296,775 +450,346 @@ function generateQuestionWithGemini_(classLevel, subject, chapter, topic, diffic
 
   if (!resData) throw new Error('Gemini failed to generate question after 3 attempts');
 
-  // Next QID
-  var qid = getNextId_('SHEET_QB', 'QuestionBank', 1, 'Q', 4);
+  var targetTab = getMasterRepoSheetName_(subject, classLevel);
+  var qid = targetTab.replace('_', '') + '-AI-' + Math.floor(1000 + Math.random() * 9000);
 
-  var newRow = [
-    qid,
-    getKolkataDate(),
-    classLevel,
-    subject,
-    chapter,
-    topic,
-    'MCQ',
-    resData.question,
-    resData.optA,
-    resData.optB,
-    resData.optC,
-    resData.optD,
-    resData.correctIdx || 'A',
-    resData.rubric || '1 mark for correct selection',
-    resData.explanation,
-    resData.sharkTankHint || '',
-    resData.teacherGhostSeconds || 35,
-    'Gemini',
-    'AI_Draft', // Law H-1: Must be AI_Draft pending admin approval
-    'high',
-    difficulty
-  ];
+  try {
+    var masterSs = SpreadsheetApp.openById(MASTER_REPO_ID);
+    var sheet = masterSs.getSheetByName(targetTab);
+    if (sheet) {
+      var maxRows = Math.max(sheet.getMaxRows(), MASTER_VAULT_START_ROW);
+      var aaVals = sheet.getRange(MASTER_VAULT_START_ROW, MASTER_VAULT_START_COL, maxRows - MASTER_VAULT_START_ROW + 1, 1).getValues();
+      var lastOffset = -1;
+      for (var rIdx = aaVals.length - 1; rIdx >= 0; rIdx--) {
+        if (String(aaVals[rIdx][0] || '').trim() !== '') {
+          lastOffset = rIdx;
+          break;
+        }
+      }
+      var nextVaultRow = MASTER_VAULT_START_ROW + lastOffset + 1;
+      var vaultRowData = [[
+        qid,
+        targetTab + '_AUTO',
+        parseInt(chapter, 10) || 1,
+        String(chapter),
+        String(topic),
+        String(topic),
+        'MCQ',
+        1,
+        difficulty,
+        resData.question || '',
+        resData.optA || '',
+        resData.optB || '',
+        resData.optC || '',
+        resData.optD || '',
+        resData.correctIdx || 'A',
+        resData.rubric || '1 mark for selecting Option ' + (resData.correctIdx || 'A') + '.',
+        resData.explanation || '',
+        resData.trapAlert || 'Read NCERT keywords carefully before selecting.',
+        resData.sharkTankHint || '',
+        'Draft'
+      ]];
+      sheet.getRange(nextVaultRow, MASTER_VAULT_START_COL, 1, MASTER_VAULT_NUM_COLS).setValues(vaultRowData);
+    }
+  } catch (repoErr) {
+    Logger.log('Master Repo write fallback notice: ' + repoErr);
+  }
 
-  appendRow_('SHEET_QB', 'QuestionBank', newRow);
-  Logger.log('✨ Generated Draft Question: ' + qid + ' (AI_Draft, awaits approval)');
+  try {
+    var newRow = [
+      qid,
+      getKolkataDate(),
+      classLevel,
+      subject,
+      chapter,
+      topic,
+      'MCQ',
+      resData.question,
+      resData.optA,
+      resData.optB,
+      resData.optC,
+      resData.optD,
+      resData.correctIdx || 'A',
+      resData.rubric || '1 mark for correct selection',
+      resData.explanation,
+      resData.sharkTankHint || '',
+      resData.teacherGhostSeconds || 35,
+      'Gemini',
+      'AI_Draft',
+      'high',
+      difficulty
+    ];
+    appendRow_('SHEET_QB', 'QuestionBank', newRow);
+  } catch (legacyErr) {}
+
+  Logger.log('✨ Generated Draft Question: ' + qid + ' (Draft, awaits approval)');
 
   return {
     qid: qid,
     question: resData.question,
-    status: 'AI_Draft'
+    status: 'Draft'
   };
 }
 
-/**
- * Approves an AI_Draft question into the active rotation vault
- * @param {string} qid
- */
 function approveQuestion_(qid) {
-  var success = updateRowByColValue_('SHEET_QB', 'QuestionBank', 'QID', qid, {
-    ApprovalStatus: 'Approved'
-  });
-  if (!success) throw new Error('Question ' + qid + ' not found');
+  var updatedInMaster = updateMasterVaultStatusByQid_(qid, 'Approved');
+  var updatedInLegacy = false;
+  try {
+    updatedInLegacy = updateRowByColValue_('SHEET_QB', 'QuestionBank', 'QID', qid, {
+      ApprovalStatus: 'Approved'
+    });
+  } catch (e) {}
+
+  if (!updatedInMaster && !updatedInLegacy) {
+    throw new Error('Question ' + qid + ' not found');
+  }
   Logger.log('✅ Approved Question: ' + qid);
   return { qid: qid, status: 'Approved' };
 }
 
-/**
- * Rejects an AI_Draft question
- * @param {string} qid
- */
 function rejectQuestion_(qid) {
-  var success = updateRowByColValue_('SHEET_QB', 'QuestionBank', 'QID', qid, {
-    ApprovalStatus: 'Rejected'
-  });
-  if (!success) throw new Error('Question ' + qid + ' not found');
+  var updatedInMaster = updateMasterVaultStatusByQid_(qid, 'Retired');
+  var updatedInLegacy = false;
+  try {
+    updatedInLegacy = updateRowByColValue_('SHEET_QB', 'QuestionBank', 'QID', qid, {
+      ApprovalStatus: 'Rejected'
+    });
+  } catch (e) {}
+
+  if (!updatedInMaster && !updatedInLegacy) {
+    throw new Error('Question ' + qid + ' not found');
+  }
   Logger.log('❌ Rejected Question: ' + qid);
   return { qid: qid, status: 'Rejected' };
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// 4. ANTI-CHEATING SHUFFLE & GHOST CHALLENGE ENGINE
-// ─────────────────────────────────────────────────────────────────────
+function updateMasterVaultStatusByQid_(qid, newStatus) {
+  var allTabs = ['11_ACC', '11_BST', '11_ECO_MICRO', '11_STAT', '12_ACC', '12_BST', '12_ECO_MACRO', '12_ECO_IED'];
+  try {
+    var masterSs = SpreadsheetApp.openById(MASTER_REPO_ID);
+    for (var t = 0; t < allTabs.length; t++) {
+      var tabName = allTabs[t];
+      var sheet = masterSs.getSheetByName(tabName);
+      if (!sheet) continue;
+      var maxRows = sheet.getMaxRows();
+      if (maxRows < MASTER_VAULT_START_ROW) continue;
+      var qids = sheet.getRange(MASTER_VAULT_START_ROW, MASTER_VAULT_START_COL, maxRows - MASTER_VAULT_START_ROW + 1, 1).getValues();
+      for (var i = 0; i < qids.length; i++) {
+        if (String(qids[i][0] || '').trim() === String(qid).trim()) {
+          sheet.getRange(MASTER_VAULT_START_ROW + i, 46).setValue(newStatus);
+          var cache = CacheService.getScriptCache();
+          cache.remove('MV_TAB_V2_' + tabName + '_APP');
+          cache.remove('MV_TAB_V2_' + tabName + '_ALL');
+          return true;
+        }
+      }
+    }
+  } catch (e) {
+    Logger.log('Error in updateMasterVaultStatusByQid_: ' + e);
+  }
+  return false;
+}
 
-/**
- * Serves daily questions to a student with Fisher-Yates option & question shuffling.
- * Renders WhatsApp answer-sharing ("1-B, 2-C") completely impossible.
- * 
- * @param {Object} verifiedUser
- * @param {Object} payload - { classLevel, subject }
- * @return {Object[]} Array of student-specific randomized questions
- */
 function apiGetDailyQuestion_(verifiedUser, payload) {
   var student = requirePaidStudent_(verifiedUser.id);
-  var classLevel = payload.classLevel || student.Class || 12;
+  var classLevel = (payload && payload.classLevel) || student.Class || 12;
   var todayStr = getKolkataDate();
 
-  // Check cache first
   var cache = CacheService.getScriptCache();
-  var cacheKey = 'DAILY_QUESTIONS_C' + classLevel + '_' + todayStr;
-  var cached = cache.get(cacheKey);
-  var questions = [];
+  var cacheKey = 'DAILY_PKG_' + todayStr + '_' + classLevel;
+  var todayQuestions = [];
 
-  if (cached) {
-    try { questions = JSON.parse(cached); } catch (e) {}
+  var cachedPkg = cache.get(cacheKey);
+  if (cachedPkg) {
+    try { todayQuestions = JSON.parse(cachedPkg); } catch (e) {}
   }
 
-  if (questions.length === 0) {
-    questions = assembleDailyQuestions_(classLevel, payload.subject);
-    if (questions && questions.length > 0) {
-      try {
-        cache.put(cacheKey, JSON.stringify(questions), 21600); // 6 hours cache
-      } catch (cErr) {}
+  if (!todayQuestions || todayQuestions.length === 0) {
+    try {
+      var dailySheet = getSheetData_('SHEET_QB', 'DailyPackage');
+      todayQuestions = dailySheet.filter(function(row) {
+        return String(row.Date) === todayStr && String(row.Class) === String(classLevel);
+      });
+    } catch (e) {}
+  }
+
+  if (!todayQuestions || todayQuestions.length === 0) {
+    var rawAssembled = assembleDailyQuestions_(classLevel, (payload && payload.subject) || 'Accountancy');
+    todayQuestions = rawAssembled.map(function(q) {
+      return {
+        QID: q.QID,
+        Question: q.Question,
+        OptionA: q.OptionA,
+        OptionB: q.OptionB,
+        OptionC: q.OptionC,
+        OptionD: q.OptionD,
+        CorrectIndex: q.CorrectIndex,
+        Rubric: q.Rubric || '1 mark',
+        Explanation: q.Explanation,
+        SharkTankHint: q.SharkTankHint || q.TrapAlert || '',
+        TeacherGhostSeconds: q.TeacherGhostSeconds || 35
+      };
+    });
+    if (todayQuestions.length > 0) {
+      cache.put(cacheKey, JSON.stringify(todayQuestions), 21600);
     }
   }
 
-  // Shuffle question sequence per student using their Telegram ID as seed
-  var studentQuestions = shuffleArrayWithSeed_(questions, verifiedUser.id + '_' + todayStr);
+  var shuffledQuestions = shuffleArray_(todayQuestions);
 
-  // Check which questions this student has already answered today
-  var existingAnswers = findRows_('SHEET_QB', 'StudentAnswers', 'TelegramID', String(verifiedUser.id));
-  var answeredMap = {};
-  existingAnswers.forEach(function(a) {
-    answeredMap[a.QID] = a;
-  });
-
-  return studentQuestions.map(function(q, qIdx) {
-    // Fisher-Yates Option Shuffling per question per student
-    var shuffled = shuffleOptionsForStudent_(q, verifiedUser.id);
-    var previousAnswer = answeredMap[q.QID];
-
+  return shuffledQuestions.map(function(q) {
+    var shuffledOpts = shuffleOptionsForStudent_(q);
     return {
       qid: q.QID,
-      questionNumber: qIdx + 1,
-      classLevel: q.Class,
-      subject: q.Subject,
-      chapter: q.Chapter,
-      topic: q.Topic,
       question: q.Question,
-      options: shuffled.options, // [{ label: 'A', text: '...', originalIdx: 'C' }]
-      teacherGhostSeconds: parseInt(q.Teacher_Ghost_Seconds, 10) || 35,
-      sharkTankHint: q.SharkTank_Hint || null,
-      difficulty: q.Difficulty || 'Medium',
-      hasAnswered: !!previousAnswer,
-      previousScore: previousAnswer ? previousAnswer.Score : null,
-      previousAnswerText: previousAnswer ? previousAnswer.AnswerText : null
+      options: shuffledOpts.options,
+      optionMap: shuffledOpts.optionMap,
+      rubric: q.Rubric,
+      sharkTankHint: q.SharkTankHint,
+      teacherGhostSeconds: q.TeacherGhostSeconds
     };
   });
 }
 
-/**
- * Shuffles options A, B, C, D using Fisher-Yates with student seed
- * @param {Object} q
- * @param {string|number} seed
- * @return {{ options: Object[], correctDisplayIdx: string }}
- */
-function shuffleOptionsForStudent_(q, seed) {
-  var rawOptions = [
-    { origKey: 'A', text: q.OptA },
-    { origKey: 'B', text: q.OptB },
-    { origKey: 'C', text: q.OptC },
-    { origKey: 'D', text: q.OptD }
+function shuffleOptionsForStudent_(q) {
+  var original = [
+    { key: 'A', text: q.OptionA },
+    { key: 'B', text: q.OptionB },
+    { key: 'C', text: q.OptionC },
+    { key: 'D', text: q.OptionD }
   ];
 
-  var shuffled = shuffleArrayWithSeed_(rawOptions, seed + '_' + q.QID);
-  var displayLabels = ['A', 'B', 'C', 'D'];
-  var mappedOptions = [];
-  var correctDisplayIdx = 'A';
+  var shuffled = shuffleArray_(original);
+  var optionsText = [];
+  var optionMap = {};
 
-  for (var i = 0; i < shuffled.length; i++) {
-    var label = displayLabels[i];
-    mappedOptions.push({
-      label: label,
-      text: shuffled[i].text,
-      originalKey: shuffled[i].origKey
-    });
-
-    if (shuffled[i].origKey === String(q.CorrectIdx).trim().toUpperCase()) {
-      correctDisplayIdx = label;
-    }
-  }
+  shuffled.forEach(function(opt, index) {
+    optionsText.push(opt.text);
+    optionMap[opt.key] = index;
+  });
 
   return {
-    options: mappedOptions,
-    correctDisplayIdx: correctDisplayIdx
+    options: optionsText,
+    optionMap: optionMap
   };
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// 5. ANSWER SUBMISSION & GHOST CHALLENGE REWARD ENGINE
-// ─────────────────────────────────────────────────────────────────────
-
-/**
- * Submits student answer with Ghost Timer comparison, 15-minute edit window,
- * spaced repetition queue updating, and +20 CG Coin bonus on beating Gyan Sir's record.
- * 
- * @param {Object} verifiedUser
- * @param {Object} payload - { qid, selectedOption, timeTakenSeconds }
- * @return {Object} Submission result with coins, confetti trigger, and explanation
- */
-function apiSubmitAnswer_(verifiedUser, payload) {
-  return withLock_('submitAnswer_' + verifiedUser.id + '_' + payload.qid, 20000, function() {
-    var student = requirePaidStudent_(verifiedUser.id);
-    var qid = payload.qid;
-    var timeTakenSeconds = parseInt(payload.timeTakenSeconds, 10) || 45;
-
-    // Fetch question from QuestionBank
-    var q = findRow_('SHEET_QB', 'QuestionBank', 'QID', qid);
-    if (!q) throw new Error('Question "' + qid + '" not found');
-
-    // 15-Minute Edit Window Check
-    var answersSheet = getSheet_('SHEET_QB', 'StudentAnswers');
-    var existingAnswers = findRows_('SHEET_QB', 'StudentAnswers', 'TelegramID', String(verifiedUser.id));
-    var existingRecord = null;
-
-    for (var i = 0; i < existingAnswers.length; i++) {
-      if (existingAnswers[i].QID === qid) {
-        existingRecord = existingAnswers[i];
-        break;
-      }
-    }
-
-    if (existingRecord) {
-      var answerTime = parseDateOrToday_(existingRecord.Timestamp);
-      var elapsedMs = Date.now() - answerTime.getTime();
-      if (elapsedMs > 15 * 60 * 1000) {
-        throw new Error('SUBMISSION_LOCKED: The 15-minute answer edit window has expired for this question.');
-      }
-    }
-
-    // Un-shuffle to check against original CorrectIdx
-    var shuffled = shuffleOptionsForStudent_(q, verifiedUser.id);
-    var chosenOriginalKey = null;
-
-    for (var j = 0; j < shuffled.options.length; j++) {
-      if (shuffled.options[j].label === payload.selectedOption) {
-        chosenOriginalKey = shuffled.options[j].originalKey;
-        break;
-      }
-    }
-
-    var isCorrect = (chosenOriginalKey === String(q.CorrectIdx).trim().toUpperCase());
-    var score = isCorrect ? 1 : 0;
-    var teacherGhostSec = parseInt(q.Teacher_Ghost_Seconds, 10) || 35;
-
-    // Ghost Timer Evaluation
-    var beatGhostStatus = 'SLOW';
-    var bonusCoins = 0;
-    var triggerConfetti = false;
-
-    if (isCorrect) {
-      if (timeTakenSeconds <= teacherGhostSec) {
-        beatGhostStatus = 'BEAT_RECORD';
-        bonusCoins = 10; // +5 base + 5 speed bonus
-        triggerConfetti = true;
-      } else {
-        beatGhostStatus = 'REGULAR';
-        bonusCoins = 5; // +5 base coins
-      }
-    }
-
-    var status = existingRecord ? 'Edited' : 'Submitted';
-
-    if (existingRecord) {
-      // Update existing row
-      var rowNum = existingRecord._rowNumber;
-      updateCell_('SHEET_QB', 'StudentAnswers', rowNum, 5, payload.selectedOption);
-      updateCell_('SHEET_QB', 'StudentAnswers', rowNum, 7, score);
-      updateCell_('SHEET_QB', 'StudentAnswers', rowNum, 8, timeTakenSeconds);
-      updateCell_('SHEET_QB', 'StudentAnswers', rowNum, 9, beatGhostStatus);
-      updateCell_('SHEET_QB', 'StudentAnswers', rowNum, 10, 'Edited');
-    } else {
-      // Append new submission
-      answersSheet.appendRow([
-        getKolkataTimestamp(),
-        String(verifiedUser.id),
-        student.Name,
-        qid,
-        payload.selectedOption,
-        1, // WordCount (MCQ)
-        score,
-        timeTakenSeconds,
-        beatGhostStatus,
-        status
-      ]);
-    }
-
-    // Update Spaced Repetition Revision Queue (notebook.gs)
-    updateRevisionQueue_(String(verifiedUser.id), qid, isCorrect);
-
-    // Update Leaderboard & Coins (notebook.gs)
-    updateStudentCoinsAndLeaderboard_(String(verifiedUser.id), student.Name, student.Class, score, bonusCoins, beatGhostStatus === 'BEAT_RECORD');
-
-    // Invalidate cached dashboard so fresh coins/accuracy show immediately
-    try {
-      CacheService.getScriptCache().remove('DASHBOARD_' + verifiedUser.id);
-    } catch (cErr) {}
-
-    return {
-      qid: qid,
-      isCorrect: isCorrect,
-      score: score,
-      correctOption: shuffled.correctDisplayIdx,
-      explanation: q.Explanation,
-      rubric: q.Rubric,
-      beatGhostStatus: beatGhostStatus,
-      teacherGhostSeconds: teacherGhostSec,
-      studentSeconds: timeTakenSeconds,
-      bonusCoinsAwarded: bonusCoins,
-      triggerConfetti: triggerConfetti,
-      message: beatGhostStatus === 'BEAT_RECORD' ?
-        '⚡ RECORD BEATEN! You solved this in ' + timeTakenSeconds + 's (Gyan Sir: ' + teacherGhostSec + 's). +20 CG Coins awarded!' :
-        (isCorrect ? '✅ Correct Answer! +10 CG Coins' : '❌ Incorrect. Automatically added to your Mistakes Notebook.')
-    };
-  });
-}
-
-// ─────────────────────────────────────────────────────────────────────
-// 6. HELPER SEED QUESTIONS (Initial Fail-Safe)
-// ─────────────────────────────────────────────────────────────────────
-
-function getEmergencySeedQuestions_(classLevel, subject) {
-  return [
-    {
-      QID: 'Q-0001',
-      Class: classLevel,
-      Subject: subject,
-      Chapter: '1',
-      Topic: 'Interest on Capital',
-      Question: 'In the absence of a Partnership Deed, interest on loan provided by a partner is allowed at what rate?',
-      OptA: '6% per annum',
-      OptB: '12% per annum',
-      OptC: 'No interest is allowed',
-      OptD: 'Equal to bank rate',
-      CorrectIdx: 'A',
-      Teacher_Ghost_Seconds: 25,
-      Explanation: 'Section 13(d) of the Indian Partnership Act, 1932 provides for interest on loan @ 6% p.a. in the absence of an agreement. It is a charge against profits.',
-      Rubric: '1 mark for Option A with Section 13(d) citation',
-      SharkTank_Hint: 'Like debt lenders earning guaranteed interest before founders take profit distributions.'
-    },
-    {
-      QID: 'Q-0002',
-      Class: classLevel,
-      Subject: subject,
-      Chapter: '1',
-      Topic: 'P&L Appropriation Account',
-      Question: 'Which of the following is an appropriation of profit and NOT a charge against profit?',
-      OptA: 'Rent to partner',
-      OptB: 'Interest on partner loan',
-      OptC: 'Salary to partner',
-      OptD: 'Manager commission',
-      CorrectIdx: 'C',
-      Teacher_Ghost_Seconds: 30,
-      Explanation: 'Salary to partner is payable only if there are profits, making it an appropriation. Rent, loan interest, and manager commission are charges.',
-      Rubric: '1 mark for Option C',
-      SharkTank_Hint: 'Appropriation is splitting the cake; charges are the cost of flour and sugar.'
-    }
-  ];
-}
-
-/** Standard Fisher-Yates shuffle */
 function shuffleArray_(arr) {
-  var copy = arr.slice();
-  for (var i = copy.length - 1; i > 0; i--) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
     var j = Math.floor(Math.random() * (i + 1));
-    var temp = copy[i];
-    copy[i] = copy[j];
-    copy[j] = temp;
+    var temp = a[i];
+    a[i] = a[j];
+    a[j] = temp;
   }
-  return copy;
+  return a;
 }
 
-/** Deterministic pseudo-random shuffle seeded per student per day */
 function shuffleArrayWithSeed_(arr, seedStr) {
-  if (!arr || arr.length <= 1) return arr ? arr.slice() : [];
-  var copy = arr.slice();
-  var seedNum = 0;
-  var s = String(seedStr || 'default_seed');
-  for (var k = 0; k < s.length; k++) {
-    seedNum = ((seedNum << 5) - seedNum + s.charCodeAt(k)) | 0;
+  var a = arr.slice();
+  var seed = 0;
+  for (var k = 0; k < seedStr.length; k++) {
+    seed = ((seed << 5) - seed) + seedStr.charCodeAt(k);
+    seed |= 0;
   }
-  seedNum = Math.abs(seedNum);
+  seed = Math.abs(seed);
 
-  function seededRandom() {
-    seedNum = (seedNum * 9301 + 49297) % 233280;
-    return Math.abs(seedNum) / 233280;
+  for (var i = a.length - 1; i > 0; i--) {
+    seed = (seed * 9301 + 49297) % 233280;
+    var rnd = seed / 233280;
+    var j = Math.floor(rnd * (i + 1));
+    var temp = a[i];
+    a[i] = a[j];
+    a[j] = temp;
   }
-
-  for (var i = copy.length - 1; i > 0; i--) {
-    var j = Math.floor(seededRandom() * (i + 1));
-    j = Math.max(0, Math.min(i, j));
-    var temp = copy[i];
-    copy[i] = copy[j];
-    copy[j] = temp;
-  }
-  return copy;
+  return a;
 }
 
-/**
- * Seeds 5 verified CBSE Class 12 Accountancy MCQs into QuestionBank and DailyQuestions for today
- * Ensures question.html loads real questions instead of failing with 'Could not load today\'s drill'.
- * @return {number} Count of seeded questions
- */
-function seedInitialQuestionBankData() {
-  var props = PropertiesService.getScriptProperties();
-  var sheetQbId = props.getProperty('SHEET_QB');
-  if (!sheetQbId) throw new Error('SHEET_QB property is not configured');
+function apiSubmitAnswer_(verifiedUser, payload) {
+  var student = requirePaidStudent_(verifiedUser.id);
+  var qid = payload.qid;
+  var selectedIndex = payload.selectedIndex;
+  var optionMap = payload.optionMap;
+  var timeTakenSeconds = payload.timeTakenSeconds || 0;
 
-  var ss = SpreadsheetApp.openById(sheetQbId);
-  var qbSheet = ss.getSheetByName('QuestionBank');
-  var dqSheet = ss.getSheetByName('DailyQuestions');
-  if (!qbSheet || !dqSheet) throw new Error('QuestionBank or DailyQuestions tab missing in Sheet 2');
+  var q = findQuestionAcrossVaults_(qid);
+  if (!q) throw new Error('Question QID ' + qid + ' not found');
 
-  var todayDateStr = getKolkataDate();
+  var correctKey = q.CorrectIndex;
+  var expectedIndex = optionMap ? optionMap[correctKey] : q.CorrectIndexNum;
+  var isCorrect = (selectedIndex === expectedIndex);
 
-  var verifiedQuestions = [
-    {
-      qid: 'Q-0001',
-      classLevel: '12',
-      subject: 'Accountancy',
-      chapter: '1',
-      topic: 'Accounting for Partnership: Basic Concepts',
-      type: 'MCQ',
-      question: 'In the absence of a partnership deed, what is the rate of interest allowed on a partner\'s loan to the firm?',
-      optA: '6% per annum as an appropriation of profit',
-      optB: '6% per annum as a charge against profit',
-      optC: '12% per annum simple interest',
-      optD: 'No interest is allowed',
-      correctIdx: 'B',
-      rubric: '1 mark for selecting 6% p.a. as a charge against profit.',
-      explanation: 'According to Section 13(d) of the Indian Partnership Act, 1932, in the absence of an agreement, a partner is entitled to interest on loan at 6% p.a. It is a charge against profit payable even if the firm incurs a loss.',
-      sharkTankHint: 'Think of partner loan as a debt investor like Shark Tank debt deals — they get paid interest before founders split any profits!',
-      ghostSec: 30
-    },
-    {
-      qid: 'Q-0002',
-      classLevel: '12',
-      subject: 'Accountancy',
-      chapter: '1',
-      topic: 'Interest on Drawings',
-      type: 'MCQ',
-      question: 'A partner withdraws ₹5,000 at the beginning of every month throughout the year. If interest on drawings is charged @ 10% p.a., the total interest will be:',
-      optA: '₹3,000',
-      optB: '₹3,250',
-      optC: '₹2,750',
-      optD: '₹3,500',
-      correctIdx: 'B',
-      rubric: '1 mark for correct calculation using 6.5 months average period.',
-      explanation: 'Total Drawings = ₹5,000 × 12 = ₹60,000. Average period for beginning of every month = (12 + 1)/2 = 6.5 months. Interest = ₹60,000 × 10/100 × 6.5/12 = ₹3,250.',
-      sharkTankHint: 'Monthly SIP withdrawals in business! Average time money stays out of the business is 6.5 months.',
-      ghostSec: 40
-    },
-    {
-      qid: 'Q-0003',
-      classLevel: '12',
-      subject: 'Accountancy',
-      chapter: '1',
-      topic: 'P&L Appropriation Account',
-      type: 'MCQ',
-      question: 'Which of the following items is treated as a CHARGE against profit and NOT an appropriation of profit?',
-      optA: 'Interest on Partner Capital',
-      optB: 'Salary to Active Working Partner',
-      optC: 'Rent paid to a Partner for firm premises',
-      optD: 'Transfer to General Reserve',
-      correctIdx: 'C',
-      rubric: '1 mark for identifying rent to partner as charge against profit.',
-      explanation: 'Rent paid to a partner for using his property is an external business expense (charge against profit) debited to P&L Account, not an appropriation.',
-      sharkTankHint: 'Landlord rent must be paid even if company revenue is zero, whether landlord is a co-founder or outsider!',
-      ghostSec: 35
-    },
-    {
-      qid: 'Q-0004',
-      classLevel: '12',
-      subject: 'Accountancy',
-      chapter: '1',
-      topic: 'Guarantee of Minimum Profit',
-      type: 'MCQ',
-      question: 'X, Y, and Z are partners sharing profits in the ratio 3:2:1. Z is guaranteed a minimum profit of ₹30,000 by X. If the firm earns a net profit of ₹1,20,000, what is X\'s final profit share?',
-      optA: '₹60,000',
-      optB: '₹50,000',
-      optC: '₹40,000',
-      optD: '₹45,000',
-      correctIdx: 'B',
-      rubric: '1 mark for deducting Z\'s ₹10,000 deficiency from X\'s share.',
-      explanation: 'Z\'s share = 1/6 of ₹1,20,000 = ₹20,000. Guaranteed profit = ₹30,000. Deficiency = ₹10,000 borne entirely by X. X\'s original share = 3/6 of ₹1,20,000 = ₹60,000. X\'s final share = ₹60,000 - ₹10,000 = ₹50,000.',
-      sharkTankHint: 'A primary shark giving a personal guarantee to a junior co-founder out of their personal equity cut!',
-      ghostSec: 45
-    },
-    {
-      qid: 'Q-0005',
-      classLevel: '12',
-      subject: 'Accountancy',
-      chapter: '1',
-      topic: 'Past Adjustments',
-      type: 'MCQ',
-      question: 'Interest on capital was omitted to be credited to partners for the year. To rectify this error in the next accounting year, which account is debited/credited through a single adjustment entry?',
-      optA: 'Profit & Loss Suspense Account',
-      optB: 'Profit & Loss Appropriation Account',
-      optC: 'Partners\' Capital or Current Accounts',
-      optD: 'General Reserve Account',
-      correctIdx: 'C',
-      rubric: '1 mark for identifying Partner Capital/Current accounts for single rectifying entry.',
-      explanation: 'Under CBSE standards, past omissions are rectified at the beginning of the next accounting period by passing a single adjustment entry through Partners\' Capital or Current Accounts.',
-      sharkTankHint: 'Internal cap-table rebalancing between partners without re-auditing last year\'s closed books!',
-      ghostSec: 35
-    },
-    {
-      qid: 'Q-0006',
-      classLevel: '12',
-      subject: 'Business Studies',
-      chapter: '2',
-      topic: 'Principles of Management',
-      type: 'MCQ',
-      question: 'Which principle of management emphasized by Henri Fayol states that an employee should receive orders from only one superior to prevent confusion and conflict?',
-      optA: 'Unity of Direction',
-      optB: 'Unity of Command',
-      optC: 'Scalar Chain',
-      optD: 'Order',
-      correctIdx: 'B',
-      rubric: '1 mark for selecting Unity of Command.',
-      explanation: 'Unity of Command states that an employee should receive instructions and be accountable to only one superior, preventing dual subordination.',
-      sharkTankHint: 'One captain per ship to avoid conflicting orders and operational chaos!',
-      ghostSec: 30
-    },
-    {
-      qid: 'Q-0007',
-      classLevel: '12',
-      subject: 'Business Studies',
-      chapter: '5',
-      topic: 'Organising Process',
-      type: 'MCQ',
-      question: 'Which step in the organizing process involves allocating work among employees and grouping similar activities into departments?',
-      optA: 'Identification and division of work',
-      optB: 'Departmentalisation',
-      optC: 'Assignment of duties',
-      optD: 'Establishing reporting relationships',
-      correctIdx: 'B',
-      rubric: '1 mark for identifying Departmentalisation.',
-      explanation: 'Once work is divided, similar activities are grouped together into departments or divisions, known as Departmentalisation.',
-      sharkTankHint: 'Grouping marketing folks together and coders together so teams run efficiently!',
-      ghostSec: 35
-    }
-  ];
+  var ghostTime = q.TeacherGhostSeconds || 35;
+  var ghostBeaten = isCorrect && (timeTakenSeconds < ghostTime);
+  var coinsEarned = isCorrect ? 10 : 0;
+  if (ghostBeaten) coinsEarned += 20;
 
-  // 1. Check existing in QuestionBank
-  var existingQb = qbSheet.getDataRange().getValues();
-  var existingQids = {};
-  for (var i = 1; i < existingQb.length; i++) {
-    existingQids[String(existingQb[i][0])] = true;
-  }
+  var todayStr = getKolkataDate();
+  var timestamp = new Date().toISOString();
 
-  verifiedQuestions.forEach(function(q) {
-    if (!existingQids[q.qid]) {
-      qbSheet.appendRow([
-        q.qid,
-        todayDateStr,
-        q.classLevel,
-        q.subject,
-        q.chapter,
-        q.topic,
-        q.type,
-        q.question,
-        q.optA,
-        q.optB,
-        q.optC,
-        q.optD,
-        q.correctIdx,
-        q.rubric,
-        q.explanation,
-        q.sharkTankHint,
-        q.ghostSec,
-        'Manual',
-        'Approved',
-        'high',
-        'Medium'
-      ]);
-      existingQids[q.qid] = true;
-    }
-  });
+  appendRow_('SHEET_QB', 'Submissions', [
+    student.StudentID,
+    todayStr,
+    qid,
+    selectedIndex,
+    isCorrect ? 'PASS' : 'FAIL',
+    timeTakenSeconds,
+    ghostBeaten ? 'YES' : 'NO',
+    coinsEarned,
+    timestamp
+  ]);
 
-  // 2. Check existing in DailyQuestions for today
-  var existingDq = dqSheet.getDataRange().getValues();
-  var todaySeeded = false;
-  for (var j = 1; j < existingDq.length; j++) {
-    var dqDate = String(existingDq[j][0]);
-    if (dqDate.indexOf(todayDateStr) !== -1 || dqDate === todayDateStr) {
-      todaySeeded = true;
-      break;
-    }
-  }
-
-  if (!todaySeeded) {
-    verifiedQuestions.forEach(function(q) {
-      dqSheet.appendRow([
-        todayDateStr,
-        q.qid,
-        q.classLevel,
-        q.subject,
-        q.type,
-        q.ghostSec
-      ]);
+  if (coinsEarned > 0) {
+    var currentCoins = Number(student.CGCoins || 0);
+    updateRowByColValue_('SHEET_CORE', 'Students', 'StudentID', student.StudentID, {
+      CGCoins: currentCoins + coinsEarned
     });
   }
 
-  // Clear stale cache
-  var cache = CacheService.getScriptCache();
-  cache.remove('DAILY_QUESTIONS_C12_' + todayDateStr);
-
-  Logger.log('✅ Seeded ' + verifiedQuestions.length + ' Class 12 Accountancy questions successfully into QuestionBank and DailyQuestions.');
-  return verifiedQuestions.length;
+  return {
+    qid: qid,
+    isCorrect: isCorrect,
+    correctOptionIndex: expectedIndex,
+    explanation: q.Explanation,
+    trapAlert: q.TrapAlert || '',
+    ghostBeaten: ghostBeaten,
+    coinsEarned: coinsEarned
+  };
 }
 
-/**
- * ─────────────────────────────────────────────────────────────────────
- * PRACTICE QUESTIONS API HANDLER (MASTER REPOSITORY INTEGRATION)
- * ─────────────────────────────────────────────────────────────────────
- */
-const MASTER_REPO_ID = "1FMk5KBCaEBLj7rwmGI9lIEpM02aGWrC-6tD8GXApDCY";
+function findQuestionAcrossVaults_(qid) {
+  var qidStr = String(qid || '').trim();
+  var prefixMap = {
+    '11ACC': '11_ACC',
+    '11BST': '11_BST',
+    '11ECO': '11_ECO_MICRO',
+    '11STAT': '11_STAT',
+    '12ACC': '12_ACC',
+    '12BST': '12_BST',
+    '12MAC': '12_ECO_MACRO',
+    '12IED': '12_ECO_IED'
+  };
 
-function getMasterRepoSheetName_(subject, classLevel) {
-  var cls = String(classLevel || '12');
-  var subj = String(subject || '').toLowerCase();
-
-  if (subj.indexOf('business') !== -1 || subj.indexOf('bst') !== -1) {
-    return cls.indexOf('11') !== -1 ? '11_BST' : '12_BST';
-  } else if (subj.indexOf('account') !== -1 || subj.indexOf('acc') !== -1) {
-    return cls.indexOf('11') !== -1 ? '11_ACC' : '12_ACC';
-  } else if (subj.indexOf('eco') !== -1) {
-    return cls.indexOf('11') !== -1 ? '11_ECO_MICRO' : '12_ECO_MACRO';
-  } else if (subj.indexOf('stat') !== -1) {
-    return '11_STAT';
-  }
-  return cls.indexOf('11') !== -1 ? '11_ACC' : '12_ACC';
-}
-
-function handleGetPracticeQuestions_(data) {
-  var subject = (data && data.subject) || "Accountancy";
-  var diff = (data && data.difficulty) || "STANDARD";
-  var classLevel = (data && data.classLevel) || "12";
-  var targetSheetName = getMasterRepoSheetName_(subject, classLevel);
-
-  var questions = [];
-
-  // 1. Read from Master Question Repository (1FMk5KBCaEBLj7rwmGI9lIEpM02aGWrC-6tD8GXApDCY)
-  try {
-    var masterSs = SpreadsheetApp.openById(MASTER_REPO_ID);
-    if (masterSs) {
-      var targetSheet = masterSs.getSheetByName(targetSheetName);
-      if (targetSheet) {
-        var masterRows = targetSheet.getDataRange().getValues();
-        // Master Repo 20 columns:
-        // A(0): QID, B(1): Canonical_Topic_ID, C(2): ChapterNo, D(3): ChapterName,
-        // E(4): Topic, F(5): Subtopic, G(6): QuestionType, H(7): Marks, I(8): Difficulty,
-        // J(9): QuestionText, K(10): OptA, L(11): OptB, M(12): OptC, N(13): OptD,
-        // O(14): CorrectAnswer, P(15): Official_CBSE_Marking_Scheme, Q(16): Explanation_NCERT,
-        // R(17): Trap_Alert, S(18): RealWorld_SharkTank_Hint, T(19): Status
-
-        for (var i = 1; i < masterRows.length; i++) {
-          var row = masterRows[i];
-          var qText = String(row[9] || '').trim();
-          var optA = String(row[10] || '').trim();
-          var optB = String(row[11] || '').trim();
-          var optC = String(row[12] || '').trim();
-          var optD = String(row[13] || '').trim();
-          var rowId = String(row[0] || '').trim();
-
-          // Skip header or KPI rows
-          if (rowId.toLowerCase() === 'qid' || qText.toLowerCase() === 'questiontext' || qText.toLowerCase() === 'question') {
-            continue;
-          }
-
-          // Ensure it's an actual question row with text and options
-          if (qText && optA && optB) {
-            var correctVal = row[14];
-            var correctIdxNum = 0;
-            if (typeof correctVal === 'number') {
-              correctIdxNum = correctVal;
-            } else if (typeof correctVal === 'string') {
-              var cStr = correctVal.trim().toUpperCase();
-              if (cStr === 'A' || cStr.indexOf('(A)') !== -1 || cStr.indexOf('A.') !== -1) correctIdxNum = 0;
-              else if (cStr === 'B' || cStr.indexOf('(B)') !== -1 || cStr.indexOf('B.') !== -1) correctIdxNum = 1;
-              else if (cStr === 'C' || cStr.indexOf('(C)') !== -1 || cStr.indexOf('C.') !== -1) correctIdxNum = 2;
-              else if (cStr === 'D' || cStr.indexOf('(D)') !== -1 || cStr.indexOf('D.') !== -1) correctIdxNum = 3;
-              else correctIdxNum = parseInt(cStr, 10) || 0;
-            }
-
-            questions.push({
-              id: String(row[0] || ('Q-' + (i + 1))),
-              subject: subject,
-              topic: String(row[4] || row[5] || row[3] || 'Core Concept'),
-              text: qText,
-              options: [optA, optB, optC || 'Option C', optD || 'Option D'],
-              correctIndex: correctIdxNum,
-              explanation: String(row[16] || row[15] || 'Remember NCERT core definitions.'),
-              trapAlert: String(row[17] || row[18] || 'Remember NCERT core definitions.'),
-              difficulty: String(row[8] || 'Standard')
-            });
-          }
-          if (questions.length >= 5) break;
-        }
-      }
+  var prefix = qidStr.split('-')[0].toUpperCase();
+  if (prefixMap[prefix]) {
+    var tabQuestions = getMasterVaultQuestionsByTab_(prefixMap[prefix], true);
+    for (var i = 0; i < tabQuestions.length; i++) {
+      if (tabQuestions[i].QID === qidStr) return tabQuestions[i];
     }
-  } catch (mErr) {
-    Logger.log('Master Repo read notice: ' + mErr.toString());
   }
 
-  // If questions found in Master Repo, return them
-  if (questions.length > 0) {
-    return { ok: true, questions: questions, source: 'MASTER_REPO', sheet: targetSheetName };
-  }
-
-  // 2. Fallback to Sheet 2 QuestionBank (1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs)
-  try {
-    var ss = SpreadsheetApp.openById("1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs");
-    var sheet = ss.getSheetByName("QuestionBank");
-    if (sheet) {
-      var rows = sheet.getDataRange().getValues();
-      if (rows && rows.length > 1) {
-        var headers = rows[0].map(function(h) { return String(h).trim().toLowerCase(); });
-        var subjCol = headers.indexOf('subject');
-        var topicCol = headers.indexOf('topic');
-        var questionCol = headers.indexOf('question');
-        if (questionCol === -1) questionCol = headers.indexOf('text');
-        var optACol = headers.indexOf('opta');
-        var optBCol = headers.indexOf('optb');
-        var optCCol = headers.indexOf('optc');
-        var optDCol = headers.indexOf('optd');
-        var correctCol = headers.indexOf('correctidx');
-        if (correctCol === -1) correctCol = headers.indexOf('correctindex');
-        var explCol = headers.indexOf('explanation');
-        var trapCol = headers.indexOf('sharktank_hint');
-        if (trapCol === -1) trapCol = headers.indexOf('trapalert');
-
-        if (subjCol === -1) subjCol = 1;
-        if (topicCol === -1) topicCol = 2;
-        if (questionCol === -1) questionCol = 3;
-        if (optACol === -1) optACol = 4;
-        if (optBCol === -1) optBCol = 5;
-        if (optCCol === -1) optCCol = 6;
-        if (optDCol === -1) optDCol = 7;
-        if (correctCol === -1) correctCol = 8;
-        if (explCol === -1) explCol = 9;
-        if (trapCol === -1) trapCol = 10;
-
-        for (var j = 1; j < rows.length; j++) {
-          var r = rows[j];
-          var rowSubj = String(r[subjCol] || r[3] || r[1] || '').trim().toLowerCase();
-          var targetSubj = subject.trim().toLowerCase();
-
-          if (rowSubj === targetSubj || (rowSubj && targetSubj && (rowSubj.indexOf(targetSubj) !== -1 || targetSubj.indexOf(rowSubj) !== -1))) {
-            var correctVal2 = r[correctCol];
-            var correctIdxNum2 = 0;
-            if (typeof correctVal2 === 'number') {
-              correctIdxNum2 = correctVal2;
-            } else if (typeof correctVal2 === 'string') {
-              var cStr2 = correctVal2.trim().toUpperCase();
-              if (cStr2 === 'A') correctIdxNum2 = 0;
-              else if (cStr2 === 'B') correctIdxNum2 = 1;
-              else if (cStr2 === 'C') correctIdxNum2 = 2;
-              else if (cStr2 === 'D') correctIdxNum2 = 3;
-              else correctIdxNum2 = parseInt(cStr2, 10) || 0;
-            }
-
-            questions.push({
-              id: String(r[0] || ('Q-' + j)),
-              subject: String(r[subjCol] || subject),
-              topic: String(r[topicCol] || 'Core Concept'),
-              text: String(r[questionCol] || r[7] || r[3] || ''),
-              options: [
-                String(r[optACol] !== undefined && r[optACol] !== '' ? r[optACol] : (r[8] || 'Option A')),
-                String(r[optBCol] !== undefined && r[optBCol] !== '' ? r[optBCol] : (r[9] || 'Option B')),
-                String(r[optCCol] !== undefined && r[optCCol] !== '' ? r[optCCol] : (r[10] || 'Option C')),
-                String(r[optDCol] !== undefined && r[optDCol] !== '' ? r[optDCol] : (r[11] || 'Option D'))
-              ],
-              correctIndex: correctIdxNum2,
-              explanation: String(r[explCol] !== undefined && r[explCol] !== '' ? r[explCol] : (r[14] || r[9] || 'Remember NCERT core definitions.')),
-              trapAlert: String(r[trapCol] !== undefined && r[trapCol] !== '' ? r[trapCol] : (r[15] || r[10] || 'Remember NCERT core definitions.'))
-            });
-          }
-          if (questions.length >= 5) break;
-        }
-      }
+  var allTabs = ['11_ACC', '11_BST', '11_ECO_MICRO', '11_STAT', '12_ACC', '12_BST', '12_ECO_MACRO', '12_ECO_IED'];
+  for (var t = 0; t < allTabs.length; t++) {
+    var qs = getMasterVaultQuestionsByTab_(allTabs[t], true);
+    for (var j = 0; j < qs.length; j++) {
+      if (qs[j].QID === qidStr) return qs[j];
     }
-  } catch (err) {
-    Logger.log('Sheet 2 QuestionBank read notice: ' + err.toString());
   }
 
-  return { ok: true, questions: questions };
+  try {
+    var qbData = getSheetData_('SHEET_QB', 'QuestionBank');
+    return qbData.find(function(row) { return row.QID === qidStr; }) || null;
+  } catch (e) {
+    return null;
+  }
 }
