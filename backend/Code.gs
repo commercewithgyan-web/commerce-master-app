@@ -167,13 +167,45 @@ function doGet(e) {
         result = getStudentFeeLedger(e.parameter.rollNo);
         break;
       case "getInquiryPipeline":
-        result = getInquiryPipeline(e.parameter.statusFilter);
+      case "getCrmData":
+        result = getCrmData(e.parameter ? e.parameter.statusFilter : null);
+        break;
+      case "getBatchRoster":
+        result = getBatchRoster(e.parameter ? e.parameter.batchId : null);
+        break;
+      case "getFinancialSummary":
+        result = getFinancialSummary();
         break;
       case "getStudentMiniAppBootstrap":
         result = getStudentMiniAppBootstrap(e.parameter);
         break;
       case "initProductionProperties":
         result = initProductionScriptProperties();
+        break;
+      case "getSystemHealth":
+        result = getSystemHealth();
+        break;
+      case "getDashboardSummary":
+        result = getDashboardSummary();
+        break;
+      case "getSyllabusTree":
+        result = getSyllabusTree(payload.board, payload.classLevel, payload.subject);
+        break;
+      case "getQuestionBankSummary":
+        result = getQuestionBankSummary();
+        break;
+      case "getStudentFeeLedger":
+        result = getStudentFeeLedger(payload.rollNo);
+        break;
+      case "getInquiryPipeline":
+      case "getCrmData":
+        result = getCrmData(payload.statusFilter);
+        break;
+      case "getBatchRoster":
+        result = getBatchRoster(payload.batchId);
+        break;
+      case "getFinancialSummary":
+        result = getFinancialSummary();
         break;
       case "setupTriggers":
         setupTriggers();
@@ -294,6 +326,31 @@ function doPost(e) {
         break;
       case "initProductionProperties":
         result = initProductionScriptProperties();
+        break;
+      case "getSystemHealth":
+        result = getSystemHealth();
+        break;
+      case "getDashboardSummary":
+        result = getDashboardSummary();
+        break;
+      case "getSyllabusTree":
+        result = getSyllabusTree(payload.board, payload.classLevel, payload.subject);
+        break;
+      case "getQuestionBankSummary":
+        result = getQuestionBankSummary();
+        break;
+      case "getStudentFeeLedger":
+        result = getStudentFeeLedger(payload.rollNo);
+        break;
+      case "getInquiryPipeline":
+      case "getCrmData":
+        result = getCrmData(payload.statusFilter);
+        break;
+      case "getBatchRoster":
+        result = getBatchRoster(payload.batchId);
+        break;
+      case "getFinancialSummary":
+        result = getFinancialSummary();
         break;
       default:
         // Studio / Legacy API action dispatcher
@@ -425,6 +482,60 @@ function getInquiryPipeline(statusFilter) {
     templates: templates
   };
 }
+
+function getCrmData(statusFilter) {
+  const pipe = getInquiryPipeline(statusFilter);
+  const IDS = getActiveSheetIds();
+  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  const students = sheetToObjects(erp.getSheetByName('Students_Master'));
+  const feeLedger = sheetToObjects(erp.getSheetByName('Fee_Ledger'));
+  const coinLedger = sheetToObjects(erp.getSheetByName('Coin_Ledger'));
+  return {
+    ok: true,
+    environment: pipe.environment,
+    count: pipe.count,
+    inquiries: pipe.inquiries,
+    demos: pipe.demos,
+    promises: pipe.promises,
+    templates: pipe.templates,
+    students: students,
+    feeLedger: feeLedger,
+    coinLedger: coinLedger
+  };
+}
+
+function getBatchRoster(batchFilter) {
+  const IDS = getActiveSheetIds();
+  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  let students = sheetToObjects(erp.getSheetByName('Students_Master'));
+  if (batchFilter && String(batchFilter).toUpperCase() !== 'ALL') {
+    const bf = String(batchFilter).toUpperCase();
+    students = students.filter(s =>
+      String(s.Batch_ID || '').toUpperCase().indexOf(bf) !== -1 ||
+      String(s.Class || '').toUpperCase() === bf.replace('CLASS ', '')
+    );
+  }
+  const attSheet = erp.getSheetByName('00_ATTENDANCE_DASHBOARD');
+  const attendance = attSheet ? sheetToObjects(attSheet) : [];
+  const coinSheet = erp.getSheetByName('Coin_Ledger');
+  const coins = coinSheet ? sheetToObjects(coinSheet) : [];
+  const feeSheet = erp.getSheetByName('Fee_Ledger');
+  const feeLedger = feeSheet ? sheetToObjects(feeSheet) : [];
+  return {
+    ok: true,
+    environment: getActiveEnvMode(),
+    count: students.length,
+    students: students,
+    attendance: attendance.slice(-250),
+    coins: coins,
+    feeLedger: feeLedger
+  };
+}
+
+function getFinancialSummary() {
+  return recordCenterExpenseAndReconcileDrawer({ amount: 0 });
+}
+
 
 function createInquiry(payload) {
   return withWriteLock_(() => {
@@ -2126,6 +2237,24 @@ function handleApiRequest(req) {
       break;
     case 'submitAnswer':
       dataResult = (typeof apiSubmitAnswer_ === 'function') ? apiSubmitAnswer_(verifiedUser, payload) : { ok: true };
+      break;
+    case 'getPracticeQuestions':
+      dataResult = (typeof handleGetPracticeQuestions_ === 'function') ? handleGetPracticeQuestions_(payload) : [];
+      break;
+    case 'askDoubt':
+      dataResult = (typeof apiAskDoubt_ === 'function') ? apiAskDoubt_(verifiedUser, payload) : { answer: '' };
+      break;
+    case 'triggerExamPanicSOS':
+      dataResult = (typeof apiTriggerExamPanicSOS_ === 'function') ? apiTriggerExamPanicSOS_(verifiedUser, payload) : { ok: true };
+      break;
+    case 'getMystery':
+      dataResult = (typeof apiGetMystery_ === 'function') ? apiGetMystery_(verifiedUser, payload) : {};
+      break;
+    case 'submitMysteryVerdict':
+      dataResult = (typeof apiSubmitMysteryVerdict_ === 'function') ? apiSubmitMysteryVerdict_(verifiedUser, payload) : { ok: true };
+      break;
+    case 'submitRedPenCopy':
+      dataResult = (typeof apiSubmitRedPenCopy_ === 'function') ? apiSubmitRedPenCopy_(verifiedUser, payload) : { ok: true };
       break;
     default:
       return { ok: false, error: 'Unknown action: ' + action };
