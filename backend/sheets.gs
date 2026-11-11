@@ -51,17 +51,43 @@ function invalidateSheetCache_(sheetKey, tabName) {
 }
 
 /**
+ * Retrieves the active Sheet ID for a given key, honoring ENV_MODE dynamically.
+ * @param {string} sheetKey
+ * @return {string}
+ */
+function getSheetIdByKey_(sheetKey) {
+  if (typeof getActiveSheetIds === 'function') {
+    var activeIds = getActiveSheetIds();
+    var keyMap = {
+      'SHEET_ERP': activeIds.MASTER_ERP,
+      'SHEET_MASTER_ERP': activeIds.MASTER_ERP,
+      'SHEET_SYLLABUS': activeIds.SYLLABUS,
+      'SHEET_QB': activeIds.QUESTION_BANK,
+      'SHEET_MASTER_REPO': activeIds.MASTER_Q_REPO,
+      'SHEET_FEE': activeIds.FEE_MGMT,
+      'SHEET_TG': activeIds.TELEGRAM,
+      'SHEET_BOOKS': activeIds.BOOKS_EXPENSES
+    };
+    if (keyMap[sheetKey]) {
+      return keyMap[sheetKey];
+    }
+  }
+  var props = PropertiesService.getScriptProperties();
+  var sheetId = props.getProperty(sheetKey) || FALLBACK_SHEET_IDS[sheetKey];
+  if (sheetId === '1FMk5KBCaEBLj7rwmGI9lIEpM02aGWrc-6tD8GXApDCY') {
+    sheetId = FALLBACK_SHEET_IDS.SHEET_MASTER_REPO;
+  }
+  return sheetId;
+}
+
+/**
  * Retrieves a Sheet instance by Script Property key and Tab name
  * @param {string} sheetKey - e.g. 'SHEET_SYLLABUS', 'SHEET_QB', 'SHEET_FEE', 'SHEET_TG', 'SHEET_BOOKS'
  * @param {string} tabName - e.g. 'Students', 'QuestionBank'
  * @return {GoogleAppsScript.Spreadsheet.Sheet}
  */
 function getSheet_(sheetKey, tabName) {
-  var props = PropertiesService.getScriptProperties();
-  var sheetId = props.getProperty(sheetKey) || FALLBACK_SHEET_IDS[sheetKey];
-  if (sheetId === '1FMk5KBCaEBLj7rwmGI9lIEpM02aGWrc-6tD8GXApDCY') {
-    sheetId = FALLBACK_SHEET_IDS.SHEET_MASTER_REPO;
-  }
+  var sheetId = getSheetIdByKey_(sheetKey);
   if (!sheetId) {
     throw new Error('Config missing for Script Property: ' + sheetKey);
   }
@@ -84,11 +110,7 @@ function getSheet_(sheetKey, tabName) {
  * @return {GoogleAppsScript.Spreadsheet.Spreadsheet}
  */
 function openSpreadsheet_(sheetKey) {
-  var props = PropertiesService.getScriptProperties();
-  var sheetId = props.getProperty(sheetKey) || FALLBACK_SHEET_IDS[sheetKey];
-  if (sheetId === '1FMk5KBCaEBLj7rwmGI9lIEpM02aGWrc-6tD8GXApDCY') {
-    sheetId = FALLBACK_SHEET_IDS.SHEET_MASTER_REPO;
-  }
+  var sheetId = getSheetIdByKey_(sheetKey);
   if (!sheetId) {
     throw new Error('Config missing for Script Property: ' + sheetKey);
   }

@@ -30,9 +30,13 @@ const STAGING_SHEET_IDS = {
   MASTER_Q_REPO: "1fK9POU5MczWrgsdhWc-g4Me5U6e6UtsWnwBkKG4IoCE"
 };
 
-function getActiveSheetIds() {
+function getActiveEnvMode() {
   const propMode = PropertiesService.getScriptProperties().getProperty("ENV_MODE");
-  const activeMode = propMode || ENV_MODE;
+  return propMode || ENV_MODE;
+}
+
+function getActiveSheetIds() {
+  const activeMode = getActiveEnvMode();
   return activeMode === "STAGING" ? STAGING_SHEET_IDS : REAL_SHEET_IDS;
 }
 
@@ -169,6 +173,13 @@ function doGet(e) {
         break;
       case "initProductionProperties":
         result = initProductionScriptProperties();
+        break;
+      case "setupTriggers":
+        setupTriggers();
+        result = { ok: true, data: { message: "Automated crons scheduled successfully", triggers: listInstalledTriggers().data.triggers } };
+        break;
+      case "listInstalledTriggers":
+        result = listInstalledTriggers();
         break;
       case "ping":
       case "health":
@@ -324,7 +335,7 @@ function getSystemHealth() {
       status[key] = { ok: false, id: IDS[key], error: err.message };
     }
   });
-  return { ok: true, environment: ENV_MODE, timestamp: new Date().toISOString(), bindings: status };
+  return { ok: true, environment: getActiveEnvMode(), timestamp: new Date().toISOString(), bindings: status };
 }
 
 function getDashboardSummary() {
@@ -337,7 +348,7 @@ function getDashboardSummary() {
   const promises = sheetToObjects(erp.getSheetByName('PROMISE_LOG'));
   return {
     ok: true,
-    environment: ENV_MODE,
+    environment: getActiveEnvMode(),
     totalStudents: students.length,
     activeStudents: students.filter(s => s.Status === 'Active').length,
     totalInquiries: inquiries.length,
@@ -405,7 +416,7 @@ function getInquiryPipeline(statusFilter) {
   const templates = sheetToObjects(erp.getSheetByName('WA_Templates'));
   return {
     ok: true,
-    environment: ENV_MODE,
+    environment: getActiveEnvMode(),
     count: inquiries.length,
     inquiries: inquiries,
     demos: demos,
@@ -1491,7 +1502,7 @@ function recordCenterExpenseAndReconcileDrawer(payload) {
 
     return {
       ok: true,
-      environment: ENV_MODE,
+      environment: getActiveEnvMode(),
       physicalCashDrawerBalanceINR: physicalCashDrawerBalance,
       cashFeeInflowsINR: cashFeeInflows,
       cashExpensesOutINR: cashExpensesOut,
@@ -1833,7 +1844,7 @@ function convertToAdmission(payload) {
     return {
       ok: true,
       data: {
-        environment: ENV_MODE,
+        environment: getActiveEnvMode(),
         rollNo: newRollNo,
         claimCode: plainClaimCode,
         claimCodeExpiry: claimExpiryDate,
@@ -2026,7 +2037,7 @@ function recordFeePayment(payload) {
   return {
     ok: true,
     data: {
-      environment: ENV_MODE,
+      environment: getActiveEnvMode(),
       invoiceId: txData.invoiceId,
       receiptId: txData.receiptId,
       netPayableINR: txData.netPayableINR,
@@ -2036,6 +2047,21 @@ function recordFeePayment(payload) {
       sha256ReceiptHash: txData.sha256ReceiptHash,
       swotReceipt: swotSmartReceipt,
       waShareUrl: waShareUrl
+    }
+  };
+}
+
+function listInstalledTriggers() {
+  const triggers = ScriptApp.getProjectTriggers();
+  return {
+    ok: true,
+    data: {
+      count: triggers.length,
+      triggers: triggers.map(t => ({
+        handler: t.getHandlerFunction(),
+        type: String(t.getEventType()),
+        triggerSource: String(t.getTriggerSource())
+      }))
     }
   };
 }
