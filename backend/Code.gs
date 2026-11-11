@@ -57,7 +57,8 @@ function initProductionScriptProperties() {
     CHANNEL_ID_11: "@commercewithgyan_class11",
     CHANNEL_ID_12: "@commercewithgyan_class12",
     GEMINI_MODEL: "gemini-2.5-flash",
-    CURRENT_FISCAL_YEAR: "2026-27"
+    CURRENT_FISCAL_YEAR: "2026-27",
+    MINI_APP_URL: "https://commercewithgyan-web.github.io/commerce-master-app/index.html"
   };
   props.setProperties(config);
   return { ok: true, data: props.getProperties() };
