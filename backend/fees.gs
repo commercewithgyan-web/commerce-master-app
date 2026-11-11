@@ -235,7 +235,8 @@ function generateStudentInvoices_(studentId, studentName, joinDate, durationMont
  * @return {Object} Receipt and payment summary
  */
 function recordPayment_(paymentData) {
-  return withLock_('recordPayment_' + paymentData.studentId, 30000, function() {
+  // Audit Patch 3: Restrict lock strictly to sheet read-check-append operations (max 5-8 seconds)
+  var tx = withLock_('recordPayment_' + paymentData.studentId, 10000, function() {
     var student = findRow_('SHEET_FEE', 'Students', 'StudentID', paymentData.studentId);
     if (!student) {
       throw new Error('Student "' + paymentData.studentId + '" not found');
@@ -278,66 +279,80 @@ function recordPayment_(paymentData) {
     // 3. Recalculate Student TotalPaid & Balance
     recalculateStudentFeeBalance_(student.StudentID);
 
-    // 4. Generate Official PDF Receipt
-    var receiptResult = generateReceiptPdf_({
-      receiptNo: receiptNo,
-      date: getKolkataDate(),
-      studentId: student.StudentID,
-      studentName: student.Name,
-      classLevel: student.Class,
-      planName: student.PlanName,
-      forMonth: matchedInvoice ? matchedInvoice.month : forMonth,
+    return {
+      student: student,
       amount: amount,
       mode: mode,
-      upiRef: paymentData.upiRef || (mode === 'Cash' ? 'OFFLINE_CASH' : 'DIRECT'),
-      invoiceNo: matchedInvoice ? matchedInvoice.invoiceNo : 'DIRECT',
-      balance: getUpdatedStudentBalance_(student.StudentID),
-      status: 'SUCCESS'
-    });
+      forMonth: forMonth,
+      paymentId: paymentId,
+      receiptNo: receiptNo,
+      matchedInvoice: matchedInvoice,
+      paymentRowNum: paymentRowNum,
+      balance: getUpdatedStudentBalance_(student.StudentID)
+    };
+  });
 
-    // 5. Deliver PDF to Student's Telegram DM
-    var sentToTelegram = false;
-    if (student.TelegramID) {
-      try {
-        sendTelegramDocument_(
-          student.TelegramID,
-          receiptResult.pdfBlob,
-          'Receipt_' + receiptNo + '.pdf',
-          '🧾 *Official Fee Receipt — Commerce Gyan*\n\n' +
-          'Dear ' + student.Name + ', thank you for your payment of ' + formatCurrency_(amount) +
-          ' (' + mode + '). Your official receipt is attached below.'
-        );
-        sentToTelegram = true;
-        // Mark ReceiptSent = ✅ in Payments tab
-        updateCell_('SHEET_FEE', 'Payments', paymentRowNum, 12, '✅');
-      } catch (tgErr) {
-        logError_('recordPayment_TelegramSend', tgErr);
-      }
+  // ── STRICTLY AFTER lock.releaseLock(): PDF Generation & Telegram/WA Notifications ──
+  var student = tx.student;
+  var receiptResult = generateReceiptPdf_({
+    receiptNo: tx.receiptNo,
+    date: getKolkataDate(),
+    studentId: student.StudentID,
+    studentName: student.Name,
+    classLevel: student.Class,
+    planName: student.PlanName,
+    forMonth: tx.matchedInvoice ? tx.matchedInvoice.month : tx.forMonth,
+    amount: tx.amount,
+    mode: tx.mode,
+    upiRef: paymentData.upiRef || (tx.mode === 'Cash' ? 'OFFLINE_CASH' : 'DIRECT'),
+    invoiceNo: tx.matchedInvoice ? tx.matchedInvoice.invoiceNo : 'DIRECT',
+    balance: tx.balance,
+    status: 'SUCCESS'
+  });
+
+  var sentToTelegram = false;
+  if (student.TelegramID) {
+    try {
+      sendTelegramDocument_(
+        student.TelegramID,
+        receiptResult.pdfBlob,
+        'Receipt_' + tx.receiptNo + '.pdf',
+        '🧾 *Official Fee Receipt — Commerce Gyan*\n\n' +
+        'Dear ' + student.Name + ', thank you for your payment of ' + formatCurrency_(tx.amount) +
+        ' (' + tx.mode + '). Your official receipt is attached below.'
+      );
+      sentToTelegram = true;
+      updateCell_('SHEET_FEE', 'Payments', tx.paymentRowNum, 12, '✅');
+    } catch (tgErr) {
+      logError_('recordPayment_TelegramSend', tgErr);
     }
+  }
 
-    // 6. Log to Receipts tab
+  try {
     appendRow_('SHEET_FEE', 'Receipts', [
-      receiptNo,
+      tx.receiptNo,
       getKolkataDate(),
       student.StudentID,
-      paymentId,
-      amount,
-      matchedInvoice ? matchedInvoice.invoiceNo : 'DIRECT',
+      tx.paymentId,
+      tx.amount,
+      tx.matchedInvoice ? tx.matchedInvoice.invoiceNo : 'DIRECT',
       receiptResult.driveUrl,
       student.TelegramID || 'No Telegram ID'
     ]);
+  } catch (rErr) {
+    logError_('recordPayment_ReceiptLog', rErr);
+  }
 
-    Logger.log('✅ Payment Recorded: ' + paymentId + ' (' + formatCurrency_(amount) + ' by ' + student.Name + ')');
+  Logger.log('✅ Payment Recorded: ' + tx.paymentId + ' (' + formatCurrency_(tx.amount) + ' by ' + student.Name + ')');
 
-    return {
-      success: true,
-      paymentId: paymentId,
-      receiptNo: receiptNo,
-      receiptUrl: receiptResult.driveUrl,
-      sentToTelegram: sentToTelegram,
-      matchedInvoice: matchedInvoice ? matchedInvoice.invoiceNo : null
-    };
-  });
+  return {
+    success: true,
+    paymentId: tx.paymentId,
+    receiptNo: tx.receiptNo,
+    receiptUrl: receiptResult.driveUrl,
+    sentToTelegram: sentToTelegram,
+    matchedInvoice: tx.matchedInvoice ? tx.matchedInvoice.invoiceNo : null
+  };
 }
 
 /**

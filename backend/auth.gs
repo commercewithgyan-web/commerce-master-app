@@ -17,16 +17,8 @@
  * @throws {Error} AUTH_FAILED if signature is invalid or expired
  */
 function verifyTelegramInitData_(initData) {
-  // Browser testing / fallback to student guest profile (NEVER admin)
-  if (!initData || typeof initData !== 'string' || initData.trim() === '' || initData.indexOf('DEV_MOCK') !== -1) {
-    return {
-      id: 'GUEST_STUDENT',
-      first_name: 'Student',
-      last_name: '',
-      username: '',
-      classLevel: '12',
-      is_admin: false
-    };
+  if (!initData || typeof initData !== 'string' || initData.trim() === '') {
+    throw new Error('HTTP 401: AUTH_FAILED (MISSING_INIT_DATA)');
   }
 
   // Parse query string parameters
@@ -37,7 +29,7 @@ function verifyTelegramInitData_(initData) {
   for (var i = 0; i < pairs.length; i++) {
     var parts = pairs[i].split('=');
     var key = decodeURIComponent(parts[0]);
-    var value = parts.slice(1).join('='); // retain any inner '='
+    var value = parts.slice(1).join('=');
     value = decodeURIComponent(value);
 
     if (key === 'hash') {
@@ -49,13 +41,13 @@ function verifyTelegramInitData_(initData) {
   }
 
   var props = PropertiesService.getScriptProperties();
-  var botToken = props.getProperty('BOT_TOKEN');
+  var botToken = props.getProperty('TELEGRAM_BOT_TOKEN') || props.getProperty('BOT_TOKEN');
   if (!botToken) {
     throw new Error('CONFIG_ERROR: BOT_TOKEN not configured in Script Properties');
   }
 
   if (!hash) {
-    throw new Error('AUTH_FAILED: Hash missing in initData');
+    throw new Error('HTTP 401: AUTH_FAILED (MISSING_HASH)');
   }
 
   // Check 24-hour freshness (auth_date in Unix seconds)
@@ -63,7 +55,7 @@ function verifyTelegramInitData_(initData) {
     var authTimestamp = parseInt(params.auth_date, 10);
     var nowSeconds = Math.floor(Date.now() / 1000);
     if (nowSeconds - authTimestamp > 86400) {
-      throw new Error('AUTH_FAILED: initData has expired (>24 hours old)');
+      throw new Error('HTTP 401: AUTH_FAILED (EXPIRED_INIT_DATA: >24 hours old)');
     }
   }
 
@@ -76,29 +68,26 @@ function verifyTelegramInitData_(initData) {
   var dataCheckString = dataCheckArr.join('\n');
 
   // Step 1: Secret Key = HMAC_SHA256("WebAppData", botToken)
-  // In Google Apps Script Utilities.computeHmacSha256Signature(value, key):
-  // value = botToken, key = "WebAppData"
-  var secretKeyBytes = Utilities.computeHmacSha256Signature(botToken, 'WebAppData');
+  var secretKeyBytes = Utilities.computeHmacSha256Signature(
+    Utilities.newBlob(botToken).getBytes(),
+    Utilities.newBlob('WebAppData').getBytes()
+  );
 
   // Step 2: Computed Hash = HMAC_SHA256(dataCheckString, secretKeyBytes)
-  // Both value and key must be Byte[] when passing byte array key
   var dataCheckBytes = Utilities.newBlob(dataCheckString).getBytes();
   var calculatedHashBytes = Utilities.computeHmacSha256Signature(dataCheckBytes, secretKeyBytes);
 
-  // Convert byte array to hexadecimal string
-  var calculatedHash = calculatedHashBytes.map(function(byte) {
-    var v = (byte < 0 ? byte + 256 : byte).toString(16);
-    return v.length === 1 ? '0' + v : v;
+  var calculatedHash = calculatedHashBytes.map(function(b) {
+    return ('0' + (b & 0xFF).toString(16)).slice(-2);
   }).join('');
 
   // Step 3: Constant-time comparison
   if (calculatedHash.toLowerCase() !== hash.toLowerCase()) {
-    throw new Error('AUTH_FAILED: Invalid HMAC signature in initData');
+    throw new Error('HTTP 401: AUTH_FAILED (INVALID_HMAC_SIGNATURE)');
   }
 
-  // Parse user object from verified payload
   if (!params.user) {
-    throw new Error('AUTH_FAILED: User payload missing in verified initData');
+    throw new Error('HTTP 401: AUTH_FAILED (USER_PAYLOAD_MISSING)');
   }
 
   try {
@@ -106,8 +95,45 @@ function verifyTelegramInitData_(initData) {
     userObj.is_admin = isAdmin_(userObj.id);
     return userObj;
   } catch (e) {
-    throw new Error('AUTH_FAILED: Could not parse user JSON in initData');
+    throw new Error('HTTP 401: AUTH_FAILED (INVALID_USER_JSON)');
   }
+}
+
+/**
+ * Stage 1 Admin Dual-Role Gateway & User Router
+ */
+function verifyAndRouteUser_(initDataRaw, previewRollNo) {
+  var user;
+  try {
+    user = verifyTelegramInitData_(initDataRaw);
+  } catch (err) {
+    return { ok: false, error: err.message || 'HTTP 401: AUTH_FAILED' };
+  }
+
+  var telegramId = String((user && user.id) || '');
+
+  // Audit Patch 2: Admin Dual-Role Bypass
+  if (telegramId === '552858970' || (typeof MASTER_ADMIN_ID !== 'undefined' && telegramId === MASTER_ADMIN_ID)) {
+    return {
+      ok: true,
+      role: 'ADMIN',
+      isAdmin: true,
+      telegramId: '552858970',
+      impersonateRollNo: previewRollNo || 'CG-11-001'
+    };
+  }
+
+  var IDS = getActiveSheetIds();
+  var erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  var students = sheetToObjects(erp.getSheetByName('Students_Master'));
+  var student = students.find(function(s) {
+    return String(s.Telegram_ID || s.Telegram_User_ID || '') === telegramId;
+  });
+
+  if (!student) {
+    return { ok: false, error: 'STUDENT_NOT_FOUND', telegramId: telegramId };
+  }
+  return { ok: true, role: 'STUDENT', isAdmin: false, student: student };
 }
 
 /**
@@ -122,70 +148,26 @@ function verifyTelegramInitData_(initData) {
 function requirePaidStudent_(telegramId) {
   var cleanId = String(telegramId || '').trim();
 
-  // Healthy Guest Student fallback for Desktop & unauthenticated users (Audit Bug 2 Fix)
-  if (!cleanId || cleanId === 'GUEST_STUDENT') {
+  // Master Admin Dual-Role Bypass for Founder
+  if (isAdmin_(cleanId) || cleanId === '552858970' || (typeof MASTER_ADMIN_ID !== 'undefined' && cleanId === MASTER_ADMIN_ID)) {
     return {
-      studentId: 'GUEST_STUDENT',
-      StudentID: 'GUEST_STUDENT',
-      name: 'Guest Student',
-      Name: 'Guest Student',
-      classLevel: '12',
-      Class: 12,
-      planId: 'P-CBSE-3',
-      PlanID: 'P-CBSE-3',
-      planName: 'CBSE Combined',
-      PlanName: 'CBSE Combined',
-      monthlyFee: 0,
-      MonthlyFee: 0,
-      totalCourseFee: 0,
-      TotalCourseFee: 0,
-      totalPaid: 0,
-      TotalPaid: 0,
-      balance: 0,
-      Balance: 0,
+      studentId: 'CG-11-001',
+      StudentID: 'CG-11-001',
+      name: 'Gyan Sir (Admin Preview)',
+      Name: 'Gyan Sir (Admin Preview)',
+      classLevel: '11',
+      Class: 11,
       paid: true,
       Paid: 'YES',
       status: 'Active',
       Status: 'Active',
-      Phone: '',
-      TelegramID: 'GUEST_STUDENT',
-      Board: 'CBSE',
-      Notes: 'Guest Explorer'
+      TelegramID: cleanId,
+      Notes: 'Founder Admin Dual-Role'
     };
   }
 
-  // Master Admin & VIP Bypass for Founder (from Script Properties strictly)
-  var props = PropertiesService.getScriptProperties();
-  var adminId = props.getProperty('ADMIN_TELEGRAM_ID') || props.getProperty('ADMIN_ID');
-  if (adminId && cleanId === String(adminId).trim()) {
-    return {
-      studentId: 'ADMIN-01',
-      StudentID: 'ADMIN-01',
-      name: 'Gyan Sir',
-      Name: 'Gyan Sir',
-      classLevel: '12',
-      Class: 12,
-      planId: 'P-CBSE-3',
-      PlanID: 'P-CBSE-3',
-      planName: 'CBSE Combined',
-      PlanName: 'CBSE Combined',
-      monthlyFee: 1500,
-      MonthlyFee: 1500,
-      totalCourseFee: 7500,
-      TotalCourseFee: 7500,
-      totalPaid: 7500,
-      TotalPaid: 7500,
-      balance: 0,
-      Balance: 0,
-      paid: true,
-      Paid: 'YES',
-      status: 'Active',
-      Status: 'Active',
-      Phone: '9876543210',
-      TelegramID: cleanId,
-      Board: 'CBSE',
-      Notes: 'Founder Admin'
-    };
+  if (!cleanId || cleanId === 'GUEST_STUDENT') {
+    throw new Error('HTTP 401: AUTH_FAILED: Unauthenticated user');
   }
 
   // Check CacheService for fast student resolution
@@ -199,50 +181,19 @@ function requirePaidStudent_(telegramId) {
 
   var student = findRow_('SHEET_FEE', 'Students', 'TelegramID', cleanId);
   if (!student) {
-    // Return healthy Guest Student profile for unregistered Telegram user (never throw 500)
-    return {
-      studentId: 'GUEST_' + cleanId.slice(-4),
-      StudentID: 'GUEST_' + cleanId.slice(-4),
-      name: 'Guest Student',
-      Name: 'Guest Student',
-      classLevel: '12',
-      Class: 12,
-      planId: 'P-CBSE-3',
-      PlanID: 'P-CBSE-3',
-      planName: 'CBSE Combined',
-      PlanName: 'CBSE Combined',
-      monthlyFee: 0,
-      MonthlyFee: 0,
-      totalCourseFee: 0,
-      TotalCourseFee: 0,
-      totalPaid: 0,
-      TotalPaid: 0,
-      balance: 0,
-      Balance: 0,
-      paid: true,
-      Paid: 'YES',
-      status: 'Active',
-      Status: 'Active',
-      Phone: '',
-      TelegramID: cleanId,
-      Board: 'CBSE',
-      Notes: 'Guest Explorer'
-    };
+    throw new Error('ACCESS_DENIED: Student record not found for Telegram ID: ' + cleanId);
   }
 
-  // Cache student record for 10 minutes to eliminate redundant sheet queries
   try {
     cache.put('STUDENT_' + cleanId, JSON.stringify(student), 600);
   } catch (cErr) {}
 
   var status = String(student.Status || '').trim();
 
-  // Handle explicit status blocks
   if (status === 'Graduated' || status === 'Dropped' || status === 'Inactive') {
     throw new Error('ACCESS_DENIED: Your student account is marked as ' + status + '. Contact Gyan Sir.');
   }
 
-  // Grace status bypasses overdue lockout (Exam Grace Shield: /grantgrace)
   if (status === 'Grace') {
     return student;
   }
@@ -251,7 +202,6 @@ function requirePaidStudent_(telegramId) {
     throw new Error('ACCESS_DENIED: Inactive account status (' + status + ')');
   }
 
-  // Check 10-day overdue rule from Fee_Schedule
   var overdue10Days = checkStudentOverdueThreshold_(student.StudentID, 10);
   if (overdue10Days) {
     throw new Error('ACCESS_PAUSED: Your account has an overdue fee invoice (>10 days past due). Balance: ' +
@@ -312,6 +262,9 @@ function checkStudentOverdueThreshold_(studentId, thresholdDays) {
 function isAdmin_(telegramId) {
   if (!telegramId) return false;
   var cleanId = String(telegramId).trim();
+  if (cleanId === '552858970' || (typeof MASTER_ADMIN_ID !== 'undefined' && cleanId === MASTER_ADMIN_ID)) {
+    return true;
+  }
   var props = PropertiesService.getScriptProperties();
   var adminId = props.getProperty('ADMIN_TELEGRAM_ID') || props.getProperty('ADMIN_ID');
   if (!adminId || String(adminId).trim() === '') return false;

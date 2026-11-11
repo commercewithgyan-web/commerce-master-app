@@ -86,6 +86,7 @@ const MASTER_REPO_ID = '1FMk5KBCaEBLj7rwmGI9lIEpM02aGWrC-6tD8GXApDCY';
 const MASTER_VAULT_START_ROW = 6;
 const MASTER_VAULT_START_COL = 27; // Column AA
 const MASTER_VAULT_NUM_COLS = 20;  // Columns AA..AT
+const MASTER_VAULT_READ_COLS = 21; // AA..AU (AU = QA_Audit_Status gatekeeper, read-only)
 
 function getMasterRepoSheetName_(subject, classLevel) {
   var cls = String(classLevel || '12');
@@ -119,7 +120,7 @@ function getMasterRepoSheetName_(subject, classLevel) {
 
 function getMasterVaultQuestionsByTab_(targetSheetName, includeAllStatuses) {
   var cache = CacheService.getScriptCache();
-  var cacheKey = 'MV_TAB_V3_' + targetSheetName + (includeAllStatuses ? '_ALL' : '_APP');
+  var cacheKey = 'MV_TAB_V4_' + targetSheetName + (includeAllStatuses ? '_ALL' : '_APP');
   var cached = cache.get(cacheKey);
   if (cached) {
     try { return JSON.parse(cached); } catch (e) {}
@@ -141,7 +142,7 @@ function getMasterVaultQuestionsByTab_(targetSheetName, includeAllStatuses) {
     if (maxRows < MASTER_VAULT_START_ROW) return [];
 
     var numRowsToScan = Math.min(maxRows - MASTER_VAULT_START_ROW + 1, 1500);
-    var vaultRows = targetSheet.getRange(MASTER_VAULT_START_ROW, MASTER_VAULT_START_COL, numRowsToScan, MASTER_VAULT_NUM_COLS).getValues();
+    var vaultRows = targetSheet.getRange(MASTER_VAULT_START_ROW, MASTER_VAULT_START_COL, numRowsToScan, MASTER_VAULT_READ_COLS).getValues();
 
     var isClass11 = targetSheetName.indexOf('11_') === 0;
     var defaultClass = isClass11 ? '11' : '12';
@@ -155,7 +156,9 @@ function getMasterVaultQuestionsByTab_(targetSheetName, includeAllStatuses) {
 
       var status = String(r[19] || '').trim().toLowerCase();
       // Only teacher-reviewed rows are live. 'Active' was the old AI-insert default and is NOT reviewed.
-      var isApproved = (status === 'approved');
+      // v2.5: the QA Gatekeeper (AU) must ALSO say READY TO APPROVE.
+      var qaReady = String(r[20] || '').toUpperCase().indexOf('READY TO APPROVE') !== -1;
+      var isApproved = (status === 'approved') && qaReady;
       if (!includeAllStatuses && !isApproved) continue;
 
       var qType = String(r[6] || 'MCQ').trim();
@@ -280,53 +283,21 @@ function assembleDailyQuestions_(classLevel, subject) {
            (q.OptionA && q.OptionA !== '-' && q.OptionB && q.OptionB !== '-');
   });
 
-  var legacyPool = [];
-  try {
-    var qbData = getSheetData_('SHEET_QB', 'QuestionBank');
-    legacyPool = qbData.filter(function(row) {
-      return String(row.Class) === String(classLevel) &&
-             String(row.Subject).toLowerCase() === String(subject || active.subject).toLowerCase() &&
-             (row.ApprovalStatus === 'Approved' || row.ApprovalStatus === 'APPROVED' || !row.ApprovalStatus);
-    });
-  } catch (e) {}
-
-  var pool = vaultMcqs.concat(legacyPool);
-  if (pool.length === 0) return [];
-
-  var freshPool = pool.filter(function(row) {
-    var idMatch = row.CanonicalSubtopicID && String(row.CanonicalSubtopicID) === String(active.canonicalId);
-    var topicMatch = row.Topic && String(row.Topic).toLowerCase() === String(active.subtopicName).toLowerCase();
-    var subtopicMatch = row.Subtopic && String(row.Subtopic).toLowerCase() === String(active.subtopicName).toLowerCase();
-    return idMatch || topicMatch || subtopicMatch;
+  // v2.5: vault only. Legacy QuestionBank rows carry no QA Gatekeeper (AU) column.
+  var size = Number(PropertiesService.getScriptProperties().getProperty('DPP_SIZE')) || 5;
+  var picked = pickDppSet_(vaultMcqs, {
+    activeId: active.canonicalId,
+    activeChapterNo: active.chapterNo,
+    activeName: active.subtopicName,
+    completed: getCompletedTopicDates_(classLevel),
+    size: size,
+    shuffle: shuffleArray_
   });
-
-  var retentionPool = pool.filter(function(row) {
-    var isSameChapter = String(row.Chapter) === String(active.chapterNo);
-    var isNotFresh = !freshPool.some(function(f) { return f.QID === row.QID; });
-    return isSameChapter && isNotFresh;
-  });
-
-  freshPool = shuffleArray_(freshPool);
-  retentionPool = shuffleArray_(retentionPool);
-
-  var freshTarget = Math.min(freshPool.length, 3);
-  if (freshPool.length >= 4 && retentionPool.length >= 1) freshTarget = 4;
-
-  var selectedFresh = freshPool.slice(0, freshTarget);
-  var retentionTarget = 5 - selectedFresh.length;
-  var selectedRetention = retentionPool.slice(0, retentionTarget);
-
-  var finalSelection = selectedFresh.concat(selectedRetention);
-
-  if (finalSelection.length < 5) {
-    var usedQIDs = {};
-    finalSelection.forEach(function(q) { usedQIDs[q.QID] = true; });
-    var remaining = pool.filter(function(q) { return !usedQIDs[q.QID]; });
-    remaining = shuffleArray_(remaining);
-    finalSelection = finalSelection.concat(remaining.slice(0, 5 - finalSelection.length));
+  _lastDppMeta = picked.meta;
+  if (picked.meta.shortfall > 0) {
+    Logger.log('INSUFFICIENT_QUESTIONS ' + targetSheetName + ' ' + active.canonicalId + ': short by ' + picked.meta.shortfall);
   }
-
-  return finalSelection;
+  return picked.questions;
 }
 
 function fillDailyQuestions(classLevel, subject) {
@@ -551,8 +522,8 @@ function updateMasterVaultStatusByQid_(qid, newStatus) {
         if (String(qids[i][0] || '').trim() === String(qid).trim()) {
           sheet.getRange(MASTER_VAULT_START_ROW + i, 46).setValue(newStatus);
           var cache = CacheService.getScriptCache();
-          cache.remove('MV_TAB_V3_' + tabName + '_APP');
-          cache.remove('MV_TAB_V3_' + tabName + '_ALL');
+          cache.remove('MV_TAB_V4_' + tabName + '_APP');
+          cache.remove('MV_TAB_V4_' + tabName + '_ALL');
           return true;
         }
       }

@@ -8,12 +8,14 @@
 
 // Hardcoded fallback Sheet IDs if PropertiesService is missing any key
 var FALLBACK_SHEET_IDS = {
-  SHEET_SYLLABUS: '1-LrOhyGDDAwxm-eNF-kJX6JldbllQYulZ9wLo_63hFY',
-  SHEET_QB: '1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs',
-  SHEET_MASTER_REPO: '1FMk5KBCaEBLj7rwmGI9lIEpM02aGWrC-6tD8GXApDCY',
-  SHEET_FEE: '1Dka1y2r-2cDjkZxDyJZ__-GOqvNjwIhR9Eurvu3srwI',
-  SHEET_TG: '1KslovmOPwDvCStvjljzhvC4wRpRnTWplcamTq_10pQY',
-  SHEET_BOOKS: '15bM321-hqqvbZRsSKKUfYNwWcOkv9l3EsOAodLZhksQ'
+  SHEET_ERP: '1hQrgvYVoJ2AZ7JSLZm13tAnBUitAACuAPB1HS2m8fZc',
+  SHEET_MASTER_ERP: '1hQrgvYVoJ2AZ7JSLZm13tAnBUitAACuAPB1HS2m8fZc',
+  SHEET_SYLLABUS: '1VN-A-e9EKURW1_AnEez03tTLEONHJcS_K5KvYtVeBto',
+  SHEET_QB: '1iK-Qv-TZv8m0gkQ7dg5SSHRedgPCN8bQCn7q3GBfwhQ',
+  SHEET_MASTER_REPO: '1fK9POU5MczWrgsdhWc-g4Me5U6e6UtsWnwBkKG4IoCE',
+  SHEET_FEE: '1l-14FD7HInLqNV7059Bxbdr1u1bY2AKY9QtsDbzZbQM',
+  SHEET_TG: '1KRHuUUTGpkOUHvYJHls7J5yLNTZsCbJa5lou1GfHiWM',
+  SHEET_BOOKS: '1FxEUPLIudc8uIZEeMu9GL7JWnP-yQktiXlq7GVtRD5k'
 };
 
 // Cache opened spreadsheets during execution to prevent redundant openById calls
