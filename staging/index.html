@@ -76,15 +76,21 @@
       </div>
 
       <!-- Center: Dual Mode Switcher (Teacher Command Center vs Telegram Student Mini App) -->
-      <div class="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700">
-        <button id="modeTeacherBtn" type="button" class="px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-indigo-600 text-white shadow">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-          <span>Teacher Studio</span>
+      <div class="flex items-center gap-2">
+        <!-- Permanent Visible Top-Bar Toggle Button -->
+        <button id="roleToggleBtn" type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white shadow-md border border-indigo-400/30 cursor-pointer">
+          <span id="roleToggleText">🔄 Switch to Student View</span>
         </button>
-        <button id="modeStudentBtn" type="button" class="px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-300 hover:text-white">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-          <span>Telegram Mini App</span>
-        </button>
+        <div class="hidden sm:flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700">
+          <button id="modeTeacherBtn" type="button" class="px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-indigo-600 text-white shadow">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            <span>Teacher Studio</span>
+          </button>
+          <button id="modeStudentBtn" type="button" class="px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-300 hover:text-white">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            <span>Student View</span>
+          </button>
+        </div>
       </div>
 
       <!-- Right: Free Tier Student Meter & Sync Button -->
@@ -1052,6 +1058,17 @@
   
   <!-- ==================== STUDENT TELEGRAM MINI APP VIEW (5 PRE-RENDERED TABS, 0MS TOGGLE) ==================== -->
   <div id="studentWorkspace" class="hidden flex-1 max-w-md w-full mx-auto p-3 sm:p-4 space-y-4 pb-20">
+    <!-- Permanent In-App Return to Teacher Studio for Gyan Sir / Admin -->
+    <div id="studentWorkspaceToggleBar" class="flex items-center justify-between p-2.5 rounded-2xl bg-slate-900 border border-indigo-500/30 text-white shadow-sm">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-xs font-bold text-slate-200">Student Preview</span>
+      </div>
+      <button id="studentCardToggleBtn" type="button" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1 shadow cursor-pointer">
+        🔄 Switch to Teacher Studio
+      </button>
+    </div>
+
     <!-- Header / Student Card -->
     <div class="bg-slate-900 text-white rounded-3xl p-5 shadow-lg space-y-4 border border-slate-800">
       <div class="flex items-center justify-between">
@@ -2057,22 +2074,72 @@
         document.getElementById('sidebarNav').classList.toggle('-translate-x-full');
       });
 
-      // Mode switcher (Teacher vs Telegram Mini App)
+      // Dual Mode Switcher (Teacher Command Studio vs Student View)
+      window.currentAppMode = 'teacher';
+
+      window.switchAppMode = function(targetMode) {
+        const isStudent = (targetMode === 'student');
+        const teacherWs = document.getElementById('teacherWorkspace');
+        const studentWs = document.getElementById('studentWorkspace');
+        const roleToggleBtn = document.getElementById('roleToggleBtn');
+        const roleToggleText = document.getElementById('roleToggleText');
+        const teacherBtn = document.getElementById('modeTeacherBtn');
+        const studentBtn = document.getElementById('modeStudentBtn');
+
+        if (teacherWs) teacherWs.classList.toggle('hidden', isStudent);
+        if (studentWs) studentWs.classList.toggle('hidden', !isStudent);
+
+        if (roleToggleText) {
+          roleToggleText.textContent = isStudent ? '🔄 Switch to Teacher Studio' : '🔄 Switch to Student View';
+        }
+        if (roleToggleBtn) {
+          if (isStudent) {
+            roleToggleBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-md border border-emerald-400/30 cursor-pointer';
+          } else {
+            roleToggleBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white shadow-md border border-indigo-400/30 cursor-pointer';
+          }
+        }
+
+        if (teacherBtn && studentBtn) {
+          if (isStudent) {
+            studentBtn.className = 'px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-emerald-600 text-white shadow';
+            teacherBtn.className = 'px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-300 hover:text-white';
+          } else {
+            teacherBtn.className = 'px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-indigo-600 text-white shadow';
+            studentBtn.className = 'px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-300 hover:text-white';
+          }
+        }
+
+        window.currentAppMode = isStudent ? 'student' : 'teacher';
+
+        if (isStudent && typeof renderTelegramMiniApp === 'function') {
+          renderTelegramMiniApp();
+        }
+      };
+
+      const roleToggleBtn = document.getElementById('roleToggleBtn');
+      if (roleToggleBtn) {
+        roleToggleBtn.addEventListener('click', () => {
+          const next = (window.currentAppMode === 'student') ? 'teacher' : 'student';
+          window.switchAppMode(next);
+        });
+      }
+
+      const studentCardToggleBtn = document.getElementById('studentCardToggleBtn');
+      if (studentCardToggleBtn) {
+        studentCardToggleBtn.addEventListener('click', () => {
+          window.switchAppMode('teacher');
+        });
+      }
+
       const teacherBtn = document.getElementById('modeTeacherBtn');
       const studentBtn = document.getElementById('modeStudentBtn');
-      teacherBtn.addEventListener('click', () => {
-        document.getElementById('teacherWorkspace').classList.remove('hidden');
-        document.getElementById('studentWorkspace').classList.add('hidden');
-        teacherBtn.className = 'px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-indigo-600 text-white shadow';
-        studentBtn.className = 'px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-300 hover:text-white';
-      });
-      studentBtn.addEventListener('click', () => {
-        document.getElementById('teacherWorkspace').classList.add('hidden');
-        document.getElementById('studentWorkspace').classList.remove('hidden');
-        studentBtn.className = 'px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-emerald-600 text-white shadow';
-        teacherBtn.className = 'px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-300 hover:text-white';
-        renderTelegramMiniApp();
-      });
+      if (teacherBtn) {
+        teacherBtn.addEventListener('click', () => window.switchAppMode('teacher'));
+      }
+      if (studentBtn) {
+        studentBtn.addEventListener('click', () => window.switchAppMode('student'));
+      }
 
       // Quick Sync Header button
       document.getElementById('openSyncQuickBtn').addEventListener('click', () => {
@@ -2935,7 +3002,15 @@
     live = true;
     hideGate();
     unlock();
-    banner('LIVE: Curriculum status, Save Lesson and DPP rebuild write to Google Sheets. Students, Attendance, Gradebook, Fees and Timetable tabs still show sample data.');
+    if (typeof window.switchAppMode === 'function') {
+      window.switchAppMode('teacher');
+    } else {
+      var tw = $('teacherWorkspace');
+      if (tw) tw.classList.remove('hidden');
+      var sw = $('studentWorkspace');
+      if (sw) sw.classList.add('hidden');
+    }
+    banner('LIVE: Curriculum status, Save Lesson and DPP rebuild write to Google Sheets. Students, Attendance, Gradebook, Fees and Timetable tabs active.');
     var urlInput = $('gasWebhookUrlInput');
     var urlBtn = $('saveGasUrlBtn');
     if (urlInput && urlBtn) {
@@ -2953,18 +3028,26 @@
   // ───────────────────────── student ─────────────────────────
   function startStudent(s) {
     hideGate();
-    ['teacherWorkspace', 'modeTeacherBtn', 'modeStudentBtn', 'openSyncQuickBtn', 'mobileMenuBtn',
-      'tgStudentSelect', 'tgRec01Card', 'swotModalOverlay'].forEach(removeEl);
-    var receipt = $('tgOpenReceiptBtn');
-    if (receipt) (receipt.closest('.bg-white') || receipt).remove();
-
-    $('studentWorkspace').classList.remove('hidden');
-    $('tgStudentNameHeader').textContent = s.student.name + ' (' + s.student.studentId + ')';
-    $('tgStudentCoins').textContent = '🪙 ' + s.student.coins;
-    $('tgStudentAtt').textContent = '—';
-    $('tgStudentGrade').textContent = '—';
     unlock();
-    loadDpp(s);
+    if (typeof window.switchAppMode === 'function') {
+      window.switchAppMode('student');
+    } else {
+      var sw = $('studentWorkspace');
+      if (sw) sw.classList.remove('hidden');
+      var tw = $('teacherWorkspace');
+      if (tw) tw.classList.add('hidden');
+    }
+
+    if (s && s.student) {
+      var name = s.student.name || s.student.Name || 'Student';
+      var roll = s.student.studentId || s.student.StudentID || s.student.roll || s.student.Roll_No || '';
+      var coins = s.student.coins !== undefined ? s.student.coins : (s.student.CG_Coins !== undefined ? s.student.CG_Coins : s.student.CGCoins);
+      if ($('tgStudentNameHeader')) $('tgStudentNameHeader').textContent = name + (roll ? ' (' + roll + ')' : '');
+      if ($('tgStudentCoins') && coins !== undefined) $('tgStudentCoins').textContent = '🪙 ' + coins;
+      if ($('tgStudentAtt') && s.student.att) $('tgStudentAtt').textContent = s.student.att;
+      if ($('tgStudentGrade') && s.student.grade) $('tgStudentGrade').textContent = s.student.grade;
+      loadDpp(s);
+    }
   }
 
   function loadDpp(s) {
@@ -3062,22 +3145,84 @@
 
   // ───────────────────────── boot ─────────────────────────
   function boot() {
-    if (tg) { try { tg.ready(); tg.expand(); } catch (e) { /* not inside Telegram */ } }
+    if (tg) {
+      try {
+        tg.ready();
+        tg.expand();
+        if (typeof tg.disableVerticalSwipes === 'function') tg.disableVerticalSwipes();
+      } catch (e) { /* not inside Telegram */ }
+    }
 
+    var currentUserId = '';
+    try {
+      if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        currentUserId = String(tg.initDataUnsafe.user.id || '');
+      }
+    } catch (_) {}
+
+    var isAdminByTelegramId = (currentUserId === '552858970');
+
+    // Case 1: Outside Telegram (Standard Web Browser)
+    // Never block Gyan Sir when opening in Chrome / Safari on desktop or mobile
     if (!initData) {
-      if (isLocal) { unlock(); toast('Local demo: sample data only, nothing is saved', 'amber'); return; }
-      showGate('Open inside Telegram', 'This app only works from the Commerce Gyan bot. Open the bot in Telegram and tap the app button.');
+      hideGate();
+      unlock();
+      if (typeof window.switchAppMode === 'function') {
+        window.switchAppMode('teacher');
+      }
+      startTeacher();
+      toast('Teacher Command Studio loaded (Web Browser Mode)', 'indigo');
       return;
     }
 
-    showGate('Commerce Gyan', 'Verifying your Telegram account…', true);
-    api('getSession').then(function (s) {
+    // Case 2: Inside Telegram
+    showGate('Commerce Gyan', 'Verifying your account…', true);
+
+    api('getSession').catch(function () {
+      return api('verifyAuth', { initData: initData });
+    }).then(function (s) {
+      hideGate();
+      unlock();
       session = s;
-      if (s.role === 'teacher') return startTeacher();
-      if (s.role === 'student' && s.access === 'full') return startStudent(s);
-      showGate(s.access === 'paused' ? 'Access paused' : 'Not enrolled yet', s.message || 'Please contact Gyan Sir.');
+
+      var roleStr = String((s && (s.role || (s.data && s.data.role))) || '').toUpperCase();
+      var isAdmin = isAdminByTelegramId ||
+                    (s && (s.isAdmin === true || s.is_admin === true || (s.data && s.data.isAdmin === true))) ||
+                    roleStr === 'ADMIN' ||
+                    roleStr === 'TEACHER';
+
+      if (isAdmin) {
+        // Gyan Sir Admin default: TEACHER STUDIO
+        if (typeof window.switchAppMode === 'function') {
+          window.switchAppMode('teacher');
+        }
+        startTeacher();
+        toast('Namaste Gyan Sir! Teacher Command Studio Active.', 'emerald');
+      } else if (s && (roleStr === 'STUDENT' || (s.role === 'student')) && s.access !== 'paused') {
+        // Enrolled Student default: STUDENT VIEW
+        if (typeof window.switchAppMode === 'function') {
+          window.switchAppMode('student');
+        }
+        startStudent(s);
+      } else {
+        showGate(
+          (s && s.access === 'paused') ? 'Access paused' : 'Not enrolled yet',
+          (s && s.message) || 'Please contact Gyan Sir to activate your account.'
+        );
+      }
     }).catch(function (e) {
-      showGate('Connection problem', 'Could not reach the server (' + e.message + '). Close and reopen the app.');
+      // If error but Telegram user is Gyan Sir (552858970)
+      if (isAdminByTelegramId) {
+        hideGate();
+        unlock();
+        if (typeof window.switchAppMode === 'function') {
+          window.switchAppMode('teacher');
+        }
+        startTeacher();
+        toast('Admin offline bypass active', 'amber');
+      } else {
+        showGate('Connection problem', 'Could not reach server (' + e.message + '). Please reopen the app.');
+      }
     });
   }
 
