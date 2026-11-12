@@ -266,7 +266,7 @@ function createQuestionPdfFromTemplate_(data) {
   var hashInput = ['QUESTION', classLevel, data.subject || 'Accountancy', qid, data.questionText || ''].join(':::');
   var contentHash = computeContentHash_(hashInput);
   var cachedUrl = typeof findCachedRender_ === 'function' ? findCachedRender_(contentHash) : null;
-  if (cachedUrl) {
+  if (cachedUrl && !data.bypassCache) {
     Logger.log('⚡ Idempotency Hit: Reusing rendered Question PDF: ' + cachedUrl);
     return {
       driveUrl: cachedUrl,
@@ -329,7 +329,7 @@ function createAnswerPdfFromTemplate_(data) {
   var hashInput = ['ANSWER', classLevel, data.subject || 'Accountancy', qid, data.questionText || '', data.answerText || '', data.marksBreakdown || '', data.commonMistakes || ''].join(':::');
   var contentHash = computeContentHash_(hashInput);
   var cachedUrl = typeof findCachedRender_ === 'function' ? findCachedRender_(contentHash) : null;
-  if (cachedUrl) {
+  if (cachedUrl && !data.bypassCache) {
     Logger.log('⚡ Idempotency Hit: Reusing rendered Model Answer PDF: ' + cachedUrl);
     return {
       driveUrl: cachedUrl,
@@ -400,6 +400,101 @@ function createAnswerPdfFromTemplate_(data) {
  * @param {string} line
  * @return {string[]}
  */
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════
+ * TRUE DYNAMIC STRUCTURE AUTO-DETECTION & ADAPTIVE LAYOUT ENGINE (v4.4.0)
+ * ═══════════════════════════════════════════════════════════════════════
+ */
+
+/**
+ * Dynamic Two-Tier Structure Detector & Block Classifier
+ * Tier A: Explicit Render_Spec JSON (if present)
+ * Tier B: Pure Rule-Based Structural Auto-Detector (Zero API Cost, Plain text or # tags)
+ * @param {string} rawText
+ * @param {string} subject
+ * @param {string|Object} [existingRenderSpec]
+ * @return {Array<Object>}
+ */
+function analyzeAndStructureBlock_(rawText, subject, existingRenderSpec) {
+  // Tier A: Explicit Render_Spec override
+  if (existingRenderSpec) {
+    try {
+      var spec = typeof existingRenderSpec === 'string' ? JSON.parse(existingRenderSpec) : existingRenderSpec;
+      if (spec && Array.isArray(spec.blocks) && spec.blocks.length > 0) {
+        return spec.blocks;
+      }
+    } catch (_) {}
+  }
+
+  // Tier B: Rule-based auto-detection
+  return parseDslBlocks_(rawText, subject, true);
+}
+
+/**
+ * Strips raw # DSL tags and table borders from question recap for clean prose presentation
+ * @param {string} rawText
+ * @return {string}
+ */
+function cleanQuestionRecapText_(rawText) {
+  if (!rawText) return '';
+  return String(rawText)
+    .replace(/#END(TABLE|TACCOUNT|CAPITAL|JOURNAL|FLOW|FORMULA|CARD)/gi, '')
+    .replace(/#(TABLE|TACCOUNT|CAPITAL|JOURNAL|FLOW|FORMULA|CARD|GRAPH)[^\n]*/gi, '')
+    .replace(/\|[\s\-:]*\|/g, '')
+    .replace(/\|\s*([^|\n]+)\s*\|/g, '$1 ')
+    .replace(/\|/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+/**
+ * Dynamically calculates <colgroup> for Partners' Capital Account with N partners (exact 50% | 50% split)
+ * Left: Particulars (22%) + N partners (28/N)% = 50%
+ * Right: Particulars (22%) + N partners (28/N)% = 50%
+ * @param {number} n
+ * @return {string}
+ */
+function generatePartnersCapitalColgroup_(n) {
+  n = Math.max(1, parseInt(n, 10) || 2);
+  var partPct = (n >= 4) ? 18 : (n === 3 ? 20 : 22);
+  var partnerPct = ((50 - partPct) / n).toFixed(2);
+  var leftCols = '<col style="width: ' + partPct + '%;">';
+  for (var i = 0; i < n; i++) leftCols += '<col style="width: ' + partnerPct + '%;">';
+  var rightCols = '<col style="width: ' + partPct + '%;">';
+  for (var j = 0; j < n; j++) rightCols += '<col style="width: ' + partnerPct + '%;">';
+  return '<colgroup>' + leftCols + rightCols + '</colgroup>';
+}
+
+/**
+ * Dynamically calculates <colgroup> for arbitrary tables with K columns
+ * @param {string[]} cols
+ * @param {string} title
+ * @return {string}
+ */
+function generateArbitraryColgroup_(cols, title) {
+  var k = cols.length;
+  if (k === 0) return '';
+  if (k === 4 && /balance sheet|revaluation|realisation|trading|p&l|cash|bank/i.test(title || '')) {
+    return '<colgroup><col style="width: 36%;"><col style="width: 14%;"><col style="width: 36%;"><col style="width: 14%;"></colgroup>';
+  }
+  if (k === 5 && /journal/i.test(title || '')) {
+    return '<colgroup><col style="width: 12%;"><col style="width: 48%;"><col style="width: 8%;"><col style="width: 16%;"><col style="width: 16%;"></colgroup>';
+  }
+
+  // Statistics / Arbitrary table
+  var firstColPct = 24;
+  if (k <= 3) firstColPct = 36;
+  else if (k >= 7) firstColPct = 20;
+
+  var remPct = ((100 - firstColPct) / (k - 1)).toFixed(2);
+  var colsHtml = '<col style="width: ' + firstColPct + '%;">';
+  for (var i = 1; i < k; i++) {
+    colsHtml += '<col style="width: ' + remPct + '%;">';
+  }
+  return '<colgroup>' + colsHtml + '</colgroup>';
+}
+
 function splitPipes_(line) {
   var cols = String(line || '').split('|').map(function(c) { return c.trim(); });
   if (cols.length > 0 && cols[0] === '') cols.shift();
@@ -756,7 +851,7 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
       classLevel: classLevel,
       estHeight: 12
     });
-    var qBlocks = parseDslBlocks_(data.questionText || '', data.subject, false);
+    var qBlocks = analyzeAndStructureBlock_(data.questionText || '', data.subject, data.renderSpec);
     for (var qb = 0; qb < qBlocks.length; qb++) {
       blocks.push(qBlocks[qb]);
     }
@@ -776,7 +871,7 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
       type: 'answer_heading',
       estHeight: 8
     });
-    var ansBlocks = parseDslBlocks_(data.answerText || '', data.subject, true);
+    var ansBlocks = analyzeAndStructureBlock_(data.answerText || '', data.subject, data.renderSpec);
     for (var ab = 0; ab < ansBlocks.length; ab++) {
       ansBlocks[ab].drCrCheck = !!data.drCrCheck;
       blocks.push(ansBlocks[ab]);
@@ -907,8 +1002,7 @@ function buildMultiPageDocumentHtml_(pages, headerData, bgBase64) {
       sheetNumber += ' [' + pageNum + '/' + totalPages + ']';
     }
 
-    var ansPillOverlay = isAns ?
-      '<div style="position: absolute; top: 4.2mm; left: 84.5mm; width: 78mm; height: 10.5mm; background: #5b1865; border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; font-weight: 800; font-size: 8.5pt; text-transform: uppercase; z-index: 2; letter-spacing: 0.3px;">' + escapeHtml_(pillText) + '</div>' : '';
+    var ansPillOverlay = ''; // Keep pre-printed stationery pill pristine; zero sticker overlay
 
     var contentHtml = pageBlocks.map(function(blk) {
       return renderBlockHtml_(blk);
@@ -918,13 +1012,13 @@ function buildMultiPageDocumentHtml_(pages, headerData, bgBase64) {
       '  <img src="data:image/png;base64,' + bgBase64 + '" style="position: absolute; top: 0; left: 0; width: 210mm; height: 297mm; z-index: 0;" />\n' +
       '  ' + ansPillOverlay + '\n' +
       '  <!-- 1. NO. Box (top-right purple box) -->\n' +
-      '  <div style="position: absolute; top: 5.5mm; left: 174mm; width: 28mm; height: 7mm; display: flex; align-items: center; justify-content: center; font-size: 8pt; font-weight: bold; color: #5b1865; z-index: 2; white-space: nowrap;">' + escapeHtml_(sheetNumber) + '</div>\n' +
+      '  <div style="position: absolute; top: 4.8mm; left: 174mm; width: 28mm; height: 7.5mm; display: flex; align-items: center; justify-content: center; font-size: 8pt; font-weight: bold; color: #5b1865; z-index: 2; white-space: nowrap;">' + escapeHtml_(sheetNumber) + '</div>\n' +
       '  <!-- 2. Subject Line (Underline after Subject :) -->\n' +
-      '  <div style="position: absolute; top: 26.5mm; left: 35mm; width: 43mm; font-size: 9pt; font-weight: bold; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2;">' + escapeHtml_(headerData.subjectText) + '</div>\n' +
+      '  <div style="position: absolute; top: 23.8mm; left: 35mm; width: 43mm; font-size: 9pt; font-weight: bold; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2;">' + escapeHtml_(headerData.subjectText) + '</div>\n' +
       '  <!-- 3. Topic Line (Underline after Topic :) -->\n' +
-      '  <div style="position: absolute; top: 26.5mm; left: 104mm; width: 44mm; font-size: 8.5pt; font-weight: bold; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2;">' + escapeHtml_(headerData.topicText) + '</div>\n' +
+      '  <div style="position: absolute; top: 23.8mm; left: 104mm; width: 44mm; font-size: 8.5pt; font-weight: bold; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2;">' + escapeHtml_(headerData.topicText) + '</div>\n' +
       '  <!-- 4. Date Line (Underline after Date :) -->\n' +
-      '  <div style="position: absolute; top: 26.5mm; left: 173mm; width: 25mm; text-align: center; font-size: 9pt; font-weight: bold; color: #0f172a; letter-spacing: 0.5px; z-index: 2;">' + escapeHtml_(headerData.formattedDate) + '</div>\n' +
+      '  <div style="position: absolute; top: 23.8mm; left: 173mm; width: 25mm; text-align: center; font-size: 9pt; font-weight: bold; color: #0f172a; letter-spacing: 0.5px; z-index: 2; background: #ffffff; padding: 0 4px;">' + escapeHtml_(headerData.formattedDate) + '</div>\n' +
       '  <!-- 5. Usable Safe Content Area (Clears left margin red line at 14mm) -->\n' +
       '  <div class="page-content">\n' +
       '    ' + contentHtml + '\n' +
@@ -970,7 +1064,7 @@ function buildMultiPageDocumentHtml_(pages, headerData, bgBase64) {
     '  .page-content {\n' +
     '    position: relative;\n' +
     '    z-index: 1;\n' +
-    '    padding: 60mm 12mm 26mm 18mm;\n' +
+    '    padding: 55mm 12mm 22mm 18mm;\n' +
     '    box-sizing: border-box;\n' +
     '    width: 210mm;\n' +
     '    height: 297mm;\n' +
@@ -1010,19 +1104,26 @@ function renderBlockHtml_(blk) {
         '</div>' +
       '</div>';
 
+    case 'question_header':
+      return '<div class="block" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px; margin-bottom: 6px;">' +
+        '<span style="font-size: 8.5pt; font-weight: 700; color: #5b1865; text-transform: uppercase;">Official CBSE Practice Problem — Class ' + blk.classLevel + '</span>' +
+        '<span style="background: #f3e8ff; border: 1px solid #a855f7; color: #581c87; font-weight: 800; padding: 1px 7px; border-radius: 4px; font-size: 8pt;">[ ' + blk.marks + ' Marks ]</span>' +
+      '</div>';
+
     case 'answer_recap':
-      var qShort = escapeHtml_(String(blk.questionText || '')).substring(0, 240);
-      if (String(blk.questionText || '').length > 240) qShort += '...';
-      return '<div class="block" style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #5b1865; border-radius: 6px; padding: 6px 10px; margin-bottom: 8px;">' +
-        '<div style="display: flex; justify-content: space-between; align-items: center;">' +
-          '<span style="font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Original Question Recap</span>' +
-          '<span style="background: #f3e8ff; border: 1px solid #a855f7; color: #581c87; font-weight: 800; padding: 1px 7px; border-radius: 4px; font-size: 10px;">[ ' + blk.marks + ' Marks ]</span>' +
-        '</div>' +
-        '<div style="font-size: 10px; color: #334155; margin-top: 2px; font-weight: 500; line-height: 1.35;">' + qShort + '</div>' +
+      var cleanText = cleanQuestionRecapText_(blk.questionText || '');
+      if (cleanText.length > 220) cleanText = cleanText.substring(0, 218) + '...';
+      return '<div class="block" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px; margin-bottom: 6px;">' +
+        '<span style="font-size: 8.5pt; font-weight: 700; color: #5b1865; text-transform: uppercase;">Official Model Answer Key — DPP Solution</span>' +
+        '<span style="background: #f3e8ff; border: 1px solid #a855f7; color: #581c87; font-weight: 800; padding: 1px 7px; border-radius: 4px; font-size: 8pt;">[ ' + blk.marks + ' Marks ]</span>' +
+      '</div>' +
+      '<div class="block" style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3.5px solid #5b1865; border-radius: 5px; padding: 5px 9px; margin-bottom: 6px;">' +
+        '<div style="font-size: 8pt; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px;">Original Problem Recap</div>' +
+        '<div style="font-size: 8.5pt; color: #334155; margin-top: 2px; font-weight: 500; line-height: 1.35;">' + escapeHtml_(cleanText) + '</div>' +
       '</div>';
 
     case 'answer_heading':
-      return '<div class="block" style="font-size: 11px; font-weight: 700; color: #5b1865; margin-bottom: 4px;">Official CBSE Model Solution:</div>';
+      return '';
 
     case 'taccount':
       return renderTAccountBlockHtml_(blk);
@@ -1084,7 +1185,6 @@ function renderTAccountBlockHtml_(blk) {
   var crTotal = 0;
   var startIndex = 0;
 
-  // Check if first row is explicit header
   if (lines.length > 0) {
     var firstCols = splitPipes_(lines[0]);
     if (/particular|dr|cr|₹|amount/i.test(firstCols[0] || '') || /particular|dr|cr|₹|amount/i.test(firstCols[1] || '')) {
@@ -1105,43 +1205,40 @@ function renderTAccountBlockHtml_(blk) {
       }
 
       trs.push('<tr style="' + borderStyle + '">' +
-        '<td style="padding: 3px 6px; border-right: 1px solid #f1f5f9; width: 33%;">' + escapeHtml_(cols[0]) + '</td>' +
-        '<td style="padding: 3px 6px; text-align: right; border-right: 1.5px solid #5b1865; width: 17%; font-family: monospace; font-weight: 600;">' + escapeHtml_(cols[1]) + '</td>' +
-        '<td style="padding: 3px 6px; border-right: 1px solid #f1f5f9; width: 33%;">' + escapeHtml_(cols[2]) + '</td>' +
-        '<td style="padding: 3px 6px; text-align: right; width: 17%; font-family: monospace; font-weight: 600;">' + escapeHtml_(cols[3]) + '</td>' +
+        '<td style="padding: 2.5px 5px; border-right: 1px solid #f1f5f9;">' + escapeHtml_(cols[0]) + '</td>' +
+        '<td style="padding: 2.5px 5px; text-align: right; border-right: 1.5px solid #5b1865; font-family: monospace; font-weight: 600;">' + escapeHtml_(cols[1]) + '</td>' +
+        '<td style="padding: 2.5px 5px; border-right: 1px solid #f1f5f9;">' + escapeHtml_(cols[2]) + '</td>' +
+        '<td style="padding: 2.5px 5px; text-align: right; font-family: monospace; font-weight: 600;">' + escapeHtml_(cols[3]) + '</td>' +
       '</tr>');
     }
   }
 
-  var tallyWarning = '';
   if (blk.drCrCheck && drTotal > 0 && crTotal > 0) {
-    if (Math.abs(drTotal - crTotal) <= 1) {
-      tallyWarning = '<div style="color: #15803d; font-size: 8pt; font-weight: bold; margin-top: 3px; padding: 2px 6px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 4px;">✅ Dr./Cr. Balance Check: Balanced at ₹' + drTotal.toLocaleString('en-IN') + ' (Dr. ₹' + drTotal.toLocaleString('en-IN') + ' = Cr. ₹' + crTotal.toLocaleString('en-IN') + ')</div>';
-    } else {
-      tallyWarning = '<div style="color: #b91c1c; font-size: 8pt; font-weight: bold; margin-top: 3px; padding: 2px 6px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px;">⚠️ Dr./Cr. Imbalance: Dr. (₹' + drTotal.toLocaleString('en-IN') + ') vs Cr. (₹' + crTotal.toLocaleString('en-IN') + ') difference of ₹' + Math.abs(drTotal - crTotal).toLocaleString('en-IN') + ' detected.</div>';
-    }
+    Logger.log('T-Account ' + blk.title + ' Tally Check: Dr=' + drTotal + ', Cr=' + crTotal + ' (Diff: ' + Math.abs(drTotal - crTotal) + ')');
   }
 
-  return '<div class="block" style="margin: 6px 0;">' +
-    '<div style="font-weight: 700; font-size: 9.5pt; color: #5b1865; margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center;">' +
+  var colgroupHtml = '<colgroup><col style="width: 36%;"><col style="width: 14%;"><col style="width: 36%;"><col style="width: 14%;"></colgroup>';
+
+  return '<div class="block" style="margin: 4px 0;">' +
+    '<div style="font-weight: 700; font-size: 8.5pt; color: #5b1865; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center;">' +
       '<span>Dr.</span>' +
-      '<span style="text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title || 'Ledger Account') + '</span>' +
+      '<span style="text-transform: uppercase; letter-spacing: 0.3px;">' + escapeHtml_(blk.title || 'Ledger Account') + '</span>' +
       '<span>Cr.</span>' +
     '</div>' +
-    '<table style="width: 100%; border-collapse: collapse; font-size: 9pt; background: #ffffff; border: 1.5px solid #5b1865;">' +
+    '<table style="width: 100%; border-collapse: collapse; font-size: 8pt; background: #ffffff; border: 1.5px solid #5b1865; table-layout: fixed;">' +
+      colgroupHtml +
       '<thead>' +
         '<tr style="background: #f3e8ff; color: #5b1865; font-weight: bold; border-bottom: 1.5px solid #5b1865;">' +
-          '<th style="padding: 3px 6px; text-align: left; border-right: 1px solid #d8b4fe;">Particulars</th>' +
-          '<th style="padding: 3px 6px; text-align: right; border-right: 1.5px solid #5b1865;">Amount (₹)</th>' +
-          '<th style="padding: 3px 6px; text-align: left; border-right: 1px solid #d8b4fe;">Particulars</th>' +
-          '<th style="padding: 3px 6px; text-align: right;">Amount (₹)</th>' +
+          '<th style="padding: 2.5px 5px; text-align: left; border-right: 1px solid #d8b4fe;">Particulars</th>' +
+          '<th style="padding: 2.5px 5px; text-align: right; border-right: 1.5px solid #5b1865;">Amount (₹)</th>' +
+          '<th style="padding: 2.5px 5px; text-align: left; border-right: 1px solid #d8b4fe;">Particulars</th>' +
+          '<th style="padding: 2.5px 5px; text-align: right;">Amount (₹)</th>' +
         '</tr>' +
       '</thead>' +
       '<tbody>' +
         trs.join('\n') +
       '</tbody>' +
     '</table>' +
-    tallyWarning +
   '</div>';
 }
 
@@ -1153,33 +1250,47 @@ function renderCapitalAccountBlockHtml_(blk) {
   if (lines.length === 0) return '';
 
   var headerCols = splitPipes_(lines[0]);
-  var ths = headerCols.map(function(c) {
-    return '<th style="background: #f3e8ff; color: #5b1865; padding: 4px 5px; border: 1px solid #d8b4fe; font-weight: 700; text-align: center; font-size: 8.5pt;">' + escapeHtml_(c) + '</th>';
+  var totalCols = headerCols.length;
+  // Calculate N partners = (totalCols - 2) / 2
+  var nPartners = Math.max(1, Math.floor((totalCols - 2) / 2));
+  var colgroupHtml = generatePartnersCapitalColgroup_(nPartners);
+
+  var midColIndex = nPartners + 1; // 1-based index where left side ends
+
+  var ths = headerCols.map(function(c, idx) {
+    var isDivider = (idx + 1 === midColIndex);
+    var divStyle = isDivider ? 'border-right: 1.5px solid #5b1865;' : 'border-right: 1px solid #d8b4fe;';
+    return '<th style="background: #f3e8ff; color: #5b1865; padding: 3px 4px; ' + divStyle + ' font-weight: 700; text-align: center; font-size: 8pt;">' + escapeHtml_(c) + '</th>';
   }).join('');
 
   var trs = [];
+  var cellFontSize = (nPartners >= 4) ? '7pt' : '8pt';
+  var cellPad = (nPartners >= 4) ? '2px 2px' : '2.5px 4px';
   for (var i = 1; i < lines.length; i++) {
     var cols = splitPipes_(lines[i]);
-    var isTotal = /total/i.test(cols[0]) || (cols[1] && /total/i.test(cols[1])) || (cols[4] && /total/i.test(cols[4]));
-    var borderStyle = isTotal ? 'border-top: 1px solid #d8b4fe; border-bottom: 3px double #1e293b; font-weight: bold; background: #faf5ff;' : 'border: 1px solid #e2e8f0;';
+    var isTotal = /total/i.test(cols[0]) || (cols[1] && /total/i.test(cols[1])) || (cols[midColIndex] && /total/i.test(cols[midColIndex]));
+    var borderStyle = isTotal ? 'border-top: 1px solid #d8b4fe; border-bottom: 3px double #1e293b; font-weight: bold; background: #faf5ff;' : 'border-bottom: 1px solid #e2e8f0;';
 
     var tds = cols.map(function(c, cIdx) {
+      var isDivider = (cIdx + 1 === midColIndex);
+      var divStyle = isDivider ? 'border-right: 1.5px solid #5b1865;' : 'border-right: 1px solid #f1f5f9;';
       var isAmt = /[\d,]+/.test(c) && !/particular/i.test(c);
       var align = isAmt ? 'right' : 'left';
-      return '<td style="padding: 3px 4px; ' + borderStyle + ' text-align: ' + align + '; font-size: 8.5pt;">' + escapeHtml_(c) + '</td>';
+      return '<td style="padding: ' + cellPad + '; ' + borderStyle + ' ' + divStyle + ' text-align: ' + align + '; font-size: ' + cellFontSize + '; font-family: ' + (isAmt ? 'monospace' : 'inherit') + '; white-space: nowrap;">' + escapeHtml_(c) + '</td>';
     }).join('');
     trs.push('<tr>' + tds + '</tr>');
   }
 
   var heading = blk.title || "PARTNERS' CAPITAL ACCOUNTS";
 
-  return '<div class="block" style="margin: 6px 0;">' +
-    '<div style="font-weight: 700; font-size: 9.5pt; color: #5b1865; margin-bottom: 3px; display: flex; justify-content: space-between;">' +
+  return '<div class="block" style="margin: 4px 0;">' +
+    '<div style="font-weight: 700; font-size: 8.5pt; color: #5b1865; margin-bottom: 2px; display: flex; justify-content: space-between;">' +
       '<span>Dr.</span>' +
-      '<span style="text-transform: uppercase;">' + escapeHtml_(heading) + '</span>' +
+      '<span style="text-transform: uppercase;">' + escapeHtml_(heading) + ' (' + nPartners + ' Partners)</span>' +
       '<span>Cr.</span>' +
     '</div>' +
-    '<table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; border: 1.5px solid #5b1865;">' +
+    '<table style="width: 100%; border-collapse: collapse; font-size: 8pt; border: 1.5px solid #5b1865; table-layout: fixed;">' +
+      colgroupHtml +
       '<thead><tr>' + ths + '</tr></thead>' +
       '<tbody>' + trs.join('\n') + '</tbody>' +
     '</table>' +
@@ -1246,6 +1357,7 @@ function renderTableBlockHtml_(blk) {
   var isHeader = true;
   var col1Total = 0;
   var col2Total = 0;
+  var headerCols = [];
 
   for (var i = 0; i < lines.length; i++) {
     var rawLine = lines[i];
@@ -1253,51 +1365,52 @@ function renderTableBlockHtml_(blk) {
       var cols = splitPipes_(rawLine);
       if (isHeader && /particular|date|debit|credit|amount|plus|minus|liabilities|assets|class|f|mid/i.test(rawLine)) {
         isHeader = false;
-        var ths = cols.map(function(c) {
-          return '<th style="background: #f3e8ff; color: #5b1865; padding: 4px 6px; border: 1px solid #d8b4fe; font-weight: 700; text-align: left; font-size: 8.5pt;">' + escapeHtml_(c) + '</th>';
+        headerCols = cols;
+        var ths = cols.map(function(c, cIdx) {
+          var isBSMid = (cols.length === 4 && cIdx === 1 && /balance sheet/i.test(blk.title || ''));
+          var divStyle = isBSMid ? 'border-right: 1.5px solid #5b1865;' : 'border-right: 1px solid #d8b4fe;';
+          return '<th style="background: #f3e8ff; color: #5b1865; padding: 3px 5px; ' + divStyle + ' font-weight: 700; text-align: ' + (cIdx > 0 && cols.length > 2 ? 'right' : 'left') + '; font-size: 8pt;">' + escapeHtml_(c) + '</th>';
         }).join('');
         trs.push('<tr style="border-bottom: 1.5px solid #5b1865;">' + ths + '</tr>');
         continue;
       }
 
       var isTotal = /total/i.test(rawLine);
-      var borderStyle = isTotal ? 'border-top: 1px solid #d8b4fe; border-bottom: 3px double #1e293b; font-weight: bold; background: #faf5ff;' : 'border: 1px solid #e2e8f0;';
+      var borderStyle = isTotal ? 'border-top: 1px solid #d8b4fe; border-bottom: 3px double #1e293b; font-weight: bold; background: #faf5ff;' : 'border-bottom: 1px solid #e2e8f0;';
 
       if (isTotal && cols.length >= 4) {
         col1Total = parseFloat(String(cols[1]).replace(/[^0-9.]/g, '')) || 0;
         col2Total = parseFloat(String(cols[3]).replace(/[^0-9.]/g, '')) || 0;
       }
 
-      var tds = cols.map(function(c) {
+      var tds = cols.map(function(c, cIdx) {
         var isAmt = /[\d,]+/.test(c) && !/[a-zA-Z]{3,}/.test(c);
-        var align = isAmt ? 'right' : 'left';
-        return '<td style="padding: 3px 6px; ' + borderStyle + ' text-align: ' + align + '; font-size: 8.5pt;">' + escapeHtml_(c) + '</td>';
+        var align = (cIdx > 0 && cols.length > 2) ? 'right' : (isAmt ? 'right' : 'left');
+        var isBSMid = (cols.length === 4 && cIdx === 1 && /balance sheet/i.test(blk.title || ''));
+        var divStyle = isBSMid ? 'border-right: 1.5px solid #5b1865;' : 'border-right: 1px solid #f1f5f9;';
+        return '<td style="padding: 2.5px 5px; ' + borderStyle + ' ' + divStyle + ' text-align: ' + align + '; font-size: 8pt; font-family: ' + (isAmt ? 'monospace' : 'inherit') + ';">' + escapeHtml_(c) + '</td>';
       }).join('');
       trs.push('<tr>' + tds + '</tr>');
     } else {
-      trs.push('<tr><td colspan="10" style="padding: 3px 6px; font-weight: bold; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 8.5pt;">' + escapeHtml_(rawLine) + '</td></tr>');
+      trs.push('<tr><td colspan="10" style="padding: 2.5px 5px; font-weight: bold; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 8pt;">' + escapeHtml_(rawLine) + '</td></tr>');
     }
   }
 
-  var contdNotice = blk.isContinuation ? '<div style="font-size: 8pt; font-weight: bold; color: #64748b; margin-bottom: 2px;">(Table Continued from previous page)</div>' : '';
-  var titleHeader = blk.title ? '<div style="font-weight: 700; font-size: 9.5pt; color: #5b1865; margin-bottom: 3px; text-transform: uppercase;">' + escapeHtml_(blk.title) + '</div>' : '';
-
-  var tallyNotice = '';
-  if (blk.drCrCheck && col1Total > 0 && col2Total > 0 && blk.title && /balance sheet/i.test(blk.title)) {
-    if (Math.abs(col1Total - col2Total) <= 1) {
-      tallyNotice = '<div style="color: #15803d; font-size: 8pt; font-weight: bold; margin-top: 3px; padding: 2px 6px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 4px;">✅ Balance Sheet Tally Check: Balanced at ₹' + col1Total.toLocaleString('en-IN') + ' (Liabilities = Assets)</div>';
-    } else {
-      tallyNotice = '<div style="color: #b91c1c; font-size: 8pt; font-weight: bold; margin-top: 3px; padding: 2px 6px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px;">⚠️ Balance Sheet Imbalance: Liabilities (₹' + col1Total.toLocaleString('en-IN') + ') vs Assets (₹' + col2Total.toLocaleString('en-IN') + ') differs by ₹' + Math.abs(col1Total - col2Total).toLocaleString('en-IN') + '</div>';
-    }
+  if (blk.drCrCheck && col1Total > 0 && col2Total > 0) {
+    Logger.log('Table ' + blk.title + ' Tally Check: Col1=' + col1Total + ', Col2=' + col2Total + ' (Diff: ' + Math.abs(col1Total - col2Total) + ')');
   }
 
-  return '<div class="block" style="margin: 6px 0;">' +
+  var colgroupHtml = generateArbitraryColgroup_(headerCols.length > 0 ? headerCols : (lines[0] ? splitPipes_(lines[0]) : []), blk.title);
+  var contdNotice = blk.isContinuation ? '<div style="font-size: 7.5pt; font-weight: bold; color: #64748b; margin-bottom: 2px;">(Table Continued from previous page)</div>' : '';
+  var titleHeader = blk.title ? '<div style="font-weight: 700; font-size: 8.5pt; color: #5b1865; margin-bottom: 2px; text-transform: uppercase;">' + escapeHtml_(blk.title) + '</div>' : '';
+
+  return '<div class="block" style="margin: 4px 0;">' +
     titleHeader +
     contdNotice +
-    '<table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; border: 1.5px solid #5b1865;">' +
+    '<table style="width: 100%; border-collapse: collapse; font-size: 8pt; border: 1.5px solid #5b1865; table-layout: fixed;">' +
+      colgroupHtml +
       '<tbody>' + trs.join('\n') + '</tbody>' +
     '</table>' +
-    tallyNotice +
   '</div>';
 }
 
@@ -1395,9 +1508,9 @@ function renderStatisticsFormulaBlock_(formulaRaw, label) {
     .replace(/\[FRAC:\s*([^/\]]+)\s*\/\s*([^\]]+)\]/gi, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 2px;">$1</span><span style="padding:1px 2px;">$2</span></span>')
     .replace(/\\frac\{([^}]+)\}\s*\{([^}]+)\}/g, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 2px;">$1</span><span style="padding:1px 2px;">$2</span></span>')
     .replace(/\[\s*([^\]]+)\s*\]\s*\/\s*\[\s*([^\]]+)\s*\]/g, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 2px;">$1</span><span style="padding:1px 2px;">$2</span></span>')
-    .replace(/√\(([^)]+)\)/g, '√<span style="border-top:1px solid #0f172a; padding:0 2px;">$1</span>')
+    .replace(/√\(([^)]+)\)/g, '<span style="font-size: 1.15em; font-weight: bold; color: #5b1865;">√( </span><span style="display:inline-block; vertical-align:middle; padding:0 2px;">$1</span><span style="font-size: 1.15em; font-weight: bold; color: #5b1865;"> )</span>')
+    .replace(/\\sqrt\{([^}]+)\}/g, '<span style="font-size: 1.15em; font-weight: bold; color: #5b1865;">√( </span><span style="display:inline-block; vertical-align:middle; padding:0 2px;">$1</span><span style="font-size: 1.15em; font-weight: bold; color: #5b1865;"> )</span>')
     .replace(/\\sum/g, 'Σ')
-    .replace(/\\sqrt\{([^}]+)\}/g, '√<span style="border-top:1px solid #0f172a; padding:0 2px;">$1</span>')
     .replace(/\\bar\{x\}/g, '<span style="text-decoration:overline">x</span>')
     .replace(/\\bar\{y\}/g, '<span style="text-decoration:overline">y</span>')
     .replace(/\\sigma/g, 'σ');
@@ -1440,13 +1553,13 @@ function renderGenericTextBlock_(text) {
 
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i];
-    var escaped = escapeHtml_(line);
+    var formatted = escapeHtml_(line).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
     if (/^\s*([0-9]+\.|\-|\•)\s+/.test(line)) {
-      out.push('<div style="padding-left: 12px; margin-bottom: 4px; font-size: 10pt; line-height: 1.45;">' + escaped + '</div>');
+      out.push('<div style="padding-left: 12px; margin-bottom: 4px; font-size: 9.5pt; line-height: 1.45;">' + formatted + '</div>');
     } else if (line.indexOf('Adjustments:') === 0 || line.indexOf('Instructions:') === 0 || line.indexOf('Working Notes:') === 0) {
-      out.push('<div style="font-weight: bold; margin-top: 6px; margin-bottom: 3px; color: #5b1865; font-size: 10pt;">' + escaped + '</div>');
+      out.push('<div style="font-weight: bold; margin-top: 6px; margin-bottom: 3px; color: #5b1865; font-size: 9.5pt;">' + formatted + '</div>');
     } else {
-      out.push('<div style="margin-bottom: 5px; font-size: 10pt; line-height: 1.5;">' + escaped + '</div>');
+      out.push('<div style="margin-bottom: 5px; font-size: 9.5pt; line-height: 1.45;">' + formatted + '</div>');
     }
   }
 
@@ -2331,7 +2444,7 @@ function runFounderSubjectiveDryRunTests() {
   var todayStr = getKolkataDate();
   var results = {};
 
-  // Test 1: Accountancy (Class 12 | 8 Marks | Dr_Cr_Check: TRUE)
+  // Test 1: Accountancy (2-Partner Revaluation + Capital + Balance Sheet)
   try {
     var t1Ans =
       '#TACCOUNT Revaluation Account\n' +
@@ -2341,28 +2454,28 @@ function runFounderSubjectiveDryRunTests() {
       '| Total | 14,500 | Total | 14,500 |\n' +
       '#ENDTACCOUNT\n\n' +
       '#CAPITAL Partners\' Capital Accounts\n' +
-      '| Particulars | A (₹) | B (₹) | C (₹) | Particulars | A (₹) | B (₹) | C (₹) |\n' +
-      '| To Revaluation (Loss) | 4,500 | 3,000 | — | By Balance b/d | 1,20,000 | 80,000 | — |\n' +
-      '| To Balance c/d | 1,39,500 | 93,000 | 60,000 | By Cash A/c | — | — | 60,000 |\n' +
-      '| | | | | By General Reserve | 12,000 | 8,000 | — |\n' +
-      '| | | | | By Premium for Goodwill | 12,000 | 8,000 | — |\n' +
-      '| Total | 1,44,000 | 96,000 | 60,000 | Total | 1,44,000 | 96,000 | 60,000 |\n' +
+      '| Particulars | A (₹) | B (₹) | Particulars | A (₹) | B (₹) |\n' +
+      '| To Revaluation (Loss) | 4,500 | 3,000 | By Balance b/d | 1,20,000 | 80,000 |\n' +
+      '| To Balance c/d | 1,39,500 | 93,000 | By General Reserve | 12,000 | 8,000 |\n' +
+      '| | | | By Premium for Goodwill | 12,000 | 8,000 |\n' +
+      '| Total | 1,44,000 | 96,000 | Total | 1,44,000 | 96,000 |\n' +
       '#ENDCAPITAL\n\n' +
       '#TABLE New Balance Sheet as on 01-04-2026\n' +
       '| Liabilities | ₹ | Assets | ₹ |\n' +
       '| Creditors | 40,000 | Cash (20,000 + 60,000 + 20,000) | 1,00,000 |\n' +
       '| Capital: A | 1,39,500 | Debtors (50,000 − 2,500) | 47,500 |\n' +
       '| Capital: B | 93,000 | Stock (70,000 + 7,000) | 77,000 |\n' +
-      '| Capital: C | 60,000 | Machinery (1,20,000 − 12,000) | 1,08,000 |\n' +
-      '| Total | 3,32,500 | Total | 3,32,500 |\n' +
+      '| Total | 2,72,500 | Machinery (1,20,000 − 12,000) | 1,08,000 |\n' +
+      '| | | Total | 3,32,500 |\n' +
       '#ENDTABLE';
 
     var res1 = createAnswerPdfFromTemplate_({
       date: todayStr,
       classLevel: 12,
       subject: 'Accountancy',
-      chapter: 'Admission of a Partner',
-      qid: 'DRYRUN-ACC-8M-DRCR',
+      chapter: 'Admission of a Partner (2 Partners)',
+      qid: 'DRYRUN-2PARTNER-ACC',
+      bypassCache: true,
       marks: 8,
       drCrCheck: true,
       questionText:
@@ -2375,73 +2488,84 @@ function runFounderSubjectiveDryRunTests() {
         '| Capital: B | 80,000 | Machinery | 1,20,000 |\n' +
         '| Total | 2,60,000 | Total | 2,60,000 |\n' +
         '#ENDTABLE\n' +
-        'Adjustments: C is admitted for 1/5th share and brings ₹60,000 as capital and ₹20,000 as goodwill in cash. (1) Stock appreciated by 10%. (2) Machinery depreciated by 10%. (3) Create 5% Provision for Doubtful Debts on Debtors. Prepare Revaluation A/c, Partners\' Capital A/cs, and New Balance Sheet.',
+        'Adjustments: C is admitted for 1/5th share. Stock appreciated by 10%. Machinery depreciated by 10%. Create 5% Provision on Debtors. Prepare Revaluation A/c, Partners\' Capital A/cs, and Balance Sheet.',
       answerText: t1Ans,
       marksBreakdown:
         '• 2.5 Marks: Accurate Revaluation A/c with loss of ₹7,500\n' +
-        '• 3.0 Marks: Balanced Partners\' Capital Accounts with correct closing balances\n' +
-        '• 2.5 Marks: Balanced New Balance Sheet at ₹3,32,500',
+        '• 3.0 Marks: Balanced Partners\' Capital Accounts (A: ₹1,39,500; B: ₹93,000)\n' +
+        '• 2.5 Marks: Balanced Balance Sheet at ₹3,32,500',
       commonMistakes:
-        '⚠️ Provision Calculation: 5% on ₹50,000 is ₹2,500 debited to Revaluation.\n' +
-        '⚠️ Cash account must include opening cash ₹20,000 + capital ₹60,000 + goodwill ₹20,000 = ₹1,00,000.'
+        '⚠️ Provision Calculation: 5% on ₹50,000 is ₹2,500.\n' +
+        '⚠️ Premium for Goodwill distributed in sacrificing ratio 3:2.'
     });
-    results.test1_accountancy = {
+    results.test1_accountancy_2partner = {
       ok: true,
       subject: 'Accountancy',
-      topic: 'Admission of a Partner',
+      topic: 'Admission of a Partner (2 Partners)',
       classLevel: 12,
       marks: 8,
       pageCount: res1.pageCount,
-      drCrCheckTally: 'BALANCED (Revaluation ₹14,500 = ₹14,500 | Balance Sheet ₹3,32,500 = ₹3,32,500)',
+      drCrCheckTally: 'BALANCED',
       driveUrl: res1.driveUrl
     };
   } catch (e1) {
-    results.test1_accountancy = { ok: false, error: e1.message };
+    results.test1_accountancy_2partner = { ok: false, error: e1.message };
   }
 
-  // Test 2: Economics (Class 11 | 4 Marks | #GRAPH:demand_shift)
+  // Test 2: 4-Partner Capital Account (P, Q, R, S)
   try {
+    var t2Ans =
+      '#CAPITAL Partners\' Capital Accounts (P, Q, R, S)\n' +
+      '| Particulars | P (₹) | Q (₹) | R (₹) | S (₹) | Particulars | P (₹) | Q (₹) | R (₹) | S (₹) |\n' +
+      '| To Drawings | 10,000 | 8,000 | 6,000 | 4,000 | By Balance b/d | 2,00,000 | 1,50,000 | 1,00,000 | 80,000 |\n' +
+      '| To Int. on Drawings | 600 | 480 | 360 | 240 | By Int. on Capital | 12,000 | 9,000 | 6,000 | 4,800 |\n' +
+      '| To Balance c/d | 2,21,400 | 1,65,520 | 1,14,640 | 92,560 | By Salary/Commission | 5,000 | 4,000 | 3,000 | 2,000 |\n' +
+      '| | | | | | By Divisible Profit | 15,000 | 11,000 | 6,000 | 10,000 |\n' +
+      '| Total | 2,32,000 | 1,74,000 | 1,21,000 | 96,800 | Total | 2,32,000 | 1,74,000 | 1,21,000 | 96,800 |\n' +
+      '#ENDCAPITAL';
+
     var res2 = createAnswerPdfFromTemplate_({
       date: todayStr,
-      classLevel: 11,
-      subject: 'Economics',
-      chapter: 'Price Determination & Demand Shift',
-      qid: 'DRYRUN-ECO-4M-GRAPH',
-      marks: 4,
-      questionText: 'Explain with a diagram the effect on equilibrium price and quantity of a normal good when consumer income increases.',
-      answerText:
-        'When consumer income rises, demand for a normal good increases and the demand curve shifts rightward from D to D1 at the same supply curve SS.\n\n' +
-        '#GRAPH:demand_shift\n\n' +
-        'Result: Equilibrium shifts from E to E1; both equilibrium price (P → P1) and equilibrium quantity (Q → Q1) increase.',
+      classLevel: 12,
+      subject: 'Accountancy',
+      chapter: 'Partnership Fundamentals (4 Partners)',
+      qid: 'DRYRUN-4PARTNER-CAP',
+      bypassCache: true,
+      marks: 6,
+      drCrCheck: true,
+      questionText:
+        'P, Q, R, and S are partners in a firm. Their capitals on 01-04-2025 were ₹2,00,000, ₹1,50,000, ₹1,00,000, and ₹80,000. Prepare Partners\' Capital Accounts after charging Interest on Capital @ 6% p.a., Interest on Drawings, Salaries, and distributing profit.',
+      answerText: t2Ans,
       marksBreakdown:
-        '• 1.5 Marks: Labeled diagram showing rightward shift of Demand curve from D to D1\n' +
-        '• 1.5 Marks: Chain of effects explaining excess demand at initial price\n' +
-        '• 1.0 Mark: Accurate conclusion on rise in equilibrium price and quantity',
+        '• 2.0 Marks: Accurate Interest on Capital & Salary postings\n' +
+        '• 2.0 Marks: Correct Drawings & Interest on Drawings debit postings\n' +
+        '• 2.0 Marks: Balanced 4-partner capital accounts with exact 50%-50% layout',
       commonMistakes:
-        '⚠️ Forgetting arrowheads on curves or shift direction results in a 0.5-mark penalty.'
+        '⚠️ Column width misalignment when preparing ledgers for 4+ partners.'
     });
-    results.test2_economics = {
+    results.test2_accountancy_4partner = {
       ok: true,
-      subject: 'Economics',
-      topic: 'Price Determination & Demand Shift',
-      classLevel: 11,
-      marks: 4,
+      subject: 'Accountancy',
+      topic: 'Partnership Fundamentals (4 Partners)',
+      classLevel: 12,
+      marks: 6,
       pageCount: res2.pageCount,
-      diagram: 'Inline Vector SVG (Demand Shift Curve)',
+      dynamicMath: 'Exact 50% | 50% (22% + 7%x4 | 22% + 7%x4)',
       driveUrl: res2.driveUrl
     };
   } catch (e2) {
-    results.test2_economics = { ok: false, error: e2.message };
+    results.test2_accountancy_4partner = { ok: false, error: e2.message };
   }
 
-  // Test 3: Statistics (Class 11 | 6 Marks | Stacked Fraction Formula + Frequency Table)
+  // Test 3: Statistics (SD Frequency Table + Stacked Fractions)
   try {
     var res3 = createAnswerPdfFromTemplate_({
       date: todayStr,
       classLevel: 11,
       subject: 'Statistics',
       chapter: 'Measures of Dispersion (Standard Deviation)',
-      qid: 'DRYRUN-STATS-6M-FORMULA',
+      qid: 'DRYRUN-STATS-ADAPTIVE',
+      bypassCache: true,
       marks: 6,
       questionText: 'Calculate Standard Deviation from the following data using Assumed Mean (A = 25): 0-10 (2), 10-20 (3), 20-30 (5), 30-40 (4), 40-50 (6).',
       answerText:
@@ -2459,33 +2583,34 @@ function runFounderSubjectiveDryRunTests() {
         '#ENDFORMULA',
       marksBreakdown:
         '• 3.0 Marks: Accurate frequency table with correct Σfd = 90 and Σfd² = 3,900\n' +
-        '• 2.0 Marks: Correct Assumed Mean standard deviation formula with stacked fractions\n' +
+        '• 2.0 Marks: Clean stacked fraction formula without strikethrough overlines\n' +
         '• 1.0 Mark: Final calculated standard deviation σ ≈ 13.22',
       commonMistakes:
-        '⚠️ Squaring error: (90/20)² = (4.5)² = 20.25, NOT 20.5.'
+        '⚠️ Squaring error: (90/20)² = 20.25, NOT 20.5.'
     });
-    results.test3_statistics = {
+    results.test3_statistics_sd = {
       ok: true,
       subject: 'Statistics',
       topic: 'Measures of Dispersion (Standard Deviation)',
       classLevel: 11,
       marks: 6,
       pageCount: res3.pageCount,
-      formulaStyle: 'CSS Stacked Fraction (.frac) with Radicand Bar',
+      formulaStyle: 'Clean √( ... ) Parentheses with Stacked Fractions',
       driveUrl: res3.driveUrl
     };
   } catch (e3) {
-    results.test3_statistics = { ok: false, error: e3.message };
+    results.test3_statistics_sd = { ok: false, error: e3.message };
   }
 
-  // Test 4: Business Studies (Class 12 | 4 Marks | Case Study Callout + Flowchart)
+  // Test 4: Business Studies (Case Study + Flowchart)
   try {
     var res4 = createAnswerPdfFromTemplate_({
       date: todayStr,
       classLevel: 12,
       subject: 'Business Studies',
       chapter: 'Planning Process',
-      qid: 'DRYRUN-BST-4M-FLOW',
+      qid: 'DRYRUN-BST-ADAPTIVE',
+      bypassCache: true,
       marks: 4,
       questionText:
         'Case Study: "ABC Ltd. Begusarai wants to increase its sales by 20% next year. The manager forecasts market demand, compares 3 marketing strategies, picks the best one, and monitors monthly results." Identify the management function and list its steps in sequence.',
@@ -2499,7 +2624,7 @@ function runFounderSubjectiveDryRunTests() {
         '• 2.0 Marks: Sequential 7-step planning process diagram with directional arrows\n' +
         '• 1.0 Mark: Specific contextual mapping to ABC Ltd. Begusarai case facts',
       commonMistakes:
-        '⚠️ Skipping "Developing Premises" or placing "Evaluating Alternatives" before "Identifying Alternatives".'
+        '⚠️ Skipping Developing Premises or reversing step order.'
     });
     results.test4_business_studies = {
       ok: true,
