@@ -1069,17 +1069,17 @@ function getStudentMiniAppBootstrap(params) {
   const tgSS = SpreadsheetApp.openById(IDS.TELEGRAM);
 
 
-  const targetRollNo = auth.isAdmin ? (auth.impersonateRollNo || 'CG-11-001') : auth.student.Roll_No;
+  const targetRollNo = auth.isAdmin ? (auth.impersonateRollNo || 'CG-11-001') : ((auth.student && auth.student.Roll_No) || 'CG-11-001');
   const students = sheetToObjects(erp.getSheetByName('Students_Master'));
   const student = students.find(s => String(s.Roll_No) === String(targetRollNo));
 
 
-  if (!student && !auth.isAdmin) {
+  if (!student && !auth.isAdmin && !auth.isTrial) {
     return { ok: true, bound: false, requiresClaimCode: true };
   }
 
 
-  const activeStudent = student || {
+  const activeStudent = student || auth.student || {
     Roll_No: targetRollNo,
     Student_Name: 'Admin Preview Student',
     Class: '11',
@@ -1208,6 +1208,11 @@ function getStudentMiniAppBootstrap(params) {
   return {
     ok: true,
     bound: true,
+    role: auth.role || 'STUDENT',
+    isAdmin: auth.isAdmin || false,
+    isSubAdmin: auth.isSubAdmin || false,
+    isTrial: auth.isTrial || false,
+    trialDaysLeft: auth.trialDaysLeft,
     student: activeStudent,
     feeLedger: studentFeeLedger,
     totalCoins: totalCoins,
