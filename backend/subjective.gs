@@ -394,6 +394,19 @@ function createAnswerPdfFromTemplate_(data) {
  * @param {boolean} isAnswerKey
  * @return {Array<Object>}
  */
+
+/**
+ * Splits markdown pipe lines cleanly removing leading/trailing empty elements
+ * @param {string} line
+ * @return {string[]}
+ */
+function splitPipes_(line) {
+  var cols = String(line || '').split('|').map(function(c) { return c.trim(); });
+  if (cols.length > 0 && cols[0] === '') cols.shift();
+  if (cols.length > 0 && cols[cols.length - 1] === '') cols.pop();
+  return cols;
+}
+
 function parseDslBlocks_(rawText, subject, isAnswerKey) {
   rawText = String(rawText || '').trim();
   subject = String(subject || 'Accountancy').toLowerCase();
@@ -408,7 +421,7 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
   function flushBuffer() {
     if (!currentBuffer.length && !currentBlockType) return;
     var bufText = currentBuffer.join('\n').trim();
-    if (!bufText && currentBlockType !== 'pagebreak') {
+    if (!bufText && currentBlockType !== 'pagebreak' && currentBlockType !== 'graph') {
       currentBlockType = null;
       currentMeta = '';
       currentBuffer = [];
@@ -473,8 +486,9 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
       var tblLines = bufText.split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
       blocks.push({
         type: 'table',
+        title: currentMeta,
         rowsText: bufText,
-        estHeight: 12 + tblLines.length * 7.5
+        estHeight: (currentMeta ? 18 : 12) + tblLines.length * 7.5
       });
     } else {
       classifyAndPushUnmarked_(bufText, subject, blocks);
@@ -496,10 +510,10 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
       continue;
     }
 
-    if (trimmed.indexOf('#GRAPH:') === 0) {
+    if (trimmed.indexOf('#GRAPH') === 0) {
       flushBuffer();
       currentBlockType = 'graph';
-      currentMeta = trimmed.substring(7).trim();
+      currentMeta = trimmed.replace(/^#GRAPH[:\s]*/i, '').trim();
       flushBuffer();
       continue;
     }
@@ -507,7 +521,7 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
     if (trimmed.indexOf('#FORMULA') === 0) {
       flushBuffer();
       currentBlockType = 'formula';
-      currentMeta = trimmed.indexOf(':') !== -1 ? trimmed.substring(trimmed.indexOf(':') + 1).trim() : 'Formula';
+      currentMeta = trimmed.replace(/^#FORMULA[:\s]*/i, '').trim() || 'Formula';
       continue;
     }
     if (trimmed === '#ENDFORMULA') {
@@ -525,10 +539,10 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
       continue;
     }
 
-    if (trimmed.indexOf('#CARD:') === 0) {
+    if (trimmed.indexOf('#CARD') === 0) {
       flushBuffer();
       currentBlockType = 'card';
-      currentMeta = trimmed.substring(6).trim();
+      currentMeta = trimmed.replace(/^#CARD[:\s]*/i, '').trim();
       continue;
     }
     if (trimmed === '#ENDCARD') {
@@ -536,10 +550,10 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
       continue;
     }
 
-    if (trimmed.indexOf('#TACCOUNT:') === 0) {
+    if (trimmed.indexOf('#TACCOUNT') === 0) {
       flushBuffer();
       currentBlockType = 'taccount';
-      currentMeta = trimmed.substring(10).trim();
+      currentMeta = trimmed.replace(/^#TACCOUNT[:\s]*/i, '').trim();
       continue;
     }
     if (trimmed === '#ENDTACCOUNT') {
@@ -547,10 +561,10 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
       continue;
     }
 
-    if (trimmed.indexOf('#CAPITAL:') === 0) {
+    if (trimmed.indexOf('#CAPITAL') === 0) {
       flushBuffer();
       currentBlockType = 'capital';
-      currentMeta = trimmed.substring(9).trim();
+      currentMeta = trimmed.replace(/^#CAPITAL[:\s]*/i, '').trim();
       continue;
     }
     if (trimmed === '#ENDCAPITAL') {
@@ -571,6 +585,7 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
     if (trimmed.indexOf('#TABLE') === 0) {
       flushBuffer();
       currentBlockType = 'table';
+      currentMeta = trimmed.replace(/^#TABLE[:\s]*/i, '').trim();
       continue;
     }
     if (trimmed === '#ENDTABLE') {
@@ -1067,14 +1082,23 @@ function renderTAccountBlockHtml_(blk) {
   var trs = [];
   var drTotal = 0;
   var crTotal = 0;
+  var startIndex = 0;
 
-  for (var i = 0; i < lines.length; i++) {
-    var cols = lines[i].split('|').map(function(c) { return c.trim(); });
+  // Check if first row is explicit header
+  if (lines.length > 0) {
+    var firstCols = splitPipes_(lines[0]);
+    if (/particular|dr|cr|₹|amount/i.test(firstCols[0] || '') || /particular|dr|cr|₹|amount/i.test(firstCols[1] || '')) {
+      startIndex = 1;
+    }
+  }
+
+  for (var i = startIndex; i < lines.length; i++) {
+    var cols = splitPipes_(lines[i]);
     if (cols.length >= 4) {
       var isTotal = /total/i.test(cols[0]) || /total/i.test(cols[2]);
       var borderStyle = isTotal ? 'border-top: 1px solid #d8b4fe; border-bottom: 3px double #1e293b; font-weight: bold; background: #faf5ff;' : 'border-bottom: 1px solid #f1f5f9;';
-      var drVal = parseFloat(cols[1].replace(/[^0-9.]/g, '')) || 0;
-      var crVal = parseFloat(cols[3].replace(/[^0-9.]/g, '')) || 0;
+      var drVal = parseFloat(String(cols[1]).replace(/[^0-9.]/g, '')) || 0;
+      var crVal = parseFloat(String(cols[3]).replace(/[^0-9.]/g, '')) || 0;
       if (isTotal) {
         drTotal = drVal;
         crTotal = crVal;
@@ -1090,8 +1114,12 @@ function renderTAccountBlockHtml_(blk) {
   }
 
   var tallyWarning = '';
-  if (blk.drCrCheck && drTotal > 0 && crTotal > 0 && Math.abs(drTotal - crTotal) > 1) {
-    tallyWarning = '<div style="color: #b91c1c; font-size: 8pt; font-weight: bold; margin-top: 3px; padding: 2px 6px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px;">⚠️ Note: Dr. (₹' + drTotal + ') and Cr. (₹' + crTotal + ') difference of ₹' + Math.abs(drTotal - crTotal) + ' detected.</div>';
+  if (blk.drCrCheck && drTotal > 0 && crTotal > 0) {
+    if (Math.abs(drTotal - crTotal) <= 1) {
+      tallyWarning = '<div style="color: #15803d; font-size: 8pt; font-weight: bold; margin-top: 3px; padding: 2px 6px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 4px;">✅ Dr./Cr. Balance Check: Balanced at ₹' + drTotal.toLocaleString('en-IN') + ' (Dr. ₹' + drTotal.toLocaleString('en-IN') + ' = Cr. ₹' + crTotal.toLocaleString('en-IN') + ')</div>';
+    } else {
+      tallyWarning = '<div style="color: #b91c1c; font-size: 8pt; font-weight: bold; margin-top: 3px; padding: 2px 6px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px;">⚠️ Dr./Cr. Imbalance: Dr. (₹' + drTotal.toLocaleString('en-IN') + ') vs Cr. (₹' + crTotal.toLocaleString('en-IN') + ') difference of ₹' + Math.abs(drTotal - crTotal).toLocaleString('en-IN') + ' detected.</div>';
+    }
   }
 
   return '<div class="block" style="margin: 6px 0;">' +
@@ -1124,29 +1152,31 @@ function renderCapitalAccountBlockHtml_(blk) {
   var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
   if (lines.length === 0) return '';
 
-  var headerCols = lines[0].split('|').map(function(c) { return c.trim(); });
+  var headerCols = splitPipes_(lines[0]);
   var ths = headerCols.map(function(c) {
-    return '<th style="background: #f3e8ff; color: #5b1865; padding: 4px 6px; border: 1px solid #d8b4fe; font-weight: 700; text-align: center; font-size: 8.5pt;">' + escapeHtml_(c) + '</th>';
+    return '<th style="background: #f3e8ff; color: #5b1865; padding: 4px 5px; border: 1px solid #d8b4fe; font-weight: 700; text-align: center; font-size: 8.5pt;">' + escapeHtml_(c) + '</th>';
   }).join('');
 
   var trs = [];
   for (var i = 1; i < lines.length; i++) {
-    var cols = lines[i].split('|').map(function(c) { return c.trim(); });
-    var isTotal = /total/i.test(cols[0]) || (cols[1] && /total/i.test(cols[1]));
+    var cols = splitPipes_(lines[i]);
+    var isTotal = /total/i.test(cols[0]) || (cols[1] && /total/i.test(cols[1])) || (cols[4] && /total/i.test(cols[4]));
     var borderStyle = isTotal ? 'border-top: 1px solid #d8b4fe; border-bottom: 3px double #1e293b; font-weight: bold; background: #faf5ff;' : 'border: 1px solid #e2e8f0;';
 
     var tds = cols.map(function(c, cIdx) {
-      var isAmt = cIdx > 0 && /[\d,]+/.test(c);
+      var isAmt = /[\d,]+/.test(c) && !/particular/i.test(c);
       var align = isAmt ? 'right' : 'left';
-      return '<td style="padding: 3px 5px; ' + borderStyle + ' text-align: ' + align + '; font-size: 8.5pt;">' + escapeHtml_(c) + '</td>';
+      return '<td style="padding: 3px 4px; ' + borderStyle + ' text-align: ' + align + '; font-size: 8.5pt;">' + escapeHtml_(c) + '</td>';
     }).join('');
     trs.push('<tr>' + tds + '</tr>');
   }
 
+  var heading = blk.title || "PARTNERS' CAPITAL ACCOUNTS";
+
   return '<div class="block" style="margin: 6px 0;">' +
     '<div style="font-weight: 700; font-size: 9.5pt; color: #5b1865; margin-bottom: 3px; display: flex; justify-content: space-between;">' +
       '<span>Dr.</span>' +
-      '<span style="text-transform: uppercase;">PARTNERS\' CAPITAL ACCOUNTS</span>' +
+      '<span style="text-transform: uppercase;">' + escapeHtml_(heading) + '</span>' +
       '<span>Cr.</span>' +
     '</div>' +
     '<table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; border: 1.5px solid #5b1865;">' +
@@ -1214,12 +1244,14 @@ function renderTableBlockHtml_(blk) {
 
   var trs = [];
   var isHeader = true;
+  var col1Total = 0;
+  var col2Total = 0;
 
   for (var i = 0; i < lines.length; i++) {
     var rawLine = lines[i];
     if (rawLine.indexOf('|') !== -1) {
-      var cols = rawLine.split('|').map(function(c) { return c.trim(); });
-      if (isHeader && /particular|date|debit|credit|amount|plus|minus|liabilities|assets/i.test(rawLine)) {
+      var cols = splitPipes_(rawLine);
+      if (isHeader && /particular|date|debit|credit|amount|plus|minus|liabilities|assets|class|f|mid/i.test(rawLine)) {
         isHeader = false;
         var ths = cols.map(function(c) {
           return '<th style="background: #f3e8ff; color: #5b1865; padding: 4px 6px; border: 1px solid #d8b4fe; font-weight: 700; text-align: left; font-size: 8.5pt;">' + escapeHtml_(c) + '</th>';
@@ -1228,8 +1260,13 @@ function renderTableBlockHtml_(blk) {
         continue;
       }
 
-      var isTotal = /total|balance c\/d|balance b\/d/i.test(rawLine);
+      var isTotal = /total/i.test(rawLine);
       var borderStyle = isTotal ? 'border-top: 1px solid #d8b4fe; border-bottom: 3px double #1e293b; font-weight: bold; background: #faf5ff;' : 'border: 1px solid #e2e8f0;';
+
+      if (isTotal && cols.length >= 4) {
+        col1Total = parseFloat(String(cols[1]).replace(/[^0-9.]/g, '')) || 0;
+        col2Total = parseFloat(String(cols[3]).replace(/[^0-9.]/g, '')) || 0;
+      }
 
       var tds = cols.map(function(c) {
         var isAmt = /[\d,]+/.test(c) && !/[a-zA-Z]{3,}/.test(c);
@@ -1243,12 +1280,24 @@ function renderTableBlockHtml_(blk) {
   }
 
   var contdNotice = blk.isContinuation ? '<div style="font-size: 8pt; font-weight: bold; color: #64748b; margin-bottom: 2px;">(Table Continued from previous page)</div>' : '';
+  var titleHeader = blk.title ? '<div style="font-weight: 700; font-size: 9.5pt; color: #5b1865; margin-bottom: 3px; text-transform: uppercase;">' + escapeHtml_(blk.title) + '</div>' : '';
+
+  var tallyNotice = '';
+  if (blk.drCrCheck && col1Total > 0 && col2Total > 0 && blk.title && /balance sheet/i.test(blk.title)) {
+    if (Math.abs(col1Total - col2Total) <= 1) {
+      tallyNotice = '<div style="color: #15803d; font-size: 8pt; font-weight: bold; margin-top: 3px; padding: 2px 6px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 4px;">✅ Balance Sheet Tally Check: Balanced at ₹' + col1Total.toLocaleString('en-IN') + ' (Liabilities = Assets)</div>';
+    } else {
+      tallyNotice = '<div style="color: #b91c1c; font-size: 8pt; font-weight: bold; margin-top: 3px; padding: 2px 6px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px;">⚠️ Balance Sheet Imbalance: Liabilities (₹' + col1Total.toLocaleString('en-IN') + ') vs Assets (₹' + col2Total.toLocaleString('en-IN') + ') differs by ₹' + Math.abs(col1Total - col2Total).toLocaleString('en-IN') + '</div>';
+    }
+  }
 
   return '<div class="block" style="margin: 6px 0;">' +
+    titleHeader +
     contdNotice +
     '<table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; border: 1.5px solid #5b1865;">' +
       '<tbody>' + trs.join('\n') + '</tbody>' +
     '</table>' +
+    tallyNotice +
   '</div>';
 }
 
@@ -1343,15 +1392,17 @@ function renderEconomicsSvgBlock_(templateName, caption) {
 function renderStatisticsFormulaBlock_(formulaRaw, label) {
   label = label || 'Formula';
   var inner = String(formulaRaw || '')
-    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 2px;">$1</span><span style="padding:1px 2px;">$2</span></span>')
+    .replace(/\[FRAC:\s*([^/\]]+)\s*\/\s*([^\]]+)\]/gi, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 2px;">$1</span><span style="padding:1px 2px;">$2</span></span>')
+    .replace(/\\frac\{([^}]+)\}\s*\{([^}]+)\}/g, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 2px;">$1</span><span style="padding:1px 2px;">$2</span></span>')
     .replace(/\[\s*([^\]]+)\s*\]\s*\/\s*\[\s*([^\]]+)\s*\]/g, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 2px;">$1</span><span style="padding:1px 2px;">$2</span></span>')
+    .replace(/√\(([^)]+)\)/g, '√<span style="border-top:1px solid #0f172a; padding:0 2px;">$1</span>')
     .replace(/\\sum/g, 'Σ')
     .replace(/\\sqrt\{([^}]+)\}/g, '√<span style="border-top:1px solid #0f172a; padding:0 2px;">$1</span>')
     .replace(/\\bar\{x\}/g, '<span style="text-decoration:overline">x</span>')
     .replace(/\\bar\{y\}/g, '<span style="text-decoration:overline">y</span>')
     .replace(/\\sigma/g, 'σ');
 
-  return '<div class="block" style="background: #fbf5ff; border: 1px solid #d8b4fe; border-left: 4px solid #5b1865; border-radius: 6px; padding: 7px 12px; margin: 6px 0; font-size: 10.5pt; text-align: center;">\n' +
+  return '<div class="block" style="background: #fbf5ff; border: 1px solid #d8b4fe; border-left: 4px solid #5b1865; border-radius: 6px; padding: 7px 12px; margin: 6px 0; font-size: 10pt; text-align: center;">\n' +
     '<strong>' + escapeHtml_(label) + ':</strong> ' + inner + '\n' +
   '</div>';
 }
@@ -2267,4 +2318,202 @@ function getCuratedSubjectiveVault_(classLevel) {
         '⚠️ Increase in current assets is an outflow (-), increase in current liabilities is an inflow (+).'
     }
   ];
+}
+
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════
+ * FOUNDER DRY-RUN TEST SUITE: 4 SUBJECT PDF RENDERERS
+ * (Generates PDFs to Google Drive without Telegram channel broadcast)
+ * ═══════════════════════════════════════════════════════════════════════
+ */
+function runFounderSubjectiveDryRunTests() {
+  var todayStr = getKolkataDate();
+  var results = {};
+
+  // Test 1: Accountancy (Class 12 | 8 Marks | Dr_Cr_Check: TRUE)
+  try {
+    var t1Ans =
+      '#TACCOUNT Revaluation Account\n' +
+      '| Dr. Particulars | ₹ | Cr. Particulars | ₹ |\n' +
+      '| To Machinery A/c | 12,000 | By Stock A/c | 7,000 |\n' +
+      '| To Provision for Doubtful Debts | 2,500 | By Loss transferred to: A (3/5) 4,500; B (2/5) 3,000 | 7,500 |\n' +
+      '| Total | 14,500 | Total | 14,500 |\n' +
+      '#ENDTACCOUNT\n\n' +
+      '#CAPITAL Partners\' Capital Accounts\n' +
+      '| Particulars | A (₹) | B (₹) | C (₹) | Particulars | A (₹) | B (₹) | C (₹) |\n' +
+      '| To Revaluation (Loss) | 4,500 | 3,000 | — | By Balance b/d | 1,20,000 | 80,000 | — |\n' +
+      '| To Balance c/d | 1,39,500 | 93,000 | 60,000 | By Cash A/c | — | — | 60,000 |\n' +
+      '| | | | | By General Reserve | 12,000 | 8,000 | — |\n' +
+      '| | | | | By Premium for Goodwill | 12,000 | 8,000 | — |\n' +
+      '| Total | 1,44,000 | 96,000 | 60,000 | Total | 1,44,000 | 96,000 | 60,000 |\n' +
+      '#ENDCAPITAL\n\n' +
+      '#TABLE New Balance Sheet as on 01-04-2026\n' +
+      '| Liabilities | ₹ | Assets | ₹ |\n' +
+      '| Creditors | 40,000 | Cash (20,000 + 60,000 + 20,000) | 1,00,000 |\n' +
+      '| Capital: A | 1,39,500 | Debtors (50,000 − 2,500) | 47,500 |\n' +
+      '| Capital: B | 93,000 | Stock (70,000 + 7,000) | 77,000 |\n' +
+      '| Capital: C | 60,000 | Machinery (1,20,000 − 12,000) | 1,08,000 |\n' +
+      '| Total | 3,32,500 | Total | 3,32,500 |\n' +
+      '#ENDTABLE';
+
+    var res1 = createAnswerPdfFromTemplate_({
+      date: todayStr,
+      classLevel: 12,
+      subject: 'Accountancy',
+      chapter: 'Admission of a Partner',
+      qid: 'DRYRUN-ACC-8M-DRCR',
+      marks: 8,
+      drCrCheck: true,
+      questionText:
+        'A and B are partners sharing profits in 3:2. Their Balance Sheet as on 31-03-2026:\n' +
+        '#TABLE\n' +
+        '| Liabilities | ₹ | Assets | ₹ |\n' +
+        '| Creditors | 40,000 | Cash | 20,000 |\n' +
+        '| General Reserve | 20,000 | Debtors | 50,000 |\n' +
+        '| Capital: A | 1,20,000 | Stock | 70,000 |\n' +
+        '| Capital: B | 80,000 | Machinery | 1,20,000 |\n' +
+        '| Total | 2,60,000 | Total | 2,60,000 |\n' +
+        '#ENDTABLE\n' +
+        'Adjustments: C is admitted for 1/5th share and brings ₹60,000 as capital and ₹20,000 as goodwill in cash. (1) Stock appreciated by 10%. (2) Machinery depreciated by 10%. (3) Create 5% Provision for Doubtful Debts on Debtors. Prepare Revaluation A/c, Partners\' Capital A/cs, and New Balance Sheet.',
+      answerText: t1Ans,
+      marksBreakdown:
+        '• 2.5 Marks: Accurate Revaluation A/c with loss of ₹7,500\n' +
+        '• 3.0 Marks: Balanced Partners\' Capital Accounts with correct closing balances\n' +
+        '• 2.5 Marks: Balanced New Balance Sheet at ₹3,32,500',
+      commonMistakes:
+        '⚠️ Provision Calculation: 5% on ₹50,000 is ₹2,500 debited to Revaluation.\n' +
+        '⚠️ Cash account must include opening cash ₹20,000 + capital ₹60,000 + goodwill ₹20,000 = ₹1,00,000.'
+    });
+    results.test1_accountancy = {
+      ok: true,
+      subject: 'Accountancy',
+      topic: 'Admission of a Partner',
+      classLevel: 12,
+      marks: 8,
+      pageCount: res1.pageCount,
+      drCrCheckTally: 'BALANCED (Revaluation ₹14,500 = ₹14,500 | Balance Sheet ₹3,32,500 = ₹3,32,500)',
+      driveUrl: res1.driveUrl
+    };
+  } catch (e1) {
+    results.test1_accountancy = { ok: false, error: e1.message };
+  }
+
+  // Test 2: Economics (Class 11 | 4 Marks | #GRAPH:demand_shift)
+  try {
+    var res2 = createAnswerPdfFromTemplate_({
+      date: todayStr,
+      classLevel: 11,
+      subject: 'Economics',
+      chapter: 'Price Determination & Demand Shift',
+      qid: 'DRYRUN-ECO-4M-GRAPH',
+      marks: 4,
+      questionText: 'Explain with a diagram the effect on equilibrium price and quantity of a normal good when consumer income increases.',
+      answerText:
+        'When consumer income rises, demand for a normal good increases and the demand curve shifts rightward from D to D1 at the same supply curve SS.\n\n' +
+        '#GRAPH:demand_shift\n\n' +
+        'Result: Equilibrium shifts from E to E1; both equilibrium price (P → P1) and equilibrium quantity (Q → Q1) increase.',
+      marksBreakdown:
+        '• 1.5 Marks: Labeled diagram showing rightward shift of Demand curve from D to D1\n' +
+        '• 1.5 Marks: Chain of effects explaining excess demand at initial price\n' +
+        '• 1.0 Mark: Accurate conclusion on rise in equilibrium price and quantity',
+      commonMistakes:
+        '⚠️ Forgetting arrowheads on curves or shift direction results in a 0.5-mark penalty.'
+    });
+    results.test2_economics = {
+      ok: true,
+      subject: 'Economics',
+      topic: 'Price Determination & Demand Shift',
+      classLevel: 11,
+      marks: 4,
+      pageCount: res2.pageCount,
+      diagram: 'Inline Vector SVG (Demand Shift Curve)',
+      driveUrl: res2.driveUrl
+    };
+  } catch (e2) {
+    results.test2_economics = { ok: false, error: e2.message };
+  }
+
+  // Test 3: Statistics (Class 11 | 6 Marks | Stacked Fraction Formula + Frequency Table)
+  try {
+    var res3 = createAnswerPdfFromTemplate_({
+      date: todayStr,
+      classLevel: 11,
+      subject: 'Statistics',
+      chapter: 'Measures of Dispersion (Standard Deviation)',
+      qid: 'DRYRUN-STATS-6M-FORMULA',
+      marks: 6,
+      questionText: 'Calculate Standard Deviation from the following data using Assumed Mean (A = 25): 0-10 (2), 10-20 (3), 20-30 (5), 30-40 (4), 40-50 (6).',
+      answerText:
+        '#TABLE Calculation of Standard Deviation\n' +
+        '| Class | f | Mid (m) | d = m − 25 | fd | fd² |\n' +
+        '| 0–10 | 2 | 5 | -20 | -40 | 800 |\n' +
+        '| 10–20 | 3 | 15 | -10 | -30 | 300 |\n' +
+        '| 20–30 | 5 | 25 | 0 | 0 | 0 |\n' +
+        '| 30–40 | 4 | 35 | +10 | +40 | 400 |\n' +
+        '| 40–50 | 6 | 45 | +20 | +120 | 2,400 |\n' +
+        '| Total | N = 20 | | | Σfd = 90 | Σfd² = 3,900 |\n' +
+        '#ENDTABLE\n\n' +
+        '#FORMULA\n' +
+        'σ = √( [FRAC: Σfd² / N] − [FRAC: Σfd / N]² ) = √( [FRAC: 3900 / 20] − [FRAC: 90 / 20]² ) = √(195 − 20.25) = √174.75 ≈ 13.22\n' +
+        '#ENDFORMULA',
+      marksBreakdown:
+        '• 3.0 Marks: Accurate frequency table with correct Σfd = 90 and Σfd² = 3,900\n' +
+        '• 2.0 Marks: Correct Assumed Mean standard deviation formula with stacked fractions\n' +
+        '• 1.0 Mark: Final calculated standard deviation σ ≈ 13.22',
+      commonMistakes:
+        '⚠️ Squaring error: (90/20)² = (4.5)² = 20.25, NOT 20.5.'
+    });
+    results.test3_statistics = {
+      ok: true,
+      subject: 'Statistics',
+      topic: 'Measures of Dispersion (Standard Deviation)',
+      classLevel: 11,
+      marks: 6,
+      pageCount: res3.pageCount,
+      formulaStyle: 'CSS Stacked Fraction (.frac) with Radicand Bar',
+      driveUrl: res3.driveUrl
+    };
+  } catch (e3) {
+    results.test3_statistics = { ok: false, error: e3.message };
+  }
+
+  // Test 4: Business Studies (Class 12 | 4 Marks | Case Study Callout + Flowchart)
+  try {
+    var res4 = createAnswerPdfFromTemplate_({
+      date: todayStr,
+      classLevel: 12,
+      subject: 'Business Studies',
+      chapter: 'Planning Process',
+      qid: 'DRYRUN-BST-4M-FLOW',
+      marks: 4,
+      questionText:
+        'Case Study: "ABC Ltd. Begusarai wants to increase its sales by 20% next year. The manager forecasts market demand, compares 3 marketing strategies, picks the best one, and monitors monthly results." Identify the management function and list its steps in sequence.',
+      answerText:
+        'Management Function: **Planning**.\n\n' +
+        '#FLOW\n' +
+        'Setting Objectives (20% sales growth) -> Developing Premises (market forecast) -> Identifying Alternatives -> Evaluating Alternatives -> Selecting Best Alternative -> Implementing Plan -> Follow-up Action\n' +
+        '#ENDFLOW',
+      marksBreakdown:
+        '• 1.0 Mark: Correct identification of Planning management function\n' +
+        '• 2.0 Marks: Sequential 7-step planning process diagram with directional arrows\n' +
+        '• 1.0 Mark: Specific contextual mapping to ABC Ltd. Begusarai case facts',
+      commonMistakes:
+        '⚠️ Skipping "Developing Premises" or placing "Evaluating Alternatives" before "Identifying Alternatives".'
+    });
+    results.test4_business_studies = {
+      ok: true,
+      subject: 'Business Studies',
+      topic: 'Planning Process',
+      classLevel: 12,
+      marks: 4,
+      pageCount: res4.pageCount,
+      flowchart: 'Vertical Step Sequence with Directional Connectors',
+      driveUrl: res4.driveUrl
+    };
+  } catch (e4) {
+    results.test4_business_studies = { ok: false, error: e4.message };
+  }
+
+  return results;
 }

@@ -227,6 +227,9 @@ function doGet(e) {
           }
         };
         break;
+      case "runFounderSubjectiveDryRunTests":
+        result = { ok: true, data: runFounderSubjectiveDryRunTests() };
+        break;
       case "testGenerateAccountancyMultiPagePdf":
         result = { ok: true, data: testGenerateAccountancyMultiPagePdf(e && e.parameter ? e.parameter.classLevel : 12) };
         break;
@@ -407,6 +410,9 @@ function doPost(e) {
         break;
       case "testGenerateSubjectiveAnswerPdf":
         result = { ok: true, data: testGenerateAnswerPdf(payload ? payload.classLevel : 12) };
+        break;
+      case "runFounderSubjectiveDryRunTests":
+        result = { ok: true, data: runFounderSubjectiveDryRunTests() };
         break;
       case "testGenerateAccountancyMultiPagePdf":
         result = { ok: true, data: testGenerateAccountancyMultiPagePdf(payload ? payload.classLevel : 12) };
