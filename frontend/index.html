@@ -69,6 +69,7 @@
         <div class="truncate">
           <div class="flex items-center gap-2">
             <span class="font-bold text-sm sm:text-base tracking-tight truncate">Commerce Gyan Studio</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 animate-pulse shadow-sm">v3.1 LIVE</span>
             <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">EMStudio Pro + 8-Spoke Hub</span>
           </div>
           <p class="text-[11px] text-slate-400 hidden sm:block truncate">Gyan Sir · Begusarai, Bihar · Class 11 & 12 (All 8 Subjects · CBSE & BSEB)</p>
@@ -1548,7 +1549,10 @@
   <div id="teacherOpsWorkspace" class="hidden flex-1 max-w-md w-full mx-auto p-3 sm:p-4 space-y-4 pb-24">
     <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-900 border border-indigo-500/30 text-white shadow-md">
       <div>
-        <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-400">Telegram Teacher Daily Ops (5 Tabs)</span>
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-400">Telegram Teacher Daily Ops</span>
+          <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 animate-pulse shadow-sm">v3.1 LIVE</span>
+        </div>
         <h2 class="text-sm font-extrabold">Gyan Sir · Begusarai Mobile Remote</h2>
       </div>
       <div class="flex gap-1.5">
@@ -1659,6 +1663,7 @@
           <div>
             <div class="flex items-center gap-1.5">
               <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Telegram Mini App</span>
+              <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 animate-pulse">v3.1 LIVE</span>
               <span id="envBadge" class="text-[9px] px-1.5 py-0.2 rounded font-bold bg-slate-800 text-amber-300 border border-slate-700">PROD</span>
             </div>
             <h2 id="tgStudentNameHeader" class="text-base font-extrabold text-white">Aarav Sharma (CG-1201)</h2>
@@ -2373,7 +2378,8 @@
         DEMO_INVITE: `Namaste ${name} ji! 🎯 Aapka 3-Day Free Demo Class (${cls}) Commerce Gyan, Begusarai mein schedule ho gaya hai. Time par padharein! — Gyan Sir`,
         FOLLOWUP: `Namaste ${name} ji! 📚 Aapka 3-Day Demo Class kaisa raha? Pro-Rata Admission + Sibling Discount ke liye aaj hi center par milein. — Gyan Sir`,
         JOIN_THANKS: `Badhai ho ${name} ji! 🎓 Commerce Gyan mein aapka Admission Confirm ho gaya hai. Roll No: ${roll} ${claim ? '| 14-Day Telegram Claim Code: ' + claim : ''}. — Gyan Sir`,
-        FEE_REMINDER: `Namaste Parent (${name}) ji! 🙏 Commerce Gyan tuition fee ₹${amt} due hai. Kripya center ya UPI se जमा karein. — Gyan Sir`
+        FEE_REMINDER: `Namaste Parent (${name}) ji! 🙏 Commerce Gyan tuition fee ₹${amt} due hai. Kripya center ya UPI se जमा karein. — Gyan Sir`,
+        ATTENDANCE: `Namaste Parent (${name}) ji! 🙏 Commerce Gyan Begusarai: Aaj ki attendance update: ${data && data.status === 'P' ? 'Upasthit (Present ✓)' : (data && data.status === 'L' ? 'Late Attended ⚠️' : 'Anupasthit (Absent ⚠️)')}. — Gyan Sir`
       };
       const msg = templates[tplKey] || templates.WELCOME;
       const prefix = 'https://wa.me/91';
@@ -2719,11 +2725,18 @@
       if (tbody) {
         tbody.innerHTML = appState.students.map(s => {
           const needsRec = s.att[6] === 'L' || s.att[6] === 'A';
+          const parentMob = s.parentPhone || s.phone;
+          const waAtt = buildLocalWaLink(parentMob, 'ATTENDANCE', { studentName: s.name, status: s.att[6] || 'P' });
           return `
             <tr class="hover:bg-slate-50">
               <td class="py-3 px-4">
                 <div class="font-bold text-slate-900">${s.name}</div>
-                <div class="text-[10px] text-slate-500 font-mono">${s.roll} · <a href="tel:+91${s.phone}" class="underline">📞 ${s.phone}</a></div>
+                <div class="text-[10px] text-slate-500 font-mono">${s.roll} · Stu: ${s.phone} · Par: ${parentMob}</div>
+                <div class="flex items-center gap-1 mt-1">
+                  <a href="tel:+91${s.phone}" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[10px]" title="Call Student">📞 Stu</a>
+                  <a href="tel:+91${parentMob}" class="px-2 py-0.5 rounded bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-[10px]" title="Call Parent">📞 Par</a>
+                  <a href="${waAtt}" target="_blank" rel="noopener" class="px-2 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold text-[10px]" title="WhatsApp Parent">💬 WA</a>
+                </div>
               </td>
               ${s.att.map((st, idx) => `
                 <td class="py-2.5 px-2 text-center ${idx === 6 ? 'bg-indigo-50/40' : ''}">
@@ -2747,14 +2760,18 @@
       const buildMobAttHtml = (s) => {
         const st = s.att[6] || 'P';
         const needsRec = st === 'L' || st === 'A';
+        const parentMob = s.parentPhone || s.phone;
+        const waAtt = buildLocalWaLink(parentMob, 'ATTENDANCE', { studentName: s.name, status: st });
         return `
           <div class="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-between gap-2">
             <div>
-              <div class="flex items-center gap-1.5">
+              <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="font-mono text-[10px] font-bold text-slate-500">${s.roll}</span>
-                <a href="tel:+91${s.phone}" class="text-[10px] font-bold text-indigo-600">📞 Call</a>
+                <a href="tel:+91${s.phone}" class="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-800">📞 Stu</a>
+                <a href="tel:+91${parentMob}" class="px-1.5 py-0.5 rounded bg-amber-100 text-[10px] font-bold text-amber-900">📞 Par</a>
+                <a href="${waAtt}" target="_blank" rel="noopener" class="px-1.5 py-0.5 rounded bg-emerald-100 text-[10px] font-bold text-emerald-800">💬 WA</a>
               </div>
-              <h4 class="text-xs font-extrabold text-slate-900">${s.name}</h4>
+              <h4 class="text-xs font-extrabold text-slate-900 mt-1">${s.name}</h4>
               <p class="text-[10px] ${needsRec ? 'text-amber-700 font-bold' : 'text-emerald-700'}">${needsRec ? '⚠️ REC-01 Recovery Queued' : '✓ Present (+2 Coins)'}</p>
             </div>
             <button type="button" data-attroll="${s.roll}" data-attidx="6" class="att-cell-btn px-4 py-2 rounded-xl font-extrabold text-xs border transition ${statusColors[st] || statusColors.P}">
@@ -2899,7 +2916,8 @@
                 </span>
               </td>
               <td class="py-3 px-4 text-right space-x-1">
-                <a href="tel:+91${parentMob}" class="inline-flex items-center px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px]" title="Call Parent">📞 Call</a>
+                <a href="tel:+91${s.phone}" class="inline-flex items-center px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px]" title="Call Student">📞 Stu</a>
+                <a href="tel:+91${parentMob}" class="inline-flex items-center px-2 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-[11px]" title="Call Parent">📞 Par</a>
                 <a href="${waRem}" target="_blank" rel="noopener" class="inline-flex items-center px-2 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold text-[11px]" title="WhatsApp Parent">💬 WA</a>
                 ${hasLateFee ? `<button type="button" data-waiveroll="${s.roll}" class="waive-fee-btn px-2 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-[11px]">Revoke_Late_Fee</button>` : ''}
                 ${!s.feePaid ? `<button type="button" data-payroll="${s.roll}" class="mark-paid-btn px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px]">Record Payment</button>` : ''}
@@ -2929,8 +2947,9 @@
               <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${s.feePaid ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${s.feePaid ? 'Paid' : 'Due'}</span>
             </div>
             <div class="flex flex-wrap gap-1.5 pt-1">
-              <a href="tel:+91${parentMob}" class="px-2.5 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-[11px]">📞 Call Parent</a>
-              <a href="${waRem}" target="_blank" rel="noopener" class="px-2.5 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-[11px]">💬 WA Parent</a>
+              <a href="tel:+91${s.phone}" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-[11px]">📞 Call Stu</a>
+              <a href="tel:+91${parentMob}" class="px-2.5 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-[11px]">📞 Call Par</a>
+              <a href="${waRem}" target="_blank" rel="noopener" class="px-2.5 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-[11px]">💬 WA</a>
               ${hasLateFee ? `<button type="button" data-waiveroll="${s.roll}" class="waive-fee-btn px-2.5 py-1.5 rounded-xl bg-amber-100 text-amber-900 font-bold text-[11px]">Waive Late Fee</button>` : ''}
               ${!s.feePaid ? `<button type="button" data-payroll="${s.roll}" class="mark-paid-btn px-2.5 py-1.5 rounded-xl bg-indigo-600 text-white font-bold text-[11px]">Record Paid</button>` : ''}
               <button type="button" data-swotroll="${s.roll}" class="open-swot-btn px-2.5 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 font-bold text-[11px]">SWOT</button>
@@ -4929,7 +4948,7 @@
       var sw = $('studentWorkspace');
       if (sw) sw.classList.add('hidden');
     }
-    banner('LIVE v3.0: All 11 Studio Tabs, 7-Step Inquiry-to-Admission Hub, 5 Mobile Teacher Ops Tabs & 6 Student Tabs connected to Google Sheets.');
+    banner('LIVE v3.1: All 11 Studio Tabs, 7-Step Inquiry-to-Admission Hub, 5 Mobile Teacher Ops Tabs & 6 Student Tabs connected to Google Sheets.');
     var urlInput = $('gasWebhookUrlInput');
     var urlBtn = $('saveGasUrlBtn');
     if (urlInput && urlBtn) {
