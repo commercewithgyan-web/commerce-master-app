@@ -208,16 +208,13 @@ function apiGetRevisionQueue_(verifiedUser) {
  */
 function generateWeeklySummary_(telegramId) {
   var student = findRow_('SHEET_FEE', 'Students', 'TelegramID', telegramId);
-  if (!student) return '';
+  var studentName = student ? (student.Name || 'Champ') : 'Champ';
+  var studentClass = student ? (student.Class || '11') : '11';
 
-  var props = PropertiesService.getScriptProperties();
-  var geminiKey = props.getProperty('GEMINI_KEY');
-  if (!geminiKey) return '';
-
-  // Gather past 7 days mistakes & notes
+  // Gather past answers & notes
   var allAnswers = findRows_('SHEET_QB', 'StudentAnswers', 'TelegramID', telegramId);
-  var mistakes = [];
   var totalCorrect = 0;
+  var mistakes = [];
 
   allAnswers.forEach(function(a) {
     if (parseInt(a.Score, 10) === 0) mistakes.push(a.QID);
@@ -226,55 +223,28 @@ function generateWeeklySummary_(telegramId) {
 
   var notes = findRows_('SHEET_QB', 'Notebook_Notes', 'TelegramID', telegramId);
 
-  var hiddenPrompt =
-    'You are Gyan Sir, an elite CBSE Commerce mentor for ' + student.Name + ' (Class ' + student.Class + ').\n\n' +
-    'STUDENT DATA FOR THE WEEK:\n' +
-    '• Solved Correctly: ' + totalCorrect + ' MCQs\n' +
-    '• Mistakes Made on QIDs: ' + mistakes.slice(-5).join(', ') + '\n' +
-    '• Notes Saved: ' + notes.length + ' key points\n\n' +
-    'DIRECTIVE:\n' +
-    'Generate an encouraging, specific 100-word coaching brief structured as:\n' +
-    '1. What you mastered well this week (2 points)\n' +
-    '2. Focus area for CBSE board exam (2 points)\n' +
-    '3. Action rule for next week (1 crisp takeaway)\n\n' +
-    'Strictly English, warm, energetic, and professional.';
-
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + getGeminiModel_() + ':generateContent?key=' + geminiKey;
-  var payload = {
-    contents: [{ parts: [{ text: hiddenPrompt }] }],
-    generationConfig: { temperature: 0.3 }
-  };
+  var summary = '🌟 Weekly Progress Brief for ' + studentName + ' (Class ' + studentClass + ')\n\n' +
+    '1. What You Mastered:\n' +
+    '• Solved ' + totalCorrect + ' practice MCQs correctly with steady focus.\n' +
+    '• Logged ' + notes.length + ' key revision points in your digital notebook.\n\n' +
+    '2. Focus Area for CBSE:\n' +
+    '• Review ' + (mistakes.length > 0 ? mistakes.length + ' concept checkpoints in your Smart Review Vault' : 'chapter heading keywords and working notes') + '.\n\n' +
+    '3. Teacher Note from Gyan Sir:\n' +
+    'Keep up this daily study rhythm, ' + studentName + '! Consistency in daily practice turns good students into board toppers.';
 
   try {
-    var response = UrlFetchApp.fetch(url, {
-      method: 'post',
-      contentType: 'application/json',
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    });
+    var weekLabel = 'Week of ' + getKolkataDate();
+    appendRow_('SHEET_QB', 'Notebook_Summary', [
+      weekLabel,
+      telegramId,
+      summary,
+      mistakes.slice(-3).join(', '),
+      'Review mistakes in notebook',
+      getKolkataTimestamp()
+    ]);
+  } catch (logErr) {}
 
-    if (response.getResponseCode() === 200) {
-      var json = JSON.parse(response.getContentText());
-      var summaryText = json.candidates[0].content.parts[0].text.trim();
-
-      // Log to Notebook_Summary
-      var weekLabel = 'Week of ' + getKolkataDate();
-      appendRow_('SHEET_QB', 'Notebook_Summary', [
-        weekLabel,
-        telegramId,
-        summaryText,
-        mistakes.slice(-3).join(', '),
-        'Review mistakes in notebook',
-        getKolkataTimestamp()
-      ]);
-
-      return summaryText;
-    }
-  } catch (e) {
-    logError_('generateWeeklySummary_', e);
-  }
-
-  return 'Great effort this week! Keep solving daily ghost challenges to reinforce partnership accounting.';
+  return summary;
 }
 
 /**

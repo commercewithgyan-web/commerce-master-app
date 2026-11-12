@@ -115,11 +115,47 @@ function askDoubtGemini(studentName, subject, question, lens) {
  * @param {Object} payload - { question, subject, lens }
  * @return {Object}
  */
+/**
+ * Checks 15 RPM token-bucket rate limit using CacheService (A12)
+ * @return {Object} { rateLimited: boolean, fallbackMessage?: string }
+ */
+function checkGeminiRateLimit_() {
+  var cache = CacheService.getScriptCache();
+  var minuteKey = 'GEMINI_RPM_' + Math.floor(Date.now() / 60000);
+  var currentCount = parseInt(cache.get(minuteKey) || '0', 10);
+  if (currentCount >= 15) {
+    return {
+      rateLimited: true,
+      fallbackMessage: 'Beta, abhi bohot saare students ek saath doubt pooch rahe hain! ⏳ Please 1 minute ruko aur dobara tap karo, Gyan Sir turant reply karenge.'
+    };
+  }
+  cache.put(minuteKey, String(currentCount + 1), 70);
+  return { rateLimited: false };
+}
+
 function apiAskDoubt_(verifiedUser, payload) {
   var student = requirePaidStudent_(verifiedUser.id);
   var studentName = student.Name || verifiedUser.first_name || 'Student';
   var questionText = (payload.question || '').trim();
   var mode = 'text';
+
+  // Rate limit protection (A12)
+  var rateCheck = checkGeminiRateLimit_();
+  if (rateCheck.rateLimited) {
+    return {
+      ok: true,
+      isRejected: false,
+      studentName: studentName,
+      subject: payload.subject || 'Accountancy',
+      topicTitle: 'High Server Traffic',
+      story: rateCheck.fallbackMessage,
+      exam_notes: rateCheck.fallbackMessage,
+      real_example: rateCheck.fallbackMessage,
+      golden_rule: 'Please wait 60 seconds before submitting another question.',
+      cbse_trap: 'Do not spam retry buttons during high traffic.',
+      answer: rateCheck.fallbackMessage
+    };
+  }
 
   // If question was not transcribed client-side, transcribe from audioBase64
   if (!questionText && payload.audioBase64) {
@@ -204,6 +240,15 @@ function apiAskVoiceDoubt_(verifiedUser, payload) {
   var student = requirePaidStudent_(verifiedUser.id);
   var studentName = student.Name || verifiedUser.first_name || 'Student';
   var subject = payload.subject || 'Accountancy';
+
+  var rateCheck = checkGeminiRateLimit_();
+  if (rateCheck.rateLimited) {
+    return {
+      isRejected: true,
+      studentName: studentName,
+      message: rateCheck.fallbackMessage
+    };
+  }
 
   var transcribedQuestion = (payload.question || '').trim();
 
