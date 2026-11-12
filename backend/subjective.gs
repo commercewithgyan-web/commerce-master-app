@@ -283,11 +283,8 @@ function generateDailyPracticeSheetHtml_(data, isAnswerKey) {
   var marks = Number(data.marks) || 6;
   var pillText = isAns ? 'DAILY PRACTICE SHEET • ANSWER KEY' : 'DAILY PRACTICE SHEET';
 
-  // Format Sheet / Question Number (NO. :)
-  var sheetNumber = String(data.qid || ('DPS-' + classLevel + (isAns ? '-A' : '-Q')));
-  if (sheetNumber.length > 10) {
-    sheetNumber = sheetNumber.substring(0, 10);
-  }
+  // Format Sheet / Question Number (NO. :) e.g. Q-12-04 or Q-12-06
+  var sheetNumber = formatSheetNumberDps_(data.qid, classLevel, marks, isAns);
 
   // Format Subject, Topic, Date
   var subjectText = 'Class ' + classLevel + ' • ' + (data.subject || 'Accountancy');
@@ -298,57 +295,50 @@ function generateDailyPracticeSheetHtml_(data, isAnswerKey) {
 
   var formattedDate = formatDateDps_(data.date);
 
-  // Check if background image overlay is configured via ScriptProperties
-  var props = PropertiesService.getScriptProperties();
-  var bgFileId = props.getProperty('PRACTICE_SHEET_BG_FILE_ID');
-  var bgBase64 = null;
-  if (data.bgBase64) {
-    bgBase64 = data.bgBase64;
-  } else if (bgFileId) {
+  // Retrieve official stationery background image (Drive File ID or data.bgBase64)
+  var bgBase64 = data.bgBase64;
+  if (!bgBase64) {
+    var props = PropertiesService.getScriptProperties();
+    var bgFileId = props.getProperty('PRACTICE_SHEET_BG_FILE_ID') || '1G5FOitdeuh8FgLbnkgNdqiftvtCfiIah';
+    if (!bgFileId) {
+      throw new Error('PRACTICE_SHEET_BG_FILE_ID is not configured in Script Properties.');
+    }
     try {
       var bgFile = DriveApp.getFileById(bgFileId);
+      if (!bgFile) {
+        throw new Error('PRACTICE_SHEET_BG_FILE_ID (' + bgFileId + ') not found in Google Drive.');
+      }
       bgBase64 = Utilities.base64Encode(bgFile.getBlob().getBytes());
     } catch (e) {
-      Logger.log('Notice: Could not load PRACTICE_SHEET_BG_FILE_ID: ' + e.message);
+      throw new Error('Failed to load official practice sheet background from Drive (' + bgFileId + '): ' + e.message);
     }
+  }
+
+  if (!bgBase64) {
+    throw new Error('PRACTICE_SHEET_BG_FILE_ID is missing or unreadable. Silent CSS fallback is disabled.');
   }
 
   // Common body content HTML
   var bodyInnerHtml = isAns ? formatAnswerBodyHtml_(data) : formatQuestionBodyHtml_(data.questionText || '', marks, classLevel);
 
-  // If background image is present, overlay onto image
-  if (bgBase64) {
-    return buildImageOverlayHtml_(bgBase64, pillText, sheetNumber, subjectText, topicText, formattedDate, bodyInnerHtml, isAns);
-  }
-
-  // Otherwise, use the Built-in Permanent Vector HTML/CSS/SVG Template (Default)
-  return buildPermanentVectorStationeryHtml_(pillText, sheetNumber, subjectText, topicText, formattedDate, bodyInnerHtml, isAns);
+  return buildImageOverlayHtml_(bgBase64, pillText, sheetNumber, subjectText, topicText, formattedDate, bodyInnerHtml, isAns);
 }
 
 /**
- * Builds the Built-in Permanent Pure HTML/CSS/inline SVG Stationery Template
+ * Deprecated: Vector CSS redraw has been permanently removed per founder policy.
+ * The official PNG stationery background is locked to guarantee 100% visual fidelity.
  */
-function buildPermanentVectorStationeryHtml_(pillText, sheetNumber, subjectText, topicText, formattedDate, bodyInnerHtml, isAns) {
-  var cgLogoSvg = '<svg width="38" height="38" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" stroke="#e2e8f0" stroke-width="1.5" fill="#ffffff"/><path d="M50 14 C72 14 86 28 86 46 C86 48 83 50 80 50 C77 50 76 48 76 46 C76 34 65 24 50 24 C36 24 25 35 25 50 C25 65 36 76 50 76 C60 76 68 70 72 61 L54 61 C51 61 49 59 49 56 C49 53 51 51 54 51 L81 51 C84 51 86 53 86 56 C86 73 70 86 50 86 C30 86 14 70 14 50 C14 30 30 14 50 14 Z" fill="url(#cgG)"/><path d="M50 32 C60 32 68 39 68 48 L68 52 C68 53 67 54 66 54 L52 54 C50 54 48 52 48 50 C48 48 50 46 52 46 L60 46 C59 40 54 36 48 36 C41 36 36 41 36 48 C36 55 41 60 48 60 C53 60 57 57 59 53 L66 57 C62 64 55 68 47 68 C35 68 26 59 26 47 C26 35 37 32 50 32 Z" fill="#9333ea" opacity="0.85"/><defs><linearGradient id="cgG" x1="14" y1="14" x2="86" y2="86" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#f59e0b"/><stop offset="45%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#0284c7"/></linearGradient></defs></svg>';
+function buildPermanentVectorStationeryHtml_() {
+  throw new Error('Vector CSS redrawing is disabled. All Daily Practice Sheet PDFs must use the official pre-printed PNG template.');
+}
 
-  var bookIconSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5b1865" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
-
-  var targetIconSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5b1865" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>';
-
-  var calIconSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5b1865" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
-
-  var pinIconSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="#5b1865"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>';
-
-  var phoneIconSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="#5b1865"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
-
-  var socialIconsSvg = '<div style="display: inline-flex; align-items: center; gap: 7px;">' +
-    '<svg width="13" height="13" viewBox="0 0 24 24"><path fill="#4285F4" d="M3.6 1.7l11.4 10.3L3.6 22.3c-.4-.4-.6-1-.6-1.7V3.4c0-.7.2-1.3.6-1.7z"/><path fill="#FBBC05" d="M17.4 9.6l3.3 1.9c1 .6 1 1.5 0 2l-3.3 1.9-2.4-2.4 2.4-3.4z"/><path fill="#34A853" d="M15 12l2.4 2.4-13.8 7.9c.7.5 1.7.4 2.4 0l9-10.3z"/><path fill="#EA4335" d="M3.6 1.7c-.7-.4-1.7-.5-2.4 0L15 12l-2.4-2.4L3.6 1.7z"/></svg>' +
-    '<svg width="14" height="14" viewBox="0 0 24 24"><rect width="24" height="18" y="3" rx="4" fill="#FF0000"/><polygon points="9.5,7.5 16.5,12 9.5,16.5" fill="#FFFFFF"/></svg>' +
-    '<svg width="13" height="13" viewBox="0 0 24 24"><defs><radialGradient id="ig" cx="30%" cy="107%" r="150%"><stop offset="0%" stop-color="#fdf497"/><stop offset="5%" stop-color="#fdf497"/><stop offset="45%" stop-color="#fd5949"/><stop offset="60%" stop-color="#d6249f"/><stop offset="90%" stop-color="#285AEB"/></radialGradient></defs><rect width="24" height="24" rx="6" fill="url(#ig)"/><rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="17" cy="7" r="1" fill="#fff"/></svg>' +
-    '<svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#29B6F6"/><path d="M5.5 11.5l12-5-4 11-3.5-3-2 1.5v-2.5l6-5.5-7.5 4.5z" fill="#ffffff"/></svg>' +
-  '</div>';
-
-  var watermarkSvg = '<svg width="220" height="220" viewBox="0 0 100 100"><path d="M50 14 C70 14 84 28 84 46 C84 48 81 50 78 50 C75 50 74 48 74 46 C74 34 63 24 50 24 C37 24 26 35 26 50 C26 65 37 76 50 76 C60 76 68 70 72 61 L54 61 C51 61 49 59 49 56 C49 53 51 51 54 51 L80 51 C83 51 85 53 85 56 C85 73 70 86 50 86 C30 86 14 70 14 50 C14 30 30 14 50 14 Z" fill="url(#cgWater)"/><defs><linearGradient id="cgWater" x1="14" y1="14" x2="86" y2="86" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#f59e0b"/><stop offset="50%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#0284c7"/></linearGradient></defs></svg>';
+/**
+ * Builds HTML overlay onto the official "Commerce Gyan — Daily Practice Sheet" PNG background.
+ * Exact millimeter coordinates match Gyan Sir's pre-printed stationery.
+ */
+function buildImageOverlayHtml_(bgBase64, pillText, sheetNumber, subjectText, topicText, formattedDate, bodyInnerHtml, isAns) {
+  var ansPillOverlay = isAns ?
+    '<div style="position: absolute; top: 4.2mm; left: 84.5mm; width: 78mm; height: 10.5mm; background: #5b1865; border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; font-weight: 800; font-size: 8.5pt; text-transform: uppercase; z-index: 2; letter-spacing: 0.3px;">' + escapeHtml_(pillText) + '</div>' : '';
 
   return '<!DOCTYPE html>\n' +
 '<html>\n' +
@@ -380,130 +370,19 @@ function buildPermanentVectorStationeryHtml_(pillText, sheetNumber, subjectText,
 '</head>\n' +
 '<body>\n' +
 '<div style="position: relative; width: 210mm; height: 297mm; overflow: hidden;">\n' +
-'  <!-- 1. Top Header Bar -->\n' +
-'  <div style="width: 210mm; padding: 4.5mm 12mm 2.5mm 12mm; display: flex; align-items: center; justify-content: space-between;">\n' +
-'    <!-- Left: Logo & Commerce Gyan Branding -->\n' +
-'    <div style="display: flex; align-items: center; gap: 9px;">\n' +
-'      ' + cgLogoSvg + '\n' +
-'      <div style="width: 1px; height: 28px; background: #cbd5e1;"></div>\n' +
-'      <div>\n' +
-'        <div style="font-family: Georgia, serif; font-size: 18.5px; font-weight: 800; color: #0f4c81; letter-spacing: 0.6px; line-height: 1.1;">COMMERCE GYAN</div>\n' +
-'        <div style="font-size: 8.5px; font-weight: 700; font-style: italic; color: #6b21a8; letter-spacing: 1.4px; line-height: 1.1; margin-top: 2px;">BE THE BEST FROM THE REST</div>\n' +
-'      </div>\n' +
-'    </div>\n' +
-'    <!-- Center: Purple Rounded Pill -->\n' +
-'    <div style="background: #5b1865; border: 1.5px solid #4f46e5; color: #ffffff; font-weight: 800; font-size: ' + (isAns ? '12px' : '12.5px') + '; text-transform: uppercase; border-radius: 20px; padding: 5px 16px; letter-spacing: 0.7px; white-space: nowrap;">' + escapeHtml_(pillText) + '</div>\n' +
-'    <!-- Right: NO. Box -->\n' +
-'    <div style="display: flex; align-items: center; gap: 6px;">\n' +
-'      <div style="width: 1px; height: 28px; background: #cbd5e1;"></div>\n' +
-'      <span style="font-weight: 700; font-size: 12px; color: #5b1865;">NO. :</span>\n' +
-'      <div style="border: 1.5px solid #5b1865; border-radius: 7px; min-width: 82px; height: 28px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11.5px; color: #5b1865; background: #ffffff; padding: 0 6px;">' + escapeHtml_(sheetNumber) + '</div>\n' +
-'    </div>\n' +
-'  </div>\n' +
-'\n' +
-'  <!-- 2. Tri-Color Divider Rule -->\n' +
-'  <div style="display: flex; width: 100%; height: 3.5px; margin-top: 2px;">\n' +
-'    <div style="flex: 75; background: #f59e0b;"></div>\n' +
-'    <div style="flex: 12; background: #38bdf8;"></div>\n' +
-'    <div style="flex: 13; background: #5b1865;"></div>\n' +
-'  </div>\n' +
-'\n' +
-'  <!-- 3. Metadata Bar -->\n' +
-'  <div style="border-top: 1.5px solid #5b1865; border-bottom: 1.5px solid #5b1865; padding: 3px 12mm; display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 700; color: #5b1865; margin-top: 2px;">\n' +
-'    <div style="display: flex; align-items: center; gap: 5px;">\n' +
-'      ' + bookIconSvg + '\n' +
-'      <span>Subject :</span>\n' +
-'      <span style="border-bottom: 1px solid #5b1865; padding: 0 6px 1px 6px; font-weight: 600; color: #0f172a; min-width: 130px; display: inline-block;">' + escapeHtml_(subjectText) + '</span>\n' +
-'    </div>\n' +
-'    <div style="width: 1px; height: 16px; background: #5b1865;"></div>\n' +
-'    <div style="display: flex; align-items: center; gap: 5px;">\n' +
-'      ' + targetIconSvg + '\n' +
-'      <span>Topic :</span>\n' +
-'      <span style="border-bottom: 1px solid #5b1865; padding: 0 6px 1px 6px; font-weight: 600; color: #0f172a; min-width: 170px; display: inline-block;">' + escapeHtml_(topicText) + '</span>\n' +
-'    </div>\n' +
-'    <div style="width: 1px; height: 16px; background: #5b1865;"></div>\n' +
-'    <div style="display: flex; align-items: center; gap: 5px;">\n' +
-'      ' + calIconSvg + '\n' +
-'      <span>Date :</span>\n' +
-'      <span style="border-bottom: 1px solid #5b1865; padding: 0 6px 1px 6px; font-weight: 600; color: #0f172a; min-width: 80px; text-align: center; display: inline-block;">' + escapeHtml_(formattedDate) + '</span>\n' +
-'    </div>\n' +
-'  </div>\n' +
-'\n' +
-'  <!-- 4. Left Red Margin Line -->\n' +
-'  <div style="position: absolute; left: 14mm; top: 32mm; bottom: 18mm; width: 1.5px; background: #e11d48; z-index: 1;"></div>\n' +
-'\n' +
-'  <!-- 5. Center Watermark -->\n' +
-'  <div style="position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%); z-index: 0; opacity: 0.08; text-align: center; pointer-events: none; width: 100%;">\n' +
-'    ' + watermarkSvg + '\n' +
-'    <div style="font-family: Georgia, serif; font-size: 26px; font-weight: 800; color: #0f4c81; letter-spacing: 2px;">COMMERCE GYAN</div>\n' +
-'    <div style="font-size: 11px; font-weight: 700; font-style: italic; color: #6b21a8; letter-spacing: 2.5px; margin-top: 4px;">BE THE BEST FROM THE REST</div>\n' +
-'  </div>\n' +
-'\n' +
-'  <!-- 6. Notebook Body Content -->\n' +
-'  <div style="position: relative; z-index: 2; margin-left: 17mm; margin-right: 12mm; padding-top: 5mm; min-height: 220mm;">\n' +
-'    ' + bodyInnerHtml + '\n' +
-'  </div>\n' +
-'\n' +
-'  <!-- 7. Footer Rule -->\n' +
-'  <div style="position: absolute; bottom: 14mm; left: 0; width: 100%; display: flex; height: 3px;">\n' +
-'    <div style="flex: 75; background: #f59e0b;"></div>\n' +
-'    <div style="flex: 12; background: #38bdf8;"></div>\n' +
-'    <div style="flex: 13; background: #5b1865;"></div>\n' +
-'  </div>\n' +
-'\n' +
-'  <!-- 8. Bottom Footer Bar -->\n' +
-'  <div style="position: absolute; bottom: 0; left: 0; width: 210mm; height: 14mm; padding: 2px 10mm 4px 10mm; display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-weight: 600; color: #1e293b;">\n' +
-'    <div style="display: flex; align-items: center; gap: 5px;">\n' +
-'      ' + pinIconSvg + '\n' +
-'      <span>Behind G.D. College, 2nd Floor, Begusarai</span>\n' +
-'    </div>\n' +
-'    <div style="width: 1px; height: 16px; background: #cbd5e1;"></div>\n' +
-'    <div style="display: flex; align-items: center; gap: 7px;">\n' +
-'      ' + socialIconsSvg + '\n' +
-'    </div>\n' +
-'    <div style="width: 1px; height: 16px; background: #cbd5e1;"></div>\n' +
-'    <div style="border: 1px solid #5b1865; border-radius: 12px; padding: 2px 9px; font-weight: 700; font-size: 9px; color: #5b1865; background: #fbf5ff; display: inline-flex; align-items: center; gap: 4px;">\n' +
-'      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#5b1865" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>\n' +
-'      <span>Commerce with Gyan</span>\n' +
-'    </div>\n' +
-'    <div style="width: 1px; height: 16px; background: #cbd5e1;"></div>\n' +
-'    <div style="display: flex; align-items: center; gap: 5px;">\n' +
-'      ' + phoneIconSvg + '\n' +
-'      <span style="font-weight: 800; font-size: 11px; color: #5b1865;">9278569860</span>\n' +
-'    </div>\n' +
-'  </div>\n' +
-'</div>\n' +
-'</body>\n' +
-'</html>';
-}
-
-/**
- * Builds HTML when an official template background image (Base64) is supplied
- */
-function buildImageOverlayHtml_(bgBase64, pillText, sheetNumber, subjectText, topicText, formattedDate, bodyInnerHtml, isAns) {
-  var ansPillOverlay = isAns ?
-    '<div style="position: absolute; top: 4.8mm; left: 75mm; width: 88mm; height: 8.5mm; background: #5b1865; border: 1.5px solid #4f46e5; border-radius: 20px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-family: sans-serif; font-weight: 800; font-size: 10px; text-transform: uppercase; z-index: 2; letter-spacing: 0.5px;">' + escapeHtml_(pillText) + '</div>' : '';
-
-  return '<!DOCTYPE html>\n' +
-'<html>\n' +
-'<head>\n' +
-'<meta charset="utf-8">\n' +
-'<title>' + escapeHtml_(pillText) + '</title>\n' +
-'<style>\n' +
-'  @page { size: 210mm 297mm; margin: 0; }\n' +
-'  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +
-'  html, body { margin: 0; padding: 0; width: 210mm; height: 297mm; background: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; position: relative; overflow: hidden; }\n' +
-'</style>\n' +
-'</head>\n' +
-'<body>\n' +
-'<div style="position: relative; width: 210mm; height: 297mm; overflow: hidden;">\n' +
-'  <img src="data:image/jpeg;base64,' + bgBase64 + '" style="position: absolute; top: 0; left: 0; width: 210mm; height: 297mm; z-index: 0;" />\n' +
+'  <!-- Exact pre-printed PNG stationery background (Full bleed A4) -->\n' +
+'  <img src="data:image/png;base64,' + bgBase64 + '" style="position: fixed; top: 0; left: 0; width: 210mm; height: 297mm; z-index: 0;" />\n' +
 '  ' + ansPillOverlay + '\n' +
-'  <div style="position: absolute; top: 5.2mm; left: 174mm; width: 27mm; height: 7.5mm; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; color: #5b1865; z-index: 2;">' + escapeHtml_(sheetNumber) + '</div>\n' +
-'  <div style="position: absolute; top: 25.4mm; left: 34mm; width: 44mm; height: 5mm; display: flex; align-items: center; font-weight: 700; font-size: 10px; color: #0f172a; z-index: 2; overflow: hidden; white-space: nowrap;">' + escapeHtml_(subjectText) + '</div>\n' +
-'  <div style="position: absolute; top: 25.4mm; left: 102mm; width: 45mm; height: 5mm; display: flex; align-items: center; font-weight: 700; font-size: 10px; color: #0f172a; z-index: 2; overflow: hidden; white-space: nowrap;">' + escapeHtml_(topicText) + '</div>\n' +
-'  <div style="position: absolute; top: 25.4mm; left: 173mm; width: 25mm; height: 5mm; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 10px; color: #0f172a; z-index: 2;">' + escapeHtml_(formattedDate) + '</div>\n' +
-'  <div style="position: absolute; top: 38mm; left: 18mm; width: 180mm; bottom: 20mm; z-index: 2; overflow: hidden;">\n' +
+'  <!-- 1. NO. Box (top-right purple box) -->\n' +
+'  <div style="position: absolute; top: 5.5mm; left: 177mm; width: 23mm; height: 7mm; display: flex; align-items: center; justify-content: center; font-size: 10pt; font-weight: bold; color: #5b1865; z-index: 2;">' + escapeHtml_(sheetNumber) + '</div>\n' +
+'  <!-- 2. Subject Line (Underline after Subject :) -->\n' +
+'  <div style="position: absolute; top: 26.5mm; left: 35mm; width: 43mm; font-size: 9pt; font-weight: bold; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2;">' + escapeHtml_(subjectText) + '</div>\n' +
+'  <!-- 3. Topic Line (Underline after Topic :) -->\n' +
+'  <div style="position: absolute; top: 26.5mm; left: 104mm; width: 44mm; font-size: 8.5pt; font-weight: bold; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2;">' + escapeHtml_(topicText) + '</div>\n' +
+'  <!-- 4. Date Line (Underline after Date :) -->\n' +
+'  <div style="position: absolute; top: 26.5mm; left: 173mm; width: 25mm; text-align: center; font-size: 9pt; font-weight: bold; color: #0f172a; letter-spacing: 0.5px; z-index: 2;">' + escapeHtml_(formattedDate) + '</div>\n' +
+'  <!-- 5. Main Question / Answer Body strictly to the right of red margin line -->\n' +
+'  <div style="position: absolute; top: 60mm; left: 16mm; right: 12mm; bottom: 26mm; background: transparent; overflow: hidden; z-index: 1;">\n' +
 '    ' + bodyInnerHtml + '\n' +
 '  </div>\n' +
 '</div>\n' +
@@ -655,12 +534,33 @@ function formatBulletListDps_(text) {
  */
 function formatDateDps_(dateVal) {
   if (!dateVal) return Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd / MM / yyyy');
+  if (dateVal instanceof Date) return Utilities.formatDate(dateVal, 'Asia/Kolkata', 'dd / MM / yyyy');
   var s = String(dateVal).trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
     var parts = s.split('-');
     return parts[2] + ' / ' + parts[1] + ' / ' + parts[0];
   }
+  var months = { jan:'01', feb:'02', mar:'03', apr:'04', may:'05', jun:'06', jul:'07', aug:'08', sep:'09', oct:'10', nov:'11', dec:'12' };
+  var m = s.match(/^(\d{1,2})[-/ ]([a-zA-Z]{3})[-/ ](\d{4})$/);
+  if (m) {
+    var day = ('0' + m[1]).slice(-2);
+    var mon = months[m[2].toLowerCase()] || '11';
+    return day + ' / ' + mon + ' / ' + m[3];
+  }
   return s;
+}
+
+/**
+ * Formats question/sheet number e.g. Q-12-04 or A-12-04
+ */
+function formatSheetNumberDps_(rawQid, classLevel, marks, isAns) {
+  var prefix = isAns ? 'A-' : 'Q-';
+  var markPad = Number(marks) < 10 ? ('0' + Number(marks)) : String(marks);
+  var def = prefix + classLevel + '-' + markPad;
+  if (!rawQid) return def;
+  var s = String(rawQid).trim();
+  if (/^[QA]-[0-9]{2}-[0-9]{2}$/i.test(s)) return s;
+  return def;
 }
 
 /**
@@ -766,47 +666,120 @@ function testGenerateAnswerPdf(classLevel) {
  * @param {number} [targetMarks]
  * @return {Object}
  */
-function getApprovedSubjectiveQuestion_(classLevel, subtopic, targetMarks) {
-  classLevel = Number(classLevel) || 12;
-  subtopic = subtopic || {};
-  targetMarks = Number(targetMarks) || 0;
-
-  // 1. Try to query SHEET_QB!QuestionBank or Theory_Bank
+/**
+ * Scans Subjective_PDF_Log to collect all previously dispatched Question IDs
+ * @return {Object.<string, boolean>}
+ */
+function getDispatchedSubjectiveQids_() {
+  var used = {};
   try {
-    var allQ = getAllRowsAsObjects_('SHEET_QB', 'QuestionBank', 1000);
-    for (var i = 0; i < allQ.length; i++) {
-      var q = allQ[i];
-      var qClass = Number(q.Class || q.classLevel);
-      var qType = String(q.Type || q.QuestionType || '').toLowerCase();
-      var qMarks = Number(q.Marks || q.marks || 6);
-      var qStatus = String(q.ApprovalStatus || q.Status || '').toLowerCase();
-
-      if (qClass === classLevel && (qType.indexOf('subjective') !== -1 || qType.indexOf('theory') !== -1 || qType.indexOf('short') !== -1 || qType.indexOf('long') !== -1)) {
-        if (qStatus === 'approved' || qStatus === 'active') {
-          if (!targetMarks || qMarks === targetMarks) {
-            return {
-              qid: q.QID || q.QuestionID || ('QB_' + classLevel + '_' + i),
-              subject: q.Subject || 'Accountancy',
-              chapter: q.Chapter || '1',
-              chapterName: q.ChapterName || subtopic.chapterName || (classLevel === 11 ? 'Introduction to Accounting' : 'Partnership Accounts'),
-              question: q.Question || q.QuestionText,
-              marks: qMarks || 6,
-              modelAnswer: q.Explanation || q.ModelAnswer || q.CorrectAnswer || 'Pass requisite Journal Entries with proper narrations and account heads.',
-              rubric: q.Rubric || q.Official_CBSE_Marking_Scheme || '• Full steps as per CBSE guidelines',
-              traps: q.TrapAlert || q.Traps || 'Ensure double underline under final balance totals.'
-            };
-          }
+    var logSheet = getSheet_('SHEET_TG', 'Subjective_PDF_Log');
+    if (logSheet && logSheet.getLastRow() > 1) {
+      var data = logSheet.getDataRange().getValues();
+      for (var r = 1; r < data.length; r++) {
+        var rowQid = String(data[r][6] || '').trim();
+        if (rowQid) used[rowQid] = true;
+        var payload = data[r][7];
+        if (payload) {
+          try {
+            var parsed = JSON.parse(payload);
+            if (parsed && parsed.qid) used[parsed.qid] = true;
+          } catch (_) {}
         }
       }
     }
   } catch (err) {
-    Logger.log('Notice in getApprovedSubjectiveQuestion_ reading QuestionBank: ' + err.message);
+    Logger.log('Notice reading Subjective_PDF_Log: ' + err.message);
+  }
+  return used;
+}
+
+/**
+ * Retrieves today's subjective problem from QuestionBank or pre-verified vault
+ * Supports 2, 3, 4, 5, 6 marks questions across Class 11 & Class 12.
+ * Strictly skips questions already logged in Subjective_PDF_Log so questions are never repeated.
+ * @param {string|number} classLevel
+ * @param {Object} subtopic
+ * @param {number} [targetMarks]
+ * @return {Object}
+ */
+function getApprovedSubjectiveQuestion_(classLevel, subtopic, targetMarks) {
+  classLevel = Number(classLevel) || 12;
+  subtopic = subtopic || {};
+  targetMarks = Number(targetMarks) || 0;
+  var usedQids = getDispatchedSubjectiveQids_();
+
+  // 1. Try to query SHEET_QB!Theory_Bank then SHEET_QB!QuestionBank
+  var bankTabs = ['Theory_Bank', 'QuestionBank'];
+  for (var t = 0; t < bankTabs.length; t++) {
+    try {
+      var allQ = getAllRowsAsObjects_('SHEET_QB', bankTabs[t], 1000);
+      for (var i = 0; i < allQ.length; i++) {
+        var q = allQ[i];
+        var qClass = Number(q.Class || q.classLevel);
+        var qType = String(q.Type || q.QuestionType || '').toLowerCase();
+        var qMarks = Number(q.Marks || q.marks || 6);
+        var qStatus = String(q.ApprovalStatus || q.Status || '').toLowerCase();
+        var qid = String(q.QID || q.T_ID || q.QuestionID || ('QB_' + classLevel + '_' + i));
+
+        if (qClass === classLevel && (qType.indexOf('subjective') !== -1 || qType.indexOf('theory') !== -1 || qType.indexOf('short') !== -1 || qType.indexOf('long') !== -1)) {
+          if (qStatus === 'approved' || qStatus === 'active') {
+            if (!targetMarks || qMarks === targetMarks) {
+              if (!usedQids[qid]) {
+                return {
+                  qid: qid,
+                  subject: q.Subject || 'Accountancy',
+                  chapter: q.Chapter || '1',
+                  chapterName: q.ChapterName || subtopic.chapterName || (classLevel === 11 ? 'Introduction to Accounting' : 'Partnership Accounts'),
+                  question: q.Question || q.QuestionText,
+                  marks: qMarks || 6,
+                  modelAnswer: q.Explanation || q.ModelAnswer || q.CorrectAnswer || 'Pass requisite Journal Entries with proper narrations and account heads.',
+                  rubric: q.Rubric || q.Official_CBSE_Marking_Scheme || '• Full steps as per CBSE guidelines',
+                  traps: q.TrapAlert || q.Traps || 'Ensure double underline under final balance totals.'
+                };
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      Logger.log('Notice in getApprovedSubjectiveQuestion_ reading ' + bankTabs[t] + ': ' + err.message);
+    }
   }
 
   // 2. Curated Authentic CBSE Multi-Mark Vault by Class Level & Mark Tier
+  // Filter out any questions already logged in Subjective_PDF_Log (prevent Nov 11 repetitions)
+  var vault = getCuratedSubjectiveVault_(classLevel);
+
+  // Pass 1: Match targetMarks if specified and not used
+  for (var v = 0; v < vault.length; v++) {
+    var candidate = vault[v];
+    if (targetMarks && candidate.marks !== targetMarks) continue;
+    if (!usedQids[candidate.qid]) {
+      return candidate;
+    }
+  }
+
+  // Pass 2: Any question in vault not yet used
+  for (var v2 = 0; v2 < vault.length; v2++) {
+    if (!usedQids[vault[v2].qid]) {
+      return vault[v2];
+    }
+  }
+
+  // Pass 3: If all vault questions have been dispatched, rotate back
+  if (targetMarks) {
+    for (var v3 = 0; v3 < vault.length; v3++) {
+      if (vault[v3].marks === targetMarks) return vault[v3];
+    }
+  }
+  return vault[0];
+}
+
+function getCuratedSubjectiveVault_(classLevel) {
   if (classLevel === 11) {
-    if (targetMarks === 3 || targetMarks === 4) {
-      return {
+    return [
+      {
         qid: 'C11_SUBJ_4M_BRS',
         subject: 'Accountancy',
         chapter: 'Chapter 5',
@@ -840,10 +813,8 @@ function getApprovedSubjectiveQuestion_(classLevel, subtopic, targetMarks) {
         traps:
           '⚠️ Common Trap: Confusing Pass Book debit balance (overdraft) with favourable Cash Book debit balance.\n' +
           '⚠️ Cheques presented (₹11,000) must NOT be added; only the unpresented portion (₹7,000) is added.'
-      };
-    } else {
-      // 6-Mark Class 11 Comprehensive Problem
-      return {
+      },
+      {
         qid: 'C11_SUBJ_6M_FINSTMT',
         subject: 'Accountancy',
         chapter: 'Chapter 8',
@@ -889,13 +860,111 @@ function getApprovedSubjectiveQuestion_(classLevel, subtopic, targetMarks) {
         traps:
           '⚠️ Dual Adjustment Rule: All 4 adjustments must appear in TWO places (Trading/P&L and Balance Sheet).\n' +
           '⚠️ Prepaid Salary must be deducted from expense and placed on Assets side.'
-      };
-    }
+      },
+      {
+        qid: 'C11_SUBJ_3M_DEPR',
+        subject: 'Accountancy',
+        chapter: 'Chapter 7',
+        chapterName: 'Depreciation, Provisions and Reserves',
+        question:
+          'On 1st April 2023, Gyan Logistics purchased a commercial vehicle for ₹6,00,000. ' +
+          'Depreciation is provided @ 10% p.a. on the Straight Line Method. Accounts are closed on 31st March every year. ' +
+          'On 1st October 2025, the vehicle was sold for ₹4,20,000. ' +
+          'Prepare the Commercial Vehicle Account for the three financial years 2023-24, 2024-25, and 2025-26.',
+        marks: 3,
+        modelAnswer:
+          'COMMERCIAL VEHICLE ACCOUNT\n' +
+          '------------------------------------------------------------------------------------\n' +
+          'Date       Particulars              Amount (₹) | Date       Particulars              Amount (₹)\n' +
+          '------------------------------------------------------------------------------------\n' +
+          '01-Apr-23  To Bank A/c                6,00,000 | 31-Mar-24  By Depreciation A/c          60,000\n' +
+          '                                               | 31-Mar-24  By Balance c/d              5,40,000\n' +
+          'Total                                 6,00,000 | Total                                  6,00,000\n' +
+          '------------------------------------------------------------------------------------\n' +
+          '01-Apr-24  To Balance b/d             5,40,000 | 31-Mar-25  By Depreciation A/c          60,000\n' +
+          '                                               | 31-Mar-25  By Balance c/d              4,80,000\n' +
+          'Total                                 5,40,000 | Total                                  5,40,000\n' +
+          '------------------------------------------------------------------------------------\n' +
+          '01-Apr-25  To Balance b/d             4,80,000 | 01-Oct-25  By Dep. A/c (6 mos)          30,000\n' +
+          '                                               | 01-Oct-25  By Bank A/c (Sale)          4,20,000\n' +
+          '                                               | 01-Oct-25  By Profit & Loss (Loss)      30,000\n' +
+          'Total                                 4,80,000 | Total                                  4,80,000\n' +
+          '====================================================================================',
+        rubric:
+          '• 1.0 Mark: Accurate depreciation for 2023-24 and 2024-25 (₹60,000 each)\n' +
+          '• 1.0 Mark: Correct proportionate depreciation for 6 months in 2025-26 (₹30,000)\n' +
+          '• 1.0 Mark: Accurate determination of Loss on Sale of vehicle (₹30,000)',
+        traps:
+          '⚠️ Time Pro-Rata Trap: In year of sale, depreciation must be charged for only 6 months (1 Apr to 1 Oct).\n' +
+          '⚠️ Book value on 1-Oct-25 is ₹4,50,000; selling at ₹4,20,000 gives Loss of ₹30,000.'
+      },
+      {
+        qid: 'C11_SUBJ_5M_RECTIFICATION',
+        subject: 'Accountancy',
+        chapter: 'Chapter 6',
+        chapterName: 'Trial Balance and Rectification of Errors',
+        question:
+          'Pass rectifying journal entries through Suspense Account for the following errors detected after preparing the Trial Balance:\n' +
+          '1. Sales Book was overcast by ₹4,000.\n' +
+          '2. Purchase of office furniture for ₹9,000 was debited to Purchases Account.\n' +
+          '3. Cash of ₹5,500 received from Mohan was credited to Sohan\'s Account.\n' +
+          '4. Goods returned to supplier ₹2,400 were entered in Returns Inward Book.\n' +
+          '5. An amount of ₹1,800 paid for repairs of machinery was debited to Machinery Account.',
+        marks: 5,
+        modelAnswer:
+          'JOURNAL PROPER (RECTIFYING ENTRIES)\n' +
+          '------------------------------------------------------------------------------------\n' +
+          'No. Particulars                                          L.F.  Debit (₹)   Credit (₹)\n' +
+          '------------------------------------------------------------------------------------\n' +
+          '1.  Sales A/c                                        Dr.           4,000\n' +
+          '      To Suspense A/c                                                          4,000\n' +
+          '    (Being overcasting of Sales Book rectified)\n' +
+          '2.  Furniture A/c                                    Dr.           9,000\n' +
+          '      To Purchases A/c                                                         9,000\n' +
+          '    (Being purchase of furniture wrongly debited to purchases rectified)\n' +
+          '3.  Sohan A/c                                        Dr.           5,500\n' +
+          '      To Mohan A/c                                                             5,500\n' +
+          '    (Being cash received from Mohan wrongly credited to Sohan rectified)\n' +
+          '4.  Returns Inward A/c                               Dr.           2,400\n' +
+          '    Suspense A/c                                     Dr.           2,400\n' +
+          '      To Returns Outward A/c (or dual entry)                                  4,800\n' +
+          '    (Being returns outward entered in returns inward rectified)\n' +
+          '5.  Repairs A/c                                      Dr.           1,800\n' +
+          '      To Machinery A/c                                                         1,800\n' +
+          '    (Being revenue repairs wrongly capitalized to machinery rectified)\n' +
+          '====================================================================================',
+        rubric:
+          '• 1 Mark for each accurate rectifying entry with appropriate account heads and narrations',
+        traps:
+          '⚠️ Suspense account is only used for ONE-SIDED errors (error 1). Error 2, 3, and 5 are two-sided.'
+      },
+      {
+        qid: 'C11_SUBJ_2M_ACCPRINC',
+        subject: 'Accountancy',
+        chapter: 'Chapter 2',
+        chapterName: 'Theory Base of Accounting & Principles',
+        question:
+          'State with brief practical justification:\n' +
+          '1. Why is closing stock always valued at "Cost or Net Realisable Value (Market Value), whichever is lower"?\n' +
+          '2. Why are outstanding expenses added to current year expenses even if cash is not yet paid?',
+        marks: 2,
+        modelAnswer:
+          '1. Valuation of Closing Stock (Prudence / Conservatism Principle):\n' +
+          '   As per the Prudence Concept, an accountant must account for all anticipated losses but anticipate no unrealized gains. Valuing closing stock at the lower of cost or market price ensures assets and profits are not overstated.\n\n' +
+          '2. Outstanding Expenses (Accrual / Matching Concept):\n' +
+          '   As per the Matching Concept and Accrual Assumption, all expenses incurred to generate revenue of the current accounting period must be recognized in the same period, regardless of whether actual cash payment has been made.',
+        rubric:
+          '• 1 Mark: Correct naming and explanation of Prudence / Conservatism Principle\n' +
+          '• 1 Mark: Correct naming and explanation of Matching Concept / Accrual Basis',
+        traps:
+          '⚠️ Mentioning "Convention of Consistency" instead of Prudence or Matching is an examiner trap.'
+      }
+    ];
   }
 
-  // Class 12 (3 or 4 Marks)
-  if (classLevel === 12 && (targetMarks === 3 || targetMarks === 4)) {
-    return {
+  // Class 12 Vault
+  return [
+    {
       qid: 'C12_SUBJ_4M_SHARES',
       subject: 'Accountancy',
       chapter: 'Chapter 7',
@@ -932,43 +1001,165 @@ function getApprovedSubjectiveQuestion_(classLevel, subtopic, targetMarks) {
       traps:
         '⚠️ Securities Premium Trap: Premium was received with allotment, so Securities Premium A/c must NOT be debited on forfeiture (Sec 52(2) Rule).\n' +
         '⚠️ Capital Reserve Pro-Rata Trap: Only gain on the 300 REISSUED shares (₹5 - ₹2 = ₹3 per share) is transferred, NOT the entire ₹2,500 balance.'
-    };
-  }
-
-  // Class 12 Problem (Default / 6-Mark)
-  return {
-    qid: 'C12_SUBJ_6M_PARTNER',
-    subject: 'Accountancy',
-    chapter: 'Chapter 1',
-    chapterName: 'Accounting for Partnership Firms - Fundamentals',
-    question:
-      'A and B are partners sharing profits in the ratio of 3:2 with capitals of ₹5,00,000 and ₹3,00,000 respectively. ' +
-      'Interest on capital is agreed @ 6% p.a. B is to be allowed an annual salary of ₹60,000. ' +
-      'During the year ended 31st March 2026, the profit earned by the firm prior to any appropriations was ₹2,40,000. ' +
-      'Prepare Profit and Loss Appropriation Account and Partners\' Capital Accounts assuming capitals are fluctuating.',
-    marks: 6,
-    modelAnswer:
-      'PROFIT AND LOSS APPROPRIATION ACCOUNT for the year ended 31-Mar-2026\n' +
-      '------------------------------------------------------------------------------------\n' +
-      'Particulars                            Amount (₹)   Particulars           Amount (₹)\n' +
-      '------------------------------------------------------------------------------------\n' +
-      'To Interest on Capital:                             By Net Profit b/d       2,40,000\n' +
-      '  A (6% on 5,00,000) = 30,000\n' +
-      '  B (6% on 3,00,000) = 18,000             48,000\n' +
-      'To Partner Salary (B)                     60,000\n' +
-      'To Divisible Profit transferred to:\n' +
-      '  A Capital A/c (3/5) = 79,200\n' +
-      '  B Capital A/c (2/5) = 52,800           1,32,000\n' +
-      '------------------------------------------------------------------------------------\n' +
-      'TOTAL                                   2,40,000   TOTAL                   2,40,000\n' +
-      '====================================================================================',
-    rubric:
-      '• 1.5 Marks: Correct calculation of Interest on Capital (A: ₹30,000, B: ₹18,000)\n' +
-      '• 1.0 Mark: Salary to B correctly treated as Appropriation\n' +
-      '• 1.5 Marks: Correct calculation of Divisible Profit (₹1,32,000 divided in 3:2)\n' +
-      '• 2.0 Marks: Neatly prepared Capital Accounts with correct closing balances',
-    traps:
-      '⚠️ Common Error: Splitting divisible profit equally instead of 3:2.\n' +
-      '⚠️ Forgetting double underline closing rules under the ledger total.'
-  };
+    },
+    {
+      qid: 'C12_SUBJ_6M_ADMISSION',
+      subject: 'Accountancy',
+      chapter: 'Chapter 3',
+      chapterName: 'Admission of a Partner',
+      question:
+        'Deepak and Alok are partners sharing profits in the ratio of 3:2. On 31st March 2026, their Balance Sheet showed: ' +
+        'Capitals: Deepak ₹1,80,000, Alok ₹1,20,000; General Reserve ₹40,000; Creditors ₹50,000; Debtors ₹80,000 (less Provision ₹4,000); Stock ₹70,000; Machinery ₹1,40,000; Cash at Bank ₹1,04,000. ' +
+        'They admit Rohit for a 1/5th share on 1st April 2026. Rohit brings ₹1,00,000 as capital and ₹30,000 for goodwill. ' +
+        'Adjustments:\n' +
+        '1. Stock is appreciated by ₹10,000.\n' +
+        '2. Provision for Doubtful Debts is increased to 10% on Debtors.\n' +
+        '3. Machinery is depreciated by 10%.\n' +
+        'Prepare Revaluation Account and Partners\' Capital Accounts.',
+      marks: 6,
+      modelAnswer:
+        'REVALUATION ACCOUNT\n' +
+        '------------------------------------------------------------------------------------\n' +
+        'Particulars                            Amount (₹) | Particulars           Amount (₹)\n' +
+        '------------------------------------------------------------------------------------\n' +
+        'To Provision for Doubtful Debts             4,000 | By Stock A/c (Appr.)       10,000\n' +
+        'To Machinery A/c (10% of 1,40,000)         14,000 | By Revaluation Loss c/d:\n' +
+        '                                                   |   Deepak (3/5) = 4,800\n' +
+        '                                                   |   Alok (2/5)   = 3,200     8,000\n' +
+        'Total                                      18,000 | Total                      18,000\n' +
+        '====================================================================================\n' +
+        'PARTNERS\' CAPITAL ACCOUNTS\n' +
+        '------------------------------------------------------------------------------------\n' +
+        'Particulars       Deepak (₹)   Alok (₹)  Rohit (₹) | Particulars       Deepak (₹)   Alok (₹)  Rohit (₹)\n' +
+        '------------------------------------------------------------------------------------\n' +
+        'To Revaluation Loss    4,800      3,200          - | By Balance b/d     1,80,000   1,20,000          -\n' +
+        'To Balance c/d       2,17,200   1,44,800   1,00,000 | By Gen. Reserve     24,000     16,000          -\n' +
+        '                                                   | By Prem. for GW     18,000     12,000          -\n' +
+        '                                                   | By Bank A/c              -          -   1,00,000\n' +
+        'Total                2,22,000   1,48,000   1,00,000 | Total              2,22,000   1,48,000   1,00,000\n' +
+        '====================================================================================',
+      rubric:
+        '• 2.0 Marks: Accurate Revaluation A/c with correct loss of ₹8,000 divided in 3:2\n' +
+        '• 1.5 Marks: Correct distribution of General Reserve (₹24k / ₹16k) and Premium for Goodwill (₹18k / ₹12k) in sacrificing ratio\n' +
+        '• 2.5 Marks: Balanced Partners\' Capital Accounts with correct closing balances',
+      traps:
+        '⚠️ Provision Increase Trap: Existing provision is ₹4,000. 10% on ₹80,000 is ₹8,000. So additional debit is ₹4,000, NOT ₹8,000!\n' +
+        '⚠️ Premium for goodwill is shared in SACRIFICING ratio (3:2), never new ratio.'
+    },
+    {
+      qid: 'C12_SUBJ_6M_PARTNER',
+      subject: 'Accountancy',
+      chapter: 'Chapter 1',
+      chapterName: 'Accounting for Partnership Firms - Fundamentals',
+      question:
+        'A and B are partners sharing profits in the ratio of 3:2 with capitals of ₹5,00,000 and ₹3,00,000 respectively. ' +
+        'Interest on capital is agreed @ 6% p.a. B is to be allowed an annual salary of ₹60,000. ' +
+        'During the year ended 31st March 2026, the profit earned by the firm prior to any appropriations was ₹2,40,000. ' +
+        'Prepare Profit and Loss Appropriation Account and Partners\' Capital Accounts assuming capitals are fluctuating.',
+      marks: 6,
+      modelAnswer:
+        'PROFIT AND LOSS APPROPRIATION ACCOUNT for the year ended 31-Mar-2026\n' +
+        '------------------------------------------------------------------------------------\n' +
+        'Particulars                            Amount (₹)   Particulars           Amount (₹)\n' +
+        '------------------------------------------------------------------------------------\n' +
+        'To Interest on Capital:                             By Net Profit b/d       2,40,000\n' +
+        '  A (6% on 5,00,000) = 30,000\n' +
+        '  B (6% on 3,00,000) = 18,000             48,000\n' +
+        'To Partner Salary (B)                     60,000\n' +
+        'To Divisible Profit transferred to:\n' +
+        '  A Capital A/c (3/5) = 79,200\n' +
+        '  B Capital A/c (2/5) = 52,800           1,32,000\n' +
+        '------------------------------------------------------------------------------------\n' +
+        'TOTAL                                   2,40,000   TOTAL                   2,40,000\n' +
+        '====================================================================================',
+      rubric:
+        '• 1.5 Marks: Correct calculation of Interest on Capital (A: ₹30,000, B: ₹18,000)\n' +
+        '• 1.0 Mark: Salary to B correctly treated as Appropriation\n' +
+        '• 1.5 Marks: Correct calculation of Divisible Profit (₹1,32,000 divided in 3:2)\n' +
+        '• 2.0 Marks: Neatly prepared Capital Accounts with correct closing balances',
+      traps:
+        '⚠️ Common Error: Splitting divisible profit equally instead of 3:2.\n' +
+        '⚠️ Forgetting double underline closing rules under the ledger total.'
+    },
+    {
+      qid: 'C12_SUBJ_4M_DEBENTURES',
+      subject: 'Accountancy',
+      chapter: 'Chapter 8',
+      chapterName: 'Issue and Redemption of Debentures',
+      question:
+        'Gyan Engineering Ltd. issued 2,000 9% Debentures of ₹100 each at a discount of 4%, redeemable at a premium of 5% after 5 years. ' +
+        'The entire issue was fully subscribed. The company has a balance of ₹25,000 in Securities Premium Account. ' +
+        'Pass necessary journal entries for the issue of debentures and for writing off the Loss on Issue of Debentures.',
+      marks: 4,
+      modelAnswer:
+        'JOURNAL OF GYAN ENGINEERING LTD.\n' +
+        '------------------------------------------------------------------------------------\n' +
+        'Date       Particulars                                   L.F.   Debit (₹)  Credit (₹)\n' +
+        '------------------------------------------------------------------------------------\n' +
+        '           Bank A/c (2,000 x 96)                     Dr.          1,92,000\n' +
+        '             To 9% Debenture Application & Allotment A/c                     1,92,000\n' +
+        '           (Being application money received on 2,000 debentures @ ₹96)\n' +
+        '------------------------------------------------------------------------------------\n' +
+        '           9% Debenture App. & Allotment A/c         Dr.          1,92,000\n' +
+        '           Loss on Issue of Debentures A/c (4% + 5%) Dr.            18,000\n' +
+        '             To 9% Debentures A/c (2,000 x 100)                              2,00,000\n' +
+        '             To Premium on Redemption of Debentures A/c (5%)                   10,000\n' +
+        '           (Being 2,000 debentures issued at 4% discount redeemable at 5% premium)\n' +
+        '------------------------------------------------------------------------------------\n' +
+        '           Securities Premium A/c                    Dr.            18,000\n' +
+        '             To Loss on Issue of Debentures A/c                               18,000\n' +
+        '           (Being total loss on issue written off from Securities Premium)\n' +
+        '====================================================================================',
+      rubric:
+        '• 1.0 Mark: Accurate entry for application money receipt (₹1,92,000)\n' +
+        '• 2.0 Marks: Accurate allotment entry recognizing Loss on Issue (₹18,000) and Premium on Redemption (₹10,000)\n' +
+        '• 1.0 Mark: Accurate write-off entry of Loss on Issue from Securities Premium',
+      traps:
+        '⚠️ Loss on Issue includes BOTH discount on issue (₹8,000) + premium on redemption (₹10,000) = ₹18,000.\n' +
+        '⚠️ Section 52(2) prioritizes Securities Premium for writing off debenture issue loss.'
+    },
+    {
+      qid: 'C12_SUBJ_3M_CFS',
+      subject: 'Accountancy',
+      chapter: 'Chapter 10',
+      chapterName: 'Cash Flow Statement',
+      question:
+        'From the following information, calculate "Cash Flow from Operating Activities" of Begusarai Chemicals Ltd.:\n' +
+        '• Net Profit before Tax and Extraordinary Items: ₹4,50,000\n' +
+        '• Depreciation on Plant & Machinery: ₹55,000\n' +
+        '• Goodwill amortised: ₹20,000\n' +
+        '• Gain on sale of land: ₹30,000\n' +
+        '• Increase in Trade Receivables: ₹40,000\n' +
+        '• Decrease in Inventories: ₹25,000\n' +
+        '• Increase in Trade Payables: ₹15,000\n' +
+        '• Income tax paid during the year: ₹60,000',
+      marks: 3,
+      modelAnswer:
+        'CASH FLOW FROM OPERATING ACTIVITIES\n' +
+        '------------------------------------------------------------------------------------\n' +
+        'Particulars                                                           Amount (₹)\n' +
+        '------------------------------------------------------------------------------------\n' +
+        'Net Profit before Tax and Extraordinary Items                            4,50,000\n' +
+        'Adjustments for Non-Cash and Non-Operating Items:\n' +
+        '  Add: Depreciation on Plant & Machinery                                   55,000\n' +
+        '  Add: Goodwill amortised                                                  20,000\n' +
+        '  Less: Gain on sale of land (investing activity)                         (30,000)\n' +
+        'Operating Profit before Working Capital Changes                          4,95,000\n' +
+        'Adjustments for Working Capital Changes:\n' +
+        '  Less: Increase in Trade Receivables (Current Asset)                     (40,000)\n' +
+        '  Add: Decrease in Inventories (Current Asset)                             25,000\n' +
+        '  Add: Increase in Trade Payables (Current Liability)                      15,000\n' +
+        'Cash Generated from Operations                                           4,95,000\n' +
+        'Less: Income Tax Paid                                                     (60,000)\n' +
+        'Net Cash Flow from Operating Activities                                  4,35,000\n' +
+        '====================================================================================',
+      rubric:
+        '• 1.0 Mark: Accurate Operating Profit before Working Capital changes (₹4,95,000)\n' +
+        '• 1.0 Mark: Accurate adjustments for working capital items (Net change ₹0)\n' +
+        '• 1.0 Mark: Accurate Net Cash from Operating Activities after tax payment (₹4,35,000)',
+      traps:
+        '⚠️ Gain on sale of land must be DEDUCTED because it is an investing activity cash inflow.\n' +
+        '⚠️ Increase in current assets is an outflow (-), increase in current liabilities is an inflow (+).'
+    }
+  ];
 }
