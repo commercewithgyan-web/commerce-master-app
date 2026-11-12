@@ -308,6 +308,14 @@ function checkBalanceSheetIntegrity() {
   } else {
     Logger.log('  ✅ Balance Sheet equation verified perfectly: ' + bs.verification.equation);
   }
+  return {
+    ok: true,
+    balanced: bs.verification.isBalanced,
+    equation: bs.verification.equation,
+    totalAssets: bs.assets.totalAssets,
+    totalLiabilitiesAndEquity: bs.verification.totalLiabilitiesAndEquity,
+    variance: bs.verification.variance
+  };
 }
 
 /**

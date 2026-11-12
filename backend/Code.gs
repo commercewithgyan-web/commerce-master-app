@@ -2326,7 +2326,14 @@ function handleApiRequest(req) {
       dataResult = (typeof apiGenerateLessonPlan_ === 'function') ? apiGenerateLessonPlan_(verifiedUser, payload) : { ok: true };
       break;
     case 'generateWeeklySummary':
-      dataResult = (typeof generateWeeklySummary_ === 'function') ? { summary: generateWeeklySummary_(String(verifiedUser.id)) } : { summary: '' };
+      if (!verifiedUser || !verifiedUser.id || verifiedUser.id === 0 || verifiedUser.id === '0') {
+        throw new Error('HTTP 401: AUTH_FAILED (MISSING_INIT_DATA)');
+      }
+      var targetTgId = String(verifiedUser.id);
+      if (verifiedUser.is_admin && payload && payload.telegramId) {
+        targetTgId = String(payload.telegramId);
+      }
+      dataResult = (typeof generateWeeklySummary_ === 'function') ? { summary: generateWeeklySummary_(targetTgId) } : { summary: '' };
       break;
     case 'getMonthlyPL':
       dataResult = (typeof apiGetMonthlyPL_ === 'function') ? apiGetMonthlyPL_(verifiedUser, payload) : {};
@@ -2341,6 +2348,7 @@ function handleApiRequest(req) {
       dataResult = (typeof checkBalanceSheetIntegrity === 'function') ? checkBalanceSheetIntegrity() : { ok: true, balanced: true };
       break;
     case 'reconcileNotebookRegistry':
+      requireAdmin_(verifiedUser && verifiedUser.id);
       dataResult = reconcileNotebookRegistry_(verifiedUser, payload);
       break;
     default:
@@ -2357,6 +2365,7 @@ function handleApiRequest(req) {
  * @return {Object}
  */
 function reconcileNotebookRegistry_(verifiedUser, payload) {
+  requireAdmin_(verifiedUser && verifiedUser.id);
   var rollNo = (payload && (payload.rollNo || payload.Roll_No)) || 'CG-11-001';
   var telegramId = String(verifiedUser && verifiedUser.id ? verifiedUser.id : '');
   var qbSS = openSpreadsheet_('SHEET_QB');

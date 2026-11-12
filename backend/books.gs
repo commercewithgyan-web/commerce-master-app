@@ -154,7 +154,21 @@ function calculateMonthlyPL_(targetMonth, targetYear) {
     var pMonth = pDate.getMonth() + 1;
     var pYear = pDate.getFullYear();
 
-    if ((pMonth === m && pYear === y) || (p.ForMonth && p.ForMonth.indexOf(monthNames[m - 1]) !== -1)) {
+    var rawForMonth = p.ForMonth || p.forMonth || '';
+    var forMonthStr = '';
+    if (rawForMonth) {
+      if (rawForMonth instanceof Date) {
+        try {
+          forMonthStr = Utilities.formatDate(rawForMonth, 'Asia/Kolkata', 'MMM yyyy');
+        } catch (fmtErr) {
+          forMonthStr = String(rawForMonth);
+        }
+      } else {
+        forMonthStr = String(rawForMonth);
+      }
+    }
+
+    if ((pMonth === m && pYear === y) || (forMonthStr && forMonthStr.indexOf(monthNames[m - 1]) !== -1)) {
       var amt = parseFloat(p.Amount) || 0;
       totalRevenue += amt;
       var mode = p.Mode || 'UPI';
