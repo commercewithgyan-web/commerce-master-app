@@ -8,6 +8,32 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/auth-failed.css">
+  <script>
+    // Global AUTH_FAILED screen overlay for unauthorized or outside-Telegram sessions
+    window.showAuthFailed = function(customMsg) {
+      if (document.getElementById('cgAuthFailedOverlay')) return;
+      try {
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+          window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+        }
+      } catch (e) {}
+      var overlay = document.createElement('div');
+      overlay.id = 'cgAuthFailedOverlay';
+      overlay.className = 'auth-failed-overlay';
+      overlay.innerHTML = [
+        '<div class="auth-failed-card">',
+        '  <div class="auth-failed-logo">CG</div>',
+        '  <h2 class="auth-failed-title">Telegram Login Required</h2>',
+        '  <p class="auth-failed-desc">' + (customMsg || 'Yeh app sirf Telegram (@CommerceGyanDostbot) ke andar kaam karta hai. Kripya Telegram bot kholkar Mini App launch karein.') + '</p>',
+        '  <a href="https://t.me/CommerceGyanDostbot" class="auth-failed-btn">',
+        '    <span>🚀</span><span>Open in Telegram</span>',
+        '  </a>',
+        '</div>'
+      ].join('');
+      document.body.appendChild(overlay);
+    };
+  </script>
   <style>
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -69,7 +95,7 @@
         <div class="truncate">
           <div class="flex items-center gap-2">
             <span class="font-bold text-sm sm:text-base tracking-tight truncate">Commerce Gyan Studio</span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 animate-pulse shadow-sm">v3.1 LIVE</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 animate-pulse shadow-sm">v3.2 LIVE</span>
             <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">EMStudio Pro + 8-Spoke Hub</span>
           </div>
           <p class="text-[11px] text-slate-400 hidden sm:block truncate">Gyan Sir · Begusarai, Bihar · Class 11 & 12 (All 8 Subjects · CBSE & BSEB)</p>
@@ -1551,7 +1577,7 @@
       <div>
         <div class="flex items-center gap-2">
           <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-400">Telegram Teacher Daily Ops</span>
-          <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 animate-pulse shadow-sm">v3.1 LIVE</span>
+          <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 animate-pulse shadow-sm">v3.2 LIVE</span>
         </div>
         <h2 class="text-sm font-extrabold">Gyan Sir · Begusarai Mobile Remote</h2>
       </div>
@@ -1663,7 +1689,7 @@
           <div>
             <div class="flex items-center gap-1.5">
               <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Telegram Mini App</span>
-              <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 animate-pulse">v3.1 LIVE</span>
+              <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 animate-pulse">v3.2 LIVE</span>
               <span id="envBadge" class="text-[9px] px-1.5 py-0.2 rounded font-bold bg-slate-800 text-amber-300 border border-slate-700">PROD</span>
             </div>
             <h2 id="tgStudentNameHeader" class="text-base font-extrabold text-white">Aarav Sharma (CG-1201)</h2>
@@ -4948,7 +4974,7 @@
       var sw = $('studentWorkspace');
       if (sw) sw.classList.add('hidden');
     }
-    banner('LIVE v3.1: All 11 Studio Tabs, 7-Step Inquiry-to-Admission Hub, 5 Mobile Teacher Ops Tabs & 6 Student Tabs connected to Google Sheets.');
+    banner('LIVE v3.2: All 11 Studio Tabs, 7-Step Inquiry-to-Admission Hub, 5 Mobile Teacher Ops Tabs & 6 Student Tabs connected to Google Sheets.');
     var urlInput = $('gasWebhookUrlInput');
     var urlBtn = $('saveGasUrlBtn');
     if (urlInput && urlBtn) {
@@ -5091,29 +5117,19 @@
       } catch (e) { /* not inside Telegram */ }
     }
 
-    var currentUserId = '';
-    try {
-      if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        currentUserId = String(tg.initDataUnsafe.user.id || '');
-      }
-    } catch (_) {}
-
-    var isAdminByTelegramId = (currentUserId === '552858970');
-
-    // Case 1: Outside Telegram (Standard Web Browser)
-    // Never block Gyan Sir when opening in Chrome / Safari on desktop or mobile
+    // Require verified Telegram initData (Abolish client-side guest/admin bypass)
     if (!initData) {
       hideGate();
       unlock();
-      if (typeof window.switchAppMode === 'function') {
-        window.switchAppMode('teacher');
+      if (typeof window.showAuthFailed === 'function') {
+        window.showAuthFailed();
+      } else {
+        showGate('Telegram Required', 'Yeh app sirf Telegram (@CommerceGyanDostbot) ke andar kaam karta hai. Kripya Telegram bot kholkar Mini App launch karein.', false);
       }
-      startTeacher();
-      toast('Teacher Command Studio loaded (Web Browser Mode)', 'indigo');
       return;
     }
 
-    // Case 2: Inside Telegram
+    // Inside Telegram: Authenticate server-side via HMAC initData
     showGate('Commerce Gyan', 'Verifying your account…', true);
 
     api('getSession').catch(function () {
@@ -5124,8 +5140,7 @@
       session = s;
 
       var roleStr = String((s && (s.role || (s.data && s.data.role))) || '').toUpperCase();
-      var isAdmin = isAdminByTelegramId ||
-                    (s && (s.isAdmin === true || s.is_admin === true || (s.data && s.data.isAdmin === true))) ||
+      var isAdmin = (s && (s.isAdmin === true || s.is_admin === true || (s.data && s.data.isAdmin === true))) ||
                     roleStr === 'ADMIN' ||
                     roleStr === 'TEACHER';
 
@@ -5149,18 +5164,7 @@
         );
       }
     }).catch(function (e) {
-      // If error but Telegram user is Gyan Sir (552858970)
-      if (isAdminByTelegramId) {
-        hideGate();
-        unlock();
-        if (typeof window.switchAppMode === 'function') {
-          window.switchAppMode('teacher');
-        }
-        startTeacher();
-        toast('Admin offline bypass active', 'amber');
-      } else {
-        showGate('Connection problem', 'Could not reach server (' + e.message + '). Please reopen the app.');
-      }
+      showGate('Connection problem', 'Could not reach server (' + e.message + '). Please reopen the app.');
     });
   }
 

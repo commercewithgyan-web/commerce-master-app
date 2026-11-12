@@ -71,7 +71,7 @@ var TG_APP = {
     if (this.tg && this.tg.initDataUnsafe && this.tg.initDataUnsafe.user) {
       return this.tg.initDataUnsafe.user;
     }
-    return { id: 'GUEST_STUDENT', first_name: 'Student', last_name: '' };
+    return null;
   },
 
   // ─────────────────────────────────────────────────────────────────
@@ -133,3 +133,25 @@ window.toggleTheme = function() {
 document.addEventListener('DOMContentLoaded', function() {
   TG_APP.init();
 });
+
+// Global AUTH_FAILED screen overlay for unauthorized or outside-Telegram sessions
+window.showAuthFailed = function(customMsg) {
+  if (document.getElementById('cgAuthFailedOverlay')) return;
+  if (window.TG_APP && typeof window.TG_APP.hapticError === 'function') {
+    window.TG_APP.hapticError();
+  }
+  var overlay = document.createElement('div');
+  overlay.id = 'cgAuthFailedOverlay';
+  overlay.className = 'auth-failed-overlay';
+  overlay.innerHTML = [
+    '<div class="auth-failed-card">',
+    '  <div class="auth-failed-logo">CG</div>',
+    '  <h2 class="auth-failed-title">Telegram Login Required</h2>',
+    '  <p class="auth-failed-desc">' + (customMsg || 'Yeh app sirf Telegram (@CommerceGyanDostbot) ke andar kaam karta hai. Kripya Telegram bot kholkar Mini App launch karein.') + '</p>',
+    '  <a href="https://t.me/CommerceGyanDostbot" class="auth-failed-btn">',
+    '    <span>🚀</span><span>Open in Telegram</span>',
+    '  </a>',
+    '</div>'
+  ].join('');
+  document.body.appendChild(overlay);
+};

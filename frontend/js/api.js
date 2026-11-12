@@ -1,10 +1,25 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * COMMERCE MASTER APP v2.3 — API CLIENT & OFFLINE PWA ENGINE (api.js)
+ * COMMERCE MASTER APP v3.0 — API CLIENT & OFFLINE PWA ENGINE (api.js)
  * Zero-Lag REST Client, HMAC initData Injection,
  * 15 KB Local Offline Cache, and Auto-Sync on Network Restoration.
  * ═══════════════════════════════════════════════════════════════════════
  */
+
+// Stale cache eviction on version upgrade
+(function() {
+  var CURRENT_VERSION = '3.2.0';
+  var stored = '';
+  try { stored = localStorage.getItem('cg_app_version'); } catch (e) {}
+  if (stored !== CURRENT_VERSION) {
+    ['cg_cache_getHomeDashboard', 'cg_cache_getNotebook', 'cg_cache_getProgress',
+     'cg_cache_getFeeDashboard', 'cg_cache_getDailyQuestion', 'cg_cache_triggerExamPanicSOS',
+     'cg_offline_daily_q', 'cg_offline_home', 'cg_pending_sync'].forEach(function(k) {
+      try { localStorage.removeItem(k); } catch (e) {}
+    });
+    try { localStorage.setItem('cg_app_version', CURRENT_VERSION); } catch (e) {}
+  }
+})();
 
 var API_CLIENT = {
   // Configured Apps Script Web App Deployment URL
@@ -101,41 +116,10 @@ var API_CLIENT = {
       var result = await response.json();
 
       if (!result.ok) {
-        // Graceful Guest Student fallback for desktop browsers (Audit Bug 2 Fix)
-        if (result.error && (result.error.includes('STUDENT_NOT_FOUND') || result.error.includes('AUTH_REQUIRED'))) {
-          console.warn('Guest preview mode active for ' + action);
-          if (action === 'getHomeDashboard') {
-            return {
-              studentId: 'GUEST_STUDENT',
-              name: 'Guest Student',
-              classLevel: 12,
-              streak: 3,
-              cgCoins: 45,
-              speedBadges: 1,
-              rank: 1,
-              overallAccuracy: 75,
-              predictedScore: '68/80',
-              todaySubtopic: {
-                chapter: 'Accounting for Partnership Firms',
-                topic: 'Fundamentals & P&L Appropriation',
-                subject: 'Accountancy'
-              },
-              revisionDueCount: 0,
-              isAdmin: false
-            };
-          }
-          if (action === 'getProgress') {
-            return {
-              overallAccuracy: 75,
-              totalAttempted: 0,
-              correctAttempts: 0,
-              predictedBoardScore: 68,
-              predictedScoreDisplay: '68/80',
-              predictedPercentage: 85,
-              weakTopics: ['Accounting for Share Capital'],
-              chapters: []
-            };
-          }
+        if (result.code === 'AUTH_FAILED' || result.code === 'AUTH_REQUIRED' ||
+            (result.error && (result.error.includes('STUDENT_NOT_FOUND') || result.error.includes('AUTH_REQUIRED')))) {
+          if (typeof window.showAuthFailed === 'function') window.showAuthFailed();
+          throw new Error('AUTH_FAILED');
         }
         throw new Error(result.error || ('Server error: ' + JSON.stringify(result)));
       }
@@ -172,7 +156,7 @@ var API_CLIENT = {
 
       // Fallback to local storage for getHomeDashboard
       if (action === 'getHomeDashboard') {
-        var cachedHome = localStorage.getItem('cg_offline_home');
+        var cachedHome = localStorage.getItem('cg_cache_getHomeDashboard');
         if (cachedHome) return JSON.parse(cachedHome);
       }
 
