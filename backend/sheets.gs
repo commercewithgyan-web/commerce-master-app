@@ -339,3 +339,120 @@ function getNextId_(sheetKey, tabName, idColIndex, prefix, padLen) {
 
   return formatId_(prefix, lastRow, padLen);
 }
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════
+ * PHASE 1 EXTENSIONS: THEORY_BANK SCHEMA & RENDER_LOG MANAGEMENT
+ * ═══════════════════════════════════════════════════════════════════════
+ */
+
+/**
+ * Ensures optional columns exist in Theory_Bank tab (SHEET_QB):
+ * Render_Spec, Page_Break_Before, Dr_Cr_Check
+ */
+function ensureTheoryBankColumns_() {
+  try {
+    var sheet = getSheet_('SHEET_QB', 'Theory_Bank');
+    if (!sheet) return;
+    var headers = getHeaders_(sheet);
+    if (!headers || headers.length === 0) return;
+
+    var extraCols = ['Render_Spec', 'Page_Break_Before', 'Dr_Cr_Check'];
+    var toAppend = [];
+    for (var i = 0; i < extraCols.length; i++) {
+      if (headers.indexOf(extraCols[i]) === -1) {
+        toAppend.push(extraCols[i]);
+      }
+    }
+
+    if (toAppend.length > 0) {
+      var startCol = headers.length + 1;
+      sheet.getRange(1, startCol, 1, toAppend.length).setValues([toAppend]);
+      invalidateSheetCache_('SHEET_QB', 'Theory_Bank');
+      Logger.log('Added missing columns to Theory_Bank: ' + toAppend.join(', '));
+    }
+  } catch (err) {
+    Logger.log('Notice in ensureTheoryBankColumns_: ' + err.message);
+  }
+}
+
+/**
+ * Ensures Render_Log tab exists in SHEET_TG with official schema
+ * Headers: Date, Class, Subject, Q_ID, Page_Count, Content_Hash, PDF_URL, Status, Error_Message, Timestamp
+ */
+function ensureRenderLogTab_() {
+  try {
+    var ssId = getSheetIdByKey_('SHEET_TG');
+    if (!ssId) return null;
+    var ss = SpreadsheetApp.openById(ssId);
+    var tab = ss.getSheetByName('Render_Log');
+    var requiredHeaders = ['Date', 'Class', 'Subject', 'Q_ID', 'Page_Count', 'Content_Hash', 'PDF_URL', 'Status', 'Error_Message', 'Timestamp'];
+
+    if (!tab) {
+      tab = ss.insertSheet('Render_Log');
+      tab.getRange(1, 1, 1, requiredHeaders.length).setValues([requiredHeaders]);
+      tab.getRange(1, 1, 1, requiredHeaders.length).setFontWeight('bold').setBackground('#f3e8ff');
+      tab.setFrozenRows(1);
+      Logger.log('Created Render_Log tab in SHEET_TG');
+    } else {
+      var headers = getHeaders_(tab);
+      if (headers.length === 0) {
+        tab.getRange(1, 1, 1, requiredHeaders.length).setValues([requiredHeaders]);
+        tab.getRange(1, 1, 1, requiredHeaders.length).setFontWeight('bold').setBackground('#f3e8ff');
+        tab.setFrozenRows(1);
+      }
+    }
+    return tab;
+  } catch (err) {
+    Logger.log('Notice in ensureRenderLogTab_: ' + err.message);
+    return null;
+  }
+}
+
+/**
+ * Logs a PDF render execution event to Render_Log in SHEET_TG
+ * @param {Object} entry - { date, classLevel, subject, qid, pageCount, contentHash, pdfUrl, status, errorMessage, timestamp }
+ */
+function logRenderExecution_(entry) {
+  try {
+    ensureRenderLogTab_();
+    appendRow_('SHEET_TG', 'Render_Log', [
+      entry.date || getKolkataDate(),
+      entry.classLevel || 12,
+      entry.subject || 'Accountancy',
+      entry.qid || '',
+      entry.pageCount || 1,
+      entry.contentHash || '',
+      entry.pdfUrl || '',
+      entry.status || 'SUCCESS',
+      entry.errorMessage || '',
+      entry.timestamp || getKolkataTimestamp()
+    ]);
+  } catch (err) {
+    Logger.log('Error logging render execution: ' + err.message);
+  }
+}
+
+/**
+ * High-speed lookup for idempotent PDF generation.
+ * Returns cached PDF_URL if identical contentHash has already succeeded.
+ * @param {string} contentHash
+ * @return {string|null} Cached PDF_URL or null
+ */
+function findCachedRender_(contentHash) {
+  if (!contentHash) return null;
+  try {
+    ensureRenderLogTab_();
+    var rows = getAllRowsAsObjects_('SHEET_TG', 'Render_Log', 2000);
+    for (var i = rows.length - 1; i >= 0; i--) {
+      var r = rows[i];
+      if (String(r.Content_Hash || '').trim() === contentHash && String(r.Status || '').toUpperCase() === 'SUCCESS' && r.PDF_URL) {
+        return String(r.PDF_URL);
+      }
+    }
+  } catch (err) {
+    Logger.log('Notice in findCachedRender_: ' + err.message);
+  }
+  return null;
+}
+

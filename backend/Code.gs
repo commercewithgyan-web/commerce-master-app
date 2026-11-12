@@ -227,6 +227,24 @@ function doGet(e) {
           }
         };
         break;
+      case "testGenerateAccountancyMultiPagePdf":
+        result = { ok: true, data: testGenerateAccountancyMultiPagePdf(e && e.parameter ? e.parameter.classLevel : 12) };
+        break;
+      case "testGenerateEconomicsGraphPdf":
+        result = { ok: true, data: testGenerateEconomicsGraphPdf(e && e.parameter ? e.parameter.classLevel : 12) };
+        break;
+      case "testGenerateStatisticsFormulaPdf":
+        result = { ok: true, data: testGenerateStatisticsFormulaPdf(e && e.parameter ? e.parameter.classLevel : 11) };
+        break;
+      case "testGenerateBstFlowchartPdf":
+        result = { ok: true, data: testGenerateBstFlowchartPdf(e && e.parameter ? e.parameter.classLevel : 12) };
+        break;
+      case "testGenerateSubjectiveQuestionPdf":
+        result = { ok: true, data: testGenerateQuestionPdf(e && e.parameter ? e.parameter.classLevel : 12) };
+        break;
+      case "testGenerateSubjectiveAnswerPdf":
+        result = { ok: true, data: testGenerateAnswerPdf(e && e.parameter ? e.parameter.classLevel : 12) };
+        break;
       default:
         result = { ok: false, error: "Unknown GET action: " + action };
     }
@@ -389,6 +407,18 @@ function doPost(e) {
         break;
       case "testGenerateSubjectiveAnswerPdf":
         result = { ok: true, data: testGenerateAnswerPdf(payload ? payload.classLevel : 12) };
+        break;
+      case "testGenerateAccountancyMultiPagePdf":
+        result = { ok: true, data: testGenerateAccountancyMultiPagePdf(payload ? payload.classLevel : 12) };
+        break;
+      case "testGenerateEconomicsGraphPdf":
+        result = { ok: true, data: testGenerateEconomicsGraphPdf(payload ? payload.classLevel : 12) };
+        break;
+      case "testGenerateStatisticsFormulaPdf":
+        result = { ok: true, data: testGenerateStatisticsFormulaPdf(payload ? payload.classLevel : 11) };
+        break;
+      case "testGenerateBstFlowchartPdf":
+        result = { ok: true, data: testGenerateBstFlowchartPdf(payload ? payload.classLevel : 12) };
         break;
       case "saveCalendarEvent":
         result = saveCalendarEvent(payload);

@@ -207,312 +207,1207 @@ function sendSubjectiveAnswerPDF() {
   });
 }
 
+
 // ─────────────────────────────────────────────────────────────────────
-// 3. OFFICIAL "COMMERCE GYAN — DAILY PRACTICE SHEET" A4 PDF COMPILER
+// 3. OFFICIAL "COMMERCE GYAN — DAILY PRACTICE SHEET" A4 MULTI-PAGE ENGINE
 // ─────────────────────────────────────────────────────────────────────
+
+var _CACHED_STATIONERY_B64 = null;
+
+/**
+ * Retrieves base64 of official stationery PNG with in-memory execution caching
+ * @return {string}
+ */
+function getStationeryBackgroundBase64_() {
+  if (_CACHED_STATIONERY_B64) return _CACHED_STATIONERY_B64;
+  var props = PropertiesService.getScriptProperties();
+  var bgFileId = props.getProperty('PRACTICE_SHEET_BG_FILE_ID') || '1G5FOitdeuh8FgLbnkgNdqiftvtCfiIah';
+  if (!bgFileId) {
+    throw new Error('PRACTICE_SHEET_BG_FILE_ID is not configured in Script Properties.');
+  }
+  var bgFile = DriveApp.getFileById(bgFileId);
+  if (!bgFile) {
+    throw new Error('PRACTICE_SHEET_BG_FILE_ID (' + bgFileId + ') not found in Google Drive.');
+  }
+  _CACHED_STATIONERY_B64 = Utilities.base64Encode(bgFile.getBlob().getBytes());
+  return _CACHED_STATIONERY_B64;
+}
+
+/**
+ * Computes deterministic SHA-256 hash for idempotency checking
+ * @param {*} payload
+ * @return {string}
+ */
+function computeContentHash_(payload) {
+  var rawStr = typeof payload === 'string' ? payload : JSON.stringify(payload);
+  var hashBytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, rawStr, Utilities.Charset.UTF_8);
+  var out = '';
+  for (var i = 0; i < hashBytes.length; i++) {
+    var b = hashBytes[i];
+    var hex = (b < 0 ? b + 256 : b).toString(16);
+    out += (hex.length === 1 ? '0' + hex : hex);
+  }
+  return out;
+}
 
 /**
  * Compiles official A4 Question PDF on "Commerce Gyan — Daily Practice Sheet" template
+ * with quota guard & idempotency check.
  * @param {Object} data
- * @return {{ driveUrl: string, pdfBlob: GoogleAppsScript.Base.Blob, qid: string }}
+ * @return {{ driveUrl: string, pdfBlob: GoogleAppsScript.Base.Blob, qid: string, pageCount: number, cached: boolean }}
  */
 function createQuestionPdfFromTemplate_(data) {
-  var folder = getOrCreatePdfFolder_('Commerce Master App Daily PDFs');
-  var htmlContent = generateDailyPracticeSheetHtml_(data, false);
+  data = data || {};
+  var classLevel = Number(data.classLevel) || 12;
   var rawDate = String(data.date || getKolkataDate()).replace(/[^0-9a-zA-Z]/g, '_');
-  var fileName = 'DPS_Question_Class' + (data.classLevel || 12) + '_' + rawDate;
+  var qid = data.qid || ('Q_SUBJ_' + classLevel + '_' + rawDate);
 
-  var htmlBlob = Utilities.newBlob(htmlContent, 'text/html', fileName + '.html');
+  // 1. Idempotency Check
+  var hashInput = ['QUESTION', classLevel, data.subject || 'Accountancy', qid, data.questionText || ''].join(':::');
+  var contentHash = computeContentHash_(hashInput);
+  var cachedUrl = typeof findCachedRender_ === 'function' ? findCachedRender_(contentHash) : null;
+  if (cachedUrl) {
+    Logger.log('⚡ Idempotency Hit: Reusing rendered Question PDF: ' + cachedUrl);
+    return {
+      driveUrl: cachedUrl,
+      pdfBlob: null,
+      qid: qid,
+      pageCount: 1,
+      cached: true
+    };
+  }
+
+  // 2. Compile Multi-Page HTML
+  var renderResult = generateMultiPageDailyPracticeSheetHtml_(data, false);
+  var fileName = 'DPS_Question_Class' + classLevel + '_' + rawDate;
+  var htmlBlob = Utilities.newBlob(renderResult.html, 'text/html', fileName + '.html');
   var pdfBlob = htmlBlob.getAs('application/pdf');
   pdfBlob.setName(fileName + '.pdf');
 
+  var folder = getOrCreatePdfFolder_('Commerce Master App Daily PDFs');
   var permPdf = folder.createFile(pdfBlob);
   permPdf.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  var permUrl = permPdf.getUrl();
+
+  // 3. Log to Render_Log
+  if (typeof logRenderExecution_ === 'function') {
+    logRenderExecution_({
+      date: data.date || getKolkataDate(),
+      classLevel: classLevel,
+      subject: data.subject || 'Accountancy',
+      qid: qid,
+      pageCount: renderResult.pageCount,
+      contentHash: contentHash,
+      pdfUrl: permUrl,
+      status: 'SUCCESS',
+      errorMessage: ''
+    });
+  }
 
   return {
-    driveUrl: permPdf.getUrl(),
+    driveUrl: permUrl,
     pdfBlob: pdfBlob,
-    qid: data.qid || ('DPS-' + (data.classLevel || 12))
+    qid: qid,
+    pageCount: renderResult.pageCount,
+    cached: false
   };
 }
 
 /**
  * Compiles official A4 Model Answer PDF on "Commerce Gyan — Daily Practice Sheet" template
+ * with quota guard & idempotency check.
  * @param {Object} data
- * @return {{ driveUrl: string, pdfBlob: GoogleAppsScript.Base.Blob, qid: string }}
+ * @return {{ driveUrl: string, pdfBlob: GoogleAppsScript.Base.Blob, qid: string, pageCount: number, cached: boolean }}
  */
 function createAnswerPdfFromTemplate_(data) {
-  var folder = getOrCreatePdfFolder_('Commerce Master App Daily PDFs');
-  var htmlContent = generateDailyPracticeSheetHtml_(data, true);
+  data = data || {};
+  var classLevel = Number(data.classLevel) || 12;
   var rawDate = String(data.date || getKolkataDate()).replace(/[^0-9a-zA-Z]/g, '_');
-  var fileName = 'DPS_Answer_Class' + (data.classLevel || 12) + '_' + rawDate;
+  var qid = data.qid || ('A_SUBJ_' + classLevel + '_' + rawDate);
 
-  var htmlBlob = Utilities.newBlob(htmlContent, 'text/html', fileName + '.html');
+  // 1. Idempotency Check
+  var hashInput = ['ANSWER', classLevel, data.subject || 'Accountancy', qid, data.questionText || '', data.answerText || '', data.marksBreakdown || '', data.commonMistakes || ''].join(':::');
+  var contentHash = computeContentHash_(hashInput);
+  var cachedUrl = typeof findCachedRender_ === 'function' ? findCachedRender_(contentHash) : null;
+  if (cachedUrl) {
+    Logger.log('⚡ Idempotency Hit: Reusing rendered Model Answer PDF: ' + cachedUrl);
+    return {
+      driveUrl: cachedUrl,
+      pdfBlob: null,
+      qid: qid,
+      pageCount: 1,
+      cached: true
+    };
+  }
+
+  // 2. Compile Multi-Page HTML
+  var renderResult = generateMultiPageDailyPracticeSheetHtml_(data, true);
+  var fileName = 'DPS_Answer_Class' + classLevel + '_' + rawDate;
+  var htmlBlob = Utilities.newBlob(renderResult.html, 'text/html', fileName + '.html');
   var pdfBlob = htmlBlob.getAs('application/pdf');
   pdfBlob.setName(fileName + '.pdf');
 
+  var folder = getOrCreatePdfFolder_('Commerce Master App Daily PDFs');
   var permPdf = folder.createFile(pdfBlob);
   permPdf.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  var permUrl = permPdf.getUrl();
+
+  // 3. Log to Render_Log
+  if (typeof logRenderExecution_ === 'function') {
+    logRenderExecution_({
+      date: data.date || getKolkataDate(),
+      classLevel: classLevel,
+      subject: data.subject || 'Accountancy',
+      qid: qid,
+      pageCount: renderResult.pageCount,
+      contentHash: contentHash,
+      pdfUrl: permUrl,
+      status: 'SUCCESS',
+      errorMessage: ''
+    });
+  }
 
   return {
-    driveUrl: permPdf.getUrl(),
+    driveUrl: permUrl,
     pdfBlob: pdfBlob,
-    qid: data.qid || ('DPS-' + (data.classLevel || 12))
+    qid: qid,
+    pageCount: renderResult.pageCount,
+    cached: false
   };
 }
 
 /**
- * Generates the complete, self-contained HTML for Gyan Sir's official
+ * Generates the complete, self-contained multi-page HTML for Gyan Sir's official
  * "Commerce Gyan — Daily Practice Sheet" A4 Stationery.
- *
- * Supports:
- * - Primary Method: If PRACTICE_SHEET_BG_FILE_ID is configured in Script Properties,
- *   embeds the PNG/JPG as a full-page background and overlays text onto exact coordinates.
- * - Built-in Permanent HTML/CSS/inline SVG Template (Always active by default):
- *   Replicates the exact stationery design in pure vector HTML/CSS/SVG so it works
- *   100% serverless and offline with zero broken images.
  *
  * @param {Object} data
  * @param {boolean} isAnswerKey
- * @return {string}
+ * @return {{ html: string, pageCount: number }}
  */
-function generateDailyPracticeSheetHtml_(data, isAnswerKey) {
+
+/**
+ * Lightweight DSL Parser for Question & Model Answer bodies.
+ * Supports: #TABLE, #TACCOUNT, #CAPITAL, #JOURNAL, #GRAPH:<template>, #FORMULA, #FLOW, #CARD, #PAGEBREAK
+ * Applies rule-based auto-judgment when no markers are present.
+ * @param {string} rawText
+ * @param {string} subject
+ * @param {boolean} isAnswerKey
+ * @return {Array<Object>}
+ */
+function parseDslBlocks_(rawText, subject, isAnswerKey) {
+  rawText = String(rawText || '').trim();
+  subject = String(subject || 'Accountancy').toLowerCase();
+  if (!rawText) return [];
+
+  var blocks = [];
+  var lines = rawText.split('\n');
+  var currentBlockType = null;
+  var currentMeta = '';
+  var currentBuffer = [];
+
+  function flushBuffer() {
+    if (!currentBuffer.length && !currentBlockType) return;
+    var bufText = currentBuffer.join('\n').trim();
+    if (!bufText && currentBlockType !== 'pagebreak') {
+      currentBlockType = null;
+      currentMeta = '';
+      currentBuffer = [];
+      return;
+    }
+
+    if (currentBlockType === 'pagebreak') {
+      blocks.push({ type: 'pagebreak', estHeight: 0 });
+    } else if (currentBlockType === 'graph') {
+      var parts = currentMeta.split('|');
+      blocks.push({
+        type: 'graph',
+        template: parts[0] || 'demand_shift',
+        caption: parts[1] || 'Economic Diagram',
+        estHeight: 52
+      });
+    } else if (currentBlockType === 'formula') {
+      blocks.push({
+        type: 'formula',
+        formula: bufText,
+        label: currentMeta || 'Key Formula',
+        estHeight: 22
+      });
+    } else if (currentBlockType === 'flow') {
+      var stepLines = bufText.split(/->|\n/).map(function(s) { return s.trim(); }).filter(Boolean);
+      blocks.push({
+        type: 'flow',
+        steps: bufText,
+        estHeight: 12 + stepLines.length * 11
+      });
+    } else if (currentBlockType === 'card') {
+      blocks.push({
+        type: 'card',
+        title: currentMeta || 'Case Scenario',
+        body: bufText,
+        estHeight: 14 + Math.ceil(bufText.length / 80) * 5
+      });
+    } else if (currentBlockType === 'taccount') {
+      var tLines = bufText.split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
+      blocks.push({
+        type: 'taccount',
+        title: currentMeta || 'Ledger Account',
+        rowsText: bufText,
+        estHeight: 14 + tLines.length * 7.5
+      });
+    } else if (currentBlockType === 'capital') {
+      var cLines = bufText.split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
+      blocks.push({
+        type: 'capital',
+        partnersText: currentMeta || 'Partners',
+        rowsText: bufText,
+        estHeight: 14 + cLines.length * 7.5
+      });
+    } else if (currentBlockType === 'journal') {
+      var jLines = bufText.split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
+      blocks.push({
+        type: 'journal',
+        rowsText: bufText,
+        estHeight: 14 + jLines.length * 7.5
+      });
+    } else if (currentBlockType === 'table') {
+      var tblLines = bufText.split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
+      blocks.push({
+        type: 'table',
+        rowsText: bufText,
+        estHeight: 12 + tblLines.length * 7.5
+      });
+    } else {
+      classifyAndPushUnmarked_(bufText, subject, blocks);
+    }
+
+    currentBlockType = null;
+    currentMeta = '';
+    currentBuffer = [];
+  }
+
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    var trimmed = line.trim();
+
+    if (trimmed === '#PAGEBREAK') {
+      flushBuffer();
+      currentBlockType = 'pagebreak';
+      flushBuffer();
+      continue;
+    }
+
+    if (trimmed.indexOf('#GRAPH:') === 0) {
+      flushBuffer();
+      currentBlockType = 'graph';
+      currentMeta = trimmed.substring(7).trim();
+      flushBuffer();
+      continue;
+    }
+
+    if (trimmed.indexOf('#FORMULA') === 0) {
+      flushBuffer();
+      currentBlockType = 'formula';
+      currentMeta = trimmed.indexOf(':') !== -1 ? trimmed.substring(trimmed.indexOf(':') + 1).trim() : 'Formula';
+      continue;
+    }
+    if (trimmed === '#ENDFORMULA') {
+      flushBuffer();
+      continue;
+    }
+
+    if (trimmed.indexOf('#FLOW') === 0) {
+      flushBuffer();
+      currentBlockType = 'flow';
+      continue;
+    }
+    if (trimmed === '#ENDFLOW') {
+      flushBuffer();
+      continue;
+    }
+
+    if (trimmed.indexOf('#CARD:') === 0) {
+      flushBuffer();
+      currentBlockType = 'card';
+      currentMeta = trimmed.substring(6).trim();
+      continue;
+    }
+    if (trimmed === '#ENDCARD') {
+      flushBuffer();
+      continue;
+    }
+
+    if (trimmed.indexOf('#TACCOUNT:') === 0) {
+      flushBuffer();
+      currentBlockType = 'taccount';
+      currentMeta = trimmed.substring(10).trim();
+      continue;
+    }
+    if (trimmed === '#ENDTACCOUNT') {
+      flushBuffer();
+      continue;
+    }
+
+    if (trimmed.indexOf('#CAPITAL:') === 0) {
+      flushBuffer();
+      currentBlockType = 'capital';
+      currentMeta = trimmed.substring(9).trim();
+      continue;
+    }
+    if (trimmed === '#ENDCAPITAL') {
+      flushBuffer();
+      continue;
+    }
+
+    if (trimmed.indexOf('#JOURNAL') === 0) {
+      flushBuffer();
+      currentBlockType = 'journal';
+      continue;
+    }
+    if (trimmed === '#ENDJOURNAL') {
+      flushBuffer();
+      continue;
+    }
+
+    if (trimmed.indexOf('#TABLE') === 0) {
+      flushBuffer();
+      currentBlockType = 'table';
+      continue;
+    }
+    if (trimmed === '#ENDTABLE') {
+      flushBuffer();
+      continue;
+    }
+
+    currentBuffer.push(line);
+  }
+
+  flushBuffer();
+  return blocks;
+}
+
+/**
+ * Auto-judgment classifier for unannotated content across CBSE Commerce subjects
+ */
+function classifyAndPushUnmarked_(text, subject, blocks) {
+  if (!text) return;
+  var lines = text.split('\n');
+  var tableLines = lines.filter(function(l) { return l.indexOf('|') !== -1; });
+
+  if (tableLines.length >= 2) {
+    var headerLine = tableLines[0].toLowerCase();
+    if (headerLine.indexOf('date') !== -1 && headerLine.indexOf('particulars') !== -1 && (headerLine.indexOf('dr') !== -1 || headerLine.indexOf('debit') !== -1)) {
+      blocks.push({
+        type: 'journal',
+        rowsText: text,
+        estHeight: 14 + tableLines.length * 7.5
+      });
+      return;
+    }
+
+    if (headerLine.indexOf('particulars') !== -1 && (headerLine.indexOf('alok') !== -1 || headerLine.indexOf('deepak') !== -1 || headerLine.indexOf('partner') !== -1 || headerLine.indexOf('rohit') !== -1 || (headerLine.match(/\([₹rs\.]+\)/g) || []).length >= 4)) {
+      blocks.push({
+        type: 'capital',
+        partnersText: 'Partners',
+        rowsText: text,
+        estHeight: 14 + tableLines.length * 7.5
+      });
+      return;
+    }
+
+    var cols = tableLines[0].split('|');
+    if (cols.length === 4 || (headerLine.match(/particulars/g) || []).length === 2) {
+      blocks.push({
+        type: 'taccount',
+        title: 'Ledger Account',
+        rowsText: text,
+        estHeight: 14 + tableLines.length * 7.5
+      });
+      return;
+    }
+
+    blocks.push({
+      type: 'table',
+      rowsText: text,
+      estHeight: 12 + tableLines.length * 7.5
+    });
+    return;
+  }
+
+  // Statistics Formula Auto-Judgment
+  if (/(\\frac|\\sigma|\\bar\{x\}|\\sum|\\sqrt|r\s*=|Mean\s*=|SD\s*=)/i.test(text)) {
+    blocks.push({
+      type: 'formula',
+      formula: text,
+      label: 'Formula',
+      estHeight: 22
+    });
+    return;
+  }
+
+  // BST Flowchart Auto-Judgment
+  if (text.indexOf('->') !== -1 && text.split('->').length >= 3) {
+    blocks.push({
+      type: 'flow',
+      steps: text,
+      estHeight: 12 + text.split('->').length * 11
+    });
+    return;
+  }
+
+  // BST Case Study Auto-Judgment
+  if (/^(Case\s*(Study|Scenario)|Read\s*the\s*following\s*scenario)/i.test(text)) {
+    var parts = text.split('\n\n');
+    var caseBody = parts[0];
+    blocks.push({
+      type: 'card',
+      title: 'Case Scenario',
+      body: caseBody,
+      estHeight: 14 + Math.ceil(caseBody.length / 80) * 5
+    });
+    if (parts.length > 1) {
+      var remaining = parts.slice(1).join('\n\n');
+      blocks.push({
+        type: 'text',
+        text: remaining,
+        estHeight: Math.max(12, Math.ceil(remaining.length / 85) * 5.5 + 4)
+      });
+    }
+    return;
+  }
+
+  // Economics Graph Auto-Judgment
+  var textLower = text.toLowerCase();
+  if (subject.indexOf('eco') !== -1 || subject.indexOf('economics') !== -1) {
+    if (textLower.indexOf('shift in demand') !== -1 || textLower.indexOf('increase in demand') !== -1 || textLower.indexOf('decrease in demand') !== -1) {
+      blocks.push({
+        type: 'text',
+        text: text,
+        estHeight: Math.max(12, Math.ceil(text.length / 85) * 5.5 + 4)
+      });
+      blocks.push({
+        type: 'graph',
+        template: 'demand_shift',
+        caption: 'Rightward Shift in Demand Curve (Increase in Demand)',
+        estHeight: 52
+      });
+      return;
+    }
+    if (textLower.indexOf('ppc') !== -1 || textLower.indexOf('production possibility') !== -1) {
+      blocks.push({
+        type: 'text',
+        text: text,
+        estHeight: Math.max(12, Math.ceil(text.length / 85) * 5.5 + 4)
+      });
+      blocks.push({
+        type: 'graph',
+        template: 'ppc',
+        caption: 'Production Possibility Curve (PPC)',
+        estHeight: 52
+      });
+      return;
+    }
+  }
+
+  blocks.push({
+    type: 'text',
+    text: text,
+    estHeight: Math.max(12, Math.ceil(text.length / 85) * 5.5 + 4)
+  });
+}
+
+function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
   data = data || {};
   var isAns = !!isAnswerKey;
   var classLevel = Number(data.classLevel) || 12;
   var marks = Number(data.marks) || 6;
-  var pillText = isAns ? 'DAILY PRACTICE SHEET • ANSWER KEY' : 'DAILY PRACTICE SHEET';
+  var bgBase64 = data.bgBase64 || getStationeryBackgroundBase64_();
 
-  // Format Sheet / Question Number (NO. :) e.g. Q-12-04 or Q-12-06
-  var sheetNumber = formatSheetNumberDps_(data.qid, classLevel, marks, isAns);
-
-  // Format Subject, Topic, Date
+  // Header metadata
+  var rawDate = formatDateDps_(data.date);
   var subjectText = 'Class ' + classLevel + ' • ' + (data.subject || 'Accountancy');
   var topicText = String(data.chapter || (classLevel === 11 ? 'Bank Reconciliation Statement' : 'Partnership Accounts Fundamentals'));
   if (topicText.length > 48) {
     topicText = topicText.substring(0, 46) + '...';
   }
+  var baseSheetNumber = formatSheetNumberDps_(data.qid, classLevel, marks, isAns);
 
-  var formattedDate = formatDateDps_(data.date);
-
-  // Retrieve official stationery background image (Drive File ID or data.bgBase64)
-  var bgBase64 = data.bgBase64;
-  if (!bgBase64) {
-    var props = PropertiesService.getScriptProperties();
-    var bgFileId = props.getProperty('PRACTICE_SHEET_BG_FILE_ID') || '1G5FOitdeuh8FgLbnkgNdqiftvtCfiIah';
-    if (!bgFileId) {
-      throw new Error('PRACTICE_SHEET_BG_FILE_ID is not configured in Script Properties.');
+  // Build content blocks
+  var blocks = [];
+  if (!isAns) {
+    // Question PDF Layout
+    blocks.push({
+      type: 'question_header',
+      marks: marks,
+      classLevel: classLevel,
+      estHeight: 12
+    });
+    var qBlocks = parseDslBlocks_(data.questionText || '', data.subject, false);
+    for (var qb = 0; qb < qBlocks.length; qb++) {
+      blocks.push(qBlocks[qb]);
     }
-    try {
-      var bgFile = DriveApp.getFileById(bgFileId);
-      if (!bgFile) {
-        throw new Error('PRACTICE_SHEET_BG_FILE_ID (' + bgFileId + ') not found in Google Drive.');
+    blocks.push({
+      type: 'question_footer',
+      estHeight: 20
+    });
+  } else {
+    // Model Answer PDF Layout
+    blocks.push({
+      type: 'answer_recap',
+      questionText: data.questionText || '',
+      marks: marks,
+      estHeight: 26
+    });
+    blocks.push({
+      type: 'answer_heading',
+      estHeight: 8
+    });
+    var ansBlocks = parseDslBlocks_(data.answerText || '', data.subject, true);
+    for (var ab = 0; ab < ansBlocks.length; ab++) {
+      ansBlocks[ab].drCrCheck = !!data.drCrCheck;
+      blocks.push(ansBlocks[ab]);
+    }
+    if (data.marksBreakdown) {
+      blocks.push({
+        type: 'rubric',
+        text: data.marksBreakdown,
+        estHeight: 12 + String(data.marksBreakdown).split('\n').filter(Boolean).length * 6.5
+      });
+    }
+    if (data.commonMistakes) {
+      blocks.push({
+        type: 'traps',
+        text: data.commonMistakes,
+        estHeight: 12 + String(data.commonMistakes).split('\n').filter(Boolean).length * 6.5
+      });
+    }
+  }
+
+  // Greedy Paginator (Max 205mm usable height per page)
+  var pages = paginateBlocks_(blocks, 205);
+  var totalPages = pages.length;
+
+  var headerData = {
+    isAns: isAns,
+    classLevel: classLevel,
+    subjectText: subjectText,
+    topicText: topicText,
+    formattedDate: rawDate,
+    sheetNumber: baseSheetNumber,
+    totalPages: totalPages
+  };
+
+  var fullHtml = buildMultiPageDocumentHtml_(pages, headerData, bgBase64);
+  return {
+    html: fullHtml,
+    pageCount: totalPages
+  };
+}
+
+/**
+ * Greedy block packing into pages with row-level table splitting support
+ * @param {Array<Object>} blocks
+ * @param {number} maxUsableHeightMm
+ * @return {Array<Array<Object>>}
+ */
+function paginateBlocks_(blocks, maxUsableHeightMm) {
+  var maxH = maxUsableHeightMm || 205;
+  var pages = [];
+  var currentPage = [];
+  var currentH = 0;
+
+  for (var i = 0; i < blocks.length; i++) {
+    var blk = blocks[i];
+    if (blk.type === 'pagebreak') {
+      if (currentPage.length > 0) {
+        pages.push(currentPage);
+        currentPage = [];
+        currentH = 0;
       }
-      bgBase64 = Utilities.base64Encode(bgFile.getBlob().getBytes());
-    } catch (e) {
-      throw new Error('Failed to load official practice sheet background from Drive (' + bgFileId + '): ' + e.message);
+      continue;
+    }
+
+    var est = blk.estHeight || 15;
+    if (currentH + est <= maxH || currentPage.length === 0) {
+      currentPage.push(blk);
+      currentH += est;
+    } else {
+      // Check if table can be split cleanly at row boundaries
+      if (blk.type === 'table' && blk.rowsText && est > 50) {
+        var lines = blk.rowsText.split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
+        if (lines.length > 4) {
+          var availH = maxH - currentH;
+          var rowsThatFit = Math.floor((availH - 12) / 7.5);
+          if (rowsThatFit >= 2 && (lines.length - rowsThatFit) >= 2) {
+            var part1Lines = lines.slice(0, rowsThatFit);
+            var part2Lines = lines.slice(rowsThatFit);
+            var part1 = {
+              type: 'table',
+              rowsText: part1Lines.join('\n'),
+              estHeight: 10 + part1Lines.length * 7.5
+            };
+            var part2 = {
+              type: 'table',
+              rowsText: part2Lines.join('\n'),
+              isContinuation: true,
+              estHeight: 10 + part2Lines.length * 7.5
+            };
+            currentPage.push(part1);
+            pages.push(currentPage);
+            currentPage = [part2];
+            currentH = part2.estHeight;
+            continue;
+          }
+        }
+      }
+
+      // Block pushes to new page
+      pages.push(currentPage);
+      currentPage = [blk];
+      currentH = est;
     }
   }
 
-  if (!bgBase64) {
-    throw new Error('PRACTICE_SHEET_BG_FILE_ID is missing or unreadable. Silent CSS fallback is disabled.');
+  if (currentPage.length > 0) {
+    pages.push(currentPage);
   }
-
-  // Common body content HTML
-  var bodyInnerHtml = isAns ? formatAnswerBodyHtml_(data) : formatQuestionBodyHtml_(data.questionText || '', marks, classLevel);
-
-  return buildImageOverlayHtml_(bgBase64, pillText, sheetNumber, subjectText, topicText, formattedDate, bodyInnerHtml, isAns);
+  return pages;
 }
 
 /**
- * Deprecated: Vector CSS redraw has been permanently removed per founder policy.
- * The official PNG stationery background is locked to guarantee 100% visual fidelity.
+ * Builds full HTML document containing all .page containers with stationery background
+ * @param {Array<Array<Object>>} pages
+ * @param {Object} headerData
+ * @param {string} bgBase64
+ * @return {string}
  */
-function buildPermanentVectorStationeryHtml_() {
-  throw new Error('Vector CSS redrawing is disabled. All Daily Practice Sheet PDFs must use the official pre-printed PNG template.');
-}
+function buildMultiPageDocumentHtml_(pages, headerData, bgBase64) {
+  var totalPages = pages.length;
+  var isAns = headerData.isAns;
+  var pillText = isAns ? 'DAILY PRACTICE SHEET • ANSWER KEY' : 'DAILY PRACTICE SHEET';
 
-/**
- * Builds HTML overlay onto the official "Commerce Gyan — Daily Practice Sheet" PNG background.
- * Exact millimeter coordinates match Gyan Sir's pre-printed stationery.
- */
-function buildImageOverlayHtml_(bgBase64, pillText, sheetNumber, subjectText, topicText, formattedDate, bodyInnerHtml, isAns) {
-  var ansPillOverlay = isAns ?
-    '<div style="position: absolute; top: 4.2mm; left: 84.5mm; width: 78mm; height: 10.5mm; background: #5b1865; border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; font-weight: 800; font-size: 8.5pt; text-transform: uppercase; z-index: 2; letter-spacing: 0.3px;">' + escapeHtml_(pillText) + '</div>' : '';
+  var pagesHtml = pages.map(function(pageBlocks, pageIndex) {
+    var pageNum = pageIndex + 1;
+    var sheetNumber = headerData.sheetNumber;
+    if (totalPages > 1) {
+      sheetNumber += ' [' + pageNum + '/' + totalPages + ']';
+    }
+
+    var ansPillOverlay = isAns ?
+      '<div style="position: absolute; top: 4.2mm; left: 84.5mm; width: 78mm; height: 10.5mm; background: #5b1865; border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; font-weight: 800; font-size: 8.5pt; text-transform: uppercase; z-index: 2; letter-spacing: 0.3px;">' + escapeHtml_(pillText) + '</div>' : '';
+
+    var contentHtml = pageBlocks.map(function(blk) {
+      return renderBlockHtml_(blk);
+    }).join('\n');
+
+    return '<div class="page">\n' +
+      '  <img src="data:image/png;base64,' + bgBase64 + '" style="position: absolute; top: 0; left: 0; width: 210mm; height: 297mm; z-index: 0;" />\n' +
+      '  ' + ansPillOverlay + '\n' +
+      '  <!-- 1. NO. Box (top-right purple box) -->\n' +
+      '  <div style="position: absolute; top: 5.5mm; left: 174mm; width: 28mm; height: 7mm; display: flex; align-items: center; justify-content: center; font-size: 8pt; font-weight: bold; color: #5b1865; z-index: 2; white-space: nowrap;">' + escapeHtml_(sheetNumber) + '</div>\n' +
+      '  <!-- 2. Subject Line (Underline after Subject :) -->\n' +
+      '  <div style="position: absolute; top: 26.5mm; left: 35mm; width: 43mm; font-size: 9pt; font-weight: bold; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2;">' + escapeHtml_(headerData.subjectText) + '</div>\n' +
+      '  <!-- 3. Topic Line (Underline after Topic :) -->\n' +
+      '  <div style="position: absolute; top: 26.5mm; left: 104mm; width: 44mm; font-size: 8.5pt; font-weight: bold; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2;">' + escapeHtml_(headerData.topicText) + '</div>\n' +
+      '  <!-- 4. Date Line (Underline after Date :) -->\n' +
+      '  <div style="position: absolute; top: 26.5mm; left: 173mm; width: 25mm; text-align: center; font-size: 9pt; font-weight: bold; color: #0f172a; letter-spacing: 0.5px; z-index: 2;">' + escapeHtml_(headerData.formattedDate) + '</div>\n' +
+      '  <!-- 5. Usable Safe Content Area (Clears left margin red line at 14mm) -->\n' +
+      '  <div class="page-content">\n' +
+      '    ' + contentHtml + '\n' +
+      '  </div>\n' +
+      '</div>';
+  }).join('\n');
 
   return '<!DOCTYPE html>\n' +
-'<html>\n' +
-'<head>\n' +
-'<meta charset="utf-8">\n' +
-'<title>' + escapeHtml_(pillText) + '</title>\n' +
-'<style>\n' +
-'  @page {\n' +
-'    size: 210mm 297mm;\n' +
-'    margin: 0;\n' +
-'  }\n' +
-'  * {\n' +
-'    box-sizing: border-box;\n' +
-'    -webkit-print-color-adjust: exact;\n' +
-'    print-color-adjust: exact;\n' +
-'  }\n' +
-'  html, body {\n' +
-'    margin: 0;\n' +
-'    padding: 0;\n' +
-'    width: 210mm;\n' +
-'    height: 297mm;\n' +
-'    background: #ffffff;\n' +
-'    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;\n' +
-'    color: #1e293b;\n' +
-'    position: relative;\n' +
-'    overflow: hidden;\n' +
-'  }\n' +
-'</style>\n' +
-'</head>\n' +
-'<body>\n' +
-'<div style="position: relative; width: 210mm; height: 297mm; overflow: hidden;">\n' +
-'  <!-- Exact pre-printed PNG stationery background (Full bleed A4) -->\n' +
-'  <img src="data:image/png;base64,' + bgBase64 + '" style="position: fixed; top: 0; left: 0; width: 210mm; height: 297mm; z-index: 0;" />\n' +
-'  ' + ansPillOverlay + '\n' +
-'  <!-- 1. NO. Box (top-right purple box) -->\n' +
-'  <div style="position: absolute; top: 5.5mm; left: 177mm; width: 23mm; height: 7mm; display: flex; align-items: center; justify-content: center; font-size: 10pt; font-weight: bold; color: #5b1865; z-index: 2;">' + escapeHtml_(sheetNumber) + '</div>\n' +
-'  <!-- 2. Subject Line (Underline after Subject :) -->\n' +
-'  <div style="position: absolute; top: 26.5mm; left: 35mm; width: 43mm; font-size: 9pt; font-weight: bold; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2;">' + escapeHtml_(subjectText) + '</div>\n' +
-'  <!-- 3. Topic Line (Underline after Topic :) -->\n' +
-'  <div style="position: absolute; top: 26.5mm; left: 104mm; width: 44mm; font-size: 8.5pt; font-weight: bold; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2;">' + escapeHtml_(topicText) + '</div>\n' +
-'  <!-- 4. Date Line (Underline after Date :) -->\n' +
-'  <div style="position: absolute; top: 26.5mm; left: 173mm; width: 25mm; text-align: center; font-size: 9pt; font-weight: bold; color: #0f172a; letter-spacing: 0.5px; z-index: 2;">' + escapeHtml_(formattedDate) + '</div>\n' +
-'  <!-- 5. Main Question / Answer Body strictly to the right of red margin line -->\n' +
-'  <div style="position: absolute; top: 60mm; left: 16mm; right: 12mm; bottom: 26mm; background: transparent; overflow: hidden; z-index: 1;">\n' +
-'    ' + bodyInnerHtml + '\n' +
-'  </div>\n' +
-'</div>\n' +
-'</body>\n' +
-'</html>';
+    '<html>\n' +
+    '<head>\n' +
+    '<meta charset="utf-8">\n' +
+    '<title>' + escapeHtml_(pillText) + '</title>\n' +
+    '<style>\n' +
+    '  @page {\n' +
+    '    size: 210mm 297mm;\n' +
+    '    margin: 0;\n' +
+    '  }\n' +
+    '  * {\n' +
+    '    box-sizing: border-box;\n' +
+    '    -webkit-print-color-adjust: exact;\n' +
+    '    print-color-adjust: exact;\n' +
+    '  }\n' +
+    '  html, body {\n' +
+    '    margin: 0;\n' +
+    '    padding: 0;\n' +
+    '    background: #ffffff;\n' +
+    '    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;\n' +
+    '    color: #1e293b;\n' +
+    '  }\n' +
+    '  .page {\n' +
+    '    width: 210mm;\n' +
+    '    height: 297mm;\n' +
+    '    position: relative;\n' +
+    '    page-break-after: always;\n' +
+    '    break-after: page;\n' +
+    '    overflow: hidden;\n' +
+    '    background: #ffffff;\n' +
+    '  }\n' +
+    '  .page:last-child {\n' +
+    '    page-break-after: avoid;\n' +
+    '    break-after: avoid;\n' +
+    '  }\n' +
+    '  .page-content {\n' +
+    '    position: relative;\n' +
+    '    z-index: 1;\n' +
+    '    padding: 60mm 12mm 26mm 18mm;\n' +
+    '    box-sizing: border-box;\n' +
+    '    width: 210mm;\n' +
+    '    height: 297mm;\n' +
+    '    overflow: hidden;\n' +
+    '  }\n' +
+    '  .block {\n' +
+    '    break-inside: avoid;\n' +
+    '    page-break-inside: avoid;\n' +
+    '  }\n' +
+    '</style>\n' +
+    '</head>\n' +
+    '<body>\n' +
+    pagesHtml + '\n' +
+    '</body>\n' +
+    '</html>';
 }
 
 /**
- * Formats question body HTML with badges, problem text/tables, and evening register prompt
+ * Dispatches individual block rendering by type
+ * @param {Object} blk
+ * @return {string}
  */
-function formatQuestionBodyHtml_(questionText, marks, classLevel) {
-  var marksBadge = '<div style="background: #f3e8ff; border: 1.5px solid #a855f7; color: #581c87; font-weight: 800; padding: 2px 10px; border-radius: 6px; font-size: 11.5px;">[ ' + marks + ' Marks ]</div>';
-  var headerRow = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">' +
-    '<div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Official CBSE Class ' + classLevel + ' Problem</div>' +
-    marksBadge +
-  '</div>';
+function renderBlockHtml_(blk) {
+  if (!blk) return '';
+  switch (blk.type) {
+    case 'question_header':
+      return '<div class="block" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">' +
+        '<div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Official CBSE Class ' + blk.classLevel + ' Problem</div>' +
+        '<div style="background: #f3e8ff; border: 1.5px solid #a855f7; color: #581c87; font-weight: 800; padding: 2px 10px; border-radius: 6px; font-size: 11px;">[ ' + blk.marks + ' Marks ]</div>' +
+      '</div>';
 
-  var contentHtml = formatAccountingTableOrTextDps_(questionText);
+    case 'question_footer':
+      return '<div class="block" style="margin-top: 20px; background: #faf5ff; border: 1.5px dashed #c084fc; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px;">' +
+        '<span style="font-size: 18px;">✍️</span>' +
+        '<div style="font-size: 11px; color: #581c87; font-weight: 600; line-height: 1.4;">' +
+          '<strong>CBSE Register Assignment:</strong> Solve this question in your physical practice register tonight. Official Step-by-Step Model Answer Key with CBSE Marking Rubric will be shared tomorrow at <strong>08:15 AM IST</strong>.' +
+        '</div>' +
+      '</div>';
 
-  var bottomNote = '<div style="margin-top: 25px; background: #faf5ff; border: 1.5px dashed #c084fc; border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 10px;">' +
-    '<span style="font-size: 20px;">✍️</span>' +
-    '<div style="font-size: 11.5px; color: #581c87; font-weight: 600; line-height: 1.4;">' +
-      '<strong>CBSE Register Assignment:</strong> Solve this question in your physical practice register tonight. Official Step-by-Step Model Answer Key with CBSE Marking Rubric will be shared tomorrow at <strong>08:15 AM IST</strong>.' +
-    '</div>' +
-  '</div>';
+    case 'answer_recap':
+      var qShort = escapeHtml_(String(blk.questionText || '')).substring(0, 240);
+      if (String(blk.questionText || '').length > 240) qShort += '...';
+      return '<div class="block" style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #5b1865; border-radius: 6px; padding: 6px 10px; margin-bottom: 8px;">' +
+        '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+          '<span style="font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Original Question Recap</span>' +
+          '<span style="background: #f3e8ff; border: 1px solid #a855f7; color: #581c87; font-weight: 800; padding: 1px 7px; border-radius: 4px; font-size: 10px;">[ ' + blk.marks + ' Marks ]</span>' +
+        '</div>' +
+        '<div style="font-size: 10px; color: #334155; margin-top: 2px; font-weight: 500; line-height: 1.35;">' + qShort + '</div>' +
+      '</div>';
 
-  return headerRow + contentHtml + bottomNote;
+    case 'answer_heading':
+      return '<div class="block" style="font-size: 11px; font-weight: 700; color: #5b1865; margin-bottom: 4px;">Official CBSE Model Solution:</div>';
+
+    case 'taccount':
+      return renderTAccountBlockHtml_(blk);
+
+    case 'capital':
+      return renderCapitalAccountBlockHtml_(blk);
+
+    case 'journal':
+      return renderJournalBlockHtml_(blk);
+
+    case 'table':
+      return renderTableBlockHtml_(blk);
+
+    case 'graph':
+      return renderEconomicsSvgBlock_(blk.template, blk.caption);
+
+    case 'formula':
+      return renderStatisticsFormulaBlock_(blk.formula, blk.label);
+
+    case 'flow':
+      return renderBstFlowchartBlock_(blk.steps);
+
+    case 'card':
+      return renderCaseStudyCardBlock_(blk.title, blk.body);
+
+    case 'rubric':
+      return '<div class="block" style="margin-top: 8px; background: #f0fdf4; border: 1.5px solid #22c55e; border-radius: 7px; padding: 7px 12px;">' +
+        '<div style="font-size: 11px; font-weight: 700; color: #15803d; display: flex; align-items: center; gap: 5px;">' +
+          '<span>✅</span><strong>CBSE Step-by-Step Marking Scheme & Rubric</strong>' +
+        '</div>' +
+        '<div style="font-size: 10px; color: #166534; margin-top: 4px; line-height: 1.4;">' +
+          formatBulletListDps_(blk.text) +
+        '</div>' +
+      '</div>';
+
+    case 'traps':
+      return '<div class="block" style="margin-top: 6px; background: #fff1f2; border: 1.5px solid #f43f5e; border-radius: 7px; padding: 7px 12px;">' +
+        '<div style="font-size: 11px; font-weight: 700; color: #be123c; display: flex; align-items: center; gap: 5px;">' +
+          '<span>⚠️</span><strong>Common Examiner Traps to Avoid</strong>' +
+        '</div>' +
+        '<div style="font-size: 10px; color: #9f1239; margin-top: 4px; line-height: 1.4;">' +
+          formatBulletListDps_(blk.text) +
+        '</div>' +
+      '</div>';
+
+    case 'text':
+    default:
+      return renderGenericTextBlock_(blk.text || '');
+  }
 }
 
 /**
- * Formats model answer body HTML with question summary, CBSE solution, rubric, and traps
+ * Renders T-Account with Dr./Cr. header and optional tally validator
  */
-function formatAnswerBodyHtml_(data) {
-  var marks = Number(data.marks) || 6;
-  var qSummary = escapeHtml_(String(data.questionText || '')).substring(0, 240);
-  if (String(data.questionText || '').length > 240) qSummary += '...';
+function renderTAccountBlockHtml_(blk) {
+  var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
+  var trs = [];
+  var drTotal = 0;
+  var crTotal = 0;
 
-  var summaryBox = '<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #5b1865; border-radius: 6px; padding: 6px 10px; margin-bottom: 8px;">' +
-    '<div style="display: flex; justify-content: space-between; align-items: center;">' +
-      '<span style="font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Original Question Recap</span>' +
-      '<span style="background: #f3e8ff; border: 1px solid #a855f7; color: #581c87; font-weight: 800; padding: 1px 7px; border-radius: 4px; font-size: 10px;">[ ' + marks + ' Marks ]</span>' +
+  for (var i = 0; i < lines.length; i++) {
+    var cols = lines[i].split('|').map(function(c) { return c.trim(); });
+    if (cols.length >= 4) {
+      var isTotal = /total/i.test(cols[0]) || /total/i.test(cols[2]);
+      var borderStyle = isTotal ? 'border-top: 1px solid #d8b4fe; border-bottom: 3px double #1e293b; font-weight: bold; background: #faf5ff;' : 'border-bottom: 1px solid #f1f5f9;';
+      var drVal = parseFloat(cols[1].replace(/[^0-9.]/g, '')) || 0;
+      var crVal = parseFloat(cols[3].replace(/[^0-9.]/g, '')) || 0;
+      if (isTotal) {
+        drTotal = drVal;
+        crTotal = crVal;
+      }
+
+      trs.push('<tr style="' + borderStyle + '">' +
+        '<td style="padding: 3px 6px; border-right: 1px solid #f1f5f9; width: 33%;">' + escapeHtml_(cols[0]) + '</td>' +
+        '<td style="padding: 3px 6px; text-align: right; border-right: 1.5px solid #5b1865; width: 17%; font-family: monospace; font-weight: 600;">' + escapeHtml_(cols[1]) + '</td>' +
+        '<td style="padding: 3px 6px; border-right: 1px solid #f1f5f9; width: 33%;">' + escapeHtml_(cols[2]) + '</td>' +
+        '<td style="padding: 3px 6px; text-align: right; width: 17%; font-family: monospace; font-weight: 600;">' + escapeHtml_(cols[3]) + '</td>' +
+      '</tr>');
+    }
+  }
+
+  var tallyWarning = '';
+  if (blk.drCrCheck && drTotal > 0 && crTotal > 0 && Math.abs(drTotal - crTotal) > 1) {
+    tallyWarning = '<div style="color: #b91c1c; font-size: 8pt; font-weight: bold; margin-top: 3px; padding: 2px 6px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px;">⚠️ Note: Dr. (₹' + drTotal + ') and Cr. (₹' + crTotal + ') difference of ₹' + Math.abs(drTotal - crTotal) + ' detected.</div>';
+  }
+
+  return '<div class="block" style="margin: 6px 0;">' +
+    '<div style="font-weight: 700; font-size: 9.5pt; color: #5b1865; margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center;">' +
+      '<span>Dr.</span>' +
+      '<span style="text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title || 'Ledger Account') + '</span>' +
+      '<span>Cr.</span>' +
     '</div>' +
-    '<div style="font-size: 10.5px; color: #334155; margin-top: 3px; font-weight: 500; line-height: 1.4;">' + qSummary + '</div>' +
+    '<table style="width: 100%; border-collapse: collapse; font-size: 9pt; background: #ffffff; border: 1.5px solid #5b1865;">' +
+      '<thead>' +
+        '<tr style="background: #f3e8ff; color: #5b1865; font-weight: bold; border-bottom: 1.5px solid #5b1865;">' +
+          '<th style="padding: 3px 6px; text-align: left; border-right: 1px solid #d8b4fe;">Particulars</th>' +
+          '<th style="padding: 3px 6px; text-align: right; border-right: 1.5px solid #5b1865;">Amount (₹)</th>' +
+          '<th style="padding: 3px 6px; text-align: left; border-right: 1px solid #d8b4fe;">Particulars</th>' +
+          '<th style="padding: 3px 6px; text-align: right;">Amount (₹)</th>' +
+        '</tr>' +
+      '</thead>' +
+      '<tbody>' +
+        trs.join('\n') +
+      '</tbody>' +
+    '</table>' +
+    tallyWarning +
   '</div>';
-
-  var solHeading = '<div style="font-size: 11.5px; font-weight: 700; color: #5b1865; margin-bottom: 2px;">Official CBSE Model Solution:</div>';
-  var solutionHtml = formatAccountingTableOrTextDps_(data.answerText || '');
-
-  // Rubric Card
-  var rubricHtml = '<div style="margin-top: 10px; background: #f0fdf4; border: 1.5px solid #22c55e; border-radius: 7px; padding: 7px 12px;">' +
-    '<div style="font-size: 11px; font-weight: 700; color: #15803d; display: flex; align-items: center; gap: 5px;">' +
-      '<span>✅</span><strong>CBSE Step-by-Step Marking Scheme & Rubric</strong>' +
-    '</div>' +
-    '<div style="font-size: 10.5px; color: #166534; margin-top: 4px; line-height: 1.45;">' +
-      formatBulletListDps_(data.marksBreakdown || '') +
-    '</div>' +
-  '</div>';
-
-  // Traps Card
-  var trapsHtml = '<div style="margin-top: 8px; background: #fff1f2; border: 1.5px solid #f43f5e; border-radius: 7px; padding: 7px 12px;">' +
-    '<div style="font-size: 11px; font-weight: 700; color: #be123c; display: flex; align-items: center; gap: 5px;">' +
-      '<span>⚠️</span><strong>Common Examiner Traps to Avoid</strong>' +
-    '</div>' +
-    '<div style="font-size: 10.5px; color: #9f1239; margin-top: 4px; line-height: 1.45;">' +
-      formatBulletListDps_(data.commonMistakes || '') +
-    '</div>' +
-  '</div>';
-
-  return summaryBox + solHeading + solutionHtml + rubricHtml + trapsHtml;
 }
 
 /**
- * Parses raw text or table markup into styled HTML
+ * Renders Partners Capital Account with multi-partner columns
  */
-function formatAccountingTableOrTextDps_(text) {
+function renderCapitalAccountBlockHtml_(blk) {
+  var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
+  if (lines.length === 0) return '';
+
+  var headerCols = lines[0].split('|').map(function(c) { return c.trim(); });
+  var ths = headerCols.map(function(c) {
+    return '<th style="background: #f3e8ff; color: #5b1865; padding: 4px 6px; border: 1px solid #d8b4fe; font-weight: 700; text-align: center; font-size: 8.5pt;">' + escapeHtml_(c) + '</th>';
+  }).join('');
+
+  var trs = [];
+  for (var i = 1; i < lines.length; i++) {
+    var cols = lines[i].split('|').map(function(c) { return c.trim(); });
+    var isTotal = /total/i.test(cols[0]) || (cols[1] && /total/i.test(cols[1]));
+    var borderStyle = isTotal ? 'border-top: 1px solid #d8b4fe; border-bottom: 3px double #1e293b; font-weight: bold; background: #faf5ff;' : 'border: 1px solid #e2e8f0;';
+
+    var tds = cols.map(function(c, cIdx) {
+      var isAmt = cIdx > 0 && /[\d,]+/.test(c);
+      var align = isAmt ? 'right' : 'left';
+      return '<td style="padding: 3px 5px; ' + borderStyle + ' text-align: ' + align + '; font-size: 8.5pt;">' + escapeHtml_(c) + '</td>';
+    }).join('');
+    trs.push('<tr>' + tds + '</tr>');
+  }
+
+  return '<div class="block" style="margin: 6px 0;">' +
+    '<div style="font-weight: 700; font-size: 9.5pt; color: #5b1865; margin-bottom: 3px; display: flex; justify-content: space-between;">' +
+      '<span>Dr.</span>' +
+      '<span style="text-transform: uppercase;">PARTNERS\' CAPITAL ACCOUNTS</span>' +
+      '<span>Cr.</span>' +
+    '</div>' +
+    '<table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; border: 1.5px solid #5b1865;">' +
+      '<thead><tr>' + ths + '</tr></thead>' +
+      '<tbody>' + trs.join('\n') + '</tbody>' +
+    '</table>' +
+  '</div>';
+}
+
+/**
+ * Renders Journal Entries with standard CBSE formatting
+ */
+function renderJournalBlockHtml_(blk) {
+  var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
+  if (lines.length === 0) return '';
+
+  var trs = [];
+  var isHeader = true;
+
+  for (var i = 0; i < lines.length; i++) {
+    var rawLine = lines[i];
+    if (rawLine.indexOf('|') !== -1) {
+      var cols = rawLine.split('|').map(function(c) { return c.trim(); });
+      if (isHeader && /particular|debit|credit/i.test(rawLine)) {
+        isHeader = false;
+        var ths = cols.map(function(c) {
+          return '<th style="background: #f3e8ff; color: #5b1865; padding: 4px 6px; border: 1px solid #d8b4fe; font-weight: 700; text-align: left; font-size: 8.5pt;">' + escapeHtml_(c) + '</th>';
+        }).join('');
+        trs.push('<tr style="border-bottom: 1.5px solid #5b1865;">' + ths + '</tr>');
+        continue;
+      }
+
+      var isTotal = /total/i.test(rawLine);
+      var borderStyle = isTotal ? 'border-top: 1px solid #d8b4fe; border-bottom: 3px double #1e293b; font-weight: bold; background: #faf5ff;' : 'border: 1px solid #e2e8f0;';
+
+      var tds = cols.map(function(c, cIdx) {
+        var isAmt = (cIdx >= cols.length - 2) && /[\d,]+/.test(c);
+        var align = isAmt ? 'right' : 'left';
+        var isCreditLine = (cIdx === 1 && /^To\s+/i.test(c));
+        var indent = isCreditLine ? 'padding-left: 20px;' : '';
+        return '<td style="padding: 3px 6px; ' + borderStyle + ' text-align: ' + align + '; ' + indent + ' font-size: 8.5pt;">' + escapeHtml_(c) + '</td>';
+      }).join('');
+      trs.push('<tr>' + tds + '</tr>');
+    } else {
+      // Narration or separator
+      var isNarration = /^\s*\(Being/i.test(rawLine);
+      var fontStyle = isNarration ? 'font-style: italic; color: #475569; padding-left: 20px;' : 'font-weight: bold;';
+      trs.push('<tr><td colspan="10" style="padding: 2px 6px; ' + fontStyle + ' font-size: 8pt; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">' + escapeHtml_(rawLine) + '</td></tr>');
+    }
+  }
+
+  return '<div class="block" style="margin: 6px 0;">' +
+    '<table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; border: 1.5px solid #5b1865;">' +
+      '<tbody>' + trs.join('\n') + '</tbody>' +
+    '</table>' +
+  '</div>';
+}
+
+/**
+ * Renders generic styled CBSE table (Balance Sheet, Trial Balance, BRS)
+ */
+function renderTableBlockHtml_(blk) {
+  var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
+  if (lines.length === 0) return '';
+
+  var trs = [];
+  var isHeader = true;
+
+  for (var i = 0; i < lines.length; i++) {
+    var rawLine = lines[i];
+    if (rawLine.indexOf('|') !== -1) {
+      var cols = rawLine.split('|').map(function(c) { return c.trim(); });
+      if (isHeader && /particular|date|debit|credit|amount|plus|minus|liabilities|assets/i.test(rawLine)) {
+        isHeader = false;
+        var ths = cols.map(function(c) {
+          return '<th style="background: #f3e8ff; color: #5b1865; padding: 4px 6px; border: 1px solid #d8b4fe; font-weight: 700; text-align: left; font-size: 8.5pt;">' + escapeHtml_(c) + '</th>';
+        }).join('');
+        trs.push('<tr style="border-bottom: 1.5px solid #5b1865;">' + ths + '</tr>');
+        continue;
+      }
+
+      var isTotal = /total|balance c\/d|balance b\/d/i.test(rawLine);
+      var borderStyle = isTotal ? 'border-top: 1px solid #d8b4fe; border-bottom: 3px double #1e293b; font-weight: bold; background: #faf5ff;' : 'border: 1px solid #e2e8f0;';
+
+      var tds = cols.map(function(c) {
+        var isAmt = /[\d,]+/.test(c) && !/[a-zA-Z]{3,}/.test(c);
+        var align = isAmt ? 'right' : 'left';
+        return '<td style="padding: 3px 6px; ' + borderStyle + ' text-align: ' + align + '; font-size: 8.5pt;">' + escapeHtml_(c) + '</td>';
+      }).join('');
+      trs.push('<tr>' + tds + '</tr>');
+    } else {
+      trs.push('<tr><td colspan="10" style="padding: 3px 6px; font-weight: bold; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 8.5pt;">' + escapeHtml_(rawLine) + '</td></tr>');
+    }
+  }
+
+  var contdNotice = blk.isContinuation ? '<div style="font-size: 8pt; font-weight: bold; color: #64748b; margin-bottom: 2px;">(Table Continued from previous page)</div>' : '';
+
+  return '<div class="block" style="margin: 6px 0;">' +
+    contdNotice +
+    '<table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; border: 1.5px solid #5b1865;">' +
+      '<tbody>' + trs.join('\n') + '</tbody>' +
+    '</table>' +
+  '</div>';
+}
+
+/**
+ * Pure inline vector SVG generators for Economics diagrams
+ */
+function renderEconomicsSvgBlock_(templateName, caption) {
+  templateName = String(templateName || 'demand_shift').toLowerCase().trim();
+  caption = caption || 'Economic Analysis Diagram';
+  var svgContent = '';
+
+  if (templateName.indexOf('supply') !== -1) {
+    svgContent = '<svg width="340" height="175" viewBox="0 0 340 175" style="background:#fff; font-family:-apple-system, sans-serif; margin:0 auto; display:block;">\n' +
+      '<line x1="40" y1="15" x2="40" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
+      '<line x1="40" y1="145" x2="310" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
+      '<text x="35" y="14" font-size="10" font-weight="bold" text-anchor="end" fill="#0f172a">Price (₹)</text>\n' +
+      '<text x="310" y="160" font-size="10" font-weight="bold" text-anchor="end" fill="#0f172a">Quantity (Units)</text>\n' +
+      '<line x1="60" y1="30" x2="270" y2="135" stroke="#9333ea" stroke-width="2.2" />\n' +
+      '<text x="275" y="140" font-size="11" font-weight="bold" fill="#9333ea">D</text>\n' +
+      '<line x1="60" y1="130" x2="245" y2="30" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="4,3" />\n' +
+      '<text x="250" y="34" font-size="11" font-weight="bold" fill="#64748b">S₀</text>\n' +
+      '<line x1="90" y1="130" x2="275" y2="30" stroke="#0284c7" stroke-width="2.2" />\n' +
+      '<text x="280" y="34" font-size="11" font-weight="bold" fill="#0284c7">S₁</text>\n' +
+      '<circle cx="155" cy="80" r="3.5" fill="#1e293b" />\n' +
+      '<text x="145" y="75" font-size="9.5" font-weight="bold" fill="#1e293b">E₀</text>\n' +
+      '<circle cx="185" cy="94" r="3.5" fill="#0284c7" />\n' +
+      '<text x="180" y="88" font-size="9.5" font-weight="bold" fill="#0284c7">E₁</text>\n' +
+      '<defs><marker id="arr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1e293b"/></marker></defs>\n' +
+    '</svg>';
+  } else if (templateName.indexOf('ppc') !== -1) {
+    svgContent = '<svg width="340" height="175" viewBox="0 0 340 175" style="background:#fff; font-family:-apple-system, sans-serif; margin:0 auto; display:block;">\n' +
+      '<line x1="40" y1="15" x2="40" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
+      '<line x1="40" y1="145" x2="310" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
+      '<text x="35" y="14" font-size="10" font-weight="bold" text-anchor="end" fill="#0f172a">Good Y</text>\n' +
+      '<text x="310" y="160" font-size="10" font-weight="bold" text-anchor="end" fill="#0f172a">Good X</text>\n' +
+      '<path d="M 40 35 Q 180 45 270 145" stroke="#9333ea" stroke-width="2.5" fill="none" />\n' +
+      '<circle cx="110" cy="50" r="3.5" fill="#16a34a" />\n' +
+      '<text x="115" y="47" font-size="9" font-weight="bold" fill="#16a34a">A (Efficient)</text>\n' +
+      '<circle cx="210" cy="90" r="3.5" fill="#16a34a" />\n' +
+      '<text x="215" y="87" font-size="9" font-weight="bold" fill="#16a34a">B (Efficient)</text>\n' +
+      '<circle cx="120" cy="105" r="3.5" fill="#ea580c" />\n' +
+      '<text x="125" y="110" font-size="9" font-weight="bold" fill="#ea580c">U (Underutilised)</text>\n' +
+      '<circle cx="230" cy="40" r="3.5" fill="#dc2626" />\n' +
+      '<text x="235" y="40" font-size="9" font-weight="bold" fill="#dc2626">G (Unattainable)</text>\n' +
+      '<defs><marker id="arr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1e293b"/></marker></defs>\n' +
+    '</svg>';
+  } else if (templateName.indexOf('cost') !== -1) {
+    svgContent = '<svg width="340" height="175" viewBox="0 0 340 175" style="background:#fff; font-family:-apple-system, sans-serif; margin:0 auto; display:block;">\n' +
+      '<line x1="40" y1="15" x2="40" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
+      '<line x1="40" y1="145" x2="310" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
+      '<text x="35" y="14" font-size="10" font-weight="bold" text-anchor="end" fill="#0f172a">Cost (₹)</text>\n' +
+      '<text x="310" y="160" font-size="10" font-weight="bold" text-anchor="end" fill="#0f172a">Output</text>\n' +
+      '<path d="M 50 40 Q 140 120 270 90" stroke="#0284c7" stroke-width="2.2" fill="none" />\n' +
+      '<text x="275" y="93" font-size="10" font-weight="bold" fill="#0284c7">AC</text>\n' +
+      '<path d="M 60 120 Q 130 140 230 30" stroke="#9333ea" stroke-width="2.2" fill="none" />\n' +
+      '<text x="235" y="32" font-size="10" font-weight="bold" fill="#9333ea">MC</text>\n' +
+      '<circle cx="150" cy="100" r="3.5" fill="#e11d48" />\n' +
+      '<text x="145" y="115" font-size="9" font-weight="bold" fill="#e11d48">MC cuts AC at min</text>\n' +
+      '<defs><marker id="arr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1e293b"/></marker></defs>\n' +
+    '</svg>';
+  } else {
+    // Default: Demand Shift
+    svgContent = '<svg width="340" height="175" viewBox="0 0 340 175" style="background:#fff; font-family:-apple-system, sans-serif; margin:0 auto; display:block;">\n' +
+      '<line x1="40" y1="15" x2="40" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
+      '<line x1="40" y1="145" x2="310" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
+      '<text x="35" y="14" font-size="10" font-weight="bold" text-anchor="end" fill="#0f172a">Price (₹)</text>\n' +
+      '<text x="310" y="160" font-size="10" font-weight="bold" text-anchor="end" fill="#0f172a">Quantity (Units)</text>\n' +
+      '<text x="28" y="156" font-size="10" font-weight="bold" fill="#64748b">O</text>\n' +
+      '<line x1="60" y1="130" x2="270" y2="30" stroke="#0284c7" stroke-width="2.2" />\n' +
+      '<text x="275" y="34" font-size="11" font-weight="bold" fill="#0284c7">S</text>\n' +
+      '<line x1="60" y1="30" x2="245" y2="130" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="4,3" />\n' +
+      '<text x="250" y="134" font-size="11" font-weight="bold" fill="#64748b">D₀</text>\n' +
+      '<line x1="90" y1="30" x2="275" y2="130" stroke="#9333ea" stroke-width="2.2" />\n' +
+      '<text x="280" y="134" font-size="11" font-weight="bold" fill="#9333ea">D₁</text>\n' +
+      '<circle cx="152" cy="80" r="3.5" fill="#1e293b" />\n' +
+      '<text x="142" y="75" font-size="9.5" font-weight="bold" fill="#1e293b">E₀</text>\n' +
+      '<circle cx="182" cy="66" r="3.5" fill="#9333ea" />\n' +
+      '<text x="178" y="60" font-size="9.5" font-weight="bold" fill="#9333ea">E₁</text>\n' +
+      '<defs><marker id="arr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1e293b"/></marker></defs>\n' +
+    '</svg>';
+  }
+
+  return '<div class="block" style="text-align: center; margin: 6px 0;">\n' +
+    svgContent + '\n' +
+    '<div style="font-size: 8.5pt; font-weight: 700; color: #5b1865; margin-top: 2px;">Figure: ' + escapeHtml_(caption) + '</div>\n' +
+  '</div>';
+}
+
+/**
+ * Renders LaTeX / Stats formula via pure stacked fraction CSS
+ */
+function renderStatisticsFormulaBlock_(formulaRaw, label) {
+  label = label || 'Formula';
+  var inner = String(formulaRaw || '')
+    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 2px;">$1</span><span style="padding:1px 2px;">$2</span></span>')
+    .replace(/\[\s*([^\]]+)\s*\]\s*\/\s*\[\s*([^\]]+)\s*\]/g, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 2px;">$1</span><span style="padding:1px 2px;">$2</span></span>')
+    .replace(/\\sum/g, 'Σ')
+    .replace(/\\sqrt\{([^}]+)\}/g, '√<span style="border-top:1px solid #0f172a; padding:0 2px;">$1</span>')
+    .replace(/\\bar\{x\}/g, '<span style="text-decoration:overline">x</span>')
+    .replace(/\\bar\{y\}/g, '<span style="text-decoration:overline">y</span>')
+    .replace(/\\sigma/g, 'σ');
+
+  return '<div class="block" style="background: #fbf5ff; border: 1px solid #d8b4fe; border-left: 4px solid #5b1865; border-radius: 6px; padding: 7px 12px; margin: 6px 0; font-size: 10.5pt; text-align: center;">\n' +
+    '<strong>' + escapeHtml_(label) + ':</strong> ' + inner + '\n' +
+  '</div>';
+}
+
+/**
+ * Renders Business Studies vertical step flowchart
+ */
+function renderBstFlowchartBlock_(stepsText) {
+  var steps = String(stepsText || '').split(/->|\n/).map(function(s) { return s.trim(); }).filter(Boolean);
+  var items = steps.map(function(s, idx) {
+    var arrow = (idx < steps.length - 1) ? '<div style="font-size: 13px; color: #5b1865; font-weight: bold; margin: 1px 0;">↓</div>' : '';
+    return '<div style="background: #fbf5ff; border: 1.5px solid #a855f7; border-radius: 6px; padding: 4px 10px; font-weight: 700; font-size: 9pt; color: #5b1865; display: inline-block; min-width: 220px;">' + escapeHtml_(s) + '</div>' + arrow;
+  }).join('');
+
+  return '<div class="block" style="text-align: center; margin: 8px 0;">' + items + '</div>';
+}
+
+/**
+ * Renders Business Studies Case Study callout card
+ */
+function renderCaseStudyCardBlock_(title, body) {
+  return '<div class="block" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-left: 4px solid #5b1865; border-radius: 6px; padding: 7px 12px; margin: 6px 0;">\n' +
+    '<div style="font-size: 9.5pt; font-weight: bold; color: #5b1865; margin-bottom: 3px; text-transform: uppercase;">📌 ' + escapeHtml_(title || 'Case Scenario') + '</div>\n' +
+    '<div style="font-size: 9pt; line-height: 1.45; color: #334155; font-style: italic;">' + escapeHtml_(body) + '</div>\n' +
+  '</div>';
+}
+
+/**
+ * Renders generic text with headings and list markers
+ */
+function renderGenericTextBlock_(text) {
   if (!text) return '';
   var lines = String(text).trim().split('\n');
-  var isTable = false;
-  for (var k = 0; k < lines.length; k++) {
-    if (lines[k].indexOf('|') !== -1) {
-      isTable = true;
-      break;
-    }
-  }
+  var out = [];
 
-  if (!isTable) {
-    var out = [];
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i];
-      var escaped = escapeHtml_(line);
-      if (/^\s*([0-9]+\.|\-|\•)\s+/.test(line)) {
-        out.push('<div style="padding-left: 14px; margin-bottom: 5px; font-size: 12px; line-height: 1.5;">' + escaped + '</div>');
-      } else if (line.indexOf('Adjustments:') === 0 || line.indexOf('Adjustments') === 0 || line.indexOf('Instructions:') === 0) {
-        out.push('<div style="font-weight: bold; margin-top: 8px; margin-bottom: 4px; color: #5b1865; font-size: 12px;">' + escaped + '</div>');
-      } else {
-        out.push('<div style="margin-bottom: 6px; font-size: 12.5px; line-height: 1.55;">' + escaped + '</div>');
-      }
-    }
-    return out.join('\n');
-  }
-
-  // Parse Table Lines
-  var htmlLines = ['<div style="overflow-x: auto; margin: 6px 0;"><table style="width: 100%; border-collapse: collapse; font-size: 10.5px; font-family: monospace, -apple-system, sans-serif;">'];
-  for (var j = 0; j < lines.length; j++) {
-    var rawLine = lines[j].trim();
-    if (!rawLine || /^[\-\=\s]+$/.test(rawLine)) continue;
-
-    if (rawLine.indexOf('|') !== -1) {
-      var cols = rawLine.split('|');
-      var isHeader = (j <= 2 && /particular|date|debit|credit|amount|plus|minus/i.test(rawLine));
-      var isTotal = /total|balance c\/d|balance b\/d/i.test(rawLine);
-
-      if (isHeader) {
-        var ths = cols.map(function(c) {
-          return '<th style="background: #f3e8ff; color: #5b1865; padding: 4px 6px; border: 1px solid #d8b4fe; font-weight: 700; text-align: left;">' + escapeHtml_(c.trim()) + '</th>';
-        }).join('');
-        htmlLines.push('<tr>' + ths + '</tr>');
-      } else {
-        var borderStyle = isTotal ? 'border: 1px solid #d8b4fe; border-bottom: 3px double #1e293b; font-weight: 700; background: #faf5ff;' : 'border: 1px solid #e2e8f0;';
-        var tds = cols.map(function(c) {
-          return '<td style="padding: 3px 6px; ' + borderStyle + '">' + escapeHtml_(c.trim()) + '</td>';
-        }).join('');
-        htmlLines.push('<tr>' + tds + '</tr>');
-      }
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    var escaped = escapeHtml_(line);
+    if (/^\s*([0-9]+\.|\-|\•)\s+/.test(line)) {
+      out.push('<div style="padding-left: 12px; margin-bottom: 4px; font-size: 10pt; line-height: 1.45;">' + escaped + '</div>');
+    } else if (line.indexOf('Adjustments:') === 0 || line.indexOf('Instructions:') === 0 || line.indexOf('Working Notes:') === 0) {
+      out.push('<div style="font-weight: bold; margin-top: 6px; margin-bottom: 3px; color: #5b1865; font-size: 10pt;">' + escaped + '</div>');
     } else {
-      htmlLines.push('<tr><td colspan="10" style="padding: 3px 6px; font-weight: bold; background: #f8fafc; border: 1px solid #e2e8f0;">' + escapeHtml_(rawLine) + '</td></tr>');
+      out.push('<div style="margin-bottom: 5px; font-size: 10pt; line-height: 1.5;">' + escaped + '</div>');
     }
   }
-  htmlLines.push('</table></div>');
-  return htmlLines.join('\n');
+
+  return '<div class="block">' + out.join('\n') + '</div>';
+}
+
+/**
+ * Parses raw text or table markup into styled HTML (Legacy Compatibility)
+ */
+function formatAccountingTableOrTextDps_(text) {
+  var blocks = parseDslBlocks_(text, 'Accountancy', false);
+  return blocks.map(function(b) { return renderBlockHtml_(b); }).join('\n');
 }
 
 /**
@@ -525,7 +1420,7 @@ function formatBulletListDps_(text) {
     l = l.trim();
     if (!l) return '';
     var escaped = escapeHtml_(l);
-    return '<div style="margin-bottom: 3px;">' + escaped + '</div>';
+    return '<div style="margin-bottom: 2px;">' + escaped + '</div>';
   }).filter(Boolean).join('\n');
 }
 
@@ -616,6 +1511,7 @@ function testGenerateQuestionPdf(classLevel) {
     type: 'QUESTION_PDF',
     classLevel: classLevel,
     qid: qData.qid,
+    pageCount: result.pageCount,
     driveUrl: result.driveUrl,
     timestamp: getKolkataTimestamp()
   };
@@ -650,6 +1546,215 @@ function testGenerateAnswerPdf(classLevel) {
     type: 'ANSWER_PDF',
     classLevel: classLevel,
     qid: qData.qid,
+    pageCount: result.pageCount,
+    driveUrl: result.driveUrl,
+    timestamp: getKolkataTimestamp()
+  };
+}
+
+/**
+ * Test 1: Accountancy Multi-Page Model Answer PDF (Reval, Capital, Balance Sheet, Notes)
+ */
+function testGenerateAccountancyMultiPagePdf(classLevel) {
+  classLevel = Number(classLevel) || 12;
+  var todayStr = getKolkataDate();
+
+  var result = createAnswerPdfFromTemplate_({
+    date: todayStr,
+    classLevel: classLevel,
+    subject: 'Accountancy',
+    chapter: 'Admission of a Partner — Comprehensive Problem',
+    qid: 'TEST-ACC-MULTI-01',
+    marks: 6,
+    drCrCheck: true,
+    questionText: 'Deepak and Alok are partners sharing profits in the ratio of 3:2. On 31st March 2026, they admit Rohit for a 1/5th share. Rohit brings ₹1,00,000 as capital and ₹30,000 for goodwill. Prepare Revaluation Account, Partners\' Capital Accounts, and Balance Sheet.',
+    answerText:
+      '#TACCOUNT:Revaluation Account\n' +
+      'To Provision for Doubtful Debts | 4,000 | By Stock A/c (Appreciation) | 10,000\n' +
+      'To Machinery A/c (10% Dep)      | 14,000 | By Revaluation Loss: Deepak (4,800), Alok (3,200) | 8,000\n' +
+      'Total                           | 18,000 | Total | 18,000\n' +
+      '#ENDTACCOUNT\n\n' +
+      '#CAPITAL:Deepak|Alok|Rohit\n' +
+      'Particulars | Deepak (₹) | Alok (₹) | Rohit (₹) | Particulars | Deepak (₹) | Alok (₹) | Rohit (₹)\n' +
+      'To Revaluation Loss | 4,800 | 3,200 | - | By Balance b/d | 1,80,000 | 1,20,000 | -\n' +
+      'To Balance c/d | 2,17,200 | 1,44,800 | 1,00,000 | By Gen. Reserve | 24,000 | 16,000 | -\n' +
+      '| | | | By Prem. for Goodwill | 18,000 | 12,000 | -\n' +
+      '| | | | By Bank A/c | - | - | 1,00,000\n' +
+      'Total | 2,22,000 | 1,48,000 | 1,00,000 | Total | 2,22,000 | 1,48,000 | 1,00,000\n' +
+      '#ENDCAPITAL\n\n' +
+      '#PAGEBREAK\n\n' +
+      '#TABLE\n' +
+      'Liabilities | Amount (₹) | Assets | Amount (₹)\n' +
+      'Capital Accounts: | | Machinery (1,40,000 - 14,000) | 1,26,000\n' +
+      '  Deepak: 2,17,200 | | Stock (70,000 + 10,000) | 80,000\n' +
+      '  Alok: 1,44,800 | | Debtors (80,000 - 8,000 PDD) | 72,000\n' +
+      '  Rohit: 1,00,000 | 4,62,000 | Cash at Bank (1,04,000 + 1,00k + 30k) | 2,34,000\n' +
+      'Creditors | 50,000 | |\n' +
+      'TOTAL LIABILITIES | 5,12,000 | TOTAL ASSETS | 5,12,000\n' +
+      '#ENDTABLE\n\n' +
+      'Working Notes:\n' +
+      '1. Sacrificing Ratio: In the absence of specific agreement, existing partners sacrifice in old ratio (3:2).\n' +
+      '2. Premium for Goodwill of ₹30,000 is credited to Deepak (₹18,000) and Alok (₹12,000).\n' +
+      '3. Closing Bank Balance: Opening ₹1,04,000 + Capital ₹1,00,000 + Premium ₹30,000 = ₹2,34,000.',
+    marksBreakdown:
+      '• 2.0 Marks: Accurate Revaluation A/c with loss of ₹8,000\n' +
+      '• 2.0 Marks: Partners\' Capital Accounts with correct closing balances\n' +
+      '• 2.0 Marks: Balanced Balance Sheet at ₹5,12,000 with Working Notes',
+    commonMistakes:
+      '⚠️ Provision Increase Trap: Additional debit is ₹4,000 (not ₹8,000) since ₹4,000 already existed.\n' +
+      '⚠️ Premium for Goodwill must never be credited to new partner Rohit.'
+  });
+
+  return {
+    ok: true,
+    test: 'ACCOUNTANCY_MULTIPAGE',
+    classLevel: classLevel,
+    pageCount: result.pageCount,
+    driveUrl: result.driveUrl,
+    timestamp: getKolkataTimestamp()
+  };
+}
+
+/**
+ * Test 2: Economics Graph Model Answer PDF (Demand Shift SVG)
+ */
+function testGenerateEconomicsGraphPdf(classLevel) {
+  classLevel = Number(classLevel) || 12;
+  var todayStr = getKolkataDate();
+
+  var result = createAnswerPdfFromTemplate_({
+    date: todayStr,
+    classLevel: classLevel,
+    subject: 'Economics',
+    chapter: 'Market Equilibrium & Shifts in Demand',
+    qid: 'TEST-ECO-GRAPH-02',
+    marks: 4,
+    questionText: 'Explain the chain of effects that takes place when there is an increase in consumer income for a normal good. Use an appropriate economic diagram.',
+    answerText:
+      'Chain of Effects of an Increase in Income of Consumers for a Normal Good:\n\n' +
+      '1. Increase in Demand: With an increase in consumer income, the demand for normal goods increases, causing a rightward shift in the demand curve from D0 to D1 while supply remains unchanged at S.\n\n' +
+      '#GRAPH:demand_shift|Rightward Shift in Demand Curve (Increase in Demand)\n\n' +
+      '2. Excess Demand: At the original equilibrium price P0, demand (Qd) exceeds supply (Qs), resulting in excess demand.\n' +
+      '3. Price Competition: Due to competition among buyers, the market price begins to rise from P0 to P1.\n' +
+      '4. Contraction of Demand & Expansion of Supply: As price rises, quantity demanded contracts along D1 and quantity supplied expands along S.\n' +
+      '5. New Equilibrium: The market settles at a new equilibrium E1 with a higher equilibrium price (P1) and higher equilibrium quantity (Q1).',
+    marksBreakdown:
+      '• 1.5 Marks: Accurate labeled diagram showing rightward shift of Demand curve from D0 to D1\n' +
+      '• 1.5 Marks: Step-by-step chain of effects explaining excess demand at initial price\n' +
+      '• 1.0 Mark: Accurate conclusion on rise in equilibrium price and quantity',
+    commonMistakes:
+      '⚠️ Forgetting arrowheads on curves or shift direction results in a 0.5-mark deduction.\n' +
+      '⚠️ Confusing shift in demand with movement along the demand curve.'
+  });
+
+  return {
+    ok: true,
+    test: 'ECONOMICS_GRAPH',
+    classLevel: classLevel,
+    pageCount: result.pageCount,
+    driveUrl: result.driveUrl,
+    timestamp: getKolkataTimestamp()
+  };
+}
+
+/**
+ * Test 3: Statistics Formula Model Answer PDF (Stacked Fraction Formula)
+ */
+function testGenerateStatisticsFormulaPdf(classLevel) {
+  classLevel = Number(classLevel) || 11;
+  var todayStr = getKolkataDate();
+
+  var result = createAnswerPdfFromTemplate_({
+    date: todayStr,
+    classLevel: classLevel,
+    subject: 'Statistics',
+    chapter: 'Correlation & Measures of Dispersion',
+    qid: 'TEST-STATS-FORMULA-03',
+    marks: 4,
+    questionText: 'State the formula for Karl Pearson\'s coefficient of correlation using actual mean method and calculate correlation between X and Y where Σxy = 120, Σx² = 160, and Σy² = 250.',
+    answerText:
+      'Karl Pearson\'s Coefficient of Correlation (r):\n\n' +
+      '#FORMULA:Karl Pearson Actual Mean Formula\n' +
+      'r = \\frac{\\sum xy}{\\sqrt{\\sum x^2 \\cdot \\sum y^2}}\n' +
+      '#ENDFORMULA\n\n' +
+      'Step-by-step Calculation:\n' +
+      '1. Given data:\n' +
+      '   • Sum of products of deviations: Σxy = 120\n' +
+      '   • Sum of squared deviations of X: Σx² = 160\n' +
+      '   • Sum of squared deviations of Y: Σy² = 250\n\n' +
+      '2. Product of squared deviations:\n' +
+      '   Σx² · Σy² = 160 · 250 = 40,000\n\n' +
+      '3. Denominator:\n' +
+      '   √(40,000) = 200\n\n' +
+      '4. Final Coefficient:\n' +
+      '   r = 120 / 200 = +0.60\n\n' +
+      'Interpretation: There is a moderate positive correlation (r = +0.60) between variable X and variable Y.',
+    marksBreakdown:
+      '• 1.0 Mark: Correct formula with proper mathematical notation\n' +
+      '• 2.0 Marks: Accurate step-by-step substitution and radical calculation\n' +
+      '• 1.0 Mark: Correct final value (+0.60) and practical interpretation',
+    commonMistakes:
+      '⚠️ Failing to write the "+" sign before positive correlation values.\n' +
+      '⚠️ Remember that -1 <= r <= +1; any value exceeding 1 is mathematically impossible.'
+  });
+
+  return {
+    ok: true,
+    test: 'STATISTICS_FORMULA',
+    classLevel: classLevel,
+    pageCount: result.pageCount,
+    driveUrl: result.driveUrl,
+    timestamp: getKolkataTimestamp()
+  };
+}
+
+/**
+ * Test 4: Business Studies Flowchart Model Answer PDF (Case Study + Flowchart)
+ */
+function testGenerateBstFlowchartPdf(classLevel) {
+  classLevel = Number(classLevel) || 12;
+  var todayStr = getKolkataDate();
+
+  var result = createAnswerPdfFromTemplate_({
+    date: todayStr,
+    classLevel: classLevel,
+    subject: 'Business Studies',
+    chapter: 'Staffing — Process and Significance',
+    qid: 'TEST-BST-FLOW-04',
+    marks: 5,
+    questionText: 'Gyan Logistics Ltd. is expanding its operations in Begusarai and needs 50 new operational staff. Explain the sequential steps of the Staffing Process that the HR manager must follow.',
+    answerText:
+      '#CARD:Business Case Scenario — Gyan Logistics Ltd.\n' +
+      'Gyan Logistics Ltd. plans rapid regional expansion across Bihar. To support expanding operations, the board has authorized hiring 50 new operational and supervisory personnel. The HR director must follow a systematic staffing process to ensure right people for the right jobs.\n' +
+      '#ENDCARD\n\n' +
+      'Sequential Steps in the Staffing Process:\n\n' +
+      '#FLOW\n' +
+      '1. Estimating the Manpower Requirements\n' +
+      '-> 2. Recruitment (Searching Prospective Candidates)\n' +
+      '-> 3. Selection (Screening & Choosing the Best)\n' +
+      '-> 4. Placement and Orientation (Induction)\n' +
+      '-> 5. Training and Development (Skill Enhancement)\n' +
+      '#ENDFLOW\n\n' +
+      'Explanation of Steps:\n' +
+      '1. Estimating Manpower Requirements: Workload analysis (number and type of staff needed) and Workforce analysis (staff already available) to determine net shortage.\n' +
+      '2. Recruitment: Attracting suitable candidates through internal and external sources (campus placement, agencies, advertisements).\n' +
+      '3. Selection: Comprehensive process including tests, interviews, and reference checks to choose the best candidate.\n' +
+      '4. Placement & Orientation: Introducing selected candidates to colleagues, company policies, and assigning specific job duties.\n' +
+      '5. Training & Development: Systematic skill development to enhance current job performance and prepare employees for future promotions.',
+    marksBreakdown:
+      '• 1.5 Marks: Correct sequential diagram of the 5-step Staffing Process\n' +
+      '• 2.5 Marks: In-depth explanation of all 5 steps with practical business context\n' +
+      '• 1.0 Mark: Contextual application to Gyan Logistics expansion',
+    commonMistakes:
+      '⚠️ Omitting Workload vs Workforce analysis when explaining Step 1.\n' +
+      '⚠️ Reversing the order of Selection and Recruitment.'
+  });
+
+  return {
+    ok: true,
+    test: 'BST_FLOWCHART',
+    classLevel: classLevel,
+    pageCount: result.pageCount,
     driveUrl: result.driveUrl,
     timestamp: getKolkataTimestamp()
   };
