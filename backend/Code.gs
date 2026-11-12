@@ -380,6 +380,15 @@ function doPost(e) {
       case "runTelegramAuthTests":
         result = { ok: true, data: runTelegramAuthAndVisitorTests() };
         break;
+      case "runAllTests":
+        result = { ok: true, data: runAllCommerceTests() };
+        break;
+      case "testGenerateSubjectiveQuestionPdf":
+        result = { ok: true, data: testGenerateQuestionPdf(payload ? payload.classLevel : 12) };
+        break;
+      case "testGenerateSubjectiveAnswerPdf":
+        result = { ok: true, data: testGenerateAnswerPdf(payload ? payload.classLevel : 12) };
+        break;
       case "saveCalendarEvent":
         result = saveCalendarEvent(payload);
         break;

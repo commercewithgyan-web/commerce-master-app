@@ -156,6 +156,49 @@ function runAllCommerceTests() {
   passed += authSuite.passed;
   failed += authSuite.failed;
 
+  // ── TEST 10: DAILY PRACTICE SHEET PERMANENT TEMPLATE & VAULT ──
+  Logger.log('\n📋 Running Test Group 10: Daily Practice Sheet Permanent Template & Vault...');
+  var qHtml = generateDailyPracticeSheetHtml_({
+    date: '2026-11-12',
+    classLevel: 12,
+    subject: 'Accountancy',
+    chapter: 'Chapter 1 — Fundamentals of Partnership',
+    questionText: 'A and B are partners...',
+    marks: 6,
+    qid: 'DPS-12-Q'
+  }, false);
+
+  assert('Question HTML generated', typeof qHtml === 'string' && qHtml.length > 500);
+  assert('Question HTML contains DAILY PRACTICE SHEET pill', qHtml.indexOf('DAILY PRACTICE SHEET') !== -1);
+  assert('Question HTML contains COMMERCE GYAN branding', qHtml.indexOf('COMMERCE GYAN') !== -1 && qHtml.indexOf('BE THE BEST FROM THE REST') !== -1);
+  assert('Question HTML contains A4 dimensions', qHtml.indexOf('210mm 297mm') !== -1);
+  assert('Question HTML contains Begusarai footer & phone', qHtml.indexOf('Behind G.D. College, 2nd Floor, Begusarai') !== -1 && qHtml.indexOf('9278569860') !== -1);
+  assert('Question HTML contains evening register prompt', qHtml.indexOf('Solve this question in your physical practice register tonight') !== -1);
+
+  var aHtml = generateDailyPracticeSheetHtml_({
+    date: '2026-11-12',
+    classLevel: 12,
+    subject: 'Accountancy',
+    chapter: 'Chapter 1 — Fundamentals of Partnership',
+    questionText: 'A and B are partners...',
+    marks: 6,
+    answerText: 'Profit and Loss Appropriation A/c...',
+    marksBreakdown: '• 1.5 Marks: Interest on capital\n• 1.0 Mark: Partner salary',
+    commonMistakes: '• Ratio trap: Avoid equal split',
+    qid: 'DPS-12-A'
+  }, true);
+
+  assert('Answer HTML contains ANSWER KEY pill', aHtml.indexOf('DAILY PRACTICE SHEET • ANSWER KEY') !== -1);
+  assert('Answer HTML contains CBSE Rubric card', aHtml.indexOf('CBSE Step-by-Step Marking Scheme &amp; Rubric') !== -1 || aHtml.indexOf('CBSE Step-by-Step Marking Scheme & Rubric') !== -1);
+  assert('Answer HTML contains Traps card', aHtml.indexOf('Common Examiner Traps to Avoid') !== -1);
+
+  var q11_4 = getApprovedSubjectiveQuestion_(11, {}, 4);
+  assert('Class 11 4-Mark vault problem returned (BRS)', q11_4 && q11_4.marks === 4 && q11_4.chapterName.indexOf('BRS') !== -1);
+  var q12_4 = getApprovedSubjectiveQuestion_(12, {}, 4);
+  assert('Class 12 4-Mark vault problem returned (Shares)', q12_4 && q12_4.marks === 4 && q12_4.chapterName.indexOf('Share Capital') !== -1);
+  var q12_6 = getApprovedSubjectiveQuestion_(12, {}, 6);
+  assert('Class 12 6-Mark vault problem returned (Partnership)', q12_6 && q12_6.marks === 6 && q12_6.chapterName.indexOf('Partnership') !== -1);
+
   // ── SUMMARY ──
   Logger.log('\n═══════════════════════════════════════════════');
   Logger.log('📊 TEST RESULTS: ' + passed + ' PASSED | ' + failed + ' FAILED');
