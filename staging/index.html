@@ -5004,7 +5004,7 @@
 
     if (s && s.student) {
       var name = s.student.name || s.student.Name || 'Student';
-      var roll = s.student.studentId || s.student.StudentID || s.student.roll || s.student.Roll_No || '';
+      var roll = s.student.Roll_No || s.student.roll || '';
       var coins = s.student.coins !== undefined ? s.student.coins : (s.student.CG_Coins !== undefined ? s.student.CG_Coins : s.student.CGCoins);
       if ($('tgStudentNameHeader')) $('tgStudentNameHeader').textContent = name + (roll ? ' (' + roll + ')' : '');
       if ($('tgStudentCoins') && coins !== undefined) $('tgStudentCoins').textContent = '🪙 ' + coins;

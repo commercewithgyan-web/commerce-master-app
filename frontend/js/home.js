@@ -105,7 +105,7 @@ function renderHomeDashboard(data) {
     var isGyanSir = false;
     try {
       var tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) || {};
-      if (String(tgUser.id) === '552858970' || (data.isAdmin === true && String(data.studentId) === 'ADMIN-01' && String(tgUser.id) === '552858970')) {
+      if (String(tgUser.id) === '552858970' || (data.isAdmin === true && String(tgUser.id) === '552858970')) {
         isGyanSir = true;
       }
     } catch (e) {}

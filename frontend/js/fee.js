@@ -48,7 +48,7 @@ function getDefaultFeeData() {
   } catch (e) {}
 
   return {
-    studentId: tgUser.id ? ('S-' + String(tgUser.id).slice(-4)) : 'STUDENT',
+    Roll_No: tgUser.id ? ('CG-11-' + String(tgUser.id).slice(-3)) : 'CG-STUDENT',
     name: tgUser.first_name || 'Student',
     joinedDate: 'Current Session',
     admissionRef: 'ACTIVE',
@@ -92,7 +92,7 @@ function renderFeeDashboard(data) {
   if (nameEl) nameEl.innerText = data.name || (tgUser.first_name || 'Student');
 
   var idEl = document.getElementById('studentIdDisplay');
-  if (idEl) idEl.innerText = data.studentId || 'STUDENT';
+  if (idEl) idEl.innerText = data.Roll_No || data.studentId || 'CG-STUDENT';
 
   var planEl = document.getElementById('planNameBadge');
   if (planEl) planEl.innerText = data.planName || 'CBSE Commerce Course';
@@ -325,7 +325,7 @@ async function viewReceipt(paymentId, receiptNo, amount, date, mode, forMonth) {
   forMonth = forMonth || 'November 2026';
 
   var studentName = (window.lastFeeData && window.lastFeeData.name) || 'Gyan Sir';
-  var studentId = (window.lastFeeData && window.lastFeeData.studentId) || 'ADMIN-01';
+  var rollNo = (window.lastFeeData && (window.lastFeeData.Roll_No || window.lastFeeData.studentId)) || 'CG-11-001';
 
   currentReceiptData = {
     paymentId: paymentId,
@@ -335,7 +335,7 @@ async function viewReceipt(paymentId, receiptNo, amount, date, mode, forMonth) {
     mode: mode,
     forMonth: forMonth,
     studentName: studentName,
-    studentId: studentId
+    Roll_No: rollNo
   };
 
   // Populate voucher modal fields
@@ -349,7 +349,7 @@ async function viewReceipt(paymentId, receiptNo, amount, date, mode, forMonth) {
   if (sNameEl) sNameEl.innerText = studentName;
 
   var sIdEl = document.getElementById('voucherStudentId');
-  if (sIdEl) sIdEl.innerText = studentId;
+  if (sIdEl) sIdEl.innerText = rollNo;
 
   var monthEl = document.getElementById('voucherMonth');
   if (monthEl) monthEl.innerText = forMonth;
@@ -380,7 +380,7 @@ async function viewReceipt(paymentId, receiptNo, amount, date, mode, forMonth) {
         if (live.date && dateEl) dateEl.innerText = live.date;
         if (live.mode && modeEl) modeEl.innerText = live.mode;
         if (live.studentName && sNameEl) sNameEl.innerText = live.studentName;
-        if (live.studentId && sIdEl) sIdEl.innerText = live.studentId;
+        if ((live.Roll_No || live.studentId) && sIdEl) sIdEl.innerText = live.Roll_No || live.studentId;
         if (live.voucherHtml) currentReceiptData.voucherHtml = live.voucherHtml;
         if (live.pdfUrl) currentReceiptData.pdfUrl = live.pdfUrl;
       }
@@ -425,7 +425,7 @@ function copyReceiptSlip() {
   var mode = d.mode || 'UPI (Verified)';
   var mth = d.forMonth || 'November 2026';
   var sName = d.studentName || 'Gyan Sir';
-  var sId = d.studentId || 'ADMIN-01';
+  var sId = d.Roll_No || d.studentId || 'CG-11-001';
 
   var text =
     '🏛️ COMMERCE GYAN BEGUSARAI\n' +
