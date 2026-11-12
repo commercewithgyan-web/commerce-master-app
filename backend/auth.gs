@@ -157,8 +157,58 @@ function verifyAndRouteUser_(initDataRaw, previewRollNo) {
   });
 
   if (!student) {
+    // Check INQUIRY_CRM for comeback trial students
+    try {
+      var inqSheet = erp.getSheetByName('INQUIRY_CRM');
+      if (inqSheet) {
+        var inqs = sheetToObjects(inqSheet);
+        var trialInq = inqs.find(function(item) {
+          return String(item.Lead_Source || '').toUpperCase() === 'COMEBACK_TRIAL' &&
+                 (String(item.Mobile || '') === telegramId || String(item.Telegram_ID || '') === telegramId);
+        });
+        if (trialInq) {
+          var todayStr = getKolkataDate();
+          var exp = String(trialInq.Trial_Expires || trialInq.Follow_Up_Date || '');
+          if (!exp || exp >= todayStr) {
+            return {
+              ok: true,
+              role: 'STUDENT',
+              isAdmin: false,
+              isTrial: true,
+              trialExpires: exp,
+              student: {
+                Roll_No: 'CG-TRIAL-' + (trialInq.Mobile ? String(trialInq.Mobile).slice(-4) : '2026'),
+                Name: trialInq.Student_Name || 'Comeback Scholar',
+                Class: trialInq.Class || '12',
+                Status: 'TRIAL_ACTIVE',
+                Lead_Source: 'COMEBACK_TRIAL',
+                Trial_Expires: exp,
+                isTrial: true
+              }
+            };
+          }
+        }
+      }
+    } catch (_) {}
+
     return { ok: false, error: 'STUDENT_NOT_FOUND', telegramId: telegramId };
   }
+
+  // Check trial active status & expiry
+  if (String(student.Status || '').toUpperCase() === 'TRIAL_ACTIVE' || String(student.Lead_Source || '').toUpperCase() === 'COMEBACK_TRIAL') {
+    var todayDateStr = getKolkataDate();
+    var expiry = String(student.Trial_Expires || student.TrialExpires || '');
+    if (expiry && expiry < todayDateStr) {
+      return {
+        ok: false,
+        error: 'TRIAL_EXPIRED',
+        trialExpires: expiry,
+        message: 'Your 7-Day Free Comeback Pass expired on ' + expiry + '. Re-join the batch with Begusarai comeback scholarship offer by messaging Gyan Sir!'
+      };
+    }
+    return { ok: true, role: 'STUDENT', isAdmin: false, isTrial: true, trialExpires: expiry, student: student };
+  }
+
   return { ok: true, role: 'STUDENT', isAdmin: false, student: student };
 }
 
@@ -214,17 +264,26 @@ function requirePaidStudent_(telegramId) {
     cache.put('STUDENT_' + cleanId, JSON.stringify(student), 600);
   } catch (cErr) {}
 
-  var status = String(student.Status || '').trim();
+  var status = String(student.Status || '').trim().toUpperCase();
 
-  if (status === 'Graduated' || status === 'Dropped' || status === 'Inactive') {
-    throw new Error('ACCESS_DENIED: Your student account is marked as ' + status + '. Contact Gyan Sir.');
-  }
-
-  if (status === 'Grace') {
+  if (status === 'TRIAL_ACTIVE' || status === 'TRIAL' || String(student.Lead_Source || '').toUpperCase() === 'COMEBACK_TRIAL') {
+    var todayStr = getKolkataDate();
+    var expiry = String(student.Trial_Expires || student.TrialExpires || '');
+    if (expiry && expiry < todayStr) {
+      throw new Error('ACCESS_DENIED: Your 7-Day Free Trial Pass expired on ' + expiry + '. Please message Gyan Sir on WhatsApp to enroll in the full batch.');
+    }
     return student;
   }
 
-  if (status !== 'Active') {
+  if (status === 'GRADUATED' || status === 'DROPPED' || status === 'INACTIVE') {
+    throw new Error('ACCESS_DENIED: Your student account is marked as ' + status + '. Contact Gyan Sir.');
+  }
+
+  if (status === 'GRACE') {
+    return student;
+  }
+
+  if (status !== 'ACTIVE') {
     throw new Error('ACCESS_DENIED: Inactive account status (' + status + ')');
   }
 

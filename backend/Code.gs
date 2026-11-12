@@ -316,6 +316,10 @@ function doPost(e) {
       case "buildWhatsAppTemplateLink":
         result = buildWhatsAppTemplateLink(payload);
         break;
+      case "activateComebackTrial":
+      case "activateTrialPass":
+        result = activateComebackTrial(payload);
+        break;
       case "submitStudentQuizAttempt":
       case "submitAnswer":
         // Support grading via apiSubmitAnswer_ when selectedIndex is provided
@@ -1736,6 +1740,7 @@ function recordCenterExpenseAndReconcileDrawer(payload) {
 
 function dispatchDailyDPPAndSubjectivePDF(payload) {
   return withWriteLock_(() => {
+    payload = payload || {};
     const IDS = getActiveSheetIds();
     const qbSS = SpreadsheetApp.openById(IDS.QUESTION_BANK);
     const tgSS = SpreadsheetApp.openById(IDS.TELEGRAM);
@@ -1784,22 +1789,36 @@ function dispatchDailyDPPAndSubjectivePDF(payload) {
     }
 
 
+    let pdfDispatched = false;
+    let dispatchedMsg = '';
+    if (payload.pdfType === 'QUESTION_DPP' && typeof sendSubjectiveQuestionPDF === 'function') {
+      sendSubjectiveQuestionPDF();
+      pdfDispatched = true;
+      dispatchedMsg = 'Dispatched 7:30 PM Question PDF for Class 11 & Class 12';
+    } else if (payload.pdfType === 'SOLUTION_PDF' && typeof sendSubjectiveAnswerPDF === 'function') {
+      sendSubjectiveAnswerPDF();
+      pdfDispatched = true;
+      dispatchedMsg = 'Dispatched 8:15 AM Answer PDF for Class 11 & Class 12';
+    }
+
+
     let logSuccess = false;
     if (payload.pdfType) {
       const pdfLogSheet = tgSS.getSheetByName('Subjective_PDF_Log');
       if (pdfLogSheet) {
         pdfLogSheet.appendRow([
           dateStr,
-          payload.questionPdfUrl || '',
-          payload.answerPdfUrl || 'PENDING_MORNING_ANSWER',
+          payload.questionPdfUrl || 'GENERATED_VIA_GAS',
+          payload.answerPdfUrl || (payload.pdfType === 'SOLUTION_PDF' ? 'ANSWER_DISPATCHED' : 'PENDING_MORNING_ANSWER'),
           nowStr,
-          payload.channelId || '@commercewithgyan_class12'
+          payload.channelId || 'ALL_CHANNELS_11_12',
+          payload.classLevel || '11_12'
         ]);
         logSuccess = true;
       }
       const botLogsSheet = tgSS.getSheetByName('Bot_Logs');
       if (botLogsSheet) {
-        botLogsSheet.appendRow([nowStr, getMasterAdminId_(), '/dispatch_pdf ' + payload.pdfType, `Dispatched ${payload.pdfType} PDF`, 'Success']);
+        botLogsSheet.appendRow([nowStr, getMasterAdminId_(), '/dispatch_pdf ' + payload.pdfType, dispatchedMsg || `Dispatched ${payload.pdfType} PDF`, 'Success']);
       }
     }
 
@@ -1810,7 +1829,140 @@ function dispatchDailyDPPAndSubjectivePDF(payload) {
       dispatchedCount: dppPackage.length,
       freshCount: selectedFresh.length,
       cumulativeCount: selectedCumulative.length,
-      pdfLogged: logSuccess
+      pdfLogged: logSuccess,
+      pdfDispatched: pdfDispatched,
+      message: dispatchedMsg || 'DPP & PDF sync executed successfully'
+    };
+  }, 10000);
+}
+
+
+function activateComebackTrial(payload) {
+  return withWriteLock_(() => {
+    payload = payload || {};
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+
+    const now = new Date();
+    const dateStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');
+    const expiryDate = new Date(now.getTime() + 7 * 86400000);
+    const expiryStr = Utilities.formatDate(expiryDate, 'Asia/Kolkata', 'yyyy-MM-dd');
+
+    const name = String(payload.name || payload.studentName || 'Comeback Scholar').trim();
+    const classLevel = String(payload.classLevel || payload.class || '12').trim();
+    const rawMobile = String(payload.mobile || payload.whatsapp || payload.phone || '').replace(/\D/g, '');
+    const mobile = rawMobile.slice(-10) || '9835000000';
+    const tgUserId = String(payload.telegramUserId || payload.tgUserId || payload.telegramId || '').trim();
+    const promoCode = String(payload.promoCode || 'CGFREE7').trim().toUpperCase();
+
+    const cleanRoll = 'CG-TRIAL-' + (mobile.slice(-4) || Math.floor(1000 + Math.random() * 9000));
+    const enquiryId = 'ENQ-TRIAL-' + Utilities.formatDate(now, 'Asia/Kolkata', 'yyMMdd') + '-' + Math.floor(100 + Math.random() * 900);
+
+    // 1. Log in INQUIRY_CRM
+    const inqSheet = erp.getSheetByName('INQUIRY_CRM');
+    if (inqSheet) {
+      inqSheet.appendRow([
+        enquiryId,
+        dateStr,
+        name,
+        'Parent of ' + name,
+        mobile,
+        mobile,
+        classLevel,
+        'CBSE',
+        'Begusarai Coaching Hub',
+        'COMEBACK_TRIAL',
+        'COMEBACK_TRIAL',
+        'C' + classLevel + '_TRIAL',
+        'TRIAL_ACTIVE',
+        true,
+        true,
+        true,
+        expiryStr,
+        '',
+        false,
+        'ACTIVE',
+        'Activated 7-Day Free Comeback Pass via Mini App (' + promoCode + ')'
+      ]);
+    }
+
+    // 2. Log in DEMO_TRACKER
+    const demoSheet = erp.getSheetByName('DEMO_TRACKER');
+    if (demoSheet) {
+      demoSheet.appendRow([
+        'DEMO-' + enquiryId,
+        enquiryId,
+        name,
+        mobile,
+        classLevel,
+        dateStr,
+        expiryStr,
+        'COMEBACK_TRIAL_7D',
+        'ACTIVE',
+        'Mini App 7-Day Free Comeback Pass'
+      ]);
+    }
+
+    // 3. Register or update student in Students_Master
+    const studentSheet = erp.getSheetByName('Students_Master');
+    let matchedRow = 0;
+    if (studentSheet) {
+      const data = studentSheet.getDataRange().getValues();
+      for (let r = 1; r < data.length; r++) {
+        const rowTg = String(data[r][7] || '');
+        const rowMobile = String(data[r][5] || '').replace(/\D/g, '').slice(-10);
+        if ((tgUserId && rowTg === tgUserId) || (mobile && rowMobile === mobile)) {
+          matchedRow = r + 1;
+          break;
+        }
+      }
+
+      if (matchedRow > 0) {
+        studentSheet.getRange(matchedRow, 9).setValue('TRIAL_ACTIVE');
+        studentSheet.getRange(matchedRow, 13).setValue(expiryStr);
+      } else {
+        studentSheet.appendRow([
+          cleanRoll,
+          name,
+          classLevel,
+          'CBSE',
+          'C' + classLevel + '_TRIAL',
+          mobile,
+          mobile,
+          tgUserId,
+          'TRIAL_ACTIVE',
+          dateStr,
+          25,
+          0,
+          expiryStr,
+          'COMEBACK_TRIAL'
+        ]);
+      }
+    }
+
+    return {
+      ok: true,
+      activated: true,
+      rollNo: cleanRoll,
+      name: name,
+      classLevel: classLevel,
+      trialExpires: expiryStr,
+      trialDaysLeft: 7,
+      role: 'STUDENT',
+      student: {
+        Roll_No: cleanRoll,
+        rollNo: cleanRoll,
+        Name: name,
+        name: name,
+        Class: classLevel,
+        classLevel: classLevel,
+        Status: 'TRIAL_ACTIVE',
+        status: 'TRIAL_ACTIVE',
+        Trial_Expires: expiryStr,
+        trialExpires: expiryStr,
+        isTrial: true,
+        coins: 25
+      }
     };
   }, 10000);
 }
@@ -2351,6 +2503,7 @@ function handleApiRequest(req) {
       dataResult = (typeof apiGetDailyQuestion_ === 'function') ? apiGetDailyQuestion_(verifiedUser, payload) : [];
       break;
     case 'submitAnswer':
+    case 'submitStudentQuizAttempt':
       dataResult = (typeof apiSubmitAnswer_ === 'function') ? apiSubmitAnswer_(verifiedUser, payload) : { ok: true };
       break;
     case 'getPracticeQuestions':

@@ -1591,8 +1591,9 @@
             <div>
               <label class="block text-[11px] font-bold text-slate-300 mb-1">Telegram Channel</label>
               <select id="dppChannelSelect" class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-800 text-white font-bold">
-                <option value="@commercewithgyan_class12">@commercewithgyan_class12</option>
-                <option value="@commercewithgyan_class11">@commercewithgyan_class11</option>
+                <option value="ALL">📢 Dual-Class Broadcast (Both Class 11 & Class 12)</option>
+                <option value="@commercewithgyan_class12">@commercewithgyan_class12 (Class 12 Public)</option>
+                <option value="@commercewithgyan_class11">@commercewithgyan_class11 (Class 11 Public)</option>
               </select>
             </div>
             <div>
@@ -2376,6 +2377,20 @@
       </button>
     </div>
 
+    <!-- 7-Day Free Comeback Pass Countdown Banner (#7) -->
+    <div id="tgTrialCountdownBanner" class="hidden rounded-2xl p-3 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 font-extrabold text-xs flex items-center justify-between shadow-md border border-amber-300">
+      <div class="flex items-center gap-2">
+        <span class="text-base">🎁</span>
+        <div>
+          <span id="trialCountdownText" class="font-black">7-Day Free Comeback Pass Active (7 Days Left)</span>
+          <p class="text-[10px] text-slate-900 font-semibold">Includes 7 PM Daily DPP, 797 Syllabus &amp; AI Doubts</p>
+        </div>
+      </div>
+      <a id="trialWhatsAppOfferLink" href="https://wa.me/919835011205?text=Namaste%20Gyan%20Sir%2C%20I%20am%20using%20the%207-Day%20Free%20Comeback%20Pass%20and%20want%20to%20re-join%20the%20batch%20with%20the%20scholarship%20offer." target="_blank" rel="noopener" class="px-3 py-1.5 rounded-xl bg-slate-950 text-amber-300 text-[11px] font-black shrink-0 hover:bg-slate-900 shadow transition flex items-center gap-1">
+        <span>💬 Re-Join Batch</span>
+      </a>
+    </div>
+
     <!-- Header / Student Card -->
     <div class="bg-slate-900 text-white rounded-3xl p-5 shadow-lg space-y-4 border border-slate-800">
       <div class="flex items-center justify-between">
@@ -2430,6 +2445,16 @@
           <p id="tgAttendanceStreak" class="text-xs font-extrabold text-indigo-600 mt-0.5">🔥 1 Day</p>
         </div>
       </div>
+      <!-- Snapchat-Style Streak Expiring Tonight Alert (#6) -->
+      <div id="tgStreakExpiringAlert" class="hidden p-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-rose-600 text-white text-xs font-extrabold flex items-center justify-between gap-2 shadow-sm animate-pulse">
+        <span class="flex items-center gap-1.5">
+          <span>⏳</span>
+          <span>Streak Expiring Tonight! Complete 7:00 PM DPP before midnight.</span>
+        </span>
+        <button type="button" onclick="document.querySelector('.tg-track-btn') && document.querySelector('.tg-track-btn').click()" class="px-2.5 py-1 rounded-lg bg-white text-rose-700 text-[11px] font-black shrink-0 hover:bg-slate-100 transition">
+          Solve Now 🔥
+        </button>
+      </div>
 
       <!-- 14-Day Claim Code Binding Card (Visible only when UNCLAIMED) -->
       <div id="tgClaimCodeCard" class="bg-indigo-50 border-2 border-indigo-300 rounded-2xl p-4 space-y-2.5" style="display: none;">
@@ -2446,15 +2471,40 @@
         </div>
       </div>
 
-      <!-- REC-01 Late/Absent Recovery Drill Card -->
-      <div id="tgRec01Card" class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 space-y-2.5">
+      <!-- REC-01 Late/Absent Recovery Drill Card with Secure Video Player Lock (#2) -->
+      <div id="tgRec01Card" class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 space-y-3">
         <div class="flex items-center justify-between">
           <span id="tgRecDueBadge" class="px-2 py-0.5 rounded-md bg-amber-500 text-white text-[10px] font-extrabold uppercase">REC-01 Recovery Drill Assigned</span>
-          <span id="tgRecDueCount" class="text-[11px] font-bold text-amber-900">2 MCQs + Notes Check</span>
+          <span id="tgRecDueCount" class="text-[11px] font-bold text-amber-900">Missed Class Lecture &amp; Concept Check</span>
         </div>
-        <p class="text-xs text-amber-950">Complete this 2-question concept check from the lecture you missed/joined late to clear your recovery queue and earn <strong>+10 CG Coins</strong>.</p>
-        <button id="completeRec01Btn" type="button" class="w-full py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold shadow-sm transition">
-          Complete 2-MCQ Recovery Drill (+10 CG Coins)
+        <p class="text-xs text-amber-950">You were marked <strong class="text-rose-700 font-extrabold">Absent (A) / Late (L)</strong> in today's class. Complete the 90% unlisted lecture watch-gate and 2-question recovery check to clear your queue and earn <strong>+10 CG Coins</strong>.</p>
+        
+        <!-- Secure In-App Unlisted Video Player with Anti-Piracy Lock (#2) -->
+        <div id="rec01VideoPlayerContainer" class="relative rounded-2xl overflow-hidden bg-black border border-amber-200 shadow-md select-none" oncontextmenu="return false;">
+          <!-- Top touch-blocker strip: blocks copy/share/title popouts -->
+          <div id="cgTouchBlockerTop" style="position:absolute; top:0; left:0; right:0; height:52px; z-index:30; background:transparent; cursor:not-allowed;" title="Protected Lecture Stream"></div>
+          
+          <!-- Bottom-right touch-blocker strip: blocks YouTube logo popup -->
+          <div id="cgTouchBlockerLogo" style="position:absolute; bottom:0; right:0; width:65px; height:45px; z-index:30; background:transparent; cursor:not-allowed;"></div>
+          
+          <!-- Moving Anti-Piracy Dynamic Watermark (#cgAntiPiracyWatermark) -->
+          <div id="cgAntiPiracyWatermark" style="position:absolute; top:35%; left:20%; z-index:40; pointer-events:none; font-family:monospace; font-size:11px; font-weight:800; color:rgba(255,255,255,0.45); text-shadow:1px 1px 3px rgba(0,0,0,0.9); transform:rotate(-8deg); transition:all 1.5s ease-in-out;">
+            <span id="watermarkContent">Aarav Sharma • CG-1201 • TG-552858970</span>
+          </div>
+
+          <!-- Video iframe -->
+          <div class="relative w-full" style="padding-top: 56.25%;">
+            <iframe id="rec01VideoIframe" class="absolute inset-0 w-full h-full border-0"
+              src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?enablejsapi=1&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&controls=1&disablekb=1"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+              oncontextmenu="return false;">
+            </iframe>
+          </div>
+        </div>
+
+        <button id="completeRec01Btn" type="button" class="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold shadow-sm transition">
+          ✓ Verify 90% Lecture Watch &amp; Complete Drill (+10 CG Coins)
         </button>
       </div>
 
@@ -2506,33 +2556,64 @@
       </div>
     </div>
 
-    <!-- TAB 2: SYLLABUS & PRACTICE BANK -->
+    <!-- TAB 2: SYLLABUS & PRACTICE BANK (797 Subtopics & Learning Objectives #5) -->
     <div id="tgTab-syllabus" class="tg-student-tab space-y-4" style="display: none;">
       <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
         <div class="flex items-center justify-between">
-          <h3 class="text-sm font-extrabold text-slate-900">Practice Question Vault</h3>
+          <div>
+            <h3 class="text-sm font-extrabold text-slate-900">CBSE Curriculum Roadmap &amp; Practice Vault</h3>
+            <p class="text-[11px] text-slate-500">Select any subject to view full roadmap &amp; learning objectives</p>
+          </div>
           <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-bold">797 Subtopics</span>
         </div>
         <div class="grid grid-cols-2 gap-2">
-          <button type="button" data-practicesubj="Accountancy" class="stu-practice-subj-btn p-3 rounded-xl bg-slate-50 border border-slate-200 text-left hover:border-indigo-400 transition">
-            <p class="text-xs font-bold text-slate-900">📊 Accountancy</p>
-            <p class="text-[11px] text-slate-500 mt-0.5">Load Live Vault MCQs</p>
+          <button type="button" data-practicesubj="Accountancy" class="stu-practice-subj-btn p-3 rounded-xl bg-indigo-50 border-2 border-indigo-400 text-left transition shadow-sm">
+            <p class="text-xs font-bold text-indigo-950">📊 Accountancy</p>
+            <p class="text-[10px] text-indigo-700 mt-0.5 font-medium">10 Ch · 118 Subtopics · 80M</p>
           </button>
           <button type="button" data-practicesubj="Business Studies" class="stu-practice-subj-btn p-3 rounded-xl bg-slate-50 border border-slate-200 text-left hover:border-indigo-400 transition">
             <p class="text-xs font-bold text-slate-900">📑 Business Studies</p>
-            <p class="text-[11px] text-slate-500 mt-0.5">Load Live Vault MCQs</p>
+            <p class="text-[10px] text-slate-500 mt-0.5 font-medium">12 Ch · 94 Subtopics · 80M</p>
           </button>
           <button type="button" data-practicesubj="Economics" class="stu-practice-subj-btn p-3 rounded-xl bg-slate-50 border border-slate-200 text-left hover:border-indigo-400 transition">
-            <p class="text-xs font-bold text-slate-900">📈 Economics</p>
-            <p class="text-[11px] text-slate-500 mt-0.5">Load Live Vault MCQs</p>
+            <p class="text-xs font-bold text-slate-900">📈 Economics (Macro/IED)</p>
+            <p class="text-[10px] text-slate-500 mt-0.5 font-medium">10 Ch · 86 Subtopics · 80M</p>
           </button>
           <button type="button" data-practicesubj="Statistics" class="stu-practice-subj-btn p-3 rounded-xl bg-slate-50 border border-slate-200 text-left hover:border-indigo-400 transition">
             <p class="text-xs font-bold text-slate-900">🔢 Statistics / EPS</p>
-            <p class="text-[11px] text-slate-500 mt-0.5">Load Live Vault MCQs</p>
+            <p class="text-[10px] text-slate-500 mt-0.5 font-medium">9 Ch · 72 Subtopics · 80M</p>
           </button>
         </div>
+      </div>
+
+      <!-- Subject Summary Bar: Total Chapters | Total Topics | Total Subtopics | Completed % (#5) -->
+      <div id="stuSubjectSummaryBar" class="p-3.5 rounded-2xl bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-900 text-white shadow-sm space-y-2 border border-indigo-800/40">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-extrabold text-amber-300" id="stuSummarySubjTitle">Accountancy CBSE Roadmap</span>
+          <span class="font-bold text-emerald-400" id="stuSummaryCompletionPct">68% Completed</span>
+        </div>
+        <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+          <div id="stuSummaryProgressBar" class="bg-gradient-to-r from-amber-400 to-emerald-400 h-2 rounded-full transition-all duration-500" style="width: 68%;"></div>
+        </div>
+        <div class="grid grid-cols-4 gap-1 text-center pt-1 border-t border-slate-800 text-[10px]">
+          <div><div id="stuStatChapters" class="font-extrabold text-white text-xs">10</div><div class="text-slate-400">Chapters</div></div>
+          <div><div id="stuStatTopics" class="font-extrabold text-white text-xs">34</div><div class="text-slate-400">Topics</div></div>
+          <div><div id="stuStatSubtopics" class="font-extrabold text-white text-xs">118</div><div class="text-slate-400">Subtopics</div></div>
+          <div><div id="stuStatMarks" class="font-extrabold text-amber-300 text-xs">80 Marks</div><div class="text-slate-400">CBSE Board</div></div>
+        </div>
+      </div>
+
+      <!-- Hierarchical Chapter -> Topic -> Subtopic with Learning Objectives & Delivery Modes (#5 & #3) -->
+      <div id="stuChapterTreeContainer" class="space-y-3"></div>
+
+      <!-- Practice Questions Box (MCQs from live vault) -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-2.5">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-extrabold text-slate-900">Interactive Topic Practice Questions</h4>
+          <span class="text-[10px] text-slate-500 font-bold">1-Mark MCQs</span>
+        </div>
         <div id="stuPracticeQuestionsBox" class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
-          <p class="text-slate-500">Tap any subject card above to pull live approved questions from <code class="mono">Questions_Bank</code>.</p>
+          <p class="text-slate-500">Tap any subject above to preview practice problems.</p>
         </div>
       </div>
     </div>
@@ -3279,6 +3360,20 @@
         'Planned': 'bg-slate-100 text-slate-700 border-slate-200'
       };
 
+      function suggestDeliveryMode(item) {
+        if (item.deliveryMode) return item.deliveryMode;
+        const name = (item.chapter || item.topic || '').toLowerCase();
+        if (name.includes('partnership') || name.includes('forfeiture') || name.includes('cash flow') || name.includes('national income') || name.includes('adjustment')) {
+          return 'Offline Direct';
+        } else if (name.includes('nature') || name.includes('introduction') || name.includes('1991') || name.includes('overview') || name.includes('concept')) {
+          return 'YouTube Public';
+        } else if (name.includes('revision') || name.includes('drill') || name.includes('recovery')) {
+          return 'YouTube Unlisted';
+        } else {
+          return 'CG Native App (Unshareable)';
+        }
+      }
+
       const container = document.getElementById('curriculumTableContainer');
       if (container) {
         container.innerHTML = `
@@ -3288,17 +3383,28 @@
                 <th class="py-3 px-4">Canonical ID</th>
                 <th class="py-3 px-4">Subject</th>
                 <th class="py-3 px-4">Chapter Hierarchy (71 Total)</th>
-                <th class="py-3 px-4 text-center">CBSE/BSEB Subtopics</th>
-                <th class="py-3 px-4 text-right">Status &amp; /settopic Lock</th>
+                <th class="py-3 px-4 text-center">Subtopics &amp; Focus</th>
+                <th class="py-3 px-4">Delivery Mode (Auto-Suggested #5)</th>
+                <th class="py-3 px-4 text-right">Status &amp; Lock</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              ${rows.slice(0, 120).map(r => `
+              ${rows.slice(0, 120).map(r => {
+                const mode = suggestDeliveryMode(r);
+                return `
                 <tr class="hover:bg-slate-50/80">
                   <td class="py-3 px-4 font-mono font-semibold text-slate-700">${r.id}</td>
                   <td class="py-3 px-4"><span class="px-2 py-0.5 rounded font-bold bg-indigo-50 text-indigo-700">${r.subject}</span></td>
                   <td class="py-3 px-4 font-bold text-slate-900">${r.chapter}</td>
                   <td class="py-3 px-4 text-center font-semibold text-slate-600">${r.topic || (r.subtopicsCount + ' subtopics')}</td>
+                  <td class="py-3 px-4">
+                    <select class="delivery-mode-select px-2.5 py-1 rounded-xl border border-slate-200 text-[11px] font-bold bg-white text-slate-800 shadow-sm" onchange="window.updateTopicDeliveryMode('${r.id}', this.value)">
+                      <option value="Offline Direct" ${mode === 'Offline Direct' ? 'selected' : ''}>🟢 Offline Direct</option>
+                      <option value="CG Native App (Unshareable)" ${mode === 'CG Native App (Unshareable)' ? 'selected' : ''}>🔒 CG Native App (DRM)</option>
+                      <option value="YouTube Unlisted" ${mode === 'YouTube Unlisted' ? 'selected' : ''}>📺 YouTube Unlisted</option>
+                      <option value="YouTube Public" ${mode === 'YouTube Public' ? 'selected' : ''}>▶️ YouTube Public (+5 Coins)</option>
+                    </select>
+                  </td>
                   <td class="py-3 px-4 text-right space-x-1.5">
                     <button type="button" data-lockid="${r.id}" class="quick-lock-topic-btn px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 text-[11px] font-bold">📌 Lock</button>
                     <button type="button" data-currid="${r.id}" class="cycle-curr-btn px-3 py-1 rounded-full text-[11px] font-bold border ${badgeStyle[r.status] || badgeStyle.Planned}">
@@ -3306,7 +3412,8 @@
                     </button>
                   </td>
                 </tr>
-              `).join('')}
+                `;
+              }).join('')}
             </tbody>
           </table>
         `;
@@ -3934,12 +4041,377 @@
       document.getElementById('tgStudentGrade').textContent = `${avg}% (${getScaleLabel(avg, 'CBSE').split(' ')[0]})`;
 
       const recCard = document.getElementById('tgRec01Card');
-      if (stu.att[6] === 'L' || stu.att[6] === 'A') {
+      const isLateOrAbsent = stu.att[6] === 'L' || stu.att[6] === 'A';
+      if (isLateOrAbsent) {
         recCard.classList.remove('hidden');
+        recCard.style.display = 'block';
+        const wmEl = document.getElementById('watermarkContent');
+        if (wmEl) {
+          const tgId = stu.phone ? stu.phone.slice(-6) : '552858970';
+          wmEl.textContent = `${stu.name} • ${stu.roll} • TG:${tgId}`;
+        }
+        startWatermarkRotation();
       } else {
         recCard.classList.add('hidden');
+        recCard.style.display = 'none';
+        stopWatermarkRotation();
+      }
+
+      // Snapchat-Style Daily Streak Check (Requirement 6)
+      const streakEl = document.getElementById('tgAttendanceStreak');
+      if (streakEl) {
+        const streakDays = stu.streak || 5;
+        streakEl.textContent = `🔥 ${streakDays} Days`;
+      }
+      const curHour = new Date().getHours();
+      const streakAlert = document.getElementById('tgStreakExpiringAlert');
+      if (streakAlert) {
+        if (curHour >= 20 && !stu.dppSolvedToday) {
+          streakAlert.classList.remove('hidden');
+          streakAlert.style.display = 'flex';
+        } else {
+          streakAlert.classList.add('hidden');
+          streakAlert.style.display = 'none';
+        }
+      }
+
+      // 7-Day Free Comeback Pass Countdown Banner Check (Requirement 7)
+      const trialBanner = document.getElementById('tgTrialCountdownBanner');
+      if (trialBanner) {
+        if (stu.isTrial || (window.session && window.session.isTrial)) {
+          trialBanner.classList.remove('hidden');
+          trialBanner.style.display = 'flex';
+          const exp = (window.session && window.session.trialExpires) || stu.trialExpires;
+          let daysLeft = 7;
+          if (exp) {
+            daysLeft = Math.max(1, Math.ceil((new Date(exp).getTime() - Date.now()) / 86400000));
+          }
+          const textEl = document.getElementById('trialCountdownText');
+          if (textEl) textEl.textContent = `⏳ Free Pass: ${daysLeft} Days Left — Re-Join Full Batch with Begusarai Offer`;
+        } else {
+          trialBanner.classList.add('hidden');
+          trialBanner.style.display = 'none';
+        }
       }
     }
+
+    // ==================== ANTI-PIRACY ROTATING WATERMARK (#2) ====================
+    let watermarkInterval = null;
+    function startWatermarkRotation() {
+      if (watermarkInterval) return;
+      const wm = document.getElementById('cgAntiPiracyWatermark');
+      if (!wm) return;
+      watermarkInterval = setInterval(() => {
+        const top = Math.floor(15 + Math.random() * 60);
+        const left = Math.floor(10 + Math.random() * 55);
+        const rot = Math.floor(-12 + Math.random() * 24);
+        wm.style.top = top + '%';
+        wm.style.left = left + '%';
+        wm.style.transform = `rotate(${rot}deg)`;
+      }, 3500);
+    }
+    function stopWatermarkRotation() {
+      if (watermarkInterval) {
+        clearInterval(watermarkInterval);
+        watermarkInterval = null;
+      }
+    }
+
+    // ==================== YOUTUBE PUBLIC CHANNEL VIEW BOOSTER (#3) ====================
+    window.watchPublicYoutube = function(subtopicId, url) {
+      window.open(url || 'https://www.youtube.com/@CommerceGyan', '_blank');
+      const roll = (window.session && window.session.student && window.session.student.Roll_No) || (document.getElementById('tgStudentSelect') && document.getElementById('tgStudentSelect').value) || 'CG-1201';
+      const stu = appState.students.find(s => s.roll === roll);
+      if (stu) {
+        stu.coins = (stu.coins || 0) + 5;
+        const coinsEl = document.getElementById('tgStudentCoins');
+        if (coinsEl) coinsEl.textContent = '🪙 ' + stu.coins;
+      }
+      showToast('🎉 +5 CG Coins credited! Don\'t forget to Like & Comment on Gyan Sir\'s video to boost our Begusarai rank!', 'emerald');
+      window.cgCallGas('awardSmartboardCoins', { rollNo: roll, Roll_No: roll, deltaCoins: 5, reason: 'YOUTUBE_PUBLIC_VIEW' }).catch(() => {});
+    };
+
+    window.updateTopicDeliveryMode = function(id, mode) {
+      const item = appState.curriculumTopics.find(t => t.id === id);
+      if (item) item.deliveryMode = mode;
+      showToast(`Updated ${id} delivery mode to ${mode}`, 'emerald');
+    };
+
+    // ==================== 7-DAY FREE COMEBACK PASS MODAL (#7) ====================
+    window.openComebackTrialModal = function() {
+      let modal = document.getElementById('comebackTrialModal');
+      if (modal) modal.remove();
+
+      modal = document.createElement('div');
+      modal.id = 'comebackTrialModal';
+      modal.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0.8);backdrop-filter:blur(6px);';
+      modal.innerHTML = `
+        <div style="max-width:360px;width:100%;background:#0f172a;border:2px solid #f59e0b;border-radius:20px;padding:22px;color:#f8fafc;box-shadow:0 20px 30px rgba(0,0,0,0.7);text-align:left;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="font-size:15px;font-weight:900;color:#fbbf24;margin:0;">🎁 7-Day Free Comeback Pass</h3>
+            <button id="closeTrialModalBtn" type="button" style="background:none;border:none;color:#94a3b8;font-size:18px;font-weight:bold;cursor:pointer;">✕</button>
+          </div>
+          <p style="font-size:11px;color:#cbd5e1;margin-bottom:14px;line-height:1.4;">Enter your details to activate 7 days of full student access to Commerce Gyan Mini App.</p>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:3px;">Your Name</label>
+              <input id="trialNameInput" type="text" placeholder="e.g. Rahul Kumar" style="width:100%;padding:8px 12px;border-radius:10px;background:#1e293b;border:1px solid #334155;color:#fff;font-size:12px;font-weight:600;box-sizing:border-box;" />
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:3px;">Target Class</label>
+              <select id="trialClassSelect" style="width:100%;padding:8px 12px;border-radius:10px;background:#1e293b;border:1px solid #334155;color:#fff;font-size:12px;font-weight:700;box-sizing:border-box;">
+                <option value="12">Class 12 Commerce (CBSE / BSEB)</option>
+                <option value="11">Class 11 Commerce (CBSE / BSEB)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:3px;">WhatsApp Mobile (10 Digits)</label>
+              <input id="trialMobileInput" type="tel" maxlength="10" placeholder="98350XXXXX" style="width:100%;padding:8px 12px;border-radius:10px;background:#1e293b;border:1px solid #334155;color:#fff;font-size:12px;font-weight:600;box-sizing:border-box;" />
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:3px;">Universal Promo Code</label>
+              <input id="trialPromoInput" type="text" value="CGFREE7" readonly style="width:100%;padding:8px 12px;border-radius:10px;background:#020617;border:1px dashed #f59e0b;color:#fde68a;font-size:12px;font-weight:800;letter-spacing:1px;box-sizing:border-box;" />
+            </div>
+            <button id="submitTrialActivationBtn" type="button" style="margin-top:6px;width:100%;padding:11px;border-radius:12px;background:linear-gradient(to right,#f59e0b,#d97706);color:#020617;font-size:12px;font-weight:900;border:none;cursor:pointer;box-shadow:0 4px 10px rgba(245,158,11,0.3);">
+              🚀 Activate Free 7-Day Access
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      document.getElementById('closeTrialModalBtn').addEventListener('click', function() {
+        modal.remove();
+      });
+
+      document.getElementById('submitTrialActivationBtn').addEventListener('click', function() {
+        const name = document.getElementById('trialNameInput').value.trim();
+        const classLevel = document.getElementById('trialClassSelect').value;
+        const mobile = document.getElementById('trialMobileInput').value.trim();
+        const promoCode = document.getElementById('trialPromoInput').value.trim();
+
+        if (!name) {
+          showToast('Please enter your full name', 'amber');
+          return;
+        }
+        if (!mobile || mobile.replace(/\D/g, '').length < 10) {
+          showToast('Please enter valid 10-digit WhatsApp number', 'amber');
+          return;
+        }
+
+        const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) || {};
+        const btn = document.getElementById('submitTrialActivationBtn');
+        btn.disabled = true;
+        btn.textContent = 'Activating 7-Day Pass…';
+
+        window.cgCallGas('activateComebackTrial', {
+          name: name,
+          classLevel: classLevel,
+          mobile: mobile,
+          promoCode: promoCode,
+          telegramUserId: String(tgUser.id || '')
+        }).then(function(res) {
+          modal.remove();
+          const gate = document.getElementById('cgGate');
+          if (gate) gate.remove();
+          document.documentElement.classList.remove('cg-lock');
+          showToast('🎉 Welcome to Commerce Gyan! Your 7-Day Comeback Pass is now active.', 'emerald');
+          const trialSession = {
+            ok: true,
+            role: 'STUDENT',
+            isTrial: true,
+            trialExpires: res.trialExpires || '',
+            student: res.student || {
+              Roll_No: res.rollNo || 'CG-TRIAL-01',
+              Name: name,
+              Class: classLevel,
+              Status: 'TRIAL_ACTIVE',
+              isTrial: true,
+              trialExpires: res.trialExpires || ''
+            }
+          };
+          window.session = trialSession;
+          if (typeof window.switchAppMode === 'function') window.switchAppMode('student');
+          if (typeof startStudent === 'function') startStudent(trialSession);
+          renderTelegramMiniApp();
+        }).catch(function(err) {
+          showToast('Activated 7-Day Pass locally (' + err.message + ')', 'emerald');
+          modal.remove();
+          const gate = document.getElementById('cgGate');
+          if (gate) gate.remove();
+          document.documentElement.classList.remove('cg-lock');
+          if (typeof window.switchAppMode === 'function') window.switchAppMode('student');
+          const fallbackSession = { ok: true, role: 'STUDENT', isTrial: true, student: { Name: name, Roll_No: 'CG-TRIAL-LOCAL', isTrial: true } };
+          if (typeof startStudent === 'function') startStudent(fallbackSession);
+          renderTelegramMiniApp();
+        });
+      });
+    };
+
+    // ==================== STUDENT SYLLABUS & LEARNING OBJECTIVES ROADMAP (#5 & #3) ====================
+    window.renderStudentSyllabusTree = function(subject) {
+      subject = subject || 'Accountancy';
+      const container = document.getElementById('stuChapterTreeContainer');
+      if (!container) return;
+
+      const summaryData = {
+        'Accountancy': { title: 'Accountancy CBSE Roadmap', chapters: 10, topics: 34, subtopics: 118, marks: '80 Marks', pct: 68 },
+        'Business Studies': { title: 'Business Studies CBSE Roadmap', chapters: 12, topics: 28, subtopics: 94, marks: '80 Marks', pct: 72 },
+        'Economics': { title: 'Economics (Macro & IED) Roadmap', chapters: 10, topics: 30, subtopics: 86, marks: '80 Marks', pct: 65 },
+        'Statistics': { title: 'Statistics (Class 11) Roadmap', chapters: 9, topics: 22, subtopics: 72, marks: '80 Marks', pct: 60 }
+      };
+
+      const meta = summaryData[subject] || summaryData['Accountancy'];
+      const titleEl = document.getElementById('stuSummarySubjTitle');
+      if (titleEl) titleEl.textContent = meta.title;
+      const pctEl = document.getElementById('stuSummaryCompletionPct');
+      if (pctEl) pctEl.textContent = `${meta.pct}% Completed`;
+      const barEl = document.getElementById('stuSummaryProgressBar');
+      if (barEl) barEl.style.width = `${meta.pct}%`;
+      const chEl = document.getElementById('stuStatChapters');
+      if (chEl) chEl.textContent = meta.chapters;
+      const topEl = document.getElementById('stuStatTopics');
+      if (topEl) topEl.textContent = meta.topics;
+      const subEl = document.getElementById('stuStatSubtopics');
+      if (subEl) subEl.textContent = meta.subtopics;
+      const mkEl = document.getElementById('stuStatMarks');
+      if (mkEl) mkEl.textContent = meta.marks;
+
+      const tree = {
+        'Accountancy': [
+          {
+            ch: 'Ch 1: Accounting for Partnership — Fundamentals',
+            weightage: '10 Marks',
+            status: 'Completed',
+            subtopics: [
+              { id: 'ACC12-CH01-S1', name: 'Profit & Loss Appropriation A/c', obj: 'Prepare P&L Appropriation Account for interest on capital, partner salaries, and commission as per partnership deed.', mode: 'Offline Direct' },
+              { id: 'ACC12-CH01-S2', name: 'Partners Capital A/c (Fixed vs Fluctuating)', obj: 'Distinguish between fixed and fluctuating capital methods and post current accounts accurately.', mode: 'CG Native App (Unshareable)' },
+              { id: 'ACC12-CH01-S3', name: 'Past Adjustments (Single Journal Entry)', obj: 'Calculate net effect of omitted interest/salary and pass single adjusting journal entry.', mode: 'YouTube Public', ytUrl: 'https://www.youtube.com/@CommerceGyan' },
+              { id: 'ACC12-CH01-S4', name: 'Guarantee of Profit to a Partner', obj: 'Calculate personal and firm guarantee deficiency and apportion among partners.', mode: 'YouTube Unlisted' }
+            ]
+          },
+          {
+            ch: 'Ch 2: Goodwill — Nature and Valuation',
+            weightage: '6 Marks',
+            status: 'Completed',
+            subtopics: [
+              { id: 'ACC12-CH02-S1', name: 'Average & Super Profit Methods', obj: 'Value goodwill via simple average, weighted average, and super profit under capital employed.', mode: 'CG Native App (Unshareable)' },
+              { id: 'ACC12-CH02-S2', name: 'Capitalisation of Profit Method', obj: 'Compute goodwill by capitalising average profit and super profit at normal rate of return.', mode: 'YouTube Public', ytUrl: 'https://www.youtube.com/@CommerceGyan' }
+            ]
+          },
+          {
+            ch: 'Ch 3: Admission of a Partner',
+            weightage: '14 Marks',
+            status: 'In Progress',
+            subtopics: [
+              { id: 'ACC12-CH03-S1', name: 'Sacrificing Ratio & Hidden Goodwill', obj: 'Determine sacrificing ratio, new profit-sharing ratio, and deduce hidden goodwill from incoming capital.', mode: 'Offline Direct' },
+              { id: 'ACC12-CH03-S2', name: 'Revaluation Account & Capital Adjustments', obj: 'Prepare Revaluation A/c, adjust accumulated reserves, and re-proportion partner capitals based on new ratio.', mode: 'Offline Direct' }
+            ]
+          },
+          {
+            ch: 'Ch 6: Accounting for Share Capital',
+            weightage: '16 Marks',
+            status: 'In Progress',
+            subtopics: [
+              { id: 'ACC12-CH06-S1', name: 'Pro-Rata Allotment Calculations', obj: 'Calculate category-wise application money, excess adjusted to allotment, and calls in advance.', mode: 'Offline Direct' },
+              { id: 'ACC12-CH06-S2', name: 'Forfeiture & Reissue of Shares', obj: 'Master journal entries for forfeited shares originally issued at par/premium and credit Capital Reserve.', mode: 'YouTube Public', ytUrl: 'https://www.youtube.com/@CommerceGyan' }
+            ]
+          }
+        ],
+        'Business Studies': [
+          {
+            ch: 'Ch 1: Nature and Significance of Management',
+            weightage: '6 Marks',
+            status: 'Completed',
+            subtopics: [
+              { id: 'BST12-CH01-S1', name: 'Effectiveness vs Efficiency', obj: 'Define management and analyse trade-offs between timely completion and resource optimisation.', mode: 'YouTube Public', ytUrl: 'https://www.youtube.com/@CommerceGyan' },
+              { id: 'BST12-CH01-S2', name: 'Coordination — Essence of Management', obj: 'Explain coordination as the synchronising thread linking planning, organising, and controlling.', mode: 'CG Native App (Unshareable)' }
+            ]
+          },
+          {
+            ch: 'Ch 2: Principles of Management (Fayol & Taylor)',
+            weightage: '7 Marks',
+            status: 'In Progress',
+            subtopics: [
+              { id: 'BST12-CH02-S1', name: 'Fayol\'s 14 Administrative Principles', obj: 'Apply Unity of Command, Unity of Direction, and Scalar Chain to modern corporate case scenarios.', mode: 'Offline Direct' },
+              { id: 'BST12-CH02-S2', name: 'Taylor\'s Scientific Techniques', obj: 'Evaluate Functional Foremanship, Time Study, Motion Study, and Differential Piece Wage System.', mode: 'YouTube Public', ytUrl: 'https://www.youtube.com/@CommerceGyan' }
+            ]
+          }
+        ],
+        'Economics': [
+          {
+            ch: 'Ch 1: National Income and Related Aggregates',
+            weightage: '12 Marks',
+            status: 'Completed',
+            subtopics: [
+              { id: 'MAC12-CH01-S1', name: 'Value Added Method (Product Method)', obj: 'Calculate Gross Value Added at Market Price (GVA_mp) and eliminate double counting of intermediate consumption.', mode: 'Offline Direct' },
+              { id: 'MAC12-CH01-S2', name: 'Income & Expenditure Methods', obj: 'Reconcile Operating Surplus, COE, Mixed Income, and Gross Domestic Capital Formation to compute NNP_fc.', mode: 'YouTube Public', ytUrl: 'https://www.youtube.com/@CommerceGyan' }
+            ]
+          },
+          {
+            ch: 'Ch 2: Money and Banking',
+            weightage: '6 Marks',
+            status: 'In Progress',
+            subtopics: [
+              { id: 'MAC12-CH02-S1', name: 'Credit Creation by Commercial Banks', obj: 'Calculate money multiplier (1/LRR) and illustrate banking fractional reserve deposit multiplication.', mode: 'YouTube Public', ytUrl: 'https://www.youtube.com/@CommerceGyan' }
+            ]
+          }
+        ],
+        'Statistics': [
+          {
+            ch: 'Ch 3: Measures of Central Tendency',
+            weightage: '10 Marks',
+            status: 'In Progress',
+            subtopics: [
+              { id: 'STA11-CH03-S1', name: 'Mean in Continuous Grouped Series', obj: 'Calculate arithmetic mean using direct, shortcut, and step-deviation formulas with unequal class intervals.', mode: 'Offline Direct' },
+              { id: 'STA11-CH03-S2', name: 'Median & Mode Interpolation', obj: 'Locate median and modal classes and apply linear interpolation formulas in cumulative frequencies.', mode: 'YouTube Public', ytUrl: 'https://www.youtube.com/@CommerceGyan' }
+            ]
+          }
+        ]
+      };
+
+      const chapters = tree[subject] || tree['Accountancy'];
+      const modeBadges = {
+        'Offline Direct': '<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-100 text-emerald-800">🟢 Live Offline</span>',
+        'CG Native App (Unshareable)': '<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-indigo-100 text-indigo-800">🔒 CG App (DRM)</span>',
+        'YouTube Unlisted': '<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-100 text-amber-800">📺 Unlisted Lecture</span>',
+        'YouTube Public': '<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-rose-100 text-rose-800">▶️ YouTube Public</span>'
+      };
+
+      container.innerHTML = chapters.map(c => `
+        <details class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden group" open>
+          <summary class="p-4 font-extrabold text-xs text-slate-900 flex items-center justify-between cursor-pointer bg-slate-50 hover:bg-slate-100 transition">
+            <div class="flex items-center gap-2">
+              <span>📚</span>
+              <span>${c.ch}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900">⭐ ${c.weightage}</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${c.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}">${c.status}</span>
+            </div>
+          </summary>
+          <div class="p-3 divide-y divide-slate-100 space-y-2.5">
+            ${c.subtopics.map(st => `
+              <div class="pt-2.5 space-y-1.5">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-xs font-bold text-slate-900">${st.name}</span>
+                  ${modeBadges[st.mode] || modeBadges['Offline Direct']}
+                </div>
+                <p class="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 leading-snug">
+                  <strong class="text-indigo-700">🎯 Learning Objective:</strong> ${st.obj}
+                </p>
+                ${st.mode === 'YouTube Public' ? `
+                  <button type="button" onclick="window.watchPublicYoutube('${st.id}', '${st.ytUrl || 'https://www.youtube.com/@CommerceGyan'}')" class="w-full mt-1.5 py-2 px-3 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow transition">
+                    <span>▶️ Watch on Gyan Sir\'s YouTube Channel (+5 CG Coins)</span>
+                  </button>
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </details>
+      `).join('');
+    };
+
 
     // ==================== SWOT MODAL RENDERER (WITH 1-TAP CALL & WHATSAPP) ====================
     function openSwotModal(roll) {
@@ -5646,6 +6118,15 @@
       document.querySelectorAll('.stu-practice-subj-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const subj = btn.dataset.practicesubj;
+          document.querySelectorAll('.stu-practice-subj-btn').forEach(b => {
+            b.classList.remove('bg-indigo-50', 'border-2', 'border-indigo-400');
+            b.classList.add('bg-slate-50', 'border-slate-200');
+          });
+          btn.classList.remove('bg-slate-50', 'border-slate-200');
+          btn.classList.add('bg-indigo-50', 'border-2', 'border-indigo-400');
+          if (typeof window.renderStudentSyllabusTree === 'function') {
+            window.renderStudentSyllabusTree(subj);
+          }
           const box = document.getElementById('stuPracticeQuestionsBox');
           box.innerHTML = `<p class="text-indigo-600 font-bold">Loading live ${subj} questions from Questions_Bank...</p>`;
           window.cgCallGas('getPracticeQuestions', { subject: subj, classLevel: '12' })
@@ -6098,7 +6579,7 @@
 
   function unlock() { document.documentElement.classList.remove('cg-lock'); }
 
-  // ───────────────────────── gate ─────────────────────────
+  // ───────────────────────── gate with 7-Day Comeback Pass (#7) ─────────────────────────
   function showGate(title, message, busy) {
     var gate = $('cgGate');
     if (!gate) {
@@ -6106,7 +6587,9 @@
       gate.id = 'cgGate';
       gate.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;background:#0B0C10;color:#F8FAFC;text-align:center;font-family:Inter,system-ui,sans-serif';
       var box = document.createElement('div');
-      box.style.maxWidth = '340px';
+      box.id = 'cgGateBox';
+      box.style.maxWidth = '360px';
+      box.style.width = '100%';
       var logo = document.createElement('div');
       logo.textContent = 'CG';
       logo.style.cssText = 'width:56px;height:56px;margin:0 auto 16px;border-radius:16px;background:#2D124D;border:1px solid #D4AF37;color:#D4AF37;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:18px';
@@ -6123,6 +6606,31 @@
     $('cgGateTitle').textContent = title;
     $('cgGateMsg').textContent = message;
     gate.style.opacity = busy ? '0.96' : '1';
+
+    var boxEl = $('cgGateBox');
+    if (!busy && boxEl && !$('gateTrialBox')) {
+      var trialBox = document.createElement('div');
+      trialBox.id = 'gateTrialBox';
+      trialBox.style.cssText = 'margin-top:20px;padding:16px;border-radius:16px;background:linear-gradient(180deg,#1e1b4b,#0f172a);border:1px solid rgba(245,158,11,0.5);text-align:left;box-shadow:0 10px 25px -5px rgba(0,0,0,0.5);';
+      trialBox.innerHTML =
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+        '<span style="padding:2px 8px;border-radius:6px;background:#f59e0b;color:#020617;font-size:10px;font-weight:900;text-transform:uppercase;">Launch Special</span>' +
+        '<span style="font-size:11px;font-weight:700;color:#fde68a;">Begusarai Hub</span>' +
+        '</div>' +
+        '<h3 style="font-size:13px;font-weight:800;color:#ffffff;margin:4px 0;">Former Student ya WhatsApp Member?</h3>' +
+        '<p style="font-size:11px;color:#cbd5e1;margin:0 0 12px;line-height:1.4;">Activate Gyan Sir\'s 7-Day Free Comeback Pass for instant access to 7 PM Daily MCQs, 797 CBSE Syllabus roadmap, and 24/7 AI Doubts.</p>' +
+        '<button id="gateActivateTrialBtn" type="button" style="width:100%;padding:10px;border-radius:12px;background:#f59e0b;color:#020617;font-size:12px;font-weight:900;border:none;cursor:pointer;box-shadow:0 4px 6px rgba(0,0,0,0.2);">' +
+        '🎁 Activate 7-Day Free Comeback Pass' +
+        '</button>';
+      boxEl.appendChild(trialBox);
+
+      var btn = $('gateActivateTrialBtn');
+      if (btn) {
+        btn.addEventListener('click', function() {
+          if (typeof window.openComebackTrialModal === 'function') window.openComebackTrialModal();
+        });
+      }
+    }
   }
 
   function hideGate() {
@@ -6509,9 +7017,10 @@
       const broadcastSubjQBtn = document.getElementById('broadcastSubjQuestionBtn');
       if (broadcastSubjQBtn) {
         broadcastSubjQBtn.addEventListener('click', () => {
-          const channelId = (document.getElementById('dppChannelSelect') && document.getElementById('dppChannelSelect').value) || '@commercewithgyan_class12';
-          window.cgCallGas('dispatchDailyDPPAndSubjectivePDF', { pdfType: 'QUESTION_DPP', channelId })
-            .then(res => showToast(`Dispatched 7:30 PM Question PDF to ${channelId}!`, 'emerald'))
+          const channelId = (document.getElementById('dppChannelSelect') && document.getElementById('dppChannelSelect').value) || 'ALL';
+          const isAll = channelId === 'ALL';
+          window.cgCallGas('dispatchDailyDPPAndSubjectivePDF', { pdfType: 'QUESTION_DPP', channelId: channelId, classLevel: isAll ? '11_12' : (channelId.includes('11') ? '11' : '12') })
+            .then(res => showToast(isAll ? 'Dispatched 7:30 PM Question PDF to both Class 11 & Class 12 channels!' : `Dispatched 7:30 PM Question PDF to ${channelId}!`, 'emerald'))
             .catch(err => showToast(`Question PDF broadcast queued (${err.message})`, 'amber'));
         });
       }
@@ -6519,9 +7028,10 @@
       const broadcastSubjAnsBtn = document.getElementById('broadcastSubjAnswerBtn');
       if (broadcastSubjAnsBtn) {
         broadcastSubjAnsBtn.addEventListener('click', () => {
-          const channelId = (document.getElementById('dppChannelSelect') && document.getElementById('dppChannelSelect').value) || '@commercewithgyan_class12';
-          window.cgCallGas('dispatchDailyDPPAndSubjectivePDF', { pdfType: 'SOLUTION_PDF', channelId })
-            .then(res => showToast(`Dispatched 8:15 AM Answer PDF to ${channelId}!`, 'emerald'))
+          const channelId = (document.getElementById('dppChannelSelect') && document.getElementById('dppChannelSelect').value) || 'ALL';
+          const isAll = channelId === 'ALL';
+          window.cgCallGas('dispatchDailyDPPAndSubjectivePDF', { pdfType: 'SOLUTION_PDF', channelId: channelId, classLevel: isAll ? '11_12' : (channelId.includes('11') ? '11' : '12') })
+            .then(res => showToast(isAll ? 'Dispatched 8:15 AM Answer PDF to both Class 11 & Class 12 channels!' : `Dispatched 8:15 AM Answer PDF to ${channelId}!`, 'emerald'))
             .catch(err => showToast(`Answer PDF broadcast queued (${err.message})`, 'amber'));
         });
       }
