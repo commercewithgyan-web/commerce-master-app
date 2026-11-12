@@ -1717,14 +1717,48 @@
 
     <!-- TAB 1: AAJ (Default visible) -->
     <div id="tgTab-aaj" class="tg-student-tab space-y-4">
+      <!-- Aaj Ki Classroom Attendance & Streak Card -->
+      <div class="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-lg">
+            📅
+          </div>
+          <div>
+            <span class="text-[10px] font-extrabold uppercase text-slate-400">Classroom Attendance</span>
+            <div id="tgTodayAttendanceBadge" class="text-xs font-extrabold text-slate-700 flex items-center gap-1.5 mt-0.5">
+              <span class="inline-block w-2 h-2 rounded-full bg-amber-400"></span> Not Marked Yet
+            </div>
+          </div>
+        </div>
+        <div class="text-right">
+          <span class="text-[10px] font-bold text-slate-400">Streak</span>
+          <p id="tgAttendanceStreak" class="text-xs font-extrabold text-indigo-600 mt-0.5">🔥 1 Day</p>
+        </div>
+      </div>
+
+      <!-- 14-Day Claim Code Binding Card (Visible only when UNCLAIMED) -->
+      <div id="tgClaimCodeCard" class="bg-indigo-50 border-2 border-indigo-300 rounded-2xl p-4 space-y-2.5" style="display: none;">
+        <div class="flex items-center justify-between">
+          <span class="px-2 py-0.5 rounded-md bg-indigo-600 text-white text-[10px] font-extrabold uppercase">14-Day Claim Code</span>
+          <span class="text-[11px] font-bold text-indigo-900">Admission Binding</span>
+        </div>
+        <p class="text-xs text-indigo-950">Apna 6-digit admission claim code yahan enter karke Telegram account bind karein:</p>
+        <div class="flex gap-2">
+          <input id="stuClaimCodeInput" type="text" placeholder="e.g. CG11-001" class="flex-1 text-xs border border-indigo-200 rounded-xl px-3 py-2 font-mono font-bold uppercase bg-white" />
+          <button id="stuBindClaimBtn" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow-sm transition">
+            Bind Code
+          </button>
+        </div>
+      </div>
+
       <!-- REC-01 Late/Absent Recovery Drill Card -->
       <div id="tgRec01Card" class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 space-y-2.5">
         <div class="flex items-center justify-between">
-          <span class="px-2 py-0.5 rounded-md bg-amber-500 text-white text-[10px] font-extrabold uppercase">REC-01 Recovery Drill Assigned</span>
-          <span class="text-[11px] font-bold text-amber-900">2 MCQs + Notes Check</span>
+          <span id="tgRecDueBadge" class="px-2 py-0.5 rounded-md bg-amber-500 text-white text-[10px] font-extrabold uppercase">REC-01 Recovery Drill Assigned</span>
+          <span id="tgRecDueCount" class="text-[11px] font-bold text-amber-900">2 MCQs + Notes Check</span>
         </div>
         <p class="text-xs text-amber-950">Complete this 2-question concept check from the lecture you missed/joined late to clear your recovery queue and earn <strong>+10 CG Coins</strong>.</p>
-        <button id="completeRec01Btn" type="button" class="w-full py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold shadow-sm">
+        <button id="completeRec01Btn" type="button" class="w-full py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold shadow-sm transition">
           Complete 2-MCQ Recovery Drill (+10 CG Coins)
         </button>
       </div>
@@ -1884,17 +1918,8 @@
       </div>
     </div>
 
-    <!-- TAB 5: DOUBT, AI SOS & 14-DAY CLAIM CODE BINDING -->
+    <!-- TAB 5: DOUBT & AI SOS -->
     <div id="tgTab-doubt" class="tg-student-tab space-y-4" style="display: none;">
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
-        <span class="text-[10px] font-extrabold uppercase text-indigo-600">Step 6: 14-Day Claim Code Binding</span>
-        <h3 class="text-sm font-extrabold text-slate-900">🔑 Bind Your Admission Claim Code (<code class="mono">bindStudentClaimCode</code>)</h3>
-        <div class="flex gap-2">
-          <input id="stuClaimCodeInput" type="text" placeholder="e.g. CG11-ABCD" class="flex-1 text-xs border border-slate-300 rounded-xl px-3 py-2 font-mono font-bold uppercase" />
-          <button id="stuBindClaimBtn" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-extrabold">Bind Code</button>
-        </div>
-      </div>
-
       <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
         <span class="text-[10px] font-extrabold uppercase text-purple-600">Serverless Gemini 2.5 Flash</span>
         <h3 class="text-sm font-extrabold text-slate-900">🤖 Ask Commerce Doubt &amp; 2 AM Exam Panic SOS</h3>
@@ -3760,28 +3785,62 @@
       // Telegram Mini App Student Controls (wired to completeRecoveryDrill & submitStudentQuizAttempt)
       document.getElementById('tgStudentSelect').addEventListener('change', (e) => {
         renderTelegramMiniApp();
-        window.cgCallGas('getStudentMiniAppBootstrap', { rollNo: e.target.value })
+        const selectedRoll = e.target.value;
+        window.cgCallGas('getStudentMiniAppBootstrap', { Roll_No: selectedRoll, rollNo: selectedRoll })
           .then(data => {
-            if (data && data.totalCoins !== undefined) {
-              const stu = appState.students.find(s => s.roll === e.target.value);
-              if (stu) stu.coins = data.totalCoins;
-              renderTelegramMiniApp();
+            if (data) {
+              if (data.totalCoins !== undefined) {
+                const stu = appState.students.find(s => s.roll === selectedRoll);
+                if (stu) stu.coins = data.totalCoins;
+                renderTelegramMiniApp();
+              }
+              if (typeof window.applyStudentBootstrap === 'function') {
+                window.applyStudentBootstrap(data, selectedRoll);
+              }
             }
           }).catch(() => {});
       });
 
-      document.getElementById('completeRec01Btn').addEventListener('click', () => {
-        const roll = document.getElementById('tgStudentSelect').value || 'CG-1201';
-        const stu = appState.students.find(s => s.roll === roll);
-        if (stu) {
-          stu.att[6] = 'P';
-          stu.coins += 10;
-          renderAll();
-        }
-        window.cgCallGas('completeRecoveryDrill', { rollNo: roll, watchPct: 95, mcqScore: 2 })
-          .then(() => showToast('REC-01 Recovery Drill Completed in Sheet! +10 CG Coins added.', 'emerald'))
-          .catch(() => showToast('REC-01 Recovery Drill Completed! +10 CG Coins added.', 'emerald'));
-      });
+      const completeRecBtn = document.getElementById('completeRec01Btn');
+      if (completeRecBtn) {
+        completeRecBtn.addEventListener('click', () => {
+          const roll = (session && session.student && (session.student.Roll_No || session.student.roll)) ||
+                       (document.getElementById('tgStudentSelect') && document.getElementById('tgStudentSelect').value) ||
+                       'CG-11-001';
+          const stu = appState.students.find(s => s.roll === roll);
+          if (stu) {
+            stu.att[6] = 'P';
+            stu.coins += 10;
+            renderAll();
+          }
+          completeRecBtn.disabled = true;
+          completeRecBtn.textContent = 'Submitting Drill…';
+          window.cgCallGas('completeRecoveryDrill', {
+            Roll_No: roll,
+            rollNo: roll,
+            qid: 'REC-01-Q1',
+            selectedOption: 'A',
+            timeTakenSeconds: 30,
+            watchPct: 95,
+            mcqScore: 2
+          }).then(res => {
+            showToast('REC-01 Recovery Drill Completed! +10 CG Coins added. 🎉', 'emerald');
+            const card = document.getElementById('tgRec01Card');
+            if (card) {
+              card.innerHTML = '<div class="p-3 bg-emerald-50 rounded-xl border border-emerald-300 text-xs text-emerald-900 font-bold flex items-center gap-2"><span>✅</span><span>Recovery Drill Completed! +10 CG Coins credited to wallet.</span></div>';
+            }
+            const coinEl = document.getElementById('tgStudentCoins');
+            if (coinEl) {
+              const curCoins = parseInt(coinEl.textContent.replace(/\D/g, '') || '0', 10);
+              coinEl.textContent = '🪙 ' + (curCoins + 10);
+            }
+          }).catch(err => {
+            showToast('Recovery Drill submitted locally: +10 CG Coins.', 'emerald');
+          }).finally(() => {
+            completeRecBtn.disabled = false;
+          });
+        });
+      }
 
       document.querySelectorAll('.tg-track-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -4615,15 +4674,32 @@
             showToast('Enter your 14-Day Claim Code (e.g. CG11-XXXX)', 'amber');
             return;
           }
+          const rollNo = (session && session.student && (session.student.Roll_No || session.student.roll)) ||
+                         (document.getElementById('tgStudentSelect') && document.getElementById('tgStudentSelect').value) ||
+                         'CG-11-001';
+          const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) || {};
+          stuBindClaimBtn.disabled = true;
+          stuBindClaimBtn.textContent = 'Binding…';
           window.cgCallGas('bindStudentClaimCode', {
+            Roll_No: rollNo,
+            rollNo: rollNo,
             claimCode,
-            telegramUserId: '552858970',
-            username: 'commerce_student',
-            firstName: 'Student'
+            telegramUserId: String(tgUser.id || '552858970'),
+            username: tgUser.username || 'commerce_student',
+            firstName: tgUser.first_name || 'Student'
           }).then(res => {
-            showToast(`Bound Claim Code to Roll ${res.rollNo}! ${res.referralStage2Credited ? '(+90 Referral Coins Credited)' : ''}`, 'emerald');
+            showToast(`Bound Claim Code to Roll ${res.rollNo || rollNo}! ${res.referralStage2Credited ? '(+90 Referral Coins Credited)' : ''}`, 'emerald');
+            const card = document.getElementById('tgClaimCodeCard');
+            if (card) card.style.display = 'none';
+            // Refresh bootstrap data
+            window.cgCallGas('getStudentMiniAppBootstrap', { Roll_No: rollNo, rollNo: rollNo })
+              .then(b => { if (b && typeof window.applyStudentBootstrap === 'function') window.applyStudentBootstrap(b, rollNo); })
+              .catch(() => {});
           }).catch(err => {
-            showToast(`Claim Code check: ${err.message}`, 'amber');
+            showToast(`Claim Code error: ${err.message || 'Invalid code ya already claimed'}`, 'amber');
+          }).finally(() => {
+            stuBindClaimBtn.disabled = false;
+            stuBindClaimBtn.textContent = 'Bind Code';
           });
         });
       }
@@ -5018,8 +5094,75 @@
       if ($('tgStudentAtt') && s.student.att) $('tgStudentAtt').textContent = s.student.att;
       if ($('tgStudentGrade') && s.student.grade) $('tgStudentGrade').textContent = s.student.grade;
       loadDpp(s);
+      loadStudentBootstrap(roll);
     }
   }
+
+  function loadStudentBootstrap(roll) {
+    var rollNo = roll || 'CG-11-001';
+    api('getStudentMiniAppBootstrap', { Roll_No: rollNo, rollNo: rollNo }).then(function (b) {
+      if (!b) return;
+      applyStudentBootstrap(b, rollNo);
+    }).catch(function (err) {
+      console.warn('Bootstrap fetch warning:', err);
+    });
+  }
+
+  function applyStudentBootstrap(b, rollNo) {
+    if (!b) return;
+
+    // 1. Claim status
+    var isUnclaimed = b.claimStatus === 'UNCLAIMED' || b.isClaimed === false;
+    var claimCard = $('tgClaimCodeCard');
+    if (claimCard) {
+      claimCard.style.display = isUnclaimed ? 'block' : 'none';
+    }
+
+    // 2. Attendance & streak
+    if (b.attendance) {
+      var att = b.attendance;
+      var isPresent = att.today === true || att.today === 'P' || att.status === 'P';
+      var isAbsent = att.today === false || att.today === 'A' || att.status === 'A';
+      var attBadge = $('tgTodayAttendanceBadge');
+      if (attBadge) {
+        if (isPresent) {
+          attBadge.className = 'text-xs font-extrabold text-emerald-700 flex items-center gap-1.5 mt-0.5';
+          attBadge.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span> Present Today ✅';
+        } else if (isAbsent) {
+          attBadge.className = 'text-xs font-extrabold text-rose-700 flex items-center gap-1.5 mt-0.5';
+          attBadge.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-rose-500"></span> Absent Today ⚠️';
+        } else {
+          attBadge.className = 'text-xs font-extrabold text-slate-700 flex items-center gap-1.5 mt-0.5';
+          attBadge.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-amber-400"></span> Not Marked Yet';
+        }
+      }
+      if ($('tgAttendanceStreak') && att.streak !== undefined) {
+        $('tgAttendanceStreak').textContent = '🔥 ' + att.streak + (att.streak === 1 ? ' Day' : ' Days');
+      }
+    }
+
+    // 3. Recovery drills due
+    var drillsDue = Number(b.recoveryDrillsDue !== undefined ? b.recoveryDrillsDue : ((b.recovery && b.recovery.length) || 0));
+    var recCard = $('tgRec01Card');
+    if (recCard) {
+      if (drillsDue > 0) {
+        recCard.style.display = 'block';
+        if ($('tgRecDueBadge')) $('tgRecDueBadge').textContent = 'Recovery Drills Due: ' + drillsDue;
+        if ($('tgRecDueCount')) $('tgRecDueCount').textContent = drillsDue + ' Pending';
+      } else {
+        recCard.style.display = 'none';
+      }
+    }
+
+    // 4. Coin balance
+    var coins = b.coinBalance !== undefined ? b.coinBalance : (b.coins !== undefined ? b.coins : b.CG_Coins);
+    if (coins !== undefined && $('tgStudentCoins')) {
+      $('tgStudentCoins').textContent = '🪙 ' + coins;
+    }
+  }
+
+  window.applyStudentBootstrap = applyStudentBootstrap;
+  window.loadStudentBootstrap = loadStudentBootstrap;
 
   function loadDpp(s) {
     var box = $('tgQuizInteractiveBox');

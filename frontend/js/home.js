@@ -93,6 +93,44 @@ function renderHomeDashboard(data) {
   }
   document.getElementById('predictedScoreDisplay').innerText = predScoreStr;
 
+  // Attendance & Streak Display (v3.0)
+  if (data.attendance) {
+    var attEl = document.getElementById('attendanceBadge') || document.getElementById('todayAttendanceBadge');
+    if (attEl) {
+      var isPresent = data.attendance.today === true || data.attendance.today === 'P' || data.attendance.status === 'P';
+      var isAbsent = data.attendance.today === false || data.attendance.today === 'A' || data.attendance.status === 'A';
+      if (isPresent) {
+        attEl.className = 'badge badge-success';
+        attEl.innerText = 'Present Today ✅';
+      } else if (isAbsent) {
+        attEl.className = 'badge badge-danger';
+        attEl.innerText = 'Absent Today ⚠️';
+      } else {
+        attEl.className = 'badge badge-warning';
+        attEl.innerText = 'Not Marked Yet';
+      }
+    }
+    if (data.attendance.streak !== undefined) {
+      var streakEl = document.getElementById('streakDisplay');
+      if (streakEl) streakEl.innerText = '🔥 ' + data.attendance.streak + (data.attendance.streak === 1 ? ' Day' : ' Days');
+    }
+  }
+
+  // Claim Code Card Visibility (v3.0)
+  var claimCard = document.getElementById('claimCodeCard') || document.getElementById('tgClaimCodeCard');
+  if (claimCard) {
+    claimCard.style.display = (data.claimStatus === 'UNCLAIMED' || data.isClaimed === false) ? 'block' : 'none';
+  }
+
+  // Recovery Drill Card Visibility (v3.0)
+  var recCard = document.getElementById('recoveryDrillCard') || document.getElementById('tgRec01Card');
+  if (recCard) {
+    var dueCount = Number(data.recoveryDrillsDue || 0);
+    recCard.style.display = dueCount > 0 ? 'block' : 'none';
+    var dueText = document.getElementById('recoveryDueCount') || document.getElementById('tgRecDueCount');
+    if (dueText) dueText.innerText = dueCount + ' Pending';
+  }
+
   // Today's Subtopic Card
   if (data.todaySubtopic) {
     document.getElementById('todayChapterName').innerText = data.todaySubtopic.chapter;
@@ -283,3 +321,44 @@ function closeSosModal() {
     history.replaceState(null, null, 'index.html');
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────
+// CLAIM CODE BINDING & RECOVERY DRILL CONTROLLERS (v3.0)
+// ─────────────────────────────────────────────────────────────────────
+async function bindStudentClaimCode(claimCode) {
+  var rollNo = localStorage.getItem('cg_roll_no') || 'CG-11-001';
+  try {
+    TG_APP.hapticLight();
+    var res = await API_CLIENT.call('bindStudentClaimCode', {
+      Roll_No: rollNo,
+      claimCode: claimCode
+    });
+    TG_APP.hapticSuccess();
+    return res;
+  } catch (err) {
+    TG_APP.hapticError();
+    throw err;
+  }
+}
+
+async function completeRecoveryDrill(qid, selectedOption, timeTakenSeconds) {
+  var rollNo = localStorage.getItem('cg_roll_no') || 'CG-11-001';
+  try {
+    TG_APP.hapticLight();
+    var res = await API_CLIENT.call('completeRecoveryDrill', {
+      Roll_No: rollNo,
+      qid: qid || 'REC-01-Q1',
+      selectedOption: selectedOption || 'A',
+      timeTakenSeconds: timeTakenSeconds || 30
+    });
+    TG_APP.hapticSuccess();
+    return res;
+  } catch (err) {
+    TG_APP.hapticError();
+    throw err;
+  }
+}
+
+window.bindStudentClaimCode = bindStudentClaimCode;
+window.completeRecoveryDrill = completeRecoveryDrill;
+
