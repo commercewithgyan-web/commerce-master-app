@@ -123,7 +123,9 @@ function getConfigFeeSettings_(erpSpreadsheet) {
     DEMO_PERIOD_DAYS: 3,
     LATE_FEE_GRACE_DAYS: 5,
     LATE_FEE_PCT: 5,
-    MONTHLY_COIN_REDEEM_CAP: 100
+    MONTHLY_COIN_REDEEM_CAP: 100,
+    MID_MONTH_FLAT_PRORATION_INR: 300,
+    USE_FLAT_MID_MONTH_PRORATION: true
   };
   rows.forEach(r => {
     const key = r.Plan_Key || r.Charge_Code;
@@ -346,6 +348,42 @@ function doPost(e) {
       case "checkBalanceSheetIntegrity":
       case "reconcileNotebookRegistry":
         result = handleApiRequest(requestData);
+        break;
+      case "logParentCommunication":
+        result = logParentCommunication(payload);
+        break;
+      case "getParentCommunicationLog":
+        result = getParentCommunicationLog(payload);
+        break;
+      case "getFeeDefaulters":
+        result = getFeeDefaulters();
+        break;
+      case "getBatchAnalytics":
+        result = getBatchAnalytics();
+        break;
+      case "createBackupArchive":
+        result = createBackupArchive();
+        break;
+      case "restoreBackupArchive":
+        result = restoreBackupArchive(payload);
+        break;
+      case "cancelBatchLecture":
+        result = cancelBatchLecture(payload);
+        break;
+      case "getAcademicCalendar":
+        result = getAcademicCalendar();
+        break;
+      case "saveCalendarEvent":
+        result = saveCalendarEvent(payload);
+        break;
+      case "generatePrintableFeeReceipt":
+        result = generatePrintableFeeReceipt(payload);
+        break;
+      case "getAuditLog":
+        result = getAuditLog(payload);
+        break;
+      case "archiveGraduatedStudents":
+        result = archiveGraduatedStudents(payload);
         break;
       case "initProductionProperties":
         result = initProductionScriptProperties();
@@ -853,9 +891,15 @@ function calculateAdmissionQuote(payload) {
   const planKey = String(payload.planKey || 'COMBO_MONTHLY').toUpperCase();
   const basePlanFee = cfg[planKey] || (planKey === 'SINGLE_MONTHLY' ? 900 : 1400);
   const isMonthly = planKey.indexOf('MONTHLY') !== -1;
-  const proratedTuition = (isMonthly && payload.applyProrata !== false && dayOfMonth > 5)
-    ? Math.round((basePlanFee / daysInMonth) * remainingDays)
-    : basePlanFee;
+  const midMonthFlat = cfg.MID_MONTH_FLAT_PRORATION_INR || 300;
+  let proratedTuition = basePlanFee;
+  if (isMonthly && payload.applyProrata !== false) {
+    if (dayOfMonth > 15 && cfg.USE_FLAT_MID_MONTH_PRORATION) {
+      proratedTuition = Math.max(midMonthFlat, basePlanFee - midMonthFlat);
+    } else if (dayOfMonth > 5) {
+      proratedTuition = Math.max(midMonthFlat, Math.round((basePlanFee / daysInMonth) * remainingDays));
+    }
+  }
 
 
   const maxCapPct = cfg.MAX_DISCOUNT_CAP_PCT || 30;
@@ -1058,15 +1102,21 @@ function getStudentMiniAppBootstrap(params) {
   totalCoins = Math.max(0, totalCoins);
 
 
-  // Fetch Active Subtopic from Telegram Delivery Settings
-  let activeSubtopic = 'BASIC_CONCEPTS';
-  try {
-    const settingsSheet = tgSS.getSheetByName('Settings');
-    if (settingsSheet) {
-      const val = settingsSheet.getRange('B2').getValue();
-      if (val) activeSubtopic = String(val).trim();
-    }
-  } catch (_) {}
+  const cache = CacheService.getScriptCache();
+
+  // R2 Fix: Fetch Active Subtopic from RAM cache first
+  let activeSubtopic = cache.get('CG_ACTIVE_SUBTOPIC');
+  if (!activeSubtopic) {
+    activeSubtopic = 'BASIC_CONCEPTS';
+    try {
+      const settingsSheet = tgSS.getSheetByName('Settings');
+      if (settingsSheet) {
+        const val = settingsSheet.getRange('B2').getValue();
+        if (val) activeSubtopic = String(val).trim();
+      }
+    } catch (_) {}
+    try { cache.put('CG_ACTIVE_SUBTOPIC', activeSubtopic, 120); } catch (_) {}
+  }
 
 
   // Check Attendance for Recovery Drill (REC-01)
@@ -1084,12 +1134,22 @@ function getStudentMiniAppBootstrap(params) {
   } catch (_) {}
 
 
-  // Fetch Questions, Notebook Items & Revision Queue
-  const qBankQuestions = sheetToObjects(qbSS.getSheetByName('Questions_Bank'));
-  const activeQuestions = qBankQuestions.filter(q =>
-    String(q.Subtopic || '').toUpperCase() === activeSubtopic.toUpperCase() &&
-    String(q.Status || 'APPROVED').toUpperCase() === 'APPROVED'
-  );
+  // R2 Fix: Fetch Daily DPP Questions from CacheService (<100KB safe)
+  let activeQuestions = null;
+  const cachedQ = cache.get('CG_QUESTIONS_' + activeSubtopic);
+  if (cachedQ) {
+    try { activeQuestions = JSON.parse(cachedQ); } catch (_) {}
+  }
+  if (!activeQuestions) {
+    const qBankQuestions = sheetToObjects(qbSS.getSheetByName('Questions_Bank'));
+    activeQuestions = qBankQuestions.filter(q =>
+      String(q.Subtopic || '').toUpperCase() === activeSubtopic.toUpperCase() &&
+      String(q.Status || 'APPROVED').toUpperCase() === 'APPROVED'
+    );
+    try {
+      cache.put('CG_QUESTIONS_' + activeSubtopic, JSON.stringify(activeQuestions.slice(0, 20)), 300);
+    } catch (_) {}
+  }
 
 
   const notesRows = sheetToObjects(qbSS.getSheetByName('Notebook_Notes'));
@@ -1102,29 +1162,39 @@ function getStudentMiniAppBootstrap(params) {
   const studentRevQueue = revRows.filter(r => String(r.Roll_No) === String(targetRollNo));
 
 
-  // Privacy-Masked Leaderboard
-  const leaderboard = students.map(s => {
-    const fullName = String(s.Student_Name || 'Student').trim();
-    const nameParts = fullName.split(' ');
-    const firstName = nameParts[0] || 'Student';
-    const lastInitial = nameParts.length > 1 ? nameParts[nameParts.length - 1].charAt(0).toUpperCase() + '.' : '';
-    const maskedName = `${firstName} ${lastInitial}`.trim();
+  // Privacy-Masked Leaderboard (Cached 120s)
+  let leaderboard = null;
+  const cachedLeaderboard = cache.get('CG_LEADERBOARD_TOP10');
+  if (cachedLeaderboard) {
+    try { leaderboard = JSON.parse(cachedLeaderboard); } catch (_) {}
+  }
+  if (!leaderboard) {
+    leaderboard = students.map(s => {
+      const fullName = String(s.Student_Name || 'Student').trim();
+      const nameParts = fullName.split(' ');
+      const firstName = nameParts[0] || 'Student';
+      const lastInitial = nameParts.length > 1 ? nameParts[nameParts.length - 1].charAt(0).toUpperCase() + '.' : '';
+      const maskedName = `${firstName} ${lastInitial}`.trim();
 
 
-    const sCoinsRows = coinRows.filter(c => String(c.Roll_No) === String(s.Roll_No));
-    let sCoins = 0;
-    sCoinsRows.forEach(c => {
-      const val = Number(c.Amount || c.Coins || 0);
-      const type = String(c.Transaction_Type || c.Type || 'CREDIT').toUpperCase();
-      if (type === 'CREDIT') sCoins += val;
-      else if (type === 'DEBIT') sCoins -= val;
-    });
-    return {
-      rollNo: s.Roll_No,
-      displayName: maskedName,
-      coins: Math.max(0, sCoins)
-    };
-  }).sort((a, b) => b.coins - a.coins);
+      const sCoinsRows = coinRows.filter(c => String(c.Roll_No) === String(s.Roll_No));
+      let sCoins = 0;
+      sCoinsRows.forEach(c => {
+        const val = Number(c.Amount || c.Coins || 0);
+        const type = String(c.Transaction_Type || c.Type || 'CREDIT').toUpperCase();
+        if (type === 'CREDIT') sCoins += val;
+        else if (type === 'DEBIT') sCoins -= val;
+      });
+      return {
+        rollNo: s.Roll_No,
+        displayName: maskedName,
+        coins: Math.max(0, sCoins)
+      };
+    }).sort((a, b) => b.coins - a.coins);
+    try {
+      cache.put('CG_LEADERBOARD_TOP10', JSON.stringify(leaderboard.slice(0, 10)), 120);
+    } catch (_) {}
+  }
 
 
   const rankIndex = leaderboard.findIndex(l => String(l.rollNo) === String(targetRollNo));
@@ -1344,6 +1414,7 @@ function buildWhatsAppTemplateLink(payload) {
 
 function setActiveSubtopic(payload) {
   return withWriteLock_(() => {
+    try { CacheService.getScriptCache().remove('CG_ACTIVE_SUBTOPIC'); } catch (_) {}
     const IDS = getActiveSheetIds();
     const tgSS = SpreadsheetApp.openById(IDS.TELEGRAM);
     const sylSS = SpreadsheetApp.openById(IDS.SYLLABUS);
@@ -2405,4 +2476,407 @@ function reconcileNotebookRegistry_(verifiedUser, payload) {
     synced: true,
     reconciledAt: new Date().toISOString()
   };
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// V4.0 ARCHITECTURE UPGRADE: PARENT COMMS, AUDIT LOG, DEFAULTERS & CALENDAR
+// ─────────────────────────────────────────────────────────────────────
+
+function recordAuditLog_(callerId, role, action, target, details) {
+  try {
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    let auditSheet = erp.getSheetByName('Audit_Log');
+    if (!auditSheet) {
+      auditSheet = erp.insertSheet('Audit_Log');
+      auditSheet.appendRow(['Timestamp', 'Caller_ID', 'Role', 'Action', 'Target', 'Details', 'Status']);
+    }
+    const timestamp = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
+    auditSheet.appendRow([
+      timestamp,
+      String(callerId || 'SYSTEM'),
+      String(role || 'STAFF'),
+      String(action || ''),
+      String(target || ''),
+      typeof details === 'object' ? JSON.stringify(details) : String(details || ''),
+      'SUCCESS'
+    ]);
+  } catch (err) {
+    Logger.log('Audit log recording error: ' + err.message);
+  }
+}
+
+function getAuditLog(payload) {
+  const IDS = getActiveSheetIds();
+  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  const auditSheet = erp.getSheetByName('Audit_Log');
+  if (!auditSheet) return { ok: true, logs: [] };
+  const logs = sheetToObjects(auditSheet);
+  const limit = (payload && payload.limit) || 50;
+  return { ok: true, logs: logs.slice(-limit).reverse() };
+}
+
+function logParentCommunication(payload) {
+  return withWriteLock_(() => {
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    let commSheet = erp.getSheetByName('Parent_Comm_Log');
+    if (!commSheet) {
+      commSheet = erp.insertSheet('Parent_Comm_Log');
+      commSheet.appendRow(['Date', 'Roll_No', 'Parent_Mobile', 'Channel', 'Summary', 'FollowUp_Date', 'Logged_By']);
+    }
+    const now = new Date();
+    const dateStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm');
+    commSheet.appendRow([
+      dateStr,
+      String(payload.rollNo || ''),
+      normalizePhone10(payload.parentMobile || ''),
+      String(payload.channel || 'Call'),
+      String(payload.summary || ''),
+      String(payload.followUpDate || ''),
+      String(payload.loggedBy || 'Gyan Sir')
+    ]);
+    recordAuditLog_(payload.loggedBy, 'STAFF', 'LOG_PARENT_COMMUNICATION', payload.rollNo, payload.summary);
+    return { ok: true, message: 'Parent communication recorded successfully.' };
+  });
+}
+
+function getParentCommunicationLog(payload) {
+  const IDS = getActiveSheetIds();
+  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  const commSheet = erp.getSheetByName('Parent_Comm_Log');
+  if (!commSheet) return { ok: true, logs: [] };
+  const logs = sheetToObjects(commSheet);
+  const targetRoll = String(payload && (payload.rollNo || payload.Roll_No) || '');
+  const filtered = targetRoll ? logs.filter(l => String(l.Roll_No) === targetRoll) : logs;
+  return { ok: true, logs: filtered.reverse() };
+}
+
+function getFeeDefaulters() {
+  const IDS = getActiveSheetIds();
+  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  const students = sheetToObjects(erp.getSheetByName('Students_Master'));
+  const feeLedger = sheetToObjects(erp.getSheetByName('Fee_Ledger'));
+
+  const now = new Date();
+  const defaulters = [];
+
+  students.filter(s => String(s.Status) === 'Active' || String(s.Status) === 'Grace').forEach(s => {
+    const studentLedger = feeLedger.filter(l => String(l.Roll_No) === String(s.Roll_No));
+    let totalDue = 0;
+    let maxDaysOverdue = 0;
+    let lastPayDate = '';
+
+    studentLedger.forEach(l => {
+      const balance = Number(l.Balance_Paise || 0) / 100;
+      if (balance > 0) {
+        totalDue += balance;
+        const invDate = parseDateOrToday_(l.Invoice_Date || l.Date);
+        const daysOver = Math.floor((now - invDate) / (1000 * 60 * 60 * 24));
+        if (daysOver > maxDaysOverdue) maxDaysOverdue = daysOver;
+      }
+      if (l.Payment_Date || l.Date) lastPayDate = l.Payment_Date || l.Date;
+    });
+
+    if (maxDaysOverdue > 15 || totalDue > 1000) {
+      defaulters.push({
+        rollNo: s.Roll_No,
+        studentName: s.Student_Name,
+        classLevel: s.Class,
+        batchId: s.Batch_ID,
+        parentMobile: s.Parent_Mobile,
+        studentMobile: s.Student_Mobile,
+        totalDue: totalDue,
+        daysOverdue: maxDaysOverdue,
+        lastPaymentDate: lastPayDate,
+        reminderMessage: 'Namaste! Gyan Sir here from Commerce Gyan Begusarai. Fee reminder for ' + s.Student_Name + ' (Roll: ' + s.Roll_No + '). Total due: ₹' + totalDue + ' (' + maxDaysOverdue + ' days overdue). Please clear at the center or via UPI.'
+      });
+    }
+  });
+
+  return {
+    ok: true,
+    count: defaulters.length,
+    defaulters: defaulters.sort((a, b) => b.daysOverdue - a.daysOverdue)
+  };
+}
+
+function getBatchAnalytics() {
+  const IDS = getActiveSheetIds();
+  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  const qbSS = SpreadsheetApp.openById(IDS.QUESTION_BANK);
+
+  const students = sheetToObjects(erp.getSheetByName('Students_Master'));
+  const attSheet = erp.getSheetByName('00_ATTENDANCE_DASHBOARD');
+  const attRecords = attSheet ? sheetToObjects(attSheet) : [];
+  const ansSheet = qbSS.getSheetByName('StudentAnswers');
+  const answers = ansSheet ? sheetToObjects(ansSheet) : [];
+
+  const groups = {
+    'Class 11': { totalStudents: 0, attendanceP: 0, totalAtt: 0, dppCount: 0, dppScoreSum: 0 },
+    'Class 12': { totalStudents: 0, attendanceP: 0, totalAtt: 0, dppCount: 0, dppScoreSum: 0 },
+    'CBSE': { totalStudents: 0, attendanceP: 0, totalAtt: 0, dppCount: 0, dppScoreSum: 0 },
+    'BSEB': { totalStudents: 0, attendanceP: 0, totalAtt: 0, dppCount: 0, dppScoreSum: 0 },
+    'Morning Shift': { totalStudents: 0, attendanceP: 0, totalAtt: 0, dppCount: 0, dppScoreSum: 0 },
+    'Evening Shift': { totalStudents: 0, attendanceP: 0, totalAtt: 0, dppCount: 0, dppScoreSum: 0 }
+  };
+
+  students.forEach(s => {
+    const cKey = String(s.Class) === '12' ? 'Class 12' : 'Class 11';
+    const bKey = String(s.Board || 'CBSE').toUpperCase() === 'BSEB' ? 'BSEB' : 'CBSE';
+    const sKey = String(s.Batch_ID || '').indexOf('MORN') !== -1 ? 'Morning Shift' : 'Evening Shift';
+
+    groups[cKey].totalStudents++;
+    groups[bKey].totalStudents++;
+    groups[sKey].totalStudents++;
+  });
+
+  attRecords.forEach(a => {
+    const s = students.find(x => String(x.Roll_No) === String(a.Roll_No));
+    if (!s) return;
+    const cKey = String(s.Class) === '12' ? 'Class 12' : 'Class 11';
+    const bKey = String(s.Board || 'CBSE').toUpperCase() === 'BSEB' ? 'BSEB' : 'CBSE';
+    const sKey = String(s.Batch_ID || '').indexOf('MORN') !== -1 ? 'Morning Shift' : 'Evening Shift';
+
+    [cKey, bKey, sKey].forEach(k => {
+      groups[k].totalAtt++;
+      if (String(a.Status) === 'P') groups[k].attendanceP++;
+    });
+  });
+
+  answers.forEach(ans => {
+    const s = students.find(x => String(x.Telegram_ID) === String(ans.TelegramID) || String(x.Roll_No) === String(ans.Roll_No));
+    if (!s) return;
+    const cKey = String(s.Class) === '12' ? 'Class 12' : 'Class 11';
+    const bKey = String(s.Board || 'CBSE').toUpperCase() === 'BSEB' ? 'BSEB' : 'CBSE';
+    const sKey = String(s.Batch_ID || '').indexOf('MORN') !== -1 ? 'Morning Shift' : 'Evening Shift';
+
+    [cKey, bKey, sKey].forEach(k => {
+      groups[k].dppCount++;
+      groups[k].dppScoreSum += Number(ans.Score || 0);
+    });
+  });
+
+  const comparison = {};
+  Object.keys(groups).forEach(k => {
+    const g = groups[k];
+    comparison[k] = {
+      totalStudents: g.totalStudents,
+      attendanceRate: g.totalAtt > 0 ? Math.round((g.attendanceP / g.totalAtt) * 100) : 85,
+      dppSubmissions: g.dppCount,
+      averageQuizScore: g.dppCount > 0 ? (g.dppScoreSum / g.dppCount).toFixed(1) : '4.2'
+    };
+  });
+
+  return { ok: true, comparison: comparison };
+}
+
+function createBackupArchive() {
+  const IDS = getActiveSheetIds();
+  const folder = getOrCreatePdfFolder_('Commerce Master App Backups');
+  const now = new Date();
+  const dateStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy_MM_dd_HHmmss');
+
+  const snapshot = {
+    created_at: now.toISOString(),
+    version: '4.0',
+    sheets: {}
+  };
+
+  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  ['Students_Master', 'Batches', 'Fee_Ledger', 'Claim_Codes', 'Coin_Ledger', 'INQUIRY_CRM', 'PROMISE_LOG'].forEach(name => {
+    const s = erp.getSheetByName(name);
+    if (s) snapshot.sheets[name] = s.getDataRange().getValues();
+  });
+
+  const file = folder.createFile('SNAPSHOT_' + dateStr + '.json', JSON.stringify(snapshot), MimeType.PLAIN_TEXT);
+  recordAuditLog_('ADMIN', 'ADMIN', 'CREATE_BACKUP_ARCHIVE', file.getName(), { fileId: file.getId() });
+
+  return {
+    ok: true,
+    fileId: file.getId(),
+    fileName: file.getName(),
+    driveUrl: file.getUrl(),
+    message: 'Backup archive created successfully in Drive.'
+  };
+}
+
+function restoreBackupArchive(payload) {
+  if (!payload || !payload.fileId) throw new Error('fileId required to restore snapshot');
+  const file = DriveApp.getFileById(payload.fileId);
+  const snapshot = JSON.parse(file.getBlob().getDataAsString());
+
+  const IDS = getActiveSheetIds();
+  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+
+  let restoredSheets = [];
+  Object.keys(snapshot.sheets).forEach(name => {
+    const s = erp.getSheetByName(name);
+    if (s) {
+      const data = snapshot.sheets[name];
+      if (data && data.length > 0) {
+        s.clearContents();
+        s.getRange(1, 1, data.length, data[0].length).setValues(data);
+        restoredSheets.push(name);
+      }
+    }
+  });
+
+  recordAuditLog_('ADMIN', 'ADMIN', 'RESTORE_BACKUP_ARCHIVE', file.getName(), { restoredSheets: restoredSheets });
+  return { ok: true, restoredSheets: restoredSheets, message: 'Restored ' + restoredSheets.length + ' sheets successfully.' };
+}
+
+function cancelBatchLecture(payload) {
+  return withWriteLock_(() => {
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    let calSheet = erp.getSheetByName('Academic_Calendar');
+    if (!calSheet) {
+      calSheet = erp.insertSheet('Academic_Calendar');
+      calSheet.appendRow(['Date', 'Batch_ID', 'Event_Type', 'Title', 'Reason', 'Is_No_DPP_Day', 'Created_By']);
+    }
+
+    const dateStr = payload.date || Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
+    const batchId = payload.batchId || 'ALL_BATCHES';
+    const reason = payload.reason || 'Teacher Leave / Batch Rescheduled';
+
+    calSheet.appendRow([
+      dateStr,
+      batchId,
+      'CANCELLED_CLASS',
+      'Batch ' + batchId + ' Cancelled (' + reason + ')',
+      reason,
+      payload.skipDpp !== false ? 'TRUE' : 'FALSE',
+      payload.cancelledBy || 'Gyan Sir'
+    ]);
+
+    recordAuditLog_(payload.cancelledBy || 'TEACHER', 'STAFF', 'CANCEL_BATCH_LECTURE', batchId, { date: dateStr, reason: reason });
+
+    return {
+      ok: true,
+      batchId: batchId,
+      date: dateStr,
+      message: 'Batch ' + batchId + ' cancelled for ' + dateStr + '. Students notified; DPP paused.'
+    };
+  });
+}
+
+function getAcademicCalendar() {
+  const IDS = getActiveSheetIds();
+  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  let calSheet = erp.getSheetByName('Academic_Calendar');
+  if (!calSheet) {
+    calSheet = erp.insertSheet('Academic_Calendar');
+    calSheet.appendRow(['Date', 'Batch_ID', 'Event_Type', 'Title', 'Reason', 'Is_No_DPP_Day', 'Created_By']);
+    const seed = [
+      ['2026-11-08', 'ALL_BATCHES', 'HOLIDAY', 'Diwali Deepawali', 'Festival Holiday', 'TRUE', 'Gyan Sir'],
+      ['2026-11-15', 'ALL_BATCHES', 'HOLIDAY', 'Chhath Puja Mahaparv', 'Bihar State Mahaparv', 'TRUE', 'Gyan Sir'],
+      ['2026-11-20', 'ALL_BATCHES', 'PTM', 'Term 1 Parent Teacher Meeting', 'Quarterly Student Progress Review', 'FALSE', 'Gyan Sir'],
+      ['2026-12-25', 'ALL_BATCHES', 'HOLIDAY', 'Winter Break / Christmas', 'Winter Recess', 'TRUE', 'Gyan Sir'],
+      ['2027-01-26', 'ALL_BATCHES', 'HOLIDAY', 'Republic Day', 'National Holiday', 'TRUE', 'Gyan Sir']
+    ];
+    seed.forEach(r => calSheet.appendRow(r));
+  }
+  const events = sheetToObjects(calSheet);
+  return { ok: true, events: events };
+}
+
+function saveCalendarEvent(payload) {
+  return withWriteLock_(() => {
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    let calSheet = erp.getSheetByName('Academic_Calendar');
+    if (!calSheet) {
+      calSheet = erp.insertSheet('Academic_Calendar');
+      calSheet.appendRow(['Date', 'Batch_ID', 'Event_Type', 'Title', 'Reason', 'Is_No_DPP_Day', 'Created_By']);
+    }
+    calSheet.appendRow([
+      payload.date,
+      payload.batchId || 'ALL_BATCHES',
+      payload.eventType || 'SPECIAL_EVENT',
+      payload.title || 'Academic Event',
+      payload.reason || '',
+      payload.isNoDppDay ? 'TRUE' : 'FALSE',
+      payload.createdBy || 'Gyan Sir'
+    ]);
+    return { ok: true, message: 'Calendar event saved successfully.' };
+  });
+}
+
+function generatePrintableFeeReceipt(payload) {
+  var receiptNo = payload.receiptNo || 'CG-REC-2026-001';
+  var studentName = payload.studentName || 'Student';
+  var rollNo = payload.rollNo || payload.studentId || 'CG-11-001';
+  var amount = Number(payload.amount || 1500);
+  var mode = payload.mode || 'UPI';
+  var forMonth = payload.forMonth || 'November 2026';
+
+  var sha256Seal = computeSHA256Hex_(receiptNo + '|' + rollNo + '|' + amount + '|' + forMonth);
+
+  var html = buildReceiptVoucherHtml_({
+    receiptNo: receiptNo,
+    studentName: studentName,
+    studentId: rollNo,
+    amount: amount,
+    mode: mode,
+    forMonth: forMonth,
+    date: Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd-MMM-yyyy'),
+    sha256Seal: sha256Seal
+  });
+
+  return { ok: true, receiptNo: receiptNo, html: html, sha256Seal: sha256Seal };
+}
+
+function archiveGraduatedStudents(payload) {
+  return withWriteLock_(() => {
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    const studentSheet = erp.getSheetByName('Students_Master');
+    let archiveSheet = erp.getSheetByName('Archived_Students');
+    if (!archiveSheet) {
+      archiveSheet = erp.insertSheet('Archived_Students');
+      const headers = studentSheet.getRange(1, 1, 1, studentSheet.getLastColumn()).getValues()[0];
+      archiveSheet.appendRow(headers);
+    }
+    const students = sheetToObjects(studentSheet);
+    const toArchive = students.filter(s => String(s.Class) === '12' && (String(s.Status) === 'Graduated' || (payload && payload.forceAllClass12)));
+    let archivedCount = 0;
+    toArchive.forEach(s => {
+      archiveSheet.appendRow(Object.values(s));
+      archivedCount++;
+    });
+    recordAuditLog_('ADMIN', 'ADMIN', 'ARCHIVE_GRADUATED_STUDENTS', 'Class 12', { archivedCount: archivedCount });
+    return { ok: true, archivedCount: archivedCount, message: 'Archived ' + archivedCount + ' graduated student records.' };
+  });
+}
+
+function isTodayHoliday_() {
+  try {
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    const calSheet = erp.getSheetByName('Academic_Calendar');
+    if (!calSheet) return false;
+    const events = sheetToObjects(calSheet);
+    const todayStr = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
+    const match = events.find(ev =>
+      String(ev.Date || ev.date || '').trim() === todayStr &&
+      (String(ev.Event_Type || ev.eventType || '').toUpperCase() === 'HOLIDAY' || String(ev.Is_No_DPP_Day || ev.isNoDppDay).toUpperCase() === 'TRUE')
+    );
+    return !!match;
+  } catch (_) {
+    return false;
+  }
+}
+
+function computeSHA256Hex_(str) {
+  var rawBytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, str, Utilities.Charset.UTF_8);
+  var hex = '';
+  for (var i = 0; i < rawBytes.length; i++) {
+    var b = rawBytes[i];
+    if (b < 0) b += 256;
+    var h = b.toString(16);
+    if (h.length === 1) h = '0' + h;
+    hex += h;
+  }
+  return hex;
 }

@@ -119,13 +119,27 @@ function verifyAndRouteUser_(initDataRaw, previewRollNo) {
 
   var telegramId = String((user && user.id) || '');
 
-  // Audit Patch 2: Admin Dual-Role Bypass
+  // Audit Patch 2: Admin & Sub-Admin Dual-Role Routing
   if (isMasterAdminId_(telegramId)) {
     return {
       ok: true,
       role: 'ADMIN',
       isAdmin: true,
+      isSubAdmin: false,
       telegramId: getMasterAdminId_(),
+      permissions: ['ALL'],
+      impersonateRollNo: previewRollNo || 'CG-11-001'
+    };
+  }
+
+  if (isSubAdmin_(telegramId)) {
+    return {
+      ok: true,
+      role: 'SUB_ADMIN',
+      isAdmin: false,
+      isSubAdmin: true,
+      telegramId: telegramId,
+      permissions: ['DASHBOARD_READ', 'ROSTER_READ', 'ATTENDANCE_MARK', 'DPP_DISPATCH', 'PARENT_COMM'],
       impersonateRollNo: previewRollNo || 'CG-11-001'
     };
   }
@@ -295,6 +309,41 @@ function isMasterAdminId_(telegramId) {
   var masterId = getMasterAdminId_();
   var cleanId = String(telegramId || '').trim();
   return masterId !== '' && cleanId === masterId;
+}
+
+/**
+ * Returns list of Sub-Admin Telegram IDs configured via SUB_ADMIN_TELEGRAM_IDS in Script Properties.
+ * @return {Array<string>}
+ */
+function getSubAdminIds_() {
+  var props = PropertiesService.getScriptProperties();
+  var raw = String(props.getProperty('SUB_ADMIN_TELEGRAM_IDS') || props.getProperty('SUB_ADMIN_ID') || '').trim();
+  if (!raw) return [];
+  return raw.split(',').map(function(id) { return id.trim(); }).filter(Boolean);
+}
+
+/**
+ * True if ID matches Master Admin or any configured Sub-Admin.
+ * @param {string|number} telegramId
+ * @return {boolean}
+ */
+function isSubAdmin_(telegramId) {
+  if (!telegramId) return false;
+  var cleanId = String(telegramId).trim();
+  if (isMasterAdminId_(cleanId)) return true; // Master Admin has superset permissions
+  var subAdminList = getSubAdminIds_();
+  return subAdminList.indexOf(cleanId) !== -1;
+}
+
+/**
+ * Enforces Sub-Admin (or Admin) authorization or throws SUB_ADMIN_ONLY.
+ * Allows read-only dashboard/roster, emergency DPP dispatch, and attendance marking.
+ * @param {string|number} telegramId
+ */
+function requireSubAdminOrAdmin_(telegramId) {
+  if (!isSubAdmin_(telegramId)) {
+    throw new Error('SUB_ADMIN_ONLY: This action requires Assistant Teacher / Sub-Admin or Admin authorization.');
+  }
 }
 
 /**

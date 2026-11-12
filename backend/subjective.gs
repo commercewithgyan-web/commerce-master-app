@@ -17,6 +17,10 @@
  */
 function sendSubjectiveQuestionPDF() {
   Logger.log('🚀 Running 07:30 PM Single-PDF Question Broadcast...');
+  if (typeof isTodayHoliday_ === 'function' && isTodayHoliday_()) {
+    Logger.log('🏖️ Today is marked as an Academic Holiday / Event in Academic_Calendar. Skipping 07:30 PM PDF broadcast.');
+    return;
+  }
   var props = PropertiesService.getScriptProperties();
   var todayStr = getKolkataDate();
 
@@ -88,6 +92,10 @@ function sendSubjectiveQuestionPDF() {
  */
 function sendSubjectiveAnswerPDF() {
   Logger.log('🌅 Running 08:15 AM Model Answer PDF Broadcast...');
+  if (typeof isTodayHoliday_ === 'function' && isTodayHoliday_()) {
+    Logger.log('🏖️ Today is marked as an Academic Holiday / Event in Academic_Calendar. Skipping 08:15 AM PDF broadcast.');
+    return;
+  }
   var props = PropertiesService.getScriptProperties();
   var todayStr = getKolkataDate();
 

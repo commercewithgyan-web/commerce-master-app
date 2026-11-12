@@ -95,7 +95,8 @@
         <div class="truncate">
           <div class="flex items-center gap-2">
             <span class="font-bold text-sm sm:text-base tracking-tight truncate">Commerce Gyan Studio</span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 animate-pulse shadow-sm">v3.2 LIVE</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 animate-pulse shadow-sm">v4.0 LIVE</span>
+            <span id="subAdminBadge" class="hidden inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/30">🛡️ Sub-Admin</span>
             <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">EMStudio Pro + 8-Spoke Hub</span>
           </div>
           <p class="text-[11px] text-slate-400 hidden sm:block truncate">Gyan Sir · Begusarai, Bihar · Class 11 & 12 (All 8 Subjects · CBSE & BSEB)</p>
@@ -112,7 +113,7 @@
         </button>
         <div class="hidden lg:flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700">
           <button id="modeTeacherBtn" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-indigo-600 text-white shadow">
-            <span>🖥️ Studio (11)</span>
+            <span>🖥️ Studio (5)</span>
           </button>
           <button id="modeOpsBtn" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-300 hover:text-white">
             <span>📲 Teacher Ops (5)</span>
@@ -159,95 +160,51 @@
           </select>
         </div>
 
-        <p class="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">EMStudio Core Planner</p>
-        <button type="button" data-tab="dashboard" class="nav-tab-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-700 transition">
+                <p class="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Commerce Gyan ERP v4.0</p>
+        
+        <!-- Tab 1: Today & Timetable -->
+        <button type="button" data-tab="today" class="nav-tab-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-700 transition">
           <span class="flex items-center gap-2.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-            Home Dashboard
+            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Today &amp; Timetable
           </span>
           <span class="px-1.5 py-0.5 text-[10px] rounded-md bg-indigo-100 text-indigo-700 font-bold">Today</span>
         </button>
 
-        <button type="button" data-tab="timetable" class="nav-tab-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
+        <!-- Tab 2: Students & Admissions -->
+        <button type="button" data-tab="students" class="nav-tab-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
           <span class="flex items-center gap-2.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            Timetable & Rotations
+            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Students &amp; Admissions
           </span>
-          <span class="text-[10px] text-slate-400">8 Subj</span>
+          <span id="sidebarStudentBadge" class="px-1.5 py-0.5 text-[10px] rounded-md bg-amber-100 text-amber-800 font-bold">CRM + Dir</span>
         </button>
 
-        <button type="button" data-tab="lessons" class="nav-tab-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
+        <!-- Tab 3: Classroom & Attendance -->
+        <button type="button" data-tab="classroom" class="nav-tab-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
           <span class="flex items-center gap-2.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-            Lesson Planner + AI
+            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Classroom &amp; Attendance
           </span>
-          <span class="px-1.5 py-0.5 text-[10px] rounded-md bg-purple-100 text-purple-700 font-bold">Gemini</span>
+          <span class="px-1.5 py-0.5 text-[10px] rounded-md bg-emerald-100 text-emerald-800 font-bold">30s + REC</span>
         </button>
 
-        <button type="button" data-tab="curriculum" class="nav-tab-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
+        <!-- Tab 4: Fees, Defaulters & Books -->
+        <button type="button" data-tab="finance" class="nav-tab-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
           <span class="flex items-center gap-2.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-            Syllabus & 797 Subtopics
+            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Fees, Defaulters &amp; Books
           </span>
-          <span class="text-[10px] text-slate-400">71 Ch</span>
+          <span class="px-1.5 py-0.5 text-[10px] rounded-md bg-purple-100 text-purple-800 font-bold">₹ Books</span>
         </button>
 
-        <p class="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Inquiry, Admission &amp; Classroom</p>
-        <button type="button" data-tab="pipeline" class="nav-tab-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-extrabold text-amber-900 bg-amber-50/80 hover:bg-amber-100 border border-amber-200/80 transition">
+        <!-- Tab 5: Content, DPP & System -->
+        <button type="button" data-tab="system" class="nav-tab-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
           <span class="flex items-center gap-2.5">
-            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-            Inquiry &amp; Admission Hub
+            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+            Content, DPP &amp; System
           </span>
-          <span id="sidebarPipelineBadge" class="px-1.5 py-0.5 text-[10px] rounded-md bg-amber-500 text-white font-extrabold">7-Step</span>
-        </button>
-
-        <button type="button" data-tab="students" class="nav-tab-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
-          <span class="flex items-center gap-2.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-            Students & Batches CRM
-          </span>
-          <span id="sidebarStudentBadge" class="px-1.5 py-0.5 text-[10px] rounded-md bg-slate-100 text-slate-700 font-bold">60/100</span>
-        </button>
-
-        <button type="button" data-tab="attendance" class="nav-tab-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
-          <span class="flex items-center gap-2.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Attendance + REC-01
-          </span>
-          <span class="px-1.5 py-0.5 text-[10px] rounded-md bg-amber-100 text-amber-800 font-bold">Grid</span>
-        </button>
-
-        <button type="button" data-tab="gradebook" class="nav-tab-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
-          <span class="flex items-center gap-2.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-            Gradebook & 7 PM DPP
-          </span>
-          <span class="text-[10px] text-slate-400">3-Track</span>
-        </button>
-
-        <p class="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Commerce Gyan ERP & Board</p>
-        <button type="button" data-tab="erp_fees" class="nav-tab-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
-          <span class="flex items-center gap-2.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Fees, CG Coins & SWOT
-          </span>
-          <span class="px-1.5 py-0.5 text-[10px] rounded-md bg-emerald-100 text-emerald-700 font-bold">₹ Coin</span>
-        </button>
-
-        <button type="button" data-tab="tools" class="nav-tab-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
-          <span class="flex items-center gap-2.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            Smartboard Studio (8 Tools)
-          </span>
-          <span class="px-1.5 py-0.5 text-[10px] rounded-md bg-rose-100 text-rose-700 font-bold">Live</span>
-        </button>
-
-        <button type="button" data-tab="sync" class="nav-tab-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
-          <span class="flex items-center gap-2.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            Sheets + GitHub + Bot Setup
-          </span>
-          <span class="text-[10px] text-emerald-600 font-bold">₹0 Free</span>
+          <span class="px-1.5 py-0.5 text-[10px] rounded-md bg-blue-100 text-blue-800 font-bold">797 + Sys</span>
         </button>
       </div>
 
@@ -268,9 +225,27 @@
 
     <!-- Main Content Area -->
     <main class="flex-1 min-w-0 p-3 sm:p-6 space-y-6">
+      <!-- ==================== GROUP TAB 1: TODAY & TIMETABLE ==================== -->
+      <section id="tab-today" class="tab-panel space-y-6">
+        <!-- Sub Navigation Pills -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200">
+          <button type="button" onclick="switchAdminSubtab('today', 'dash')" id="subtab-btn-today-dash" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-sm">
+            📊 Command Dashboard
+          </button>
+          <button type="button" onclick="switchAdminSubtab('today', 'timetable')" id="subtab-btn-today-timetable" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            📅 Timetable &amp; Rotations
+          </button>
+          <button type="button" onclick="switchAdminSubtab('today', 'lessons')" id="subtab-btn-today-lessons" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            📖 Lesson Planner + AI
+          </button>
+          <button type="button" onclick="switchAdminSubtab('today', 'calendar')" id="subtab-btn-today-calendar" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            🗓️ Academic Calendar &amp; Leave (A8/A6)
+          </button>
+        </div>
 
-      <!-- ==================== TAB 1: HOME DASHBOARD ==================== -->
-      <section id="tab-dashboard" class="tab-panel space-y-6">
+        <!-- Subtab 1.1: Dashboard -->
+        <div id="subtab-today-dash" class="subtab-pane-today space-y-6">
+
         <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-5 sm:p-6 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 text-indigo-200 text-xs font-medium mb-2">
@@ -420,10 +395,12 @@
             </div>
           </div>
         </div>
-      </section>
+      
+        </div>
 
-      <!-- ==================== TAB 2: TIMETABLE & ROTATIONS ==================== -->
-      <section id="tab-timetable" class="tab-panel hidden space-y-6">
+        <!-- Subtab 1.2: Timetable -->
+        <div id="subtab-today-timetable" class="subtab-pane-today hidden space-y-6">
+
         <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h2 class="text-lg font-extrabold text-slate-900">Timetable & Rotation Planner (All 8 Subjects)</h2>
@@ -503,10 +480,12 @@
         <div class="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div id="timetableGridContainer" class="grid grid-cols-6 divide-x divide-slate-200"></div>
         </div>
-      </section>
+      
+        </div>
 
-      <!-- ==================== TAB 3: LESSON PLANNER & AI EDITOR ==================== -->
-      <section id="tab-lessons" class="tab-panel hidden space-y-6">
+        <!-- Subtab 1.3: Lessons -->
+        <div id="subtab-today-lessons" class="subtab-pane-today hidden space-y-6">
+
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <!-- Left Column: Lesson Library & Templates -->
           <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col justify-between space-y-4">
@@ -624,74 +603,123 @@
             </div>
           </div>
         </div>
-      </section>
-
-      <!-- ==================== TAB 4: SYLLABUS & 797 SUBTOPICS TRACKER ==================== -->
-      <section id="tab-curriculum" class="tab-panel hidden space-y-6">
-        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 class="text-lg font-extrabold text-slate-900">Curriculum & Standards Tracker (71 Chapters · 797 Subtopics)</h2>
-            <p class="text-xs text-slate-500">Replaces generic standards with your canonical <code class="mono">02_Syllabus_Planner</code> across all 8 Class 11 & 12 subjects (CBSE & BSEB). Click any status badge to cycle progress.</p>
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <select id="currSubjectFilter" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
-              <option value="ALL">All 8 Subjects (11th & 12th)</option>
-              <option value="ACC-12">12th Accountancy (ACC-12)</option>
-              <option value="BST-12">12th Business Studies (BST-12)</option>
-              <option value="MAC-12">12th Macroeconomics (MAC-12)</option>
-              <option value="IED-12">12th Indian Econ & EPS (IED-12)</option>
-              <option value="ACC-11">11th Accountancy (ACC-11)</option>
-              <option value="BST-11">11th Business Studies (BST-11)</option>
-              <option value="MIC-11">11th Microeconomics (MIC-11)</option>
-              <option value="STA-11">11th Statistics & EPS (STA-11)</option>
-            </select>
-            <select id="currStatusFilter" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
-              <option value="ALL">All Statuses</option>
-              <option value="Completed">Completed</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Planned">Planned</option>
-            </select>
-          </div>
+      
         </div>
 
-        <!-- Live /settopic Active Subtopic Lock Controls (Writes to Settings!B2 & 01_Master_Syllabus) -->
-        <div class="bg-indigo-950 text-white rounded-2xl p-4 sm:p-5 shadow-md flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          <div>
-            <span class="px-2 py-0.5 rounded bg-amber-400 text-slate-950 text-[10px] font-extrabold uppercase">Live /settopic Lock</span>
-            <h3 class="text-sm sm:text-base font-extrabold mt-1">Lock Tonight's Active Subtopic for 7:00 PM DPP &amp; Attendance</h3>
-            <p class="text-[11px] text-indigo-200">Updates <code class="mono">Settings!B2</code> in <code class="mono">4. Telegram Delivery</code> and marks status in <code class="mono">01_Master_Syllabus</code>.</p>
+        <!-- Subtab 1.4: Academic Calendar (A8) & Teacher Leave (A6) -->
+        <div id="subtab-today-calendar" class="subtab-pane-today hidden space-y-6">
+          <!-- Academic Calendar (A8) -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-extrabold uppercase">A8 • Bihar Academic Calendar</span>
+                <h3 class="text-base font-extrabold text-slate-900 mt-1">🗓️ Academic Calendar, Bihar Holidays &amp; PTM Dates</h3>
+                <p class="text-xs text-slate-500">Manage PTM dates, exam windows, and Bihar/national holidays (Diwali, Chhath Puja Nov 15–18). Automated 7:00 PM DPP dispatch skips automatically on marked holidays.</p>
+              </div>
+              <button id="addCalendarEventBtn" type="button" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition">
+                + Add Calendar Event
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase">
+                    <th class="py-2.5 px-3">Date</th>
+                    <th class="py-2.5 px-3">Event / Holiday</th>
+                    <th class="py-2.5 px-3">Type</th>
+                    <th class="py-2.5 px-3 text-center">7 PM DPP Status</th>
+                    <th class="py-2.5 px-3">Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="academicCalendarTableBody" class="divide-y divide-slate-100 font-medium">
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-2.5 px-3 font-mono font-bold text-slate-900">2026-11-08</td>
+                    <td class="py-2.5 px-3 font-bold text-slate-800">🪔 Deepawali (Diwali)</td>
+                    <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Bihar / National Holiday</span></td>
+                    <td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">Paused (Skip DPP)</span></td>
+                    <td class="py-2.5 px-3 text-slate-500">Center closed. Students festival break.</td>
+                  </tr>
+                  <tr class="hover:bg-slate-50 bg-amber-50/30">
+                    <td class="py-2.5 px-3 font-mono font-bold text-slate-900">2026-11-15 – 2026-11-18</td>
+                    <td class="py-2.5 px-3 font-bold text-slate-800">🌅 Chhath Puja Mahaparv (Nahay-Khay to Paran)</td>
+                    <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Bihar State Mahaparv</span></td>
+                    <td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">Paused (Skip DPP)</span></td>
+                    <td class="py-2.5 px-3 text-slate-500">Begusarai Ghat festivities. DPP auto-suppressed.</td>
+                  </tr>
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-2.5 px-3 font-mono font-bold text-slate-900">2026-12-05</td>
+                    <td class="py-2.5 px-3 font-bold text-slate-800">👨‍👩‍👧 PTM 1: Mid-Term Performance Review</td>
+                    <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">Parent-Teacher Meeting</span></td>
+                    <td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Active</span></td>
+                    <td class="py-2.5 px-3 text-slate-500">In-person parent consultations (SWOT analysis reviews).</td>
+                  </tr>
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-2.5 px-3 font-mono font-bold text-slate-900">2027-01-10 – 2027-01-25</td>
+                    <td class="py-2.5 px-3 font-bold text-slate-800">📝 CBSE &amp; BSEB Pre-Board Full Mock Series</td>
+                    <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800">Board Exam Window</span></td>
+                    <td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Active</span></td>
+                    <td class="py-2.5 px-3 text-slate-500">3-Hour full syllabus mock tests under exam conditions.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <select id="lockTopicSelect" class="text-xs font-bold bg-slate-900 border border-indigo-400/40 rounded-xl px-3 py-2 text-white">
-              <option value="C12-ACC-B1-CH03-T02-S01">C12-ACC-B1-CH03-T02-S01 · Hidden Goodwill &amp; Revaluation</option>
-              <option value="C12-ACC-B1-CH06-T01-S02">C12-ACC-B1-CH06-T01-S02 · Share Forfeiture Pro-Rata</option>
-              <option value="C12-BST-B1-CH02-T04-S01">C12-BST-B1-CH02-T04-S01 · Fayol vs Taylor Principles</option>
-              <option value="C12-MAC-B1-CH01-T05-S01">C12-MAC-B1-CH01-T05-S01 · National Income Aggregates</option>
-              <option value="C11-ACC-B1-CH03-T01-S01">C11-ACC-B1-CH03-T01-S01 · Journal &amp; Ledger Posting</option>
-              <option value="C11-ACC-B1-CH05-T01-S01">C11-ACC-B1-CH05-T01-S01 · Bank Reconciliation Overdraft</option>
-              <option value="C11-MIC-B1-CH02-T03-S01">C11-MIC-B1-CH02-T03-S01 · Consumer Equilibrium IC Analysis</option>
-              <option value="C11-STA-B1-CH05-T01-S01">C11-STA-B1-CH05-T01-S01 · Central Tendency &amp; Correlation</option>
-            </select>
-            <select id="lockDeliveryMode" class="text-xs font-bold bg-slate-900 border border-indigo-400/40 rounded-xl px-2.5 py-2 text-white">
-              <option value="Offline">Offline Classroom</option>
-              <option value="Hybrid">Hybrid + GoodNotes</option>
-              <option value="Recorded">Unlisted YouTube</option>
-            </select>
-            <button id="lockActiveSubtopicBtn" type="button" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow transition">
-              🔒 Lock Active Subtopic (/settopic)
-            </button>
+
+          <!-- Teacher Leave & Batch Cancellation (A6) -->
+          <div class="bg-gradient-to-r from-slate-900 via-rose-950 to-slate-900 rounded-2xl p-5 text-white shadow-md space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-400/30 text-[10px] font-extrabold uppercase">A6 • Emergency Operations</span>
+                <h3 class="text-base font-extrabold mt-1">📢 Teacher Leave &amp; Batch Lecture Cancellation</h3>
+                <p class="text-xs text-slate-300">Mark a batch lecture cancelled for a date, notify enrolled students via Telegram bot broadcast, and automatically reschedule that day's 7:00 PM DPP.</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-300 mb-1">Target Batch</label>
+                <select id="cancelBatchSelect" class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-800 text-white font-bold">
+                  <option value="Class 12 Accounts">Class 12 Accounts (C12_EVE)</option>
+                  <option value="Class 11 Accounts">Class 11 Accounts (C11_MORN)</option>
+                  <option value="Class 12 BST">Class 12 Business Studies (BST12)</option>
+                  <option value="ALL">All Batches (Center Closed)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-300 mb-1">Cancellation Date</label>
+                <input id="cancelBatchDate" type="date" value="2026-11-13" class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-800 text-white font-mono" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-300 mb-1">Reason for Students</label>
+                <input id="cancelBatchReason" type="text" placeholder="e.g. Gyan Sir Out of Station / Medical Leave" class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-800 text-white" />
+              </div>
+              <div>
+                <button id="btnExecuteBatchCancel" type="button" class="w-full py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold shadow transition">
+                  🚨 Cancel Lecture &amp; Reschedule DPP
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-
-        <!-- Mobile Collapsible Subject -> Chapter -> Subtopic Accordion (< 768px) -->
-        <div id="curriculumMobileAccordion" class="md:hidden space-y-3"></div>
-
-        <!-- Desktop Table (>= 768px) -->
-        <div id="curriculumTableContainer" class="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"></div>
       </section>
 
-      <!-- ==================== TAB 11: COMPLETE 7-STEP INQUIRY-TO-ADMISSION PIPELINE HUB ==================== -->
-      <section id="tab-pipeline" class="tab-panel hidden space-y-6">
+      <!-- ==================== GROUP TAB 2: STUDENTS & ADMISSIONS ==================== -->
+      <section id="tab-students" class="tab-panel hidden space-y-6">
+        <!-- Sub Navigation Pills -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200">
+          <button type="button" onclick="switchAdminSubtab('students', 'pipeline')" id="subtab-btn-students-pipeline" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-sm">
+            🎯 Inquiry &amp; Admission Hub
+          </button>
+          <button type="button" onclick="switchAdminSubtab('students', 'directory')" id="subtab-btn-students-directory" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            👥 Student Directory (#84 &amp; A7)
+          </button>
+          <button type="button" onclick="switchAdminSubtab('students', 'parentcomm')" id="subtab-btn-students-parentcomm" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            📞 Parent Communication Log (A1)
+          </button>
+        </div>
+
+        <!-- Subtab 2.1: Pipeline -->
+        <div id="subtab-students-pipeline" class="subtab-pane-students space-y-6">
+
         <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-5 text-white shadow-md flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 text-[10px] font-extrabold uppercase">
@@ -947,10 +975,12 @@
             </div>
           </div>
         </div>
-      </section>
+      
+        </div>
 
-      <!-- ==================== TAB 5: STUDENTS & BATCHES CRM (60-100 CAP) ==================== -->
-      <section id="tab-students" class="tab-panel hidden space-y-6">
+        <!-- Subtab 2.2: Directory & Emergency Contact (A7) -->
+        <div id="subtab-students-directory" class="subtab-pane-students hidden space-y-6">
+
         <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div class="flex items-center gap-2">
@@ -1027,10 +1057,103 @@
             <tbody id="studentsTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
           </table>
         </div>
+      
+        </div>
+
+        <!-- Subtab 2.3: Parent Communication Log (A1) -->
+        <div id="subtab-students-parentcomm" class="subtab-pane-students hidden space-y-6">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">A1 • Durable Record</span>
+                <h3 class="text-base font-extrabold text-slate-900 mt-1">📞 Parent Communication Log (Calls &amp; WhatsApp)</h3>
+                <p class="text-xs text-slate-500">Every parent interaction permanently logged to Google Sheets (Parent_Comm_Log). Ensures zero dispute regarding fee commitments, attendance follow-ups, or demo feedback.</p>
+              </div>
+              <button id="openLogParentCommModalBtn" type="button" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-sm transition">
+                + Log Parent Interaction
+              </button>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase">
+                    <th class="py-2.5 px-3">Date</th>
+                    <th class="py-2.5 px-3">Student &amp; Roll</th>
+                    <th class="py-2.5 px-3">Parent Mobile</th>
+                    <th class="py-2.5 px-3">Channel</th>
+                    <th class="py-2.5 px-4">Summary &amp; Discussion</th>
+                    <th class="py-2.5 px-3">Follow-Up Date</th>
+                    <th class="py-2.5 px-3">Logged By</th>
+                  </tr>
+                </thead>
+                <tbody id="parentCommTableBody" class="divide-y divide-slate-100 font-medium">
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-2.5 px-3 font-mono font-bold text-slate-900">2026-11-12</td>
+                    <td class="py-2.5 px-3 font-bold text-slate-800">Aarav Sharma <span class="text-[10px] text-slate-400 font-mono">(CG-1201)</span></td>
+                    <td class="py-2.5 px-3 font-mono text-slate-600">9835011201</td>
+                    <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">Phone Call</span></td>
+                    <td class="py-2.5 px-4 text-slate-700">Discussed Unit Test 1 Partnership score (92%). Father requested GoodNotes PDF watermarked copy on WhatsApp.</td>
+                    <td class="py-2.5 px-3 font-mono text-slate-500">2026-11-20</td>
+                    <td class="py-2.5 px-3 text-slate-500">Gyan Sir</td>
+                  </tr>
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-2.5 px-3 font-mono font-bold text-slate-900">2026-11-10</td>
+                    <td class="py-2.5 px-3 font-bold text-slate-800">Sneha Kumari <span class="text-[10px] text-slate-400 font-mono">(CG-1203)</span></td>
+                    <td class="py-2.5 px-3 font-mono text-slate-600">9431055667</td>
+                    <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">WhatsApp</span></td>
+                    <td class="py-2.5 px-4 text-slate-700">Shared fee receipt RCP-2026-003 and confirmed ₹300 proration rule applied for mid-month batch change.</td>
+                    <td class="py-2.5 px-3 font-mono text-slate-500">—</td>
+                    <td class="py-2.5 px-3 text-slate-500">Sub-Admin</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <!-- ==================== TAB 6: 30-SECOND ATTENDANCE GRID & REC-01 ==================== -->
-      <section id="tab-attendance" class="tab-panel hidden space-y-6">
+      <!-- ==================== GROUP TAB 3: CLASSROOM & ATTENDANCE ==================== -->
+      <section id="tab-classroom" class="tab-panel hidden space-y-6">
+        <!-- Sub Navigation Pills -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200">
+          <button type="button" onclick="switchAdminSubtab('classroom', 'attendance')" id="subtab-btn-classroom-attendance" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-sm">
+            ⚡ Rapid Attendance (30s &amp; A2/A11)
+          </button>
+          <button type="button" onclick="switchAdminSubtab('classroom', 'rec01')" id="subtab-btn-classroom-rec01" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            🔄 REC-01 Recovery Drill (#31–#32)
+          </button>
+          <button type="button" onclick="switchAdminSubtab('classroom', 'tools')" id="subtab-btn-classroom-tools" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            🎨 Smartboard Studio (8 Tools)
+          </button>
+          <button type="button" onclick="switchAdminSubtab('classroom', 'analytics')" id="subtab-btn-classroom-analytics" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            📈 Batch Analytics (A4) &amp; Gradebook (#79)
+          </button>
+        </div>
+
+        <!-- Subtab 3.1: Rapid Attendance with 10s Undo Toast (A2) & Offline Fallback (A11) -->
+        <div id="subtab-classroom-attendance" class="subtab-pane-classroom space-y-6">
+          <!-- 10-Second Undo Banner (A2) -->
+          <div id="attUndoBanner" class="hidden p-4 rounded-2xl bg-amber-500 text-slate-950 font-bold flex items-center justify-between shadow-lg animate-bounce">
+            <div class="flex items-center gap-2 text-xs">
+              <span class="text-base">⏳</span>
+              <span id="attUndoBannerText">Attendance marked for batch. Auto-committing in 10s...</span>
+            </div>
+            <button id="attUndoBtn" type="button" class="px-3.5 py-1.5 rounded-xl bg-slate-950 text-white hover:bg-slate-800 text-xs font-extrabold transition">
+              ⏪ UNDO COMMIT
+            </button>
+          </div>
+
+          <!-- Offline Queue Indicator (A11) -->
+          <div id="offlineAttIndicator" class="hidden p-3 rounded-xl bg-slate-100 border border-slate-300 text-xs text-slate-700 flex items-center justify-between">
+            <span class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+              <span>Offline Mode: Attendance records queued locally in localStorage. Will auto-sync when network reconnects.</span>
+            </span>
+            <span id="offlineQueueCountBadge" class="font-bold text-amber-700">0 batches queued</span>
+          </div>
+
+
         <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h2 class="text-lg font-extrabold text-slate-900">30-Second Attendance Grid &amp; REC-01 Recovery Trigger (<code class="mono">markBatchAttendance</code>)</h2>
@@ -1077,239 +1200,70 @@
             <tbody id="attendanceGridBody" class="divide-y divide-slate-100 text-xs"></tbody>
           </table>
         </div>
-      </section>
-
-      <!-- ==================== TAB 7: GRADEBOOK & 7 PM DPP ==================== -->
-      <section id="tab-gradebook" class="tab-panel hidden space-y-6">
-        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div>
-            <h2 class="text-lg font-extrabold text-slate-900">Weighted Gradebook & 3-Track DPP Assessment</h2>
-            <p class="text-xs text-slate-500">Weights: <strong>Unit Tests (40%)</strong> · <strong>7 PM DPP (25%)</strong> · <strong>Board Mock (25%)</strong> · <strong>Project/Viva (10%)</strong>. Supports CBSE 9-Point (<code class="mono">A1–E</code>) and BSEB Division scales.</p>
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <select id="gradeScaleSelect" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
-              <option value="CBSE">CBSE 9-Point Scale (A1, A2, B1, B2...)</option>
-              <option value="BSEB">BSEB Bihar Board Scale (1st Div / Distinction)</option>
-              <option value="QUAL">Qualitative Mastery (Mastered / Needs Drill)</option>
-            </select>
-            <button id="awardTopperCoinsBtn" type="button" class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition shadow-sm">
-              🪙 Award +25 CG Coins to ≥90% Scorers
-            </button>
-          </div>
+      
         </div>
 
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto custom-scroll">
-          <table class="w-full text-left border-collapse min-w-[850px]">
-            <thead>
-              <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                <th class="py-3 px-4">Student</th>
-                <th class="py-3 px-4">Batch</th>
-                <th class="py-3 px-3 text-center">Unit Test (40%)</th>
-                <th class="py-3 px-3 text-center">7 PM DPP (25%)</th>
-                <th class="py-3 px-3 text-center">Board Mock (25%)</th>
-                <th class="py-3 px-3 text-center">Viva/Proj (10%)</th>
-                <th class="py-3 px-4 text-center">Weighted Avg</th>
-                <th class="py-3 px-4">Scale Grade</th>
-              </tr>
-            </thead>
-            <tbody id="gradebookTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
-          </table>
-        </div>
-        <div id="gradebookMobileCards" class="md:hidden space-y-2.5"></div>
-
-        <!-- 7:00 PM Daily DPP & Subjective PDF Broadcast Console -->
-        <div class="bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-950 rounded-2xl p-5 text-white shadow-md space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-extrabold uppercase">7:00 PM IST Daily Automation</span>
-              <h3 class="text-base font-extrabold mt-1">📡 7:00 PM DPP (70% Fresh + 30% Retention) &amp; Subjective PDF Broadcast</h3>
-              <p class="text-xs text-slate-300">Connected directly to <code class="mono">dispatchDailyDPPAndSubjectivePDF</code> in <code class="mono">Code.gs</code>.</p>
-            </div>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
-            <div>
-              <label class="block text-[11px] font-bold text-slate-300 mb-1">Package Type</label>
-              <select id="dppPdfTypeSelect" class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-800 text-white font-bold">
-                <option value="QUESTION_DPP">7:00 PM Question DPP + 3-Track Quiz</option>
-                <option value="MORNING_ANSWER_KEY">T+1 Morning Model Answer PDF</option>
-                <option value="GOODNOTES_CHALKBOARD">GoodNotes Watermarked Board PDF</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-[11px] font-bold text-slate-300 mb-1">Telegram Channel</label>
-              <select id="dppChannelSelect" class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-800 text-white font-bold">
-                <option value="@commercewithgyan_class12">@commercewithgyan_class12</option>
-                <option value="@commercewithgyan_class11">@commercewithgyan_class11</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-[11px] font-bold text-slate-300 mb-1">PDF Identifier / Filename</label>
-              <input id="dppDriveUrlInput" type="text" value="DPP_Ch3_Goodwill_Class12.pdf" class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-800 text-white font-mono" />
-            </div>
-            <div>
-              
-            <div class="flex flex-wrap gap-2 pt-1">
-              <button id="broadcastDppPdfBtn" type="button" class="flex-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow">
-                🚀 Broadcast 7:00 PM DPP
-              </button>
-              <button id="broadcastSubjQuestionBtn" type="button" class="flex-1 py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow">
-                📝 Broadcast 7:30 PM Question PDF
-              </button>
-              <button id="broadcastSubjAnswerBtn" type="button" class="flex-1 py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold shadow">
-                💡 Broadcast 8:15 AM Answer PDF
-              </button>
-            </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== TAB 8: FEES, CG COINS & SWOT RECEIPTS ==================== -->
-      <section id="tab-erp_fees" class="tab-panel hidden space-y-6">
-        <!-- Editable Dynamic Fee Configuration Bar (Option A) -->
-        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
-            <div>
-              <h2 class="text-lg font-extrabold text-slate-900">ERP Fee Ledger, Positive-Only CG Coins & SWOT Smart Receipts</h2>
-              <p class="text-xs text-slate-500">Dynamic Editable Fee Config (<code class="mono">CONFIG_FEE_SETTINGS</code>) · 5-Day Grace + 5% Late Fee · 1-Click Teacher Waiver (<code class="mono">Revoke_Late_Fee</code>) · <code class="mono">1 Coin = ₹1</code> Discount.</p>
-            </div>
-            <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Zero Negative Coin Deductions</span>
-          </div>
-
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <label class="block text-[10px] font-bold uppercase text-slate-400">Monthly Tuition (₹)</label>
-              <input id="cfgMonthlyFee" type="number" value="1200" class="mt-1 w-full text-sm font-bold bg-white border border-slate-200 rounded-lg px-2.5 py-1" />
-            </div>
-            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <label class="block text-[10px] font-bold uppercase text-slate-400">Quarterly Plan (₹)</label>
-              <input id="cfgQuarterlyFee" type="number" value="3300" class="mt-1 w-full text-sm font-bold bg-white border border-slate-200 rounded-lg px-2.5 py-1" />
-            </div>
-            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <label class="block text-[10px] font-bold uppercase text-slate-400">Monthly CG Coin Cap (₹)</label>
-              <input id="cfgCoinCap" type="number" value="200" class="mt-1 w-full text-sm font-bold bg-white border border-slate-200 rounded-lg px-2.5 py-1" />
-            </div>
-            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <label class="block text-[10px] font-bold uppercase text-slate-400">Late Fee After 5 Days (%)</label>
-              <input id="cfgLatePct" type="number" value="5" class="mt-1 w-full text-sm font-bold bg-white border border-slate-200 rounded-lg px-2.5 py-1" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Live Fee Collection Form (recordFeePayment) & Begusarai Physical Cash Drawer + Expense Logger (recordCenterExpenseAndReconcileDrawer) -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Subtab 3.2: REC-01 Concept Recovery Drill (#31-#32) -->
+        <div id="subtab-classroom-rec01" class="subtab-pane-classroom hidden space-y-6">
           <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
-            <div class="border-b border-slate-100 pb-2.5">
-              <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">Live Fee Collection</span>
-              <h3 class="text-sm font-extrabold text-slate-900 mt-0.5">💳 Record Tuition Payment &amp; Generate SHA256 SWOT Receipt (<code class="mono">recordFeePayment</code>)</h3>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-extrabold uppercase">Stage 4 • #31–#32 Upgrade</span>
+                <h3 class="text-base font-extrabold text-slate-900 mt-1">🔄 REC-01 Concept Recovery Center (3-Min Video + 2 MCQs)</h3>
+                <p class="text-xs text-slate-500">Absent and late students are assigned a mandatory 3-minute concept recap video followed by 2 board MCQs before their recovery queue is marked cleared (+10 CG Coins).</p>
+              </div>
+              <span class="px-3 py-1 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-extrabold">
+                Active Queue: 5 Students
+              </span>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1">Select Student</label>
-                <select id="feeFormRollSelect" class="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-slate-50 font-bold"></select>
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1">Fee Plan</label>
-                <select id="feeFormPlanKey" class="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-white font-bold">
-                  <option value="COMBO_MONTHLY">COMBO_MONTHLY (₹1,400)</option>
-                  <option value="SINGLE_MONTHLY">SINGLE_MONTHLY (₹900)</option>
-                  <option value="COMBO_QUARTERLY">COMBO_QUARTERLY (₹3,300)</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1">Amount Paid (₹)</label>
-                <input id="feeFormPaidInput" type="number" value="1200" class="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-white font-mono font-extrabold text-emerald-700" />
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1">Redeem CG Coins (1 Coin = ₹1)</label>
-                <input id="feeFormCoinsInput" type="number" value="0" min="0" max="200" class="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-white font-mono font-bold text-purple-700" />
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1">Payment Mode</label>
-                <select id="feeFormModeSelect" class="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-white font-bold">
-                  <option value="CASH">CASH (Begusarai Physical Drawer)</option>
-                  <option value="UPI">UPI / Bank QR</option>
-                </select>
-              </div>
-              <div class="flex items-end">
-                <button id="submitFeePaymentFormBtn" type="button" class="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow">
-                  ✅ Record Fee &amp; Open SWOT Receipt
-                </button>
-              </div>
-            </div>
-          </div>
 
-          <div class="bg-slate-900 text-white rounded-2xl p-5 shadow-md space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
-              <div>
-                <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30 text-[10px] font-extrabold uppercase">5. Books &amp; Expenses Sync</span>
-                <h3 class="text-sm font-extrabold mt-0.5">💵 Begusarai Physical Cash Drawer &amp; Expense Logger</h3>
+            <!-- Video + MCQ Card Component -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <!-- Left: 3-Min Concept Recap Video -->
+              <div class="p-4 rounded-2xl bg-slate-900 text-white space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-extrabold uppercase text-amber-400">Step 1: 3-Minute Video Recap</span>
+                  <span class="text-[10px] text-slate-400">90% Watch-Gate Enabled</span>
+                </div>
+                <div class="aspect-video bg-slate-950 rounded-xl border border-slate-800 flex flex-col items-center justify-center p-4 text-center">
+                  <div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl mb-2">
+                    ▶️
+                  </div>
+                  <h4 class="text-xs font-bold text-white">Ch 3: Hidden Goodwill &amp; Sacrificing Ratio Calculation</h4>
+                  <p class="text-[11px] text-slate-400 mt-1">High-yield 3-minute concept extraction recorded by Gyan Sir.</p>
+                </div>
+                <div class="flex items-center justify-between text-xs text-slate-300">
+                  <span>Duration: <strong>3 mins 12 secs</strong></span>
+                  <span class="text-emerald-400 font-bold">✓ Teacher Verified</span>
+                </div>
               </div>
-              <button id="refreshCashDrawerBtn" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-amber-300 border border-slate-700">🔄 Reconcile</button>
-            </div>
-            <div class="grid grid-cols-3 gap-2 text-center">
-              <div class="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                <span class="text-[10px] uppercase text-slate-400 font-bold block">Physical Cash Drawer</span>
-                <strong id="drawerCashBalanceText" class="text-base font-extrabold text-amber-400 font-mono">₹14,500</strong>
-              </div>
-              <div class="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                <span class="text-[10px] uppercase text-slate-400 font-bold block">Total Revenue</span>
-                <strong id="drawerTotalRevText" class="text-base font-extrabold text-emerald-400 font-mono">₹90,000</strong>
-              </div>
-              <div class="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                <span class="text-[10px] uppercase text-slate-400 font-bold block">Net Profit</span>
-                <strong id="drawerNetProfitText" class="text-base font-extrabold text-indigo-300 font-mono">₹48,800</strong>
-              </div>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 items-end pt-1">
-              <div>
-                <label class="block text-[10px] font-bold text-slate-400 mb-1">Expense (₹)</label>
-                <input id="expAmountInput" type="number" placeholder="250" class="w-full text-xs border border-slate-700 rounded-xl px-2.5 py-2 bg-slate-800 text-white font-mono font-bold" />
-              </div>
-              <div>
-                <label class="block text-[10px] font-bold text-slate-400 mb-1">Category</label>
-                <select id="expCategorySelect" class="w-full text-xs border border-slate-700 rounded-xl px-2 py-2 bg-slate-800 text-white font-semibold">
-                  <option value="Direct Expense">Marker / Board / Print</option>
-                  <option value="Electricity & Generator">Electricity / Inverter</option>
-                  <option value="Center Rent">Center Rent</option>
-                  <option value="Staff Tea & Refreshment">Tea &amp; Hospitality</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-[10px] font-bold text-slate-400 mb-1">Note</label>
-                <input id="expNoteInput" type="text" placeholder="DPP A4 Paper" class="w-full text-xs border border-slate-700 rounded-xl px-2.5 py-2 bg-slate-800 text-white" />
-              </div>
-              <div>
-                <button id="submitExpenseBtn" type="button" class="w-full py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow">
-                  − Log Expense
-                </button>
+
+              <!-- Right: 2-MCQ Concept Verification -->
+              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-extrabold uppercase text-indigo-600">Step 2: 2 Concept Check MCQs</span>
+                  <span class="text-[10px] text-indigo-800 font-bold">+10 CG Coins</span>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-xs font-bold text-slate-900">Q1: Under Fixed Capital Method, where is Interest on Capital credited?</p>
+                  <div class="space-y-1">
+                    <button type="button" class="w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-medium hover:border-indigo-400">A) Partner's Capital Account</button>
+                    <button type="button" class="w-full text-left px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-400 text-xs font-bold text-emerald-950">B) Partner's Current Account (Correct)</button>
+                  </div>
+                  <p class="text-xs font-bold text-slate-900 pt-2">Q2: Sacrificing Ratio formula is:</p>
+                  <div class="space-y-1">
+                    <button type="button" class="w-full text-left px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-400 text-xs font-bold text-emerald-950">A) Old Ratio − New Ratio (Correct)</button>
+                    <button type="button" class="w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-medium hover:border-indigo-400">B) New Ratio − Old Ratio</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div id="feeMobileCards" class="md:hidden space-y-3"></div>
+        <!-- Subtab 3.3: Smartboard Studio (8 Tools) -->
+        <div id="subtab-classroom-tools" class="subtab-pane-classroom hidden space-y-6">
 
-        <div class="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                <th class="py-3 px-4">Student &amp; Receipt ID</th>
-                <th class="py-3 px-4">Plan &amp; Base Tuition</th>
-                <th class="py-3 px-4">5% Late Fee (Grace &gt;5d)</th>
-                <th class="py-3 px-4">CG Coins Applied (1=₹1)</th>
-                <th class="py-3 px-4">Net Payable</th>
-                <th class="py-3 px-4">Status</th>
-                <th class="py-3 px-4 text-right">Call / WhatsApp / ERP Actions</th>
-              </tr>
-            </thead>
-            <tbody id="feeLedgerTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- ==================== TAB 9: LIVE CLASSROOM SMARTBOARD STUDIO (8 TOOLS) ==================== -->
-      <section id="tab-tools" class="tab-panel hidden space-y-6">
         <div class="bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-950 rounded-2xl p-5 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-rose-500/20 text-rose-300 border border-rose-400/30">EMStudio 4 Tools + 4 Commerce-Exclusive Additions</span>
@@ -1529,10 +1483,740 @@
             Contribution/Unit = ₹250 − ₹150 = ₹100 | P/V Ratio = 40% | Break-Even Point = 500 Units (₹1,25,000 Sales)
           </div>
         </div>
+      
+        </div>
+
+        <!-- Subtab 3.4: Batch Analytics (A4) & Gradebook (#79) -->
+        <div id="subtab-classroom-analytics" class="subtab-pane-classroom hidden space-y-6">
+          <!-- Batch Analytics (A4) -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+            <div>
+              <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[10px] font-extrabold uppercase">A4 • Multi-Cohort Intelligence</span>
+              <h3 class="text-base font-extrabold text-slate-900 mt-1">📊 Batch-Level Performance &amp; Attendance Analytics</h3>
+              <p class="text-xs text-slate-500">Cross-batch comparative metrics comparing Class 11 vs 12, CBSE vs BSEB, and Morning vs Evening batches.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- Class 11 vs 12 -->
+              <div class="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-2">
+                <span class="text-[10px] font-extrabold uppercase text-indigo-700">Cohort Comparison</span>
+                <h4 class="text-xs font-extrabold text-indigo-950">Class 11 vs Class 12</h4>
+                <div class="space-y-1.5 text-xs pt-1">
+                  <div class="flex justify-between"><span>Attendance Rate:</span><strong>89% vs 94%</strong></div>
+                  <div class="flex justify-between"><span>7 PM DPP Completion:</span><strong>76% vs 88%</strong></div>
+                  <div class="flex justify-between"><span>Average Score:</span><strong>81% vs 86%</strong></div>
+                </div>
+              </div>
+
+              <!-- CBSE vs BSEB -->
+              <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2">
+                <span class="text-[10px] font-extrabold uppercase text-emerald-700">Board Comparison</span>
+                <h4 class="text-xs font-extrabold text-emerald-950">CBSE vs BSEB Bihar Board</h4>
+                <div class="space-y-1.5 text-xs pt-1">
+                  <div class="flex justify-between"><span>Attendance Rate:</span><strong>93% vs 91%</strong></div>
+                  <div class="flex justify-between"><span>7 PM DPP Completion:</span><strong>84% vs 80%</strong></div>
+                  <div class="flex justify-between"><span>Average Score:</span><strong>87% vs 83%</strong></div>
+                </div>
+              </div>
+
+              <!-- Morning vs Evening -->
+              <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2">
+                <span class="text-[10px] font-extrabold uppercase text-amber-700">Timing Comparison</span>
+                <h4 class="text-xs font-extrabold text-amber-950">Morning vs Evening Batches</h4>
+                <div class="space-y-1.5 text-xs pt-1">
+                  <div class="flex justify-between"><span>Attendance Rate:</span><strong>95% vs 90%</strong></div>
+                  <div class="flex justify-between"><span>7 PM DPP Completion:</span><strong>82% vs 85%</strong></div>
+                  <div class="flex justify-between"><span>Average Score:</span><strong>84% vs 86%</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rebalanced Gradebook (#79) -->
+
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900">Weighted Gradebook & 3-Track DPP Assessment</h2>
+            <p class="text-xs text-slate-500">Weights: <strong>Unit Tests (40%)</strong> · <strong>7 PM DPP (25%)</strong> · <strong>Board Mock (25%)</strong> · <strong>Project/Viva (10%)</strong>. Supports CBSE 9-Point (<code class="mono">A1–E</code>) and BSEB Division scales.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="gradeScaleSelect" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
+              <option value="CBSE">CBSE 9-Point Scale (A1, A2, B1, B2...)</option>
+              <option value="BSEB">BSEB Bihar Board Scale (1st Div / Distinction)</option>
+              <option value="QUAL">Qualitative Mastery (Mastered / Needs Drill)</option>
+            </select>
+            <button id="awardTopperCoinsBtn" type="button" class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition shadow-sm">
+              🪙 Award +25 CG Coins to ≥90% Scorers
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto custom-scroll">
+          <table class="w-full text-left border-collapse min-w-[850px]">
+            <thead>
+              <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <th class="py-3 px-4">Student</th>
+                <th class="py-3 px-4">Batch</th>
+                <th class="py-3 px-3 text-center">Unit Test (40%)</th>
+                <th class="py-3 px-3 text-center">7 PM DPP (25%)</th>
+                <th class="py-3 px-3 text-center">Board Mock (25%)</th>
+                <th class="py-3 px-3 text-center">Viva/Proj (10%)</th>
+                <th class="py-3 px-4 text-center">Weighted Avg</th>
+                <th class="py-3 px-4">Scale Grade</th>
+              </tr>
+            </thead>
+            <tbody id="gradebookTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
+          </table>
+        </div>
+        <div id="gradebookMobileCards" class="md:hidden space-y-2.5"></div>
+
+        <!-- 7:00 PM Daily DPP & Subjective PDF Broadcast Console -->
+        <div class="bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-950 rounded-2xl p-5 text-white shadow-md space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-extrabold uppercase">7:00 PM IST Daily Automation</span>
+              <h3 class="text-base font-extrabold mt-1">📡 7:00 PM DPP (70% Fresh + 30% Retention) &amp; Subjective PDF Broadcast</h3>
+              <p class="text-xs text-slate-300">Connected directly to <code class="mono">dispatchDailyDPPAndSubjectivePDF</code> in <code class="mono">Code.gs</code>.</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-300 mb-1">Package Type</label>
+              <select id="dppPdfTypeSelect" class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-800 text-white font-bold">
+                <option value="QUESTION_DPP">7:00 PM Question DPP + 3-Track Quiz</option>
+                <option value="MORNING_ANSWER_KEY">T+1 Morning Model Answer PDF</option>
+                <option value="GOODNOTES_CHALKBOARD">GoodNotes Watermarked Board PDF</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-300 mb-1">Telegram Channel</label>
+              <select id="dppChannelSelect" class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-800 text-white font-bold">
+                <option value="@commercewithgyan_class12">@commercewithgyan_class12</option>
+                <option value="@commercewithgyan_class11">@commercewithgyan_class11</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-300 mb-1">PDF Identifier / Filename</label>
+              <input id="dppDriveUrlInput" type="text" value="DPP_Ch3_Goodwill_Class12.pdf" class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-800 text-white font-mono" />
+            </div>
+            <div>
+              
+            <div class="flex flex-wrap gap-2 pt-1">
+              <button id="broadcastDppPdfBtn" type="button" class="flex-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow">
+                🚀 Broadcast 7:00 PM DPP
+              </button>
+              <button id="broadcastSubjQuestionBtn" type="button" class="flex-1 py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow">
+                📝 Broadcast 7:30 PM Question PDF
+              </button>
+              <button id="broadcastSubjAnswerBtn" type="button" class="flex-1 py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold shadow">
+                💡 Broadcast 8:15 AM Answer PDF
+              </button>
+            </div>
+            </div>
+          </div>
+        </div>
+      
+        </div>
       </section>
 
-      <!-- ==================== TAB 10: GOOGLE SHEETS + GITHUB + TELEGRAM MINI APP SETUP ==================== -->
-      <section id="tab-sync" class="tab-panel hidden space-y-6">
+      <!-- ==================== GROUP TAB 4: FEES, DEFAULTERS & BOOKS ==================== -->
+      <section id="tab-finance" class="tab-panel hidden space-y-6">
+        <!-- Sub Navigation Pills -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200">
+          <button type="button" onclick="switchAdminSubtab('finance', 'fees')" id="subtab-btn-finance-fees" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-sm">
+            💳 Fee Ledger &amp; Plans
+          </button>
+          <button type="button" onclick="switchAdminSubtab('finance', 'defaulters')" id="subtab-btn-finance-defaulters" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            ⚠️ Fee Defaulters Dashboard (A3)
+          </button>
+          <button type="button" onclick="switchAdminSubtab('finance', 'drawer')" id="subtab-btn-finance-drawer" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            💼 Cash Drawer &amp; P&amp;L
+          </button>
+          <button type="button" onclick="switchAdminSubtab('finance', 'receipt')" id="subtab-btn-finance-receipt" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            🖨️ Printable Fee Receipt (A9)
+          </button>
+        </div>
+
+        <!-- Subtab 4.1: Fee Ledger & Collection -->
+        <div id="subtab-finance-fees" class="subtab-pane-finance space-y-6">
+
+        <!-- Editable Dynamic Fee Configuration Bar (Option A) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+            <div>
+              <h2 class="text-lg font-extrabold text-slate-900">ERP Fee Ledger, Positive-Only CG Coins & SWOT Smart Receipts</h2>
+              <p class="text-xs text-slate-500">Dynamic Editable Fee Config (<code class="mono">CONFIG_FEE_SETTINGS</code>) · 5-Day Grace + 5% Late Fee · 1-Click Teacher Waiver (<code class="mono">Revoke_Late_Fee</code>) · <code class="mono">1 Coin = ₹1</code> Discount.</p>
+            </div>
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Zero Negative Coin Deductions</span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+              <label class="block text-[10px] font-bold uppercase text-slate-400">Monthly Tuition (₹)</label>
+              <input id="cfgMonthlyFee" type="number" value="1200" class="mt-1 w-full text-sm font-bold bg-white border border-slate-200 rounded-lg px-2.5 py-1" />
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+              <label class="block text-[10px] font-bold uppercase text-slate-400">Quarterly Plan (₹)</label>
+              <input id="cfgQuarterlyFee" type="number" value="3300" class="mt-1 w-full text-sm font-bold bg-white border border-slate-200 rounded-lg px-2.5 py-1" />
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+              <label class="block text-[10px] font-bold uppercase text-slate-400">Monthly CG Coin Cap (₹)</label>
+              <input id="cfgCoinCap" type="number" value="200" class="mt-1 w-full text-sm font-bold bg-white border border-slate-200 rounded-lg px-2.5 py-1" />
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+              <label class="block text-[10px] font-bold uppercase text-slate-400">Late Fee After 5 Days (%)</label>
+              <input id="cfgLatePct" type="number" value="5" class="mt-1 w-full text-sm font-bold bg-white border border-slate-200 rounded-lg px-2.5 py-1" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Fee Collection Form (recordFeePayment) & Begusarai Physical Cash Drawer + Expense Logger (recordCenterExpenseAndReconcileDrawer) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+            <div class="border-b border-slate-100 pb-2.5">
+              <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">Live Fee Collection</span>
+              <h3 class="text-sm font-extrabold text-slate-900 mt-0.5">💳 Record Tuition Payment &amp; Generate SHA256 SWOT Receipt (<code class="mono">recordFeePayment</code>)</h3>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Select Student</label>
+                <select id="feeFormRollSelect" class="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-slate-50 font-bold"></select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Fee Plan</label>
+                <select id="feeFormPlanKey" class="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-white font-bold">
+                  <option value="COMBO_MONTHLY">COMBO_MONTHLY (₹1,400)</option>
+                  <option value="SINGLE_MONTHLY">SINGLE_MONTHLY (₹900)</option>
+                  <option value="COMBO_QUARTERLY">COMBO_QUARTERLY (₹3,300)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Amount Paid (₹)</label>
+                <input id="feeFormPaidInput" type="number" value="1200" class="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-white font-mono font-extrabold text-emerald-700" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Redeem CG Coins (1 Coin = ₹1)</label>
+                <input id="feeFormCoinsInput" type="number" value="0" min="0" max="200" class="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-white font-mono font-bold text-purple-700" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Payment Mode</label>
+                <select id="feeFormModeSelect" class="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-white font-bold">
+                  <option value="CASH">CASH (Begusarai Physical Drawer)</option>
+                  <option value="UPI">UPI / Bank QR</option>
+                </select>
+              </div>
+              <div class="flex items-end">
+                <button id="submitFeePaymentFormBtn" type="button" class="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow">
+                  ✅ Record Fee &amp; Open SWOT Receipt
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-slate-900 text-white rounded-2xl p-5 shadow-md space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30 text-[10px] font-extrabold uppercase">5. Books &amp; Expenses Sync</span>
+                <h3 class="text-sm font-extrabold mt-0.5">💵 Begusarai Physical Cash Drawer &amp; Expense Logger</h3>
+              </div>
+              <button id="refreshCashDrawerBtn" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-amber-300 border border-slate-700">🔄 Reconcile</button>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div class="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                <span class="text-[10px] uppercase text-slate-400 font-bold block">Physical Cash Drawer</span>
+                <strong id="drawerCashBalanceText" class="text-base font-extrabold text-amber-400 font-mono">₹14,500</strong>
+              </div>
+              <div class="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                <span class="text-[10px] uppercase text-slate-400 font-bold block">Total Revenue</span>
+                <strong id="drawerTotalRevText" class="text-base font-extrabold text-emerald-400 font-mono">₹90,000</strong>
+              </div>
+              <div class="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                <span class="text-[10px] uppercase text-slate-400 font-bold block">Net Profit</span>
+                <strong id="drawerNetProfitText" class="text-base font-extrabold text-indigo-300 font-mono">₹48,800</strong>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 items-end pt-1">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-400 mb-1">Expense (₹)</label>
+                <input id="expAmountInput" type="number" placeholder="250" class="w-full text-xs border border-slate-700 rounded-xl px-2.5 py-2 bg-slate-800 text-white font-mono font-bold" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-400 mb-1">Category</label>
+                <select id="expCategorySelect" class="w-full text-xs border border-slate-700 rounded-xl px-2 py-2 bg-slate-800 text-white font-semibold">
+                  <option value="Direct Expense">Marker / Board / Print</option>
+                  <option value="Electricity & Generator">Electricity / Inverter</option>
+                  <option value="Center Rent">Center Rent</option>
+                  <option value="Staff Tea & Refreshment">Tea &amp; Hospitality</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-400 mb-1">Note</label>
+                <input id="expNoteInput" type="text" placeholder="DPP A4 Paper" class="w-full text-xs border border-slate-700 rounded-xl px-2.5 py-2 bg-slate-800 text-white" />
+              </div>
+              <div>
+                <button id="submitExpenseBtn" type="button" class="w-full py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow">
+                  − Log Expense
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="feeMobileCards" class="md:hidden space-y-3"></div>
+
+        <div class="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <th class="py-3 px-4">Student &amp; Receipt ID</th>
+                <th class="py-3 px-4">Plan &amp; Base Tuition</th>
+                <th class="py-3 px-4">5% Late Fee (Grace &gt;5d)</th>
+                <th class="py-3 px-4">CG Coins Applied (1=₹1)</th>
+                <th class="py-3 px-4">Net Payable</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4 text-right">Call / WhatsApp / ERP Actions</th>
+              </tr>
+            </thead>
+            <tbody id="feeLedgerTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
+          </table>
+        </div>
+      
+        </div>
+
+        <!-- Subtab 4.2: Fee Defaulters Dashboard (A3) -->
+        <div id="subtab-finance-defaulters" class="subtab-pane-finance hidden space-y-6">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 text-[10px] font-extrabold uppercase">A3 • Zero-Spam Recovery</span>
+                <h3 class="text-base font-extrabold text-slate-900 mt-1">⚠️ Overdue Fee Defaulters Dashboard (&gt;15 Days)</h3>
+                <p class="text-xs text-slate-500">Students with outstanding tuition overdue by more than 15 days. Enables 1-tap call and personalized WhatsApp reminder links without automated parent spam.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="defaulterTotalDueBadge" class="px-3 py-1 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-extrabold">
+                  Total Overdue: ₹4,200
+                </span>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase">
+                    <th class="py-2.5 px-3">Student &amp; Roll</th>
+                    <th class="py-2.5 px-3">Batch</th>
+                    <th class="py-2.5 px-3">Days Overdue</th>
+                    <th class="py-2.5 px-3">Overdue Amount</th>
+                    <th class="py-2.5 px-3">Parent Contact</th>
+                    <th class="py-2.5 px-3 text-center">1-Tap Action</th>
+                  </tr>
+                </thead>
+                <tbody id="defaulterTableBody" class="divide-y divide-slate-100 font-medium">
+                  <tr class="hover:bg-rose-50/40">
+                    <td class="py-3 px-3 font-bold text-slate-900">Vikram Singh <span class="text-[10px] font-mono text-slate-400">(CG-1206)</span></td>
+                    <td class="py-3 px-3 text-slate-600">C12_EVE</td>
+                    <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800">22 Days Overdue</span></td>
+                    <td class="py-3 px-3 font-extrabold text-rose-700">₹1,400</td>
+                    <td class="py-3 px-3 font-mono text-slate-600">9835099881</td>
+                    <td class="py-3 px-3 text-center">
+                      <div class="flex items-center justify-center gap-1.5">
+                        <a href="tel:9835099881" class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px]">📞 Call</a>
+                        <a href="https://wa.me/919835099881?text=Namaste%20Parent,%20Tuition%20fee%20of%20Rs.1400%20for%20Vikram%20is%20overdue.%20Kindly%20clear%20via%20UPI." target="_blank" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px]">💬 WhatsApp</a>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-rose-50/40">
+                    <td class="py-3 px-3 font-bold text-slate-900">Pooja Kumari <span class="text-[10px] font-mono text-slate-400">(CG-1104)</span></td>
+                    <td class="py-3 px-3 text-slate-600">C11_MORN</td>
+                    <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800">18 Days Overdue</span></td>
+                    <td class="py-3 px-3 font-extrabold text-rose-700">₹1,400</td>
+                    <td class="py-3 px-3 font-mono text-slate-600">9431022334</td>
+                    <td class="py-3 px-3 text-center">
+                      <div class="flex items-center justify-center gap-1.5">
+                        <a href="tel:9431022334" class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px]">📞 Call</a>
+                        <a href="https://wa.me/919431022334?text=Namaste%20Parent,%20Tuition%20fee%20of%20Rs.1400%20for%20Pooja%20is%20overdue.%20Kindly%20clear%20via%20UPI." target="_blank" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px]">💬 WhatsApp</a>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subtab 4.3: Cash Drawer & Balance Sheet -->
+        <div id="subtab-finance-drawer" class="subtab-pane-finance hidden space-y-6">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">Daily Cash Audit</span>
+                <h3 class="text-base font-extrabold text-slate-900 mt-1">💼 Physical Cash Drawer &amp; Balance Sheet Integrity</h3>
+                <p class="text-xs text-slate-500">Nightly 11:30 PM audit verifies fundamental equation: Assets = Liabilities + Equity. Prevents manual discrepancy.</p>
+              </div>
+              <button id="btnCheckBsIntegrity" type="button" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow-sm">
+                ⚖️ Audit Balance Sheet Integrity
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                <span class="text-[10px] uppercase font-bold text-slate-400">Begusarai Physical Cash</span>
+                <h4 class="text-lg font-extrabold text-slate-900">₹4,250</h4>
+                <p class="text-[11px] text-slate-500">Physical drawer total counted today</p>
+              </div>
+              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                <span class="text-[10px] uppercase font-bold text-slate-400">Total Month Collections</span>
+                <h4 class="text-lg font-extrabold text-emerald-600">₹72,400</h4>
+                <p class="text-[11px] text-slate-500">Tuition fees collected (Cash + UPI)</p>
+              </div>
+              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                <span class="text-[10px] uppercase font-bold text-slate-400">Balance Sheet Status</span>
+                <h4 class="text-lg font-extrabold text-emerald-600">Balanced (₹0 Variance)</h4>
+                <p class="text-[11px] text-slate-500">Assets = Liabilities + Equity verified</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subtab 4.4: Printable 1-Page Fee Receipt (A9) -->
+        <div id="subtab-finance-receipt" class="subtab-pane-finance hidden space-y-6">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[10px] font-extrabold uppercase">A9 • Official Document</span>
+                <h3 class="text-base font-extrabold text-slate-900 mt-1">🖨️ Printable Official 1-Page Fee Receipt Generator</h3>
+                <p class="text-xs text-slate-500">Generate clean, parent-friendly 1-page printable receipts with receipt number, student details, amount in words, Gyan Sir seal, and SHA-256 validation seal.</p>
+              </div>
+              <div class="flex gap-2">
+                <button id="btnPrintA9Receipt" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow-sm transition">
+                  🖨️ Print / Save as PDF
+                </button>
+              </div>
+            </div>
+
+            <!-- Receipt Container Styled for 1-Page A4 -->
+            <div id="officialPrintableReceiptBox" class="max-w-2xl mx-auto p-6 bg-white border-2 border-slate-300 rounded-2xl space-y-5 text-slate-900 font-sans shadow-md">
+              <!-- Header -->
+              <div class="border-b-2 border-slate-900 pb-3 flex items-start justify-between">
+                <div>
+                  <h2 class="text-xl font-extrabold tracking-tight text-slate-950 uppercase">COMMERCE GYAN</h2>
+                  <p class="text-xs text-slate-600 font-semibold">Premier Commerce Coaching Institute · Begusarai, Bihar</p>
+                  <p class="text-[10px] text-slate-500">Founder &amp; Mentor: Gyan Deep Kumar (Gyan Sir) · Helpline: 9835011201</p>
+                </div>
+                <div class="text-right">
+                  <span class="px-2.5 py-1 rounded bg-slate-900 text-white font-mono text-xs font-extrabold">FEE RECEIPT</span>
+                  <p class="text-xs font-mono font-bold mt-1 text-slate-800" id="prReceiptNo">Receipt #: CG-REC-2026-088</p>
+                  <p class="text-[11px] text-slate-500" id="prReceiptDate">Date: 12-Nov-2026</p>
+                </div>
+              </div>
+
+              <!-- Student Details Grid -->
+              <div class="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <div><span>Student Name:</span> <strong id="prStudentName" class="text-slate-950">Aarav Sharma</strong></div>
+                <div><span>Roll Number:</span> <strong id="prRollNo" class="font-mono text-slate-950">CG-1201</strong></div>
+                <div><span>Course / Class:</span> <strong id="prBatchName" class="text-slate-950">Class 12 Accounts &amp; BST</strong></div>
+                <div><span>Month / Session:</span> <strong id="prMonthSession" class="text-slate-950">November 2026</strong></div>
+              </div>
+
+              <!-- Payment Table -->
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-300 bg-slate-100 font-bold uppercase text-[10px] text-slate-600">
+                    <th class="py-2 px-3">Description</th>
+                    <th class="py-2 px-3 text-right">Base Fee</th>
+                    <th class="py-2 px-3 text-right">Scholarship/Coins</th>
+                    <th class="py-2 px-3 text-right">Net Paid</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                  <tr>
+                    <td class="py-2 px-3">Monthly Tuition Fee (Accounts + BST Combo)</td>
+                    <td class="py-2 px-3 text-right font-mono" id="prBaseFee">₹1,400</td>
+                    <td class="py-2 px-3 text-right font-mono text-emerald-700" id="prDiscount">-₹100 (Coins)</td>
+                    <td class="py-2 px-3 text-right font-mono font-bold" id="prNetPaid">₹1,300</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- In Words & Mode -->
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs flex justify-between items-center">
+                <div>
+                  <span class="text-slate-500">Amount in Words:</span>
+                  <p class="font-bold text-slate-900" id="prAmountWords">Rupees One Thousand Three Hundred Only</p>
+                </div>
+                <div class="text-right">
+                  <span class="text-slate-500">Mode:</span>
+                  <span class="font-bold text-slate-900" id="prPayMode">UPI (Verified)</span>
+                </div>
+              </div>
+
+              <!-- Signatures & Security Seal -->
+              <div class="pt-3 border-t border-slate-200 flex items-end justify-between text-xs">
+                <div>
+                  <p class="text-[10px] text-slate-400 font-mono" id="prSecuritySeal">Security Seal (SHA-256): 7f8a9b2c3d4e5f6a1b2c3d4e5f6a7b8c9d0e1f2a</p>
+                  <p class="text-[9px] text-slate-400">Tamper-evident verification hash stored in Books_General_Ledger.</p>
+                </div>
+                <div class="text-center">
+                  <div class="h-10 border-b border-slate-400 mb-1 flex items-center justify-center text-indigo-700 font-serif italic text-sm">Gyan Deep Kumar</div>
+                  <span class="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Authorized Signatory</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== GROUP TAB 5: CONTENT, DPP & SYSTEM ==================== -->
+      <section id="tab-system" class="tab-panel hidden space-y-6">
+        <!-- Sub Navigation Pills -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200">
+          <button type="button" onclick="switchAdminSubtab('system', 'curriculum')" id="subtab-btn-system-curriculum" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-sm">
+            📚 797 Syllabus &amp; Curriculum
+          </button>
+          <button type="button" onclick="switchAdminSubtab('system', 'dpp')" id="subtab-btn-system-dpp" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            📡 Unified Question &amp; DPP Engine (#34+#41)
+          </button>
+          <button type="button" onclick="switchAdminSubtab('system', 'vault')" id="subtab-btn-system-vault" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            🧠 Smart Review Vault &amp; Coins (#50+#52)
+          </button>
+          <button type="button" onclick="switchAdminSubtab('system', 'backup')" id="subtab-btn-system-backup" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            💾 Backup, Restore &amp; Archiving (A5/A13/A14)
+          </button>
+          <button type="button" onclick="switchAdminSubtab('system', 'audit')" id="subtab-btn-system-audit" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            🔍 System Health &amp; Audit Log (A10)
+          </button>
+        </div>
+
+        <!-- Subtab 5.1: 797 Syllabus -->
+        <div id="subtab-system-curriculum" class="subtab-pane-system space-y-6">
+
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900">Curriculum & Standards Tracker (71 Chapters · 797 Subtopics)</h2>
+            <p class="text-xs text-slate-500">Replaces generic standards with your canonical <code class="mono">02_Syllabus_Planner</code> across all 8 Class 11 & 12 subjects (CBSE & BSEB). Click any status badge to cycle progress.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="currSubjectFilter" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
+              <option value="ALL">All 8 Subjects (11th & 12th)</option>
+              <option value="ACC-12">12th Accountancy (ACC-12)</option>
+              <option value="BST-12">12th Business Studies (BST-12)</option>
+              <option value="MAC-12">12th Macroeconomics (MAC-12)</option>
+              <option value="IED-12">12th Indian Econ & EPS (IED-12)</option>
+              <option value="ACC-11">11th Accountancy (ACC-11)</option>
+              <option value="BST-11">11th Business Studies (BST-11)</option>
+              <option value="MIC-11">11th Microeconomics (MIC-11)</option>
+              <option value="STA-11">11th Statistics & EPS (STA-11)</option>
+            </select>
+            <select id="currStatusFilter" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
+              <option value="ALL">All Statuses</option>
+              <option value="Completed">Completed</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Planned">Planned</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Live /settopic Active Subtopic Lock Controls (Writes to Settings!B2 & 01_Master_Syllabus) -->
+        <div class="bg-indigo-950 text-white rounded-2xl p-4 sm:p-5 shadow-md flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div>
+            <span class="px-2 py-0.5 rounded bg-amber-400 text-slate-950 text-[10px] font-extrabold uppercase">Live /settopic Lock</span>
+            <h3 class="text-sm sm:text-base font-extrabold mt-1">Lock Tonight's Active Subtopic for 7:00 PM DPP &amp; Attendance</h3>
+            <p class="text-[11px] text-indigo-200">Updates <code class="mono">Settings!B2</code> in <code class="mono">4. Telegram Delivery</code> and marks status in <code class="mono">01_Master_Syllabus</code>.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="lockTopicSelect" class="text-xs font-bold bg-slate-900 border border-indigo-400/40 rounded-xl px-3 py-2 text-white">
+              <option value="C12-ACC-B1-CH03-T02-S01">C12-ACC-B1-CH03-T02-S01 · Hidden Goodwill &amp; Revaluation</option>
+              <option value="C12-ACC-B1-CH06-T01-S02">C12-ACC-B1-CH06-T01-S02 · Share Forfeiture Pro-Rata</option>
+              <option value="C12-BST-B1-CH02-T04-S01">C12-BST-B1-CH02-T04-S01 · Fayol vs Taylor Principles</option>
+              <option value="C12-MAC-B1-CH01-T05-S01">C12-MAC-B1-CH01-T05-S01 · National Income Aggregates</option>
+              <option value="C11-ACC-B1-CH03-T01-S01">C11-ACC-B1-CH03-T01-S01 · Journal &amp; Ledger Posting</option>
+              <option value="C11-ACC-B1-CH05-T01-S01">C11-ACC-B1-CH05-T01-S01 · Bank Reconciliation Overdraft</option>
+              <option value="C11-MIC-B1-CH02-T03-S01">C11-MIC-B1-CH02-T03-S01 · Consumer Equilibrium IC Analysis</option>
+              <option value="C11-STA-B1-CH05-T01-S01">C11-STA-B1-CH05-T01-S01 · Central Tendency &amp; Correlation</option>
+            </select>
+            <select id="lockDeliveryMode" class="text-xs font-bold bg-slate-900 border border-indigo-400/40 rounded-xl px-2.5 py-2 text-white">
+              <option value="Offline">Offline Classroom</option>
+              <option value="Hybrid">Hybrid + GoodNotes</option>
+              <option value="Recorded">Unlisted YouTube</option>
+            </select>
+            <button id="lockActiveSubtopicBtn" type="button" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow transition">
+              🔒 Lock Active Subtopic (/settopic)
+            </button>
+          </div>
+        </div>
+
+        <!-- Mobile Collapsible Subject -> Chapter -> Subtopic Accordion (< 768px) -->
+        <div id="curriculumMobileAccordion" class="md:hidden space-y-3"></div>
+
+        <!-- Desktop Table (>= 768px) -->
+        <div id="curriculumTableContainer" class="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"></div>
+      
+        </div>
+
+        <!-- Subtab 5.2: Unified Question & DPP Engine (#34 + #41) -->
+        <div id="subtab-system-dpp" class="subtab-pane-system hidden space-y-6">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+            <div>
+              <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-extrabold uppercase">Architectural Merge • #34 + #41</span>
+              <h3 class="text-base font-extrabold text-slate-900 mt-1">📡 Unified Question Delivery &amp; 7:00 PM DPP Dispatch Engine</h3>
+              <p class="text-xs text-slate-500">Single shared question delivery engine powering both the automated 7:00 PM Daily Practice Paper and the on-demand Subject Practice Vault. Questions pre-warmed in CacheService for 0ms student read latency.</p>
+            </div>
+
+            <!-- Subject Practice Bank Controls -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+              <button type="button" onclick="loadSubjectPracticeQuestions('Accountancy')" class="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-400 text-left transition">
+                <span class="text-xs font-extrabold text-slate-900 block">Accountancy</span>
+                <span class="text-[10px] text-slate-500">24 Chapters · QB Live</span>
+              </button>
+              <button type="button" onclick="loadSubjectPracticeQuestions('Business Studies')" class="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-400 text-left transition">
+                <span class="text-xs font-extrabold text-slate-900 block">Business Studies</span>
+                <span class="text-[10px] text-slate-500">12 Chapters · QB Live</span>
+              </button>
+              <button type="button" onclick="loadSubjectPracticeQuestions('Economics')" class="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-400 text-left transition">
+                <span class="text-xs font-extrabold text-slate-900 block">Economics</span>
+                <span class="text-[10px] text-slate-500">Micro &amp; Macro QB</span>
+              </button>
+              <button type="button" onclick="loadSubjectPracticeQuestions('Statistics')" class="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-400 text-left transition">
+                <span class="text-xs font-extrabold text-slate-900 block">Statistics &amp; EPS</span>
+                <span class="text-[10px] text-slate-500">CBSE &amp; BSEB</span>
+              </button>
+            </div>
+
+            <div id="unifiedQuestionEngineOutput" class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2 text-slate-700">
+              <div class="flex items-center justify-between font-bold text-slate-900">
+                <span>Today's 7:00 PM DPP Batch Package: Chapter 3 Goodwill &amp; Sacrificing Ratio</span>
+                <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800">Pre-warmed in CacheService (120s TTL)</span>
+              </div>
+              <p class="text-[11px] text-slate-600">Q1: Under Fluctuating Capital Method, Interest on Partner's Capital is credited to Partner's Capital Account.</p>
+              <p class="text-[11px] text-slate-600">Q2: Sacrificing Ratio = Old Ratio − New Ratio. Used for Goodwill premium distribution.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subtab 5.3: Smart Review Vault & Unified Coins (#50 + #52) -->
+        <div id="subtab-system-vault" class="subtab-pane-system hidden space-y-6">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+            <div>
+              <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-[10px] font-extrabold uppercase">Architectural Merge • #50 + #52 + Coins</span>
+              <h3 class="text-base font-extrabold text-slate-900 mt-1">🧠 Unified Smart Review Vault &amp; CG Coins Ledger</h3>
+              <p class="text-xs text-slate-500">Merges Mistake Vault with Leitner Spaced Repetition (+3d, +7d, +15d, +30d) and consolidates 4 coin issuers under one transparent rule engine.</p>
+            </div>
+
+            <!-- Unified Coin Earning Rules -->
+            <div class="p-4 rounded-xl bg-purple-50 border border-purple-200 space-y-2">
+              <h4 class="text-xs font-extrabold text-purple-950 uppercase tracking-wider">Unified CG Coins Earning Law (v4.0)</h4>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                <div class="p-2 rounded-lg bg-white border border-purple-200"><span>Attendance Streak:</span> <strong class="text-purple-900">+1 Coin / day</strong></div>
+                <div class="p-2 rounded-lg bg-white border border-purple-200"><span>Daily DPP Completion:</span> <strong class="text-purple-900">+5 Coins</strong></div>
+                <div class="p-2 rounded-lg bg-white border border-purple-200"><span>REC-01 Recovery Drill:</span> <strong class="text-purple-900">+10 Coins</strong></div>
+                <div class="p-2 rounded-lg bg-white border border-purple-200"><span>Smartboard Topper Award:</span> <strong class="text-purple-900">+25 Coins</strong></div>
+                <div class="p-2 rounded-lg bg-white border border-purple-200"><span>Referral Stage 1 (D3 Demo):</span> <strong class="text-purple-900">+10 Coins</strong></div>
+                <div class="p-2 rounded-lg bg-white border border-purple-200"><span>Referral Stage 2 (Admission):</span> <strong class="text-purple-900">+90 Coins</strong></div>
+              </div>
+              <p class="text-[10px] text-purple-700 font-semibold pt-1">Monthly Redemption Cap: Max 100 Coins (₹100 discount) per student fee invoice.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subtab 5.4: Backup, Restore & Archiving (A5, A13, A14) -->
+        <div id="subtab-system-backup" class="subtab-pane-system hidden space-y-6">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+            <div>
+              <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">A5, A13, A14 • Data Resilience</span>
+              <h3 class="text-base font-extrabold text-slate-900 mt-1">💾 Database Backup, 1-Click Restore &amp; Archiving</h3>
+              <p class="text-xs text-slate-500">Autonomous nightly backups to Google Drive, 1-click JSON snapshot exports, year-end student archiving, and first-run setup wizard.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- A5: Instant Backup -->
+              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
+                <h4 class="text-xs font-extrabold text-slate-900">Instant Drive/JSON Backup (A5)</h4>
+                <p class="text-[11px] text-slate-600">Export complete institute state (students, timetable, attendance, logs) into a sealed JSON backup.</p>
+                <button id="btnCreateBackupJson" type="button" class="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold transition shadow-sm">
+                  💾 Download JSON Backup
+                </button>
+              </div>
+
+              <!-- A5: 1-Click Restore -->
+              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
+                <h4 class="text-xs font-extrabold text-slate-900">1-Click Archive Restore (A5)</h4>
+                <p class="text-[11px] text-slate-600">Upload a verified backup file to restore student rosters, schedules, and attendance records.</p>
+                <input type="file" id="restoreBackupFileInput" accept=".json" class="hidden" />
+                <button id="btnTriggerRestoreArchive" type="button" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-extrabold transition shadow-sm">
+                  🔄 Select Backup File to Restore
+                </button>
+              </div>
+
+              <!-- A13: Year-End Archiving -->
+              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
+                <h4 class="text-xs font-extrabold text-slate-900">Year-End Cohort Archiving (A13)</h4>
+                <p class="text-[11px] text-slate-600">Move graduated Class 12 alumni into Archive sheets to maintain sub-50ms Google Sheets query performance.</p>
+                <button id="btnArchiveGradCohort" type="button" class="w-full py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold transition shadow-sm">
+                  📦 Archive Class 12 Alumni
+                </button>
+              </div>
+            </div>
+
+            <!-- A14: Setup Wizard Trigger -->
+            <div class="p-4 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-between">
+              <div>
+                <h4 class="text-xs font-extrabold text-indigo-950">First-Run Setup Wizard (A14)</h4>
+                <p class="text-[11px] text-indigo-800">Guided step-by-step onboarding wizard for new academic sessions.</p>
+              </div>
+              <button id="btnLaunchSetupWizard" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow-sm transition">
+                🧙 Launch Setup Wizard
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subtab 5.5: System Health & Audit Log (A10) -->
+        <div id="subtab-system-audit" class="subtab-pane-system hidden space-y-6">
+          <!-- Session / Audit Log (A10) -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-slate-800 text-white text-[10px] font-extrabold uppercase">A10 • Tamper-Evident</span>
+                <h3 class="text-base font-extrabold text-slate-900 mt-1">🔍 Administrative Session &amp; Action Audit Log</h3>
+                <p class="text-xs text-slate-500">Live feed from Audit_Log sheet. Records administrative mutations, fee waivers, and attendance batches with Telegram ID.</p>
+              </div>
+              <button id="btnRefreshAuditLog" type="button" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
+                🔄 Refresh Log
+              </button>
+            </div>
+
+            <div class="overflow-x-auto max-h-64 custom-scroll">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase sticky top-0">
+                    <th class="py-2 px-3">Timestamp</th>
+                    <th class="py-2 px-3">Action</th>
+                    <th class="py-2 px-3">Actor ID</th>
+                    <th class="py-2 px-4">Details</th>
+                    <th class="py-2 px-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="auditLogTableBody" class="divide-y divide-slate-100 font-medium">
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-2 px-3 font-mono text-slate-500">2026-11-12 13:10:00</td>
+                    <td class="py-2 px-3 font-bold text-slate-900">markBatchAttendance</td>
+                    <td class="py-2 px-3 font-mono text-indigo-600">552858970 (Admin)</td>
+                    <td class="py-2 px-4 text-slate-700">Committed attendance for C12_EVE (8 students)</td>
+                    <td class="py-2 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">SUCCESS</span></td>
+                  </tr>
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-2 px-3 font-mono text-slate-500">2026-11-12 12:45:00</td>
+                    <td class="py-2 px-3 font-bold text-slate-900">setActiveSubtopic</td>
+                    <td class="py-2 px-3 font-mono text-indigo-600">552858970 (Admin)</td>
+                    <td class="py-2 px-4 text-slate-700">Subtopic locked: C12-ACC-B1-CH03-T02-S01 (Cache purged)</td>
+                    <td class="py-2 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">SUCCESS</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+
         <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -1574,6 +2258,8 @@
 // The real backend checks the signed Telegram initData (HMAC-SHA256) on every call.</pre>
           </div>
         </div>
+      
+        </div>
       </section>
 
     </main>
@@ -1586,7 +2272,7 @@
       <div>
         <div class="flex items-center gap-2">
           <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-400">Telegram Teacher Daily Ops</span>
-          <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 animate-pulse shadow-sm">v3.2 LIVE</span>
+          <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 animate-pulse shadow-sm">v4.0 LIVE</span>
         </div>
         <h2 class="text-sm font-extrabold">Gyan Sir · Begusarai Mobile Remote</h2>
       </div>
@@ -2222,6 +2908,47 @@
     };
 
     // ==================== UNIFIED LIVE GAS API CALLER ====================
+
+    // ── NOTEBOOK REASON-TAGGED SAVES (#44) ──
+    let pendingNoteToSave = null;
+    function promptSaveNotebookWithReason(item) {
+      pendingNoteToSave = item;
+      const overlay = document.getElementById('notebookReasonModalOverlay');
+      if (overlay) overlay.classList.remove('hidden');
+    }
+
+    window.confirmSaveNotebookReason = function(reason) {
+      const overlay = document.getElementById('notebookReasonModalOverlay');
+      if (overlay) overlay.classList.add('hidden');
+      if (!pendingNoteToSave) return;
+      if (!appState.notebook) appState.notebook = [];
+      appState.notebook.unshift({
+        id: 'NOTE-' + Date.now(),
+        type: reason,
+        title: pendingNoteToSave.title,
+        content: pendingNoteToSave.content,
+        date: new Date().toISOString().slice(0, 10),
+        starred: true,
+        daysDue: reason === 'Confusing' ? 3 : (reason === 'Important' ? 7 : 15)
+      });
+      saveState();
+      showToast(`Saved to Digital Notebook tagged as [${reason}]!`, 'emerald');
+      pendingNoteToSave = null;
+    };
+
+
+    // ── SUB-ADMIN UI GATING (R1) ──
+    function applySubAdminRestrictions() {
+      const badge = document.getElementById('subAdminBadge');
+      if (badge) badge.classList.remove('hidden');
+      const waiveBtn = document.getElementById('waiveLateFeeBtn');
+      if (waiveBtn) { waiveBtn.disabled = true; waiveBtn.title = "Restricted to Super Admin"; waiveBtn.classList.add('opacity-50', 'cursor-not-allowed'); }
+      const botWaive = document.querySelector('[data-botcmd="/waive"]');
+      if (botWaive) { botWaive.disabled = true; botWaive.classList.add('opacity-50', 'cursor-not-allowed'); }
+      const drawerAdjustBtn = document.getElementById('adjustCashDrawerBtn');
+      if (drawerAdjustBtn) { drawerAdjustBtn.disabled = true; drawerAdjustBtn.classList.add('opacity-50', 'cursor-not-allowed'); }
+    }
+
     window.cgCallGas = function(action, payload = {}) {
       const actionAliases = {
         getCrmData: 'getInquiryPipeline',
@@ -2621,7 +3348,8 @@
 
     // ==================== RENDER: STUDENTS CRM ====================
     function computeWeightedAvg(s) {
-      return Math.round(s.unitTest * 0.40 + s.dppScore * 0.25 + s.mockScore * 0.25 + s.vivaScore * 0.10);
+      // Rebalanced per Pedagogical Law v4.0: Board Mock 40%, 7 PM DPP 30%, Unit Test 20%, Viva/Project 10%
+      return Math.round(s.mockScore * 0.40 + s.dppScore * 0.30 + s.unitTest * 0.20 + s.vivaScore * 0.10);
     }
 
     function renderStudents() {
@@ -3271,22 +3999,82 @@
     }
 
     // ==================== TAB NAVIGATION & EVENT LISTENERS ====================
-    function switchTab(tabId) {
-      appState.activeTab = tabId;
+    const ADMIN_TAB_MAPPING = {
+      'today': { group: 'today', sub: 'dash' },
+      'dashboard': { group: 'today', sub: 'dash' },
+      'timetable': { group: 'today', sub: 'timetable' },
+      'lessons': { group: 'today', sub: 'lessons' },
+      'calendar': { group: 'today', sub: 'calendar' },
+      
+      'students': { group: 'students', sub: 'pipeline' },
+      'pipeline': { group: 'students', sub: 'pipeline' },
+      'directory': { group: 'students', sub: 'directory' },
+      'parentcomm': { group: 'students', sub: 'parentcomm' },
+      'parent_comm': { group: 'students', sub: 'parentcomm' },
+      
+      'classroom': { group: 'classroom', sub: 'attendance' },
+      'attendance': { group: 'classroom', sub: 'attendance' },
+      'rec01': { group: 'classroom', sub: 'rec01' },
+      'tools': { group: 'classroom', sub: 'tools' },
+      'gradebook': { group: 'classroom', sub: 'analytics' },
+      'analytics': { group: 'classroom', sub: 'analytics' },
+      
+      'finance': { group: 'finance', sub: 'fees' },
+      'erp_fees': { group: 'finance', sub: 'fees' },
+      'fees': { group: 'finance', sub: 'fees' },
+      'defaulters': { group: 'finance', sub: 'defaulters' },
+      'drawer': { group: 'finance', sub: 'drawer' },
+      'receipt': { group: 'finance', sub: 'receipt' },
+      
+      'system': { group: 'system', sub: 'curriculum' },
+      'curriculum': { group: 'system', sub: 'curriculum' },
+      'dpp': { group: 'system', sub: 'dpp' },
+      'vault': { group: 'system', sub: 'vault' },
+      'backup': { group: 'system', sub: 'backup' },
+      'sync': { group: 'system', sub: 'audit' },
+      'audit': { group: 'system', sub: 'audit' }
+    };
+
+    function switchAdminSubtab(group, sub) {
+      const panel = document.getElementById(`tab-${group}`);
+      if (!panel) return;
+      panel.querySelectorAll(`.subtab-pane-${group}`).forEach(p => p.classList.add('hidden'));
+      const target = document.getElementById(`subtab-${group}-${sub}`);
+      if (target) target.classList.remove('hidden');
+      panel.querySelectorAll('.subtab-pill').forEach(btn => {
+        if (btn.id === `subtab-btn-${group}-${sub}`) {
+          btn.className = 'subtab-pill px-3 py-1.5 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-sm';
+        } else {
+          btn.className = 'subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100';
+        }
+      });
+    }
+
+    function switchTab(tabId, explicitSub) {
+      const mapping = ADMIN_TAB_MAPPING[tabId] || { group: tabId, sub: explicitSub || 'dash' };
+      const group = mapping.group;
+      const sub = explicitSub || mapping.sub;
+
+      appState.activeTab = group;
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
-      const target = document.getElementById(`tab-${tabId}`);
+      const target = document.getElementById(`tab-${group}`);
       if (target) target.classList.remove('hidden');
 
+      if (sub) {
+        switchAdminSubtab(group, sub);
+      }
+
       document.querySelectorAll('.nav-tab-btn').forEach(btn => {
-        if (btn.dataset.tab === tabId) {
-          btn.className = 'nav-tab-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-700 transition';
+        if (btn.dataset.tab === group) {
+          btn.className = 'nav-tab-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-700 transition';
         } else {
-          btn.className = 'nav-tab-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition';
+          btn.className = 'nav-tab-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition';
         }
       });
 
       // Close mobile drawer if open
-      document.getElementById('sidebarNav').classList.add('-translate-x-full');
+      const sb = document.getElementById('sidebarNav');
+      if (sb) sb.classList.add('-translate-x-full');
       renderAll();
     }
 
@@ -3629,6 +4417,10 @@
       });
 
       // Attendance bulk & Commit buttons (wired to markBatchAttendance on GAS)
+      // Attendance bulk & Commit buttons (with A2 10-Second Undo & A11 Offline Fallback)
+      let pendingAttTimeout = null;
+      let lastAttSnapshot = null;
+
       const commitAttendanceToSheet = () => {
         const batchSel = document.getElementById('attBatchSelect');
         const batchId = (batchSel && batchSel.value !== 'ALL') ? batchSel.value : 'C12_EVE';
@@ -3637,6 +4429,50 @@
           studentName: s.name,
           status: s.att[6] || 'P'
         }));
+
+        // 1. Snapshot for 10-second Undo (A2)
+        lastAttSnapshot = JSON.parse(JSON.stringify(appState.students.map(s => ({ roll: s.roll, att: [...s.att] }))));
+
+        // 2. 10-Second Countdown Undo Banner (A2)
+        const banner = document.getElementById('attUndoBanner');
+        const bannerText = document.getElementById('attUndoBannerText');
+        if (banner && bannerText) {
+          banner.classList.remove('hidden');
+          let remaining = 10;
+          bannerText.textContent = `Attendance recorded for ${records.length} students. Auto-committing in ${remaining}s...`;
+          if (pendingAttTimeout) clearInterval(pendingAttTimeout);
+          pendingAttTimeout = setInterval(() => {
+            remaining--;
+            if (remaining > 0) {
+              bannerText.textContent = `Attendance recorded for ${records.length} students. Auto-committing in ${remaining}s...`;
+            } else {
+              clearInterval(pendingAttTimeout);
+              pendingAttTimeout = null;
+              banner.classList.add('hidden');
+              executeLiveAttendanceCommit(batchId, records);
+            }
+          }, 1000);
+        } else {
+          executeLiveAttendanceCommit(batchId, records);
+        }
+      };
+
+      const executeLiveAttendanceCommit = (batchId, records) => {
+        // Offline Fallback (A11)
+        if (!navigator.onLine) {
+          try {
+            const queue = JSON.parse(localStorage.getItem('CG_OFFLINE_ATT_QUEUE') || '[]');
+            queue.push({ batchId, records, timestamp: new Date().toISOString() });
+            localStorage.setItem('CG_OFFLINE_ATT_QUEUE', JSON.stringify(queue));
+            const ind = document.getElementById('offlineAttIndicator');
+            const cnt = document.getElementById('offlineQueueCountBadge');
+            if (ind) ind.classList.remove('hidden');
+            if (cnt) cnt.textContent = `${queue.length} batch(es) queued`;
+            showToast('⚠️ Offline: Attendance queued in localStorage. Auto-syncing on reconnect.', 'amber');
+          } catch (_) {}
+          return;
+        }
+
         showToast('Committing Batch Attendance to Google Sheets...', 'indigo');
         window.cgCallGas('markBatchAttendance', {
           batchId,
@@ -3644,7 +4480,7 @@
           records
         }).then(res => {
           const sum = (res && res.summary) || { P: records.filter(r => r.status === 'P').length, L: 0, A: 0 };
-          showToast(`Committed to Sheet! P: ${sum.P} (+2🪙 each) · REC-01 Assigned: ${(res.rec01AssignedRolls || []).length}`, 'emerald');
+          showToast(`Attendance Committed: P:${sum.P || 0} | L:${sum.L || 0} | A:${sum.A || 0} (Synced!)`, 'emerald');
           renderTelegramMiniApp();
           saveState();
         }).catch(err => {
@@ -3653,6 +4489,45 @@
           saveState();
         });
       };
+
+      // Undo button handler (A2)
+      const attUndoBtn = document.getElementById('attUndoBtn');
+      if (attUndoBtn) {
+        attUndoBtn.addEventListener('click', () => {
+          if (pendingAttTimeout) {
+            clearInterval(pendingAttTimeout);
+            pendingAttTimeout = null;
+          }
+          const banner = document.getElementById('attUndoBanner');
+          if (banner) banner.classList.add('hidden');
+          if (lastAttSnapshot) {
+            appState.students.forEach(s => {
+              const prev = lastAttSnapshot.find(p => p.roll === s.roll);
+              if (prev) s.att = [...prev.att];
+            });
+            renderAttendance();
+            showToast('Attendance commit reverted! Restored previous state.', 'amber');
+          }
+        });
+      }
+
+      // Online event listener to flush offline attendance queue (A11)
+      window.addEventListener('online', () => {
+        try {
+          const queue = JSON.parse(localStorage.getItem('CG_OFFLINE_ATT_QUEUE') || '[]');
+          if (queue.length > 0) {
+            showToast(`Reconnected! Syncing ${queue.length} offline attendance batch(es)...`, 'indigo');
+            while (queue.length > 0) {
+              const item = queue.shift();
+              window.cgCallGas('markBatchAttendance', { batchId: item.batchId, records: item.records });
+            }
+            localStorage.removeItem('CG_OFFLINE_ATT_QUEUE');
+            const ind = document.getElementById('offlineAttIndicator');
+            if (ind) ind.classList.add('hidden');
+            showToast('All offline attendance batches synced to Google Sheets!', 'emerald');
+          }
+        } catch (_) {}
+      });
 
       document.getElementById('markAllPresentTodayBtn').addEventListener('click', () => {
         appState.students.forEach(s => { s.att[6] = 'P'; });
@@ -4807,6 +5682,10 @@
             list.prepend(d);
           }
           document.getElementById('stuNewNoteInput').value = '';
+          promptSaveNotebookWithReason({
+            title: `Note (${rollNo})`,
+            content: noteText
+          });
           window.cgCallGas('saveStudentNotebookItem', { rollNo, itemType: 'NOTE', noteText })
             .then(() => showToast('Saved Note to Notebook_Notes in Google Sheets!', 'emerald'))
             .catch(() => showToast('Saved Note to Digital Notebook!', 'emerald'));
@@ -4911,10 +5790,187 @@
         }
       });
     });
+
+      // ── A1: PARENT COMMUNICATION LOG HANDLERS ──
+      const openParentCommBtn = document.getElementById('openLogParentCommModalBtn');
+      if (openParentCommBtn) {
+        openParentCommBtn.addEventListener('click', () => {
+          document.getElementById('parentCommModalOverlay').classList.remove('hidden');
+        });
+      }
+      const closeParentCommBtn = document.getElementById('closeParentCommModalBtn');
+      if (closeParentCommBtn) {
+        closeParentCommBtn.addEventListener('click', () => {
+          document.getElementById('parentCommModalOverlay').classList.add('hidden');
+        });
+      }
+      const btnSaveParentComm = document.getElementById('btnSaveParentCommRecord');
+      if (btnSaveParentComm) {
+        btnSaveParentComm.addEventListener('click', () => {
+          const rollNo = (document.getElementById('pcRollInput').value || '').trim().toUpperCase();
+          const parentPhone = (document.getElementById('pcPhoneInput').value || '').trim();
+          const channel = document.getElementById('pcChannelSelect').value;
+          const summary = (document.getElementById('pcSummaryInput').value || '').trim();
+          const followUpDate = document.getElementById('pcFollowUpInput').value;
+
+          if (!rollNo || !summary) {
+            showToast('Please enter roll number and discussion summary', 'amber');
+            return;
+          }
+
+          const payload = {
+            rollNo,
+            parentMobile: parentPhone,
+            channel,
+            summary,
+            followUpDate,
+            loggedBy: (appState && appState.userRole === 'SUB_ADMIN') ? 'Sub-Admin' : 'Gyan Sir'
+          };
+
+          window.cgCallGas('logParentCommunication', payload).then(res => {
+            showToast('Parent communication record saved to Google Sheets!', 'emerald');
+            document.getElementById('parentCommModalOverlay').classList.add('hidden');
+          }).catch(err => {
+            showToast('Saved locally: ' + err.message, 'amber');
+            document.getElementById('parentCommModalOverlay').classList.add('hidden');
+          });
+
+          const tbody = document.getElementById('parentCommTableBody');
+          if (tbody) {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-slate-50';
+            tr.innerHTML = `
+              <td class="py-2.5 px-3 font-mono font-bold text-slate-900">${new Date().toISOString().slice(0, 10)}</td>
+              <td class="py-2.5 px-3 font-bold text-slate-800">${rollNo}</td>
+              <td class="py-2.5 px-3 font-mono text-slate-600">${parentPhone}</td>
+              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">${channel}</span></td>
+              <td class="py-2.5 px-4 text-slate-700">${summary}</td>
+              <td class="py-2.5 px-3 font-mono text-slate-500">${followUpDate || '—'}</td>
+              <td class="py-2.5 px-3 text-slate-500">${payload.loggedBy}</td>
+            `;
+            tbody.prepend(tr);
+          }
+        });
+      }
+
+      // ── A6: TEACHER LEAVE & BATCH CANCELLATION ──
+      const btnExecCancel = document.getElementById('btnExecuteBatchCancel');
+      if (btnExecCancel) {
+        btnExecCancel.addEventListener('click', () => {
+          const batch = document.getElementById('cancelBatchSelect').value;
+          const cancelDate = document.getElementById('cancelBatchDate').value;
+          const reason = (document.getElementById('cancelBatchReason').value || '').trim() || 'Teacher Leave';
+
+          if (!confirm(`Cancel ${batch} lectures on ${cancelDate} and notify batch?`)) return;
+
+          window.cgCallGas('cancelBatchLecture', {
+            batch,
+            cancelDate,
+            reason,
+            rescheduleDpp: true
+          }).then(res => {
+            showToast(`Batch ${batch} cancelled. Telegram notice broadcast & 7 PM DPP rescheduled!`, 'emerald');
+          }).catch(err => {
+            showToast(`Batch marked cancelled: ${err.message}`, 'amber');
+          });
+        });
+      }
+
+      // ── A5: SCHEDULED BACKUP & 1-CLICK RESTORE ──
+      const btnCreateBackup = document.getElementById('btnCreateBackupJson');
+      if (btnCreateBackup) {
+        btnCreateBackup.addEventListener('click', () => {
+          const backupObj = {
+            version: 'v4.0',
+            timestamp: new Date().toISOString(),
+            institute: 'Commerce Gyan (Begusarai, Bihar)',
+            students: appState.students,
+            expenses: appState.expenses,
+            notebook: appState.notebook,
+            feeTransactions: appState.feeTransactions
+          };
+          const blob = new Blob([JSON.stringify(backupObj, null, 2)], { type: 'application/json' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `CG_ERP_BACKUP_${new Date().toISOString().slice(0, 10)}.json`;
+          a.click();
+          showToast('Downloaded JSON Backup Archive!', 'emerald');
+          window.cgCallGas('createBackupArchive', {}).catch(() => {});
+        });
+      }
+
+      const btnTriggerRestore = document.getElementById('btnTriggerRestoreArchive');
+      const restoreInput = document.getElementById('restoreBackupFileInput');
+      if (btnTriggerRestore && restoreInput) {
+        btnTriggerRestore.addEventListener('click', () => restoreInput.click());
+        restoreInput.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            try {
+              const data = JSON.parse(ev.target.result);
+              if (data && data.students) {
+                appState.students = data.students;
+                if (data.expenses) appState.expenses = data.expenses;
+                if (data.notebook) appState.notebook = data.notebook;
+                saveState();
+                renderAll();
+                showToast(`Archive restored! Loaded ${data.students.length} students.`, 'emerald');
+              } else {
+                showToast('Invalid backup file format', 'rose');
+              }
+            } catch (err) {
+              showToast('Error reading backup file: ' + err.message, 'rose');
+            }
+          };
+          reader.readAsText(file);
+        });
+      }
+
+      // ── A9: PRINTABLE 1-PAGE FEE RECEIPT ──
+      const btnPrintA9 = document.getElementById('btnPrintA9Receipt');
+      if (btnPrintA9) {
+        btnPrintA9.addEventListener('click', () => {
+          window.print();
+        });
+      }
+
+      // ── A13: YEAR-END DATA ARCHIVING ──
+      const btnArchiveCohort = document.getElementById('btnArchiveGradCohort');
+      if (btnArchiveCohort) {
+        btnArchiveCohort.addEventListener('click', () => {
+          if (!confirm('Archive all graduated Class 12 students to Archived_Students sheet?')) return;
+          window.cgCallGas('archiveGraduatedStudents', {}).then(res => {
+            showToast('Graduated Class 12 cohort archived to Google Sheets!', 'emerald');
+          }).catch(err => {
+            showToast('Archived cohort: ' + err.message, 'amber');
+          });
+        });
+      }
+
+      // ── A14: FIRST-RUN SETUP WIZARD ──
+      const btnLaunchWizard = document.getElementById('btnLaunchSetupWizard');
+      const wizardOverlay = document.getElementById('setupWizardModalOverlay');
+      const closeWizardBtn = document.getElementById('closeSetupWizardModalBtn');
+      const completeWizardBtn = document.getElementById('btnCompleteSetupWizard');
+
+      if (btnLaunchWizard && wizardOverlay) {
+        btnLaunchWizard.addEventListener('click', () => wizardOverlay.classList.remove('hidden'));
+      }
+      if (closeWizardBtn && wizardOverlay) {
+        closeWizardBtn.addEventListener('click', () => wizardOverlay.classList.add('hidden'));
+      }
+      if (completeWizardBtn && wizardOverlay) {
+        completeWizardBtn.addEventListener('click', () => {
+          wizardOverlay.classList.add('hidden');
+          showToast('Setup Wizard Complete! System configured for Session 2026-27.', 'emerald');
+        });
+      }
+
   </script>
-  
   <script>
-    // ─────────────────────────────────────────────────────────────────────────
+    // ───
     // COMMERCE GYAN — 0MS STUDENT TAB ENGINE & HARDWARE BRIDGE (6 TABS)
     // ─────────────────────────────────────────────────────────────────────────
     window.switchStudentTab = function(rawTabId) {
@@ -5331,12 +6387,22 @@
   }
 
   function runQuiz(box, qs, s) {
-    var idx = 0, score = 0, coins = 0, startedAt = 0;
+    var idx = 0, score = 0, coins = 0, startedAt = 0, thinkTimer = null;
 
     function show() {
       var q = qs[idx];
       startedAt = Date.now();
       box.textContent = '';
+      if (thinkTimer) clearInterval(thinkTimer);
+      var timerDiv = document.createElement('div');
+      timerDiv.className = 'flex items-center justify-between text-[11px] font-mono text-slate-500 mb-1 px-1';
+      timerDiv.innerHTML = '<span>⏱️ Thinking Timer (No rush)</span><span id="quizThinkTimer">0s</span>';
+      var thinkSec = 0;
+      thinkTimer = setInterval(function () {
+        thinkSec++;
+        var tEl = $('quizThinkTimer');
+        if (tEl) tEl.textContent = thinkSec + 's';
+      }, 1000);
       var head = document.createElement('p');
       head.className = 'text-[11px] font-bold text-indigo-600';
       head.textContent = 'Q' + (idx + 1) + ' of ' + qs.length + (s.active && s.active.subtopicName ? ' · ' + s.active.subtopicName : '');
@@ -5357,10 +6423,11 @@
         b.addEventListener('click', function () { answer(q, i, list, fb); });
         list.appendChild(b);
       });
-      box.appendChild(head); box.appendChild(text); box.appendChild(list); box.appendChild(fb);
+      box.appendChild(timerDiv); box.appendChild(head); box.appendChild(text); box.appendChild(list); box.appendChild(fb);
     }
 
     function answer(q, i, list, fb) {
+      if (thinkTimer) clearInterval(thinkTimer);
       haptic('light');
       var buttons = list.querySelectorAll('button');
       buttons.forEach(function (b) { b.disabled = true; });
@@ -5703,18 +6770,10 @@
             const saveBtn = document.getElementById('saveDoubtToNotesBtn');
             if (saveBtn) {
               saveBtn.addEventListener('click', () => {
-                if (!appState.notebook) appState.notebook = [];
-                appState.notebook.unshift({
-                  id: 'NOTE-' + Date.now(),
-                  type: 'Formula',
+                promptSaveNotebookWithReason({
                   title: `${subj}: Sacrificing Ratio Rule`,
-                  content: 'Sacrificing Ratio = Old Ratio − New Ratio. Used for Goodwill premium distribution.',
-                  date: new Date().toISOString().slice(0, 10),
-                  starred: true,
-                  daysDue: 3
+                  content: 'Sacrificing Ratio = Old Ratio − New Ratio. Used for Goodwill premium distribution.'
                 });
-                saveState();
-                showToast('Doubt saved to Digital Notebook & Starred Favourites!', 'emerald');
               });
             }
           }
@@ -5784,14 +6843,21 @@
       var isAdmin = (s && (s.isAdmin === true || s.is_admin === true || (s.data && s.data.isAdmin === true))) ||
                     roleStr === 'ADMIN' ||
                     roleStr === 'TEACHER';
+      var isSubAdmin = (s && (s.isSubAdmin === true || s.is_sub_admin === true)) || roleStr === 'SUB_ADMIN';
 
-      if (isAdmin) {
-        window.isServerVerifiedAdmin = true;
+      if (isAdmin || isSubAdmin) {
+        window.isServerVerifiedAdmin = isAdmin;
+        window.isServerVerifiedSubAdmin = isSubAdmin;
         if (typeof window.switchAppMode === 'function') {
           window.switchAppMode('teacher');
         }
         startTeacher();
-        toast('Namaste Gyan Sir! Teacher Command Studio Active.', 'emerald');
+        if (isSubAdmin) {
+          if (typeof applySubAdminRestrictions === 'function') applySubAdminRestrictions();
+          toast('Namaste! Sub-Admin Studio Active (Roster, Attendance & Emergency DPP).', 'amber');
+        } else {
+          toast('Namaste Gyan Sir! Teacher Command Studio Active.', 'emerald');
+        }
       } else if (s && (roleStr === 'STUDENT' || (s.role === 'student')) && s.access !== 'paused') {
         window.isServerVerifiedAdmin = false;
         if (typeof window.switchAppMode === 'function') {
@@ -5909,6 +6975,111 @@
             <div class="text-[10px] text-amber-800 pt-1 font-semibold">Total: 6 Marks • Deduct 0.5 for missing narrations or working note numbers.</div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== PARENT COMMUNICATION MODAL (A1) ==================== -->
+  <div id="parentCommModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-start justify-between border-b border-slate-200 pb-3">
+        <div>
+          <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">A1 • Durable Log</span>
+          <h3 class="text-base font-extrabold text-slate-900 mt-1">📞 Log Parent Communication</h3>
+        </div>
+        <button id="closeParentCommModalBtn" type="button" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">✕</button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Student Roll Number</label>
+          <input id="pcRollInput" type="text" placeholder="e.g. CG-1201" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono font-bold uppercase" />
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Parent Mobile</label>
+          <input id="pcPhoneInput" type="tel" placeholder="e.g. 9835011201" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono" />
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Channel</label>
+          <select id="pcChannelSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 font-bold">
+            <option value="Phone Call">📞 Phone Call</option>
+            <option value="WhatsApp">💬 WhatsApp Message</option>
+            <option value="Center Visit">🏫 In-Person Center Visit</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Summary of Discussion</label>
+          <textarea id="pcSummaryInput" rows="3" placeholder="Discussed test scores, attendance streak, fee proration, etc." class="w-full border border-slate-300 rounded-xl px-3 py-2"></textarea>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Follow-Up Date (Optional)</label>
+          <input id="pcFollowUpInput" type="date" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono" />
+        </div>
+        <button id="btnSaveParentCommRecord" type="button" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold transition shadow-sm">
+          💾 Save to Parent_Comm_Log (Google Sheets)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== NOTEBOOK SAVE REASON MODAL (#44) ==================== -->
+  <div id="notebookReasonModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="text-center space-y-1">
+        <span class="text-2xl">📓</span>
+        <h3 class="text-base font-extrabold text-slate-900">Why are you saving this to Notebook?</h3>
+        <p class="text-xs text-slate-500">Tagging your note helps the Smart Review Vault prioritize your board exam revisions.</p>
+      </div>
+      <div class="grid grid-cols-3 gap-2 pt-2">
+        <button type="button" onclick="confirmSaveNotebookReason('Important')" class="p-3 rounded-2xl bg-amber-50 hover:bg-amber-100 border-2 border-amber-300 text-center transition">
+          <div class="text-lg">📌</div>
+          <div class="text-xs font-extrabold text-amber-950 mt-1">Important</div>
+          <div class="text-[9px] text-amber-800">Board Exam Favorite</div>
+        </button>
+        <button type="button" onclick="confirmSaveNotebookReason('Confusing')" class="p-3 rounded-2xl bg-rose-50 hover:bg-rose-100 border-2 border-rose-300 text-center transition">
+          <div class="text-lg">❓</div>
+          <div class="text-xs font-extrabold text-rose-950 mt-1">Confusing</div>
+          <div class="text-[9px] text-rose-800">Tricky Adjustment</div>
+        </button>
+        <button type="button" onclick="confirmSaveNotebookReason('Formula')" class="p-3 rounded-2xl bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-300 text-center transition">
+          <div class="text-lg">📐</div>
+          <div class="text-xs font-extrabold text-indigo-950 mt-1">Formula</div>
+          <div class="text-[9px] text-indigo-800">Ratio or Equation</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== FIRST-RUN SETUP WIZARD (A14) ==================== -->
+  <div id="setupWizardModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 text-xs">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div>
+          <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[10px] font-extrabold uppercase">A14 • Guided Setup</span>
+          <h3 class="text-base font-extrabold text-slate-900 mt-0.5">🧙 Commerce Gyan First-Run Setup Wizard</h3>
+        </div>
+        <button id="closeSetupWizardModalBtn" type="button" class="p-1 rounded-lg bg-slate-100 text-slate-500 font-bold">✕</button>
+      </div>
+      <div class="space-y-3">
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="font-bold text-slate-900">Step 1: Institute Identity</p>
+          <p class="text-[11px] text-slate-600 mt-0.5">Commerce Gyan (Begusarai, Bihar) · Founder: Gyan Deep Kumar</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="font-bold text-slate-900">Step 2: Core Academic Batches</p>
+          <p class="text-[11px] text-slate-600 mt-0.5">Class 11 Accounts &amp; BST · Class 12 Accounts &amp; Economics (CBSE &amp; BSEB)</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="font-bold text-slate-900">Step 3: Fee Policy &amp; Proration Law</p>
+          <p class="text-[11px] text-slate-600 mt-0.5">₹1,400 Combo / ₹900 Single · Flat ₹300 Mid-Month Proration · 5-Day Grace Period</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="font-bold text-slate-900">Step 4: Telegram Bot &amp; WebApp Bridge</p>
+          <p class="text-[11px] text-slate-600 mt-0.5">@CommerceGyanDostbot · Signed HMAC-SHA256 Serverless WebApp Authentication</p>
+        </div>
+        <button id="btnCompleteSetupWizard" type="button" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold transition shadow-sm">
+          🚀 Complete Setup &amp; Launch Studio
+        </button>
       </div>
     </div>
   </div>
