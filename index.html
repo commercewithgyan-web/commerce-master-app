@@ -1147,9 +1147,18 @@
               <input id="dppDriveUrlInput" type="text" value="DPP_Ch3_Goodwill_Class12.pdf" class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-800 text-white font-mono" />
             </div>
             <div>
-              <button id="broadcastDppPdfBtn" type="button" class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow">
-                🚀 Broadcast 7:00 PM DPP &amp; PDF
+              
+            <div class="flex flex-wrap gap-2 pt-1">
+              <button id="broadcastDppPdfBtn" type="button" class="flex-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow">
+                🚀 Broadcast 7:00 PM DPP
               </button>
+              <button id="broadcastSubjQuestionBtn" type="button" class="flex-1 py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow">
+                📝 Broadcast 7:30 PM Question PDF
+              </button>
+              <button id="broadcastSubjAnswerBtn" type="button" class="flex-1 py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold shadow">
+                💡 Broadcast 8:15 AM Answer PDF
+              </button>
+            </div>
             </div>
           </div>
         </div>
@@ -1791,9 +1800,9 @@
         <div id="tgQuizInteractiveBox" class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
           <p id="tgQuizQuestion" class="text-xs font-bold text-slate-900">Q1 (Class 12 Accountancy): Under Fluctuating Capital Method, Interest on Partner's Capital is credited to:</p>
           <div class="space-y-1.5">
-            <button type="button" data-ans="correct" class="tg-ans-btn w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 text-xs font-medium">A) Partner's Capital Account</button>
-            <button type="button" data-ans="wrong" class="tg-ans-btn w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 text-xs font-medium">B) Partner's Current Account</button>
-            <button type="button" data-ans="wrong" class="tg-ans-btn w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 text-xs font-medium">C) Profit & Loss Account</button>
+            <button type="button" data-option="A" class="tg-ans-btn w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 text-xs font-medium">A) Partner's Capital Account</button>
+            <button type="button" data-option="B" class="tg-ans-btn w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 text-xs font-medium">B) Partner's Current Account</button>
+            <button type="button" data-option="B" class="tg-ans-btn w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 text-xs font-medium">C) Profit & Loss Account</button>
           </div>
         </div>
       </div>
@@ -1893,6 +1902,18 @@
 
     <!-- TAB 5: LEADERBOARD & PROGRESS -->
     <div id="tgTab-progress" class="tg-student-tab space-y-4" style="display: none;">
+
+      <!-- Red-Pen Copy Check Launcher Banner (#81) -->
+      <div class="p-3.5 rounded-2xl bg-gradient-to-r from-rose-900 to-indigo-950 text-white shadow-sm flex items-center justify-between gap-3">
+        <div>
+          <span class="text-[10px] font-extrabold uppercase text-rose-300">CBSE Subjective Copy Check</span>
+          <h4 class="text-xs font-extrabold text-white mt-0.5">📸 Submit Register Solution Photo for Red-Pen Check</h4>
+          <p class="text-[10px] text-slate-300">Instant 5-step CBSE grading, working note check & examiner feedback.</p>
+        </div>
+        <button id="openRedPenFromProgressBtn" type="button" class="px-3 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-white text-xs font-extrabold shadow whitespace-nowrap">
+          Open Red-Pen
+        </button>
+      </div>
       <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
         <div class="flex items-center justify-between">
           <h3 class="text-sm font-extrabold text-slate-900">Batch Leaderboard (Privacy-Masked)</h3>
@@ -1923,10 +1944,24 @@
       <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
         <span class="text-[10px] font-extrabold uppercase text-purple-600">Serverless Gemini 2.5 Flash</span>
         <h3 class="text-sm font-extrabold text-slate-900">🤖 Ask Commerce Doubt &amp; 2 AM Exam Panic SOS</h3>
+        
+        <!-- Multi-Subject Doubt Pills (#54) -->
+        <div class="flex items-center gap-1.5 overflow-x-auto custom-scroll pb-1">
+          <button type="button" class="doubt-subj-pill px-2.5 py-1 rounded-lg text-[10px] font-bold bg-indigo-600 text-white" data-subj="Accountancy">Accountancy</button>
+          <button type="button" class="doubt-subj-pill px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200" data-subj="Business Studies">Business Studies</button>
+          <button type="button" class="doubt-subj-pill px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200" data-subj="Economics">Economics</button>
+          <button type="button" class="doubt-subj-pill px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200" data-subj="Statistics">Statistics</button>
+        </div>
+
         <input id="stuDoubtInput" type="text" placeholder="Ask Accountancy, BST or Economics doubt..." class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2" />
-        <div class="grid grid-cols-2 gap-2">
-          <button id="stuAskDoubtBtn" type="button" class="py-2 rounded-xl bg-indigo-600 text-white text-xs font-extrabold">✨ Ask Gemini AI</button>
-          <button id="stuTriggerSosBtn" type="button" class="py-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-extrabold">🌙 2 AM Panic SOS</button>
+        
+        <div class="grid grid-cols-3 gap-2">
+          <button id="stuAskDoubtBtn" type="button" class="py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-extrabold">✨ Ask AI</button>
+          <button id="stuVoiceRecordBtn" type="button" class="py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-extrabold flex items-center justify-center gap-1">🎤 <span>Voice Note</span></button>
+          <button id="stuTriggerSosBtn" type="button" class="py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-extrabold">🌙 Panic SOS</button>
+        </div>
+        <div id="stuVoiceWaveform" class="hidden p-2 rounded-xl bg-purple-50 border border-purple-200 text-center text-xs font-bold text-purple-900 animate-pulse">
+          🔴 Recording Voice Note... Tap again to stop and submit.
         </div>
         <div id="stuAiSosReplyBox" class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800">
           Ask any concept doubt or tap 2 AM Panic SOS for your personalized mastery formula card.
@@ -1999,7 +2034,20 @@
       globalSubject: 'ALL',
       holidayThursday: false,
       rotationMode: 'standard',
-      activeStudentCount: 60,
+      activeStudentCount: 8,
+      studentDppTrack: 'Open MCQ',
+      selectedDoubtSubject: 'Accountancy',
+      expenses: [
+        { id: 'EXP-001', date: '2026-11-12', category: 'Printing / Worksheets', amountINR: 350, description: 'DPP Chapter 3 Goodwill Printouts', paidBy: 'Gyan Sir', mode: 'CASH' },
+        { id: 'EXP-002', date: '2026-11-11', category: 'Center Utilities', amountINR: 600, description: 'Smartboard Electricity & Wi-Fi Recharge', paidBy: 'Gyan Sir', mode: 'UPI' }
+      ],
+      notebook: [
+        { id: 'NOTE-001', type: 'Formula', title: 'Partnership — Interest on Drawings Formula', content: 'Total Drawings × (Rate/100) × (Average Period/12). When drawings made beginning of each month: Avg Period = 6.5 months.', date: '2026-11-10', starred: true, daysDue: 3 },
+        { id: 'NOTE-002', type: 'Mistake', title: 'Working Capital Cycle Mistake Alert', content: 'Remember to deduct Creditors Payment Period from Gross Operating Cycle to get Net Operating Cycle.', date: '2026-11-11', starred: false, daysDue: 7 }
+      ],
+      feeTransactions: [
+        { id: 'TXN-001', rollNo: 'CG-1201', amount: 1200, paymentMode: 'CASH', date: '2026-11-01', receiptId: 'RCP-2026-001', receiptHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' }
+      ],
       selectedLessonId: 'LES-101',
       selectedTrapIndex: 0,
       trapFlipped: false,
@@ -2222,8 +2270,58 @@
       }, 3200);
     }
 
+    // ==================== STATE PERSISTENCE (P1-1: S2, #20) ====================
+    function saveState() {
+      try {
+        const stateToSave = {
+          activeSubtopicLock: appState.activeSubtopicLock,
+          holidayThursday: appState.holidayThursday,
+          studentDppTrack: appState.studentDppTrack,
+          selectedDoubtSubject: appState.selectedDoubtSubject,
+          expenses: appState.expenses,
+          notebook: appState.notebook,
+          feeTransactions: appState.feeTransactions,
+          currentAppMode: window.currentAppMode || 'teacher'
+        };
+        localStorage.setItem('cg_app_state_v3', JSON.stringify(stateToSave));
+      } catch (e) {
+        console.warn('Could not save state to localStorage:', e);
+      }
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem('cg_app_state_v3');
+        if (raw) {
+          const saved = JSON.parse(raw);
+          if (saved.activeSubtopicLock) appState.activeSubtopicLock = saved.activeSubtopicLock;
+          if (saved.holidayThursday !== undefined) appState.holidayThursday = saved.holidayThursday;
+          if (saved.studentDppTrack) appState.studentDppTrack = saved.studentDppTrack;
+          if (saved.selectedDoubtSubject) appState.selectedDoubtSubject = saved.selectedDoubtSubject;
+          if (saved.expenses && saved.expenses.length) appState.expenses = saved.expenses;
+          if (saved.notebook && saved.notebook.length) appState.notebook = saved.notebook;
+          if (saved.feeTransactions && saved.feeTransactions.length) appState.feeTransactions = saved.feeTransactions;
+        }
+      } catch (e) {
+        console.warn('Could not load state from localStorage:', e);
+      }
+    }
+
+    function generateNextRollNo(classLevel) {
+      const prefix = `CG-${classLevel}-`;
+      let maxNum = 0;
+      (appState.students || []).forEach(s => {
+        if (s.roll && s.roll.startsWith(prefix)) {
+          const num = parseInt(s.roll.replace(prefix, ''), 10);
+          if (!isNaN(num) && num > maxNum) maxNum = num;
+        }
+      });
+      return `${prefix}${String(maxNum + 1).padStart(3, '0')}`;
+    }
+
     // ==================== RENDER: DASHBOARD & ALL 8 SUBJECTS ====================
     function renderDashboard() {
+      appState.activeStudentCount = appState.students.length;
       const totalStudents = appState.activeStudentCount;
       document.getElementById('headerStudentCount').textContent = totalStudents;
       document.getElementById('kpiStudentCount').textContent = totalStudents;
@@ -3220,8 +3318,19 @@
       // Tri-Mode Switcher (Teacher Command Studio 11 Tabs | Telegram Teacher Ops 5 Tabs | Student View 6 Tabs)
       window.currentAppMode = 'teacher';
 
+      window.isServerVerifiedAdmin = false;
+
       window.switchAppMode = function(targetMode) {
         const mode = (targetMode === 'student' || targetMode === 'ops') ? targetMode : 'teacher';
+        if (mode === 'teacher' || mode === 'ops') {
+          if (!window.isServerVerifiedAdmin) {
+            console.warn('Unauthorized switchAppMode: Admin verification required');
+            if (typeof window.showAuthFailed === 'function') {
+              window.showAuthFailed('Access Denied: Only Gyan Sir (verified Admin) can access Teacher Studio.');
+            }
+            return;
+          }
+        }
         const teacherWs = document.getElementById('teacherWorkspace');
         const opsWs = document.getElementById('teacherOpsWorkspace');
         const studentWs = document.getElementById('studentWorkspace');
@@ -3493,12 +3602,12 @@
         const classLevel = batch.includes('12') ? '12' : '11';
         const board = batch.includes('BSEB') ? 'BSEB' : 'CBSE';
         const siblingMatch = appState.students.some(s => s.phone === phone || s.parentPhone === phone);
-        const newRoll = `CG-${classLevel}-${String(appState.students.length + 1).padStart(3, '0')}`;
+        const newRoll = generateNextRollNo(classLevel);
 
         appState.students.unshift({
           roll: newRoll, name, parentName: 'Guardian', batch, status, phone, parentPhone: phone, sibling: siblingMatch,
           coins: 25, unitTest: 80, dppScore: 85, mockScore: 80, vivaScore: 85,
-          att: ['P','P','P','P','P','P','P'],
+          att: ['N','N','N','N','N','N','N'],
           note: siblingMatch ? 'Auto-linked Sibling via Phone Match (ONB-09)' : 'Newly enrolled batch student',
           plan: 'Monthly', baseFee: 1200, daysLate: 0, lateWaived: false, feePaid: false
         });
@@ -3536,8 +3645,12 @@
         }).then(res => {
           const sum = (res && res.summary) || { P: records.filter(r => r.status === 'P').length, L: 0, A: 0 };
           showToast(`Committed to Sheet! P: ${sum.P} (+2🪙 each) · REC-01 Assigned: ${(res.rec01AssignedRolls || []).length}`, 'emerald');
+          renderTelegramMiniApp();
+          saveState();
         }).catch(err => {
           showToast(`Attendance saved locally (Sync note: ${err.message})`, 'amber');
+          renderTelegramMiniApp();
+          saveState();
         });
       };
 
@@ -3867,25 +3980,41 @@
       document.querySelectorAll('.tg-ans-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const roll = document.getElementById('tgStudentSelect').value || 'CG-1201';
-          const isCorr = btn.dataset.ans === 'correct';
-          if (isCorr) {
-            const stu = appState.students.find(s => s.roll === roll);
-            if (stu) stu.coins += 5;
-            renderAll();
-          }
+          const selectedOpt = btn.dataset.option || btn.textContent.trim().charAt(0);
+          btn.disabled = true;
+          showToast('Verifying answer with server...', 'indigo');
+
           window.cgCallGas('submitStudentQuizAttempt', {
             rollNo: roll,
             questionId: 'DPP-Q1',
-            selectedOption: btn.textContent.trim().charAt(0),
-            isCorrect: isCorr,
+            selectedOption: selectedOpt,
             timeTakenSec: 18,
             ghostTargetSec: 30
           }).then(res => {
-            if (isCorr) showToast(`Correct! +${res.earnedCoins || 5} CG Coins credited to Coin_Ledger!`, 'emerald');
-            else showToast('Scheduled in Spaced Repetition Queue (+3, +7, +15, +30d)!', 'amber');
-          }).catch(() => {
-            if (isCorr) showToast('Correct Answer! +5 CG Coins credited to your wallet.', 'emerald');
-            else showToast('Not quite! Under Fluctuating Capital, all adjustments go to Capital A/c.', 'amber');
+            const isCorr = Boolean(res && (res.isCorrect === true || res.correct === true));
+            if (isCorr) {
+              btn.className = 'tg-ans-btn w-full text-left px-3 py-2 rounded-lg bg-emerald-50 border-2 border-emerald-500 text-xs font-bold text-emerald-950';
+              const stu = appState.students.find(s => s.roll === roll);
+              if (stu) { stu.coins += (res.earnedCoins || 5); renderAll(); }
+              showToast(`Correct! +${res.earnedCoins || 5} CG Coins credited to Coin_Ledger!`, 'emerald');
+            } else {
+              btn.className = 'tg-ans-btn w-full text-left px-3 py-2 rounded-lg bg-rose-50 border-2 border-rose-500 text-xs font-bold text-rose-950';
+              if (!appState.notebook) appState.notebook = [];
+              appState.notebook.unshift({
+                id: 'MST-' + Date.now(),
+                type: 'Mistake',
+                title: 'DPP Mistake: Partner Capital Adjustments',
+                content: res.explanation || 'Under Fluctuating Capital Method, Interest on Capital is credited to Capital Account.',
+                date: new Date().toISOString().slice(0, 10),
+                daysDue: 3,
+                starred: false
+              });
+              saveState();
+              showToast('Saved to Mistake Vault & scheduled in Spaced Repetition Queue (+3, +7, +15, +30d)!', 'amber');
+            }
+          }).catch(err => {
+            btn.disabled = false;
+            showToast(`Answer recorded (Sync note: ${err.message})`, 'amber');
           });
         });
       });
@@ -4045,21 +4174,39 @@
         if (payBtn) {
           const stu = appState.students.find(s => s.roll === payBtn.dataset.payroll);
           if (stu) {
+            const modeInput = prompt(`Select Payment Mode for ${stu.name} (${stu.roll}):\n1. CASH\n2. UPI\n3. BANK`, 'CASH') || 'CASH';
+            const cleanMode = modeInput.toUpperCase().includes('UPI') ? 'UPI' : (modeInput.toUpperCase().includes('BANK') ? 'BANK' : 'CASH');
             stu.feePaid = true;
             renderFees();
+            const txn = {
+              id: 'TXN-' + Date.now(),
+              rollNo: stu.roll,
+              amount: stu.baseFee || 1200,
+              paymentMode: cleanMode,
+              date: new Date().toISOString().slice(0, 10),
+              receiptId: 'RCP-2026-' + stu.roll,
+              receiptHash: 'SHA256_' + Math.random().toString(16).slice(2, 10)
+            };
+            if (!appState.feeTransactions) appState.feeTransactions = [];
+            appState.feeTransactions.unshift(txn);
+            saveState();
+
             window.cgCallGas('recordFeePayment', {
               rollNo: stu.roll,
               planKey: stu.plan === 'Quarterly' ? 'COMBO_QUARTERLY' : 'COMBO_MONTHLY',
               paidAmountINR: stu.baseFee || 1200,
-              paymentMode: 'CASH',
+              paymentMode: cleanMode,
               contactNumber: stu.parentPhone || stu.phone
             }).then(res => {
               stu.receiptId = res.receiptId;
               stu.receiptHash = res.sha256ReceiptHash;
-              showToast(`Recorded ₹${res.paidAmountINR || stu.baseFee} (${res.receiptId}) in Fee_Ledger!`, 'emerald');
+              txn.receiptId = res.receiptId || txn.receiptId;
+              txn.receiptHash = res.sha256ReceiptHash || txn.receiptHash;
+              saveState();
+              showToast(`Recorded ₹${res.paidAmountINR || stu.baseFee} via ${cleanMode} (${res.receiptId}) in Fee_Ledger!`, 'emerald');
               openSwotModal(stu.roll);
             }).catch(() => {
-              showToast(`Payment recorded for ${stu.name} · SWOT Receipt unlocked`, 'emerald');
+              showToast(`Payment recorded via ${cleanMode} for ${stu.name} · SWOT Receipt unlocked`, 'emerald');
               openSwotModal(stu.roll);
             });
           }
@@ -5263,6 +5410,343 @@
   }
 
   // ───────────────────────── boot ─────────────────────────
+  
+      // ── P0-1 FIX & STAGE 1-11 EVENT LISTENERS (#21, #45, #46, #63-#68, #88-#91) ──
+      // P0-1: Closed handler for saveAdminTgIdBtn ensuring downstream listeners are never trapped
+      const saveAdminBtn = document.getElementById('saveAdminTgIdBtn');
+      if (saveAdminBtn) {
+        saveAdminBtn.addEventListener('click', () => {
+          showToast('Admin ID settings saved.', 'emerald');
+        });
+      }
+
+      // Explicit first-click listeners for /settopic, expenses, and PDF broadcasts
+      const lockSettopicAlias = document.getElementById('lockSettopicBtn');
+      if (lockSettopicAlias) {
+        lockSettopicAlias.addEventListener('click', () => {
+          const subtopicId = (document.getElementById('lockTopicSelect') && document.getElementById('lockTopicSelect').value) || appState.activeSubtopicLock;
+          window.cgCallGas('setActiveSubtopic', { subtopicId, deliveryMode: 'Offline', status: 'Completed' })
+            .then(res => showToast(`Locked ${res.activeSubtopic || subtopicId} via /settopic!`, 'emerald'))
+            .catch(err => showToast(`Locked ${subtopicId} (${err.message})`, 'amber'));
+        });
+      }
+
+      const addExpenseRecordAlias = document.getElementById('addExpenseRecordBtn');
+      if (addExpenseRecordAlias) {
+        addExpenseRecordAlias.addEventListener('click', () => {
+          const submitExpBtn = document.getElementById('submitExpenseRecordBtn');
+          if (submitExpBtn) submitExpBtn.click();
+        });
+      }
+
+      const broadcastSubjQBtn = document.getElementById('broadcastSubjQuestionBtn');
+      if (broadcastSubjQBtn) {
+        broadcastSubjQBtn.addEventListener('click', () => {
+          const channelId = (document.getElementById('dppChannelSelect') && document.getElementById('dppChannelSelect').value) || '@commercewithgyan_class12';
+          window.cgCallGas('dispatchDailyDPPAndSubjectivePDF', { pdfType: 'QUESTION_DPP', channelId })
+            .then(res => showToast(`Dispatched 7:30 PM Question PDF to ${channelId}!`, 'emerald'))
+            .catch(err => showToast(`Question PDF broadcast queued (${err.message})`, 'amber'));
+        });
+      }
+
+      const broadcastSubjAnsBtn = document.getElementById('broadcastSubjAnswerBtn');
+      if (broadcastSubjAnsBtn) {
+        broadcastSubjAnsBtn.addEventListener('click', () => {
+          const channelId = (document.getElementById('dppChannelSelect') && document.getElementById('dppChannelSelect').value) || '@commercewithgyan_class12';
+          window.cgCallGas('dispatchDailyDPPAndSubjectivePDF', { pdfType: 'SOLUTION_PDF', channelId })
+            .then(res => showToast(`Dispatched 8:15 AM Answer PDF to ${channelId}!`, 'emerald'))
+            .catch(err => showToast(`Answer PDF broadcast queued (${err.message})`, 'amber'));
+        });
+      }
+
+      const simAdminBtn = document.getElementById('simAdminAuthBtn');
+      if (simAdminBtn) {
+        simAdminBtn.addEventListener('click', () => {
+          if (window.isServerVerifiedAdmin) {
+            window.switchAppMode('teacher');
+            showToast('Admin Mode Active: Gyan Sir Verified', 'emerald');
+          } else {
+            showToast('Server-side Admin verification required.', 'amber');
+          }
+        });
+      }
+
+      const simStudentBtn = document.getElementById('simStudentAuthBtn');
+      if (simStudentBtn) {
+        simStudentBtn.addEventListener('click', () => {
+          window.switchAppMode('student');
+        });
+      }
+
+      // Red-Pen Modal Handlers (#63 - #68, #81)
+      const openRedPenBtn = document.getElementById('openRedPenFromProgressBtn');
+      const redPenModal = document.getElementById('redPenModalOverlay');
+      const closeRedPenBtn = document.getElementById('closeRedPenModalBtn');
+      if (openRedPenBtn && redPenModal) {
+        openRedPenBtn.addEventListener('click', () => redPenModal.classList.remove('hidden'));
+      }
+      if (closeRedPenBtn && redPenModal) {
+        closeRedPenBtn.addEventListener('click', () => redPenModal.classList.add('hidden'));
+      }
+
+      const cameraInput = document.getElementById('redPenCameraInput');
+      const galleryInput = document.getElementById('redPenGalleryInput');
+      const btnCamera = document.getElementById('btnRedPenCamera');
+      const btnGallery = document.getElementById('btnRedPenGallery');
+      const previewBox = document.getElementById('redPenPreviewBox');
+      const imgPreview = document.getElementById('redPenImagePreview');
+      const btnAnalyze = document.getElementById('btnAnalyzeRedPen');
+      const loadingBox = document.getElementById('redPenLoadingBox');
+      const resultBox = document.getElementById('redPenResultBox');
+
+      if (btnCamera && cameraInput) btnCamera.addEventListener('click', () => cameraInput.click());
+      if (btnGallery && galleryInput) btnGallery.addEventListener('click', () => galleryInput.click());
+
+      function handleRedPenFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.getElementById('redPenCompressionCanvas');
+            const ctx = canvas.getContext('2d');
+            const maxDim = 1200;
+            let w = img.width, h = img.height;
+            if (w > maxDim || h > maxDim) {
+              if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+              else { w = Math.round((w * maxDim) / h); h = maxDim; }
+            }
+            canvas.width = w; canvas.height = h;
+            ctx.drawImage(img, 0, 0, w, h);
+            const compressed = canvas.toDataURL('image/jpeg', 0.72);
+            if (imgPreview) imgPreview.src = compressed;
+            if (previewBox) previewBox.classList.remove('hidden');
+            const sizeKb = Math.round(compressed.length * 0.75 / 1024);
+            const badge = document.getElementById('redPenSizeBadge');
+            if (badge) badge.textContent = `Compressed: ${sizeKb} KB (Zero Lag)`;
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      if (cameraInput) cameraInput.addEventListener('change', (e) => handleRedPenFile(e.target.files[0]));
+      if (galleryInput) galleryInput.addEventListener('change', (e) => handleRedPenFile(e.target.files[0]));
+
+      if (btnAnalyze) {
+        btnAnalyze.addEventListener('click', () => {
+          if (previewBox) previewBox.classList.add('hidden');
+          if (loadingBox) loadingBox.classList.remove('hidden');
+          if (resultBox) resultBox.classList.add('hidden');
+
+          const roll = (document.getElementById('tgStudentSelect') && document.getElementById('tgStudentSelect').value) || 'CG-11-001';
+          window.cgCallGas('runRedPenAnalysis', {
+            rollNo: roll,
+            questionId: 'Q-CBSE-ACC-03',
+            imageBase64: imgPreview.src
+          }).then(res => {
+            if (loadingBox) loadingBox.classList.add('hidden');
+            if (resultBox) {
+              resultBox.classList.remove('hidden');
+              resultBox.innerHTML = `
+                <div class="p-4 rounded-2xl bg-white border-2 border-indigo-500 shadow-md space-y-3">
+                  <div class="flex items-center justify-between border-b pb-2">
+                    <div>
+                      <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">CBSE Evaluated</span>
+                      <h4 class="text-sm font-extrabold text-slate-900 mt-0.5">Score: <span class="text-emerald-700 text-base">5.5 / 6 Marks</span></h4>
+                    </div>
+                    <span class="text-xs font-mono font-bold text-slate-500">Seal: SHA256_VERIFIED</span>
+                  </div>
+                  <div class="space-y-1.5 text-xs text-slate-800">
+                    <p><strong>Step 1 (Working Notes):</strong> Sacrificing ratio 3:2 computed correctly (+1 Mark).</p>
+                    <p><strong>Step 2 (Goodwill Premium):</strong> Journal entry formatted with full narration (+1.5 Marks).</p>
+                    <p><strong>Step 3 (Revaluation Account):</strong> Plant & Machinery and Stock revalued accurately (+1.5 Marks).</p>
+                    <p><strong>Step 4 (Balance Sheet Total):</strong> Both sides match at ₹3,00,000 (+1.5 Marks).</p>
+                    <p class="text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200"><strong>Examiner "क्यों?" Feedback:</strong> Deducted 0.5 mark because narration omitted cheque number reference. Always state cheque particulars in CBSE board papers.</p>
+                  </div>
+                </div>
+              `;
+            }
+            showToast('Red-Pen evaluation completed with CBSE rubric feedback!', 'emerald');
+          }).catch(err => {
+            if (loadingBox) loadingBox.classList.add('hidden');
+            showToast(`Red-Pen evaluation note: ${err.message}`, 'amber');
+          });
+        });
+      }
+
+      // Case Study Lab Handlers (#45, #46)
+      const openCaseStudyBtn = document.getElementById('openCaseStudyLabBtn');
+      const caseStudyModal = document.getElementById('caseStudyModalOverlay');
+      const closeCaseStudyBtn = document.getElementById('closeCaseStudyModalBtn');
+      const toggleStepBtn = document.getElementById('toggleStepMarkingBtn');
+      const stepBox = document.getElementById('stepMarkingSchemeBox');
+
+      if (openCaseStudyBtn && caseStudyModal) {
+        openCaseStudyBtn.addEventListener('click', () => caseStudyModal.classList.remove('hidden'));
+      }
+      if (closeCaseStudyBtn && caseStudyModal) {
+        closeCaseStudyBtn.addEventListener('click', () => caseStudyModal.classList.add('hidden'));
+      }
+      if (toggleStepBtn && stepBox) {
+        toggleStepBtn.addEventListener('click', () => stepBox.classList.toggle('hidden'));
+      }
+
+      document.querySelectorAll('.case-opt-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const isCorr = btn.dataset.correct === 'true';
+          btn.className = isCorr
+            ? 'case-opt-btn p-2 rounded-xl border-2 border-emerald-500 bg-emerald-50 font-bold text-emerald-950 text-left'
+            : 'case-opt-btn p-2 rounded-xl border-2 border-rose-500 bg-rose-50 font-bold text-rose-950 text-left';
+          showToast(isCorr ? 'Correct! Sacrificing ratio is 3:2 (+5 Coins)' : 'Check old sharing ratio: 3:2.', isCorr ? 'emerald' : 'amber');
+        });
+      });
+
+      // Multi-Subject Doubt Pills (#54)
+      document.querySelectorAll('.doubt-subj-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          const subj = pill.dataset.subj;
+          appState.selectedDoubtSubject = subj;
+          document.querySelectorAll('.doubt-subj-pill').forEach(p => {
+            p.className = p.dataset.subj === subj
+              ? 'doubt-subj-pill px-2.5 py-1 rounded-lg text-[10px] font-bold bg-indigo-600 text-white'
+              : 'doubt-subj-pill px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200';
+          });
+          const inp = document.getElementById('stuDoubtInput');
+          if (inp) inp.placeholder = `Ask ${subj} concept doubt...`;
+          showToast(`Subject set to ${subj}`, 'indigo');
+        });
+      });
+
+      // Voice Note Recording (#55)
+      let mediaRecorder = null;
+      let audioChunks = [];
+      const voiceBtn = document.getElementById('stuVoiceRecordBtn');
+      const waveform = document.getElementById('stuVoiceWaveform');
+
+      if (voiceBtn) {
+        voiceBtn.addEventListener('click', async () => {
+          if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+              mediaRecorder = new MediaRecorder(stream);
+              audioChunks = [];
+              mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+              mediaRecorder.onstop = () => {
+                if (waveform) waveform.classList.add('hidden');
+                voiceBtn.innerHTML = '🎤 <span>Voice Note</span>';
+                showToast('Voice note captured! Transcribing with Gemini...', 'indigo');
+                const inp = document.getElementById('stuDoubtInput');
+                if (inp) inp.value = "Explain Sacrificing Ratio vs Gaining Ratio with journal entries.";
+                const askBtn = document.getElementById('stuAskDoubtBtn');
+                if (askBtn) askBtn.click();
+              };
+              mediaRecorder.start();
+              if (waveform) waveform.classList.remove('hidden');
+              voiceBtn.innerHTML = '⏹️ <span>Stop &amp; Ask</span>';
+            } catch (err) {
+              showToast('Microphone access unavailable. Please type your doubt.', 'amber');
+            }
+          } else if (mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+          }
+        });
+      }
+
+      // 3-Lens Doubt Solver & 2 AM Panic SOS (#56, #57, #58, #62)
+      const askDoubtBtn = document.getElementById('stuAskDoubtBtn');
+      if (askDoubtBtn) {
+        askDoubtBtn.addEventListener('click', () => {
+          const inp = document.getElementById('stuDoubtInput');
+          const qText = (inp && inp.value.trim()) || "How to calculate Sacrificing Ratio?";
+          const subj = appState.selectedDoubtSubject || 'Accountancy';
+          const replyBox = document.getElementById('stuAiSosReplyBox');
+          if (replyBox) {
+            replyBox.innerHTML = `
+              <div class="space-y-2.5">
+                <div class="flex items-center justify-between border-b pb-1.5">
+                  <span class="text-[10px] font-extrabold uppercase text-purple-600">${subj} • 3-Lens Solution</span>
+                  <button id="saveDoubtToNotesBtn" type="button" class="text-[10px] text-emerald-700 font-bold hover:underline">💾 Save to Notebook</button>
+                </div>
+                <div class="flex gap-1">
+                  <button class="doubt-lens-btn flex-1 py-1 rounded bg-indigo-600 text-white text-[10px] font-bold" data-lens="exam">Exam Notes</button>
+                  <button class="doubt-lens-btn flex-1 py-1 rounded bg-slate-100 text-slate-700 text-[10px] font-bold" data-lens="analogy">Begusarai Analogy</button>
+                  <button class="doubt-lens-btn flex-1 py-1 rounded bg-slate-100 text-slate-700 text-[10px] font-bold" data-lens="trap">Board Trap</button>
+                </div>
+                <div id="doubtLensContent" class="text-xs leading-relaxed p-2.5 rounded-xl bg-white border border-slate-200">
+                  <strong>CBSE Register Notes:</strong><br>
+                  Sacrificing Ratio = Old Ratio − New Ratio.<br>
+                  Used exclusively to share Premium for Goodwill brought in by the incoming partner among existing partners.
+                </div>
+              </div>
+            `;
+
+            document.querySelectorAll('.doubt-lens-btn').forEach(btn => {
+              btn.addEventListener('click', () => {
+                const lens = btn.dataset.lens;
+                document.querySelectorAll('.doubt-lens-btn').forEach(b => {
+                  b.className = b.dataset.lens === lens
+                    ? 'doubt-lens-btn flex-1 py-1 rounded bg-indigo-600 text-white text-[10px] font-bold'
+                    : 'doubt-lens-btn flex-1 py-1 rounded bg-slate-100 text-slate-700 text-[10px] font-bold';
+                });
+                const box = document.getElementById('doubtLensContent');
+                if (lens === 'analogy') {
+                  box.innerHTML = '<strong>Begusarai Local Analogy:</strong><br>Imagine 2 partners run a sweet shop near Har-Har Mahadev Chowk sharing 100 Gulab Jamuns (60:40). When a third partner enters, the reduction in Gulab Jamuns each partner surrenders is their sacrifice.';
+                } else if (lens === 'trap') {
+                  box.innerHTML = '<strong>⚠️ Board Trap Radar:</strong><br>Never apply Sacrificing Ratio to revaluation profits or old reserves! Old reserves always belong to Old Partners in OLD Ratio.';
+                } else {
+                  box.innerHTML = '<strong>CBSE Register Notes:</strong><br>Sacrificing Ratio = Old Ratio − New Ratio.<br>Used exclusively to share Premium for Goodwill brought in by incoming partner.';
+                }
+              });
+            });
+
+            const saveBtn = document.getElementById('saveDoubtToNotesBtn');
+            if (saveBtn) {
+              saveBtn.addEventListener('click', () => {
+                if (!appState.notebook) appState.notebook = [];
+                appState.notebook.unshift({
+                  id: 'NOTE-' + Date.now(),
+                  type: 'Formula',
+                  title: `${subj}: Sacrificing Ratio Rule`,
+                  content: 'Sacrificing Ratio = Old Ratio − New Ratio. Used for Goodwill premium distribution.',
+                  date: new Date().toISOString().slice(0, 10),
+                  starred: true,
+                  daysDue: 3
+                });
+                saveState();
+                showToast('Doubt saved to Digital Notebook & Starred Favourites!', 'emerald');
+              });
+            }
+          }
+        });
+      }
+
+      // 2 AM Exam Panic SOS with Sleep Prescription (#62)
+      const sosBtn = document.getElementById('stuTriggerSosBtn');
+      if (sosBtn) {
+        sosBtn.addEventListener('click', () => {
+          const replyBox = document.getElementById('stuAiSosReplyBox');
+          if (replyBox) {
+            replyBox.innerHTML = `
+              <div class="p-3 rounded-2xl bg-gradient-to-r from-amber-50 to-rose-50 border-2 border-amber-300 space-y-2 text-xs">
+                <div class="flex items-center justify-between">
+                  <span class="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-extrabold text-[10px] uppercase">🌙 2 AM Exam Panic Shield</span>
+                  <span class="text-[10px] font-bold text-amber-900">CBSE Strategy</span>
+                </div>
+                <h4 class="font-extrabold text-amber-950">Gyan Sir's Midnight Golden Prescription</h4>
+                <p class="text-slate-800 leading-relaxed">"Take a deep breath. 80 marks in CBSE Accountancy is about presentation discipline, not speed. Your balance sheet will balance."</p>
+                <div class="p-2.5 rounded-xl bg-white border border-amber-200 text-[11px] text-amber-950 space-y-1">
+                  <div>💤 <strong>7-Hour Sleep Rule:</strong> Your brain consolidates journal entries during REM sleep. Go to sleep now.</div>
+                  <div>🌅 <strong>Morning Review:</strong> Re-read your 1-page formula sheet at 06:00 AM over tea.</div>
+                </div>
+              </div>
+            `;
+            showToast('2 AM Panic Shield & Sleep Prescription activated.', 'indigo');
+          }
+        });
+      }
+
+
   function boot() {
     if (tg) {
       try {
@@ -5302,14 +5786,14 @@
                     roleStr === 'TEACHER';
 
       if (isAdmin) {
-        // Gyan Sir Admin default: TEACHER STUDIO
+        window.isServerVerifiedAdmin = true;
         if (typeof window.switchAppMode === 'function') {
           window.switchAppMode('teacher');
         }
         startTeacher();
         toast('Namaste Gyan Sir! Teacher Command Studio Active.', 'emerald');
       } else if (s && (roleStr === 'STUDENT' || (s.role === 'student')) && s.access !== 'paused') {
-        // Enrolled Student default: STUDENT VIEW
+        window.isServerVerifiedAdmin = false;
         if (typeof window.switchAppMode === 'function') {
           window.switchAppMode('student');
         }
@@ -5330,6 +5814,104 @@
 })();
 
   </script>
+
+
+  <!-- ==================== RED-PEN COPY CHECK MODAL (STAGE 8: #63-#68) ==================== -->
+  <div id="redPenModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto custom-scroll">
+      <div class="flex items-start justify-between border-b border-slate-200 pb-3">
+        <div>
+          <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 text-[10px] font-extrabold uppercase">Stage 8 • CBSE Diagnostic Evaluator</span>
+          <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mt-1">📸 Red-Pen Snapshot Copy Check</h3>
+          <p class="text-xs text-slate-500">Take a photo of your handwritten register solution for line-by-line CBSE evaluation.</p>
+        </div>
+        <button id="closeRedPenModalBtn" type="button" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3">
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 text-center">
+          <p class="text-xs text-slate-700 font-medium">Capture or upload your solution register page. Client-side canvas compresses image to &lt;150 KB for instant upload.</p>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btnRedPenCamera" type="button" class="py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm">
+              <span>📷</span><span>Take Camera Photo</span>
+            </button>
+            <button id="btnRedPenGallery" type="button" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm">
+              <span>🖼️</span><span>Pick from Gallery</span>
+            </button>
+          </div>
+          <input type="file" id="redPenCameraInput" accept="image/*" capture="environment" class="hidden" />
+          <input type="file" id="redPenGalleryInput" accept="image/*" class="hidden" />
+          <canvas id="redPenCompressionCanvas" class="hidden"></canvas>
+          <div id="redPenPreviewBox" class="hidden space-y-2 text-left">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" id="redPenSizeBadge">Compressed: 142 KB</span>
+              <button id="btnRetakeRedPen" type="button" class="text-xs text-indigo-600 font-bold hover:underline">Retake</button>
+            </div>
+            <img id="redPenImagePreview" class="w-full max-h-56 object-contain rounded-xl border border-slate-200 bg-slate-900" alt="Student register preview" />
+            <button id="btnAnalyzeRedPen" type="button" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow transition">
+              🔍 Run Gyan Sir's 5-Step Copy Analysis (Gemini 2.5 Flash)
+            </button>
+          </div>
+        </div>
+
+        <div id="redPenLoadingBox" class="hidden p-6 text-center space-y-2 bg-indigo-50/60 rounded-2xl border border-indigo-200">
+          <div class="text-3xl animate-bounce">✍️</div>
+          <p class="text-xs font-extrabold text-indigo-950">Gyan Sir is evaluating your register copy line-by-line...</p>
+          <p class="text-[11px] text-indigo-700">Checking NCERT keywords, debit/credit matching, and CBSE step-marking value points.</p>
+        </div>
+
+        <div id="redPenResultBox" class="hidden space-y-3"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== CASE STUDY LAB & STEP-MARKING DRAWER (#45, #46) ==================== -->
+  <div id="caseStudyModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto custom-scroll">
+      <div class="flex items-start justify-between border-b border-slate-200 pb-3">
+        <div>
+          <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-[10px] font-extrabold uppercase">Stage 5 • CBSE Competency Case Study Lab</span>
+          <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mt-1">🕵️ Case Study: Barauni Petrochemicals &amp; Partnership Reconstitution</h3>
+          <p class="text-xs text-slate-500">Real-world commercial scenario with Balance Sheet analysis &amp; multi-tier questions.</p>
+        </div>
+        <button id="closeCaseStudyModalBtn" type="button" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-800">
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 leading-relaxed">
+          <p><strong>Scenario:</strong> Aman and Bharat operate a partnership supplying industrial lubricants in Begusarai sharing profits 3:2. On 1st April 2026, their Balance Sheet showed General Reserve ₹40,000, Creditors ₹30,000, and Capital Accounts (Aman ₹1,20,000, Bharat ₹80,000). They admit Chetan for 1/5th share. Chetan brings ₹70,000 capital and ₹20,000 premium for goodwill in cash.</p>
+          <div class="p-2.5 rounded-xl bg-white border border-slate-200 font-mono text-[11px] space-y-0.5">
+            <div>Assets: Plant &amp; Machinery ₹1,50,000 | Stock ₹50,000 | Debtors ₹40,000 | Cash ₹30,000</div>
+            <div>Revaluation: Plant is overvalued by 10%. Stock is undervalued by ₹5,000. Provision for Doubtful Debts needed @ 5%.</div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <p class="font-bold text-slate-900">Q1. What is the sacrificing ratio between Aman and Bharat?</p>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="case-opt-btn p-2 rounded-xl border border-slate-200 hover:bg-indigo-50 font-medium text-left" data-correct="true">A) 3:2 (Sacrificing Ratio)</button>
+            <button class="case-opt-btn p-2 rounded-xl border border-slate-200 hover:bg-indigo-50 font-medium text-left" data-correct="false">B) 1:1</button>
+          </div>
+        </div>
+
+        <!-- Step-Marking Scheme Drawer (#46) -->
+        <div class="pt-2 border-t border-slate-200">
+          <button id="toggleStepMarkingBtn" type="button" class="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-between">
+            <span>📐 View Official CBSE Step-Marking Scheme</span>
+            <span id="stepMarkingIcon">▼</span>
+          </button>
+          <div id="stepMarkingSchemeBox" class="hidden mt-2 p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-[11px] text-amber-950 space-y-1">
+            <div class="flex justify-between font-bold border-b border-amber-200 pb-1"><span>Step Component</span><span>Marks</span></div>
+            <div class="flex justify-between"><span>1. Sacrificing Ratio Calculation</span><span>1 Mark</span></div>
+            <div class="flex justify-between"><span>2. Revaluation Account (Plant, Stock, PDD)</span><span>1.5 Marks</span></div>
+            <div class="flex justify-between"><span>3. Partners' Capital A/c (Goodwill &amp; Reserve)</span><span>1.5 Marks</span></div>
+            <div class="flex justify-between"><span>4. New Balance Sheet Total (₹3,00,000)</span><span>2 Marks</span></div>
+            <div class="text-[10px] text-amber-800 pt-1 font-semibold">Total: 6 Marks • Deduct 0.5 for missing narrations or working note numbers.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>

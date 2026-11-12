@@ -448,3 +448,72 @@ function apiDispatchDpp_(verifiedUser, payload) {
   var classes = (payload && payload.classLevel) ? [payload.classLevel] : [11, 12];
   return classes.map(function(cls) { return buildAndCacheDailyPackage_(cls); });
 }
+
+
+/**
+ * Generates an AI lesson plan using Gemini API (or structured NCERT fallback)
+ * @param {Object} verifiedUser
+ * @param {Object} payload - { subject, topicId, title, unit }
+ * @return {Object} { ok: true, lessonPlan: { title, unit, body } }
+ */
+function apiGenerateLessonPlan_(verifiedUser, payload) {
+  requireAdmin_(verifiedUser && verifiedUser.id);
+  var subject = (payload && payload.subject) || 'ACC-12';
+  var topicId = (payload && payload.topicId) || 'ACC12-CH03-T02';
+  var title = (payload && payload.title) || 'Admission of a Partner: Hidden Goodwill';
+  var unit = (payload && payload.unit) || 'Ch 3: Reconstitution of Partnership Firm';
+
+  var systemPrompt =
+    'You are Gyan Sir, founder of Commerce Gyan (Begusarai, Bihar) and premier CBSE Commerce mentor.\n' +
+    'Generate a high-impact, classroom-ready lesson plan for:\n' +
+    'SUBJECT: ' + subject + '\n' +
+    'TOPIC: ' + title + ' (' + unit + ')\n\n' +
+    'Include exactly 4 sections:\n' +
+    '1. LEARNING OBJECTIVES (CBSE & BSEB Board Alignment)\n' +
+    '2. BOARD EXAM TRAP RADAR (Mistakes students make)\n' +
+    '3. STEP-BY-STEP WORKING NOTE (Exact numerical/conceptual presentation)\n' +
+    '4. BEGUSARAI / INDIAN BUSINESS REAL-WORLD HOOK (e.g. Barauni Refinery, Tata, local Kirana)';
+
+  var body = '';
+  try {
+    if (typeof callGeminiGenerateContent_ === 'function') {
+      var geminiRes = callGeminiGenerateContent_({
+        contents: [{ parts: [{ text: systemPrompt }] }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 800 }
+      });
+      if (geminiRes && geminiRes.candidates && geminiRes.candidates[0].content && geminiRes.candidates[0].content.parts) {
+        body = geminiRes.candidates[0].content.parts[0].text;
+      }
+    }
+  } catch (err) {
+    Logger.log('Gemini lesson plan warning: ' + err.message);
+  }
+
+  if (!body) {
+    body = '1. LEARNING OBJECTIVES (CBSE & BSEB Board Alignment):\n' +
+      '- Master key conceptual definitions and NCERT accounting principles.\n' +
+      '- Prepare journal entries with complete narrations and ledger accounts.\n' +
+      '- Calculate ratios and adjustments accurately in exam conditions.\n\n' +
+      '2. BOARD EXAM TRAP RADAR:\n' +
+      '- Watch out for date factors, pro-rata share limits, and old vs new partner distinctions.\n' +
+      '- Never omit working notes: CBSE assigns up to 40% of marks to working notes.\n\n' +
+      '3. STEP-BY-STEP WORKING NOTE:\n' +
+      '- Step 1: Identify given parameters and apply the fundamental formula.\n' +
+      '- Step 2: Set up journal entries / T-accounts with proper column headings.\n' +
+      '- Step 3: Verify debit total equals credit total before concluding.\n\n' +
+      '4. BEGUSARAI REAL-WORLD HOOK:\n' +
+      '- Anchor this concept to local commercial transactions in Begusarai markets and Barauni industrial units.';
+  }
+
+  return {
+    ok: true,
+    lessonPlan: {
+      id: 'LES-' + Date.now(),
+      subject: subject,
+      code: topicId,
+      title: title,
+      unit: unit,
+      body: body
+    }
+  };
+}

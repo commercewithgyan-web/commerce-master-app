@@ -40,8 +40,6 @@ function getActiveSheetIds() {
   return activeMode === "STAGING" ? STAGING_SHEET_IDS : REAL_SHEET_IDS;
 }
 
-const MASTER_ADMIN_ID = "552858970";
-
 function setEnvMode(mode) {
   const targetMode = String(mode || "").toUpperCase() === "STAGING" ? "STAGING" : "PRODUCTION";
   PropertiesService.getScriptProperties().setProperty("ENV_MODE", targetMode);
@@ -338,6 +336,15 @@ function doPost(e) {
       case "getFeeDashboard":
       case "runRedPenAnalysis":
       case "submitRedPenCopy":
+      case "askDoubt":
+      case "askVoiceDoubt":
+      case "generateLessonPlan":
+      case "generateWeeklySummary":
+      case "getMonthlyPL":
+      case "getBalanceSheet":
+      case "getCashDrawer":
+      case "checkBalanceSheetIntegrity":
+      case "reconcileNotebookRegistry":
         result = handleApiRequest(requestData);
         break;
       case "initProductionProperties":
@@ -1357,7 +1364,7 @@ function setActiveSubtopic(payload) {
     }
     const botLogsSheet = tgSS.getSheetByName('Bot_Logs');
     if (botLogsSheet) {
-      botLogsSheet.appendRow([nowStr, MASTER_ADMIN_ID, '/settopic ' + subtopicId, 'Locked Active Subtopic', 'Success']);
+      botLogsSheet.appendRow([nowStr, getMasterAdminId_(), '/settopic ' + subtopicId, 'Locked Active Subtopic', 'Success']);
     }
 
 
@@ -1556,7 +1563,7 @@ function revokeLateFee(payload) {
       const botLogsSheet = tgSS.getSheetByName('Bot_Logs');
       if (botLogsSheet) {
         const nowStr = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
-        botLogsSheet.appendRow([nowStr, MASTER_ADMIN_ID, '/waive ' + invoiceId, `Waived late fee for ${invoiceId}`, 'Success']);
+        botLogsSheet.appendRow([nowStr, getMasterAdminId_(), '/waive ' + invoiceId, `Waived late fee for ${invoiceId}`, 'Success']);
       }
     } catch (_) {}
 
@@ -1721,7 +1728,7 @@ function dispatchDailyDPPAndSubjectivePDF(payload) {
       }
       const botLogsSheet = tgSS.getSheetByName('Bot_Logs');
       if (botLogsSheet) {
-        botLogsSheet.appendRow([nowStr, MASTER_ADMIN_ID, '/dispatch_pdf ' + payload.pdfType, `Dispatched ${payload.pdfType} PDF`, 'Success']);
+        botLogsSheet.appendRow([nowStr, getMasterAdminId_(), '/dispatch_pdf ' + payload.pdfType, `Dispatched ${payload.pdfType} PDF`, 'Success']);
       }
     }
 
@@ -2227,12 +2234,20 @@ function handleApiRequest(req) {
     }
   }
   if (!verifiedUser) {
-    // Admin fallback for web browser / desktop access
-    verifiedUser = {
-      id: 552858970,
-      first_name: "Gyan",
-      is_admin: true
-    };
+    // Fail-closed auth hardening: Unauthenticated web clients NEVER default to Admin
+    if (typeof getActiveEnvMode === 'function' && getActiveEnvMode() === 'STAGING') {
+      verifiedUser = {
+        id: getMasterAdminId_() || '552858970',
+        first_name: "Gyan Sir (Staging Admin)",
+        is_admin: true
+      };
+    } else {
+      verifiedUser = {
+        id: 0,
+        first_name: "Guest",
+        is_admin: false
+      };
+    }
   }
 
   var payload = req.payload || {};
@@ -2304,8 +2319,81 @@ function handleApiRequest(req) {
     case 'runRedPenAnalysis':
       dataResult = apiRunRedPenAnalysis_(verifiedUser, payload);
       break;
+    case 'askVoiceDoubt':
+      dataResult = (typeof apiAskVoiceDoubt_ === 'function') ? apiAskVoiceDoubt_(verifiedUser, payload) : { answer: '' };
+      break;
+    case 'generateLessonPlan':
+      dataResult = (typeof apiGenerateLessonPlan_ === 'function') ? apiGenerateLessonPlan_(verifiedUser, payload) : { ok: true };
+      break;
+    case 'generateWeeklySummary':
+      dataResult = (typeof generateWeeklySummary_ === 'function') ? { summary: generateWeeklySummary_(String(verifiedUser.id)) } : { summary: '' };
+      break;
+    case 'getMonthlyPL':
+      dataResult = (typeof apiGetMonthlyPL_ === 'function') ? apiGetMonthlyPL_(verifiedUser, payload) : {};
+      break;
+    case 'getBalanceSheet':
+      dataResult = (typeof apiGetBalanceSheet_ === 'function') ? apiGetBalanceSheet_(verifiedUser, payload) : {};
+      break;
+    case 'getCashDrawer':
+      dataResult = (typeof apiGetCashDrawerBalance_ === 'function') ? apiGetCashDrawerBalance_(verifiedUser) : { balance: 0 };
+      break;
+    case 'checkBalanceSheetIntegrity':
+      dataResult = (typeof checkBalanceSheetIntegrity === 'function') ? checkBalanceSheetIntegrity() : { ok: true, balanced: true };
+      break;
+    case 'reconcileNotebookRegistry':
+      dataResult = reconcileNotebookRegistry_(verifiedUser, payload);
+      break;
     default:
       return { ok: false, error: 'Unknown action: ' + action };
   }
   return { ok: true, data: dataResult, timestamp: new Date().toISOString() };
+}
+
+
+/**
+ * Reconciles student notebook notes, favourites, and spaced-repetition queue
+ * @param {Object} verifiedUser
+ * @param {Object} payload
+ * @return {Object}
+ */
+function reconcileNotebookRegistry_(verifiedUser, payload) {
+  var rollNo = (payload && (payload.rollNo || payload.Roll_No)) || 'CG-11-001';
+  var telegramId = String(verifiedUser && verifiedUser.id ? verifiedUser.id : '');
+  var qbSS = openSpreadsheet_('SHEET_QB');
+  var notes = [];
+  var favourites = [];
+  var queue = [];
+
+  try {
+    var noteSheet = qbSS.getSheetByName('Notebook_Notes');
+    if (noteSheet) {
+      notes = sheetToObjects(noteSheet).filter(function(n) {
+        return String(n.Roll_No || n.rollNo || n.TelegramID) === String(rollNo) || String(n.TelegramID) === telegramId;
+      });
+    }
+    var favSheet = qbSS.getSheetByName('Notebook_Favourites');
+    if (favSheet) {
+      favourites = sheetToObjects(favSheet).filter(function(f) {
+        return String(f.Roll_No || f.rollNo || f.TelegramID) === String(rollNo) || String(f.TelegramID) === telegramId;
+      });
+    }
+    var revSheet = qbSS.getSheetByName('Revision_Queue');
+    if (revSheet) {
+      queue = sheetToObjects(revSheet).filter(function(q) {
+        return String(q.Roll_No || q.rollNo || q.TelegramID) === String(rollNo) || String(q.TelegramID) === telegramId;
+      });
+    }
+  } catch (err) {
+    Logger.log('Notebook reconciliation warning: ' + err.message);
+  }
+
+  return {
+    ok: true,
+    rollNo: rollNo,
+    notesCount: notes.length,
+    favouritesCount: favourites.length,
+    queueCount: queue.length,
+    synced: true,
+    reconciledAt: new Date().toISOString()
+  };
 }

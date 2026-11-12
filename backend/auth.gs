@@ -112,7 +112,7 @@ function verifyAndRouteUser_(initDataRaw, previewRollNo) {
     }
   } else if ((typeof getActiveEnvMode === 'function' && getActiveEnvMode() === 'STAGING') || previewRollNo) {
     // Admin / Staging sandbox test preview bypass
-    user = { id: 552858970, first_name: 'Gyan Sir (Admin Preview)' };
+    user = { id: getMasterAdminId_(), first_name: 'Gyan Sir (Admin Preview)' };
   } else {
     return { ok: false, error: 'HTTP 401: AUTH_FAILED (MISSING_INIT_DATA)' };
   }
@@ -120,14 +120,19 @@ function verifyAndRouteUser_(initDataRaw, previewRollNo) {
   var telegramId = String((user && user.id) || '');
 
   // Audit Patch 2: Admin Dual-Role Bypass
-  if (telegramId === '552858970' || (typeof MASTER_ADMIN_ID !== 'undefined' && telegramId === MASTER_ADMIN_ID)) {
+  if (isMasterAdminId_(telegramId)) {
     return {
       ok: true,
       role: 'ADMIN',
       isAdmin: true,
-      telegramId: '552858970',
+      telegramId: getMasterAdminId_(),
       impersonateRollNo: previewRollNo || 'CG-11-001'
     };
+  }
+
+  // Fail closed: a blank ID must never match a student row with a blank Telegram_ID
+  if (!telegramId) {
+    return { ok: false, error: 'STUDENT_NOT_FOUND', telegramId: telegramId };
   }
 
   var IDS = getActiveSheetIds();
@@ -156,7 +161,7 @@ function requirePaidStudent_(telegramId) {
   var cleanId = String(telegramId || '').trim();
 
   // Master Admin Dual-Role Bypass for Founder
-  if (isAdmin_(cleanId) || cleanId === '552858970' || (typeof MASTER_ADMIN_ID !== 'undefined' && cleanId === MASTER_ADMIN_ID)) {
+  if (isAdmin_(cleanId)) {
     return {
       studentId: 'CG-11-001',
       StudentID: 'CG-11-001',
@@ -268,14 +273,28 @@ function checkStudentOverdueThreshold_(studentId, thresholdDays) {
  */
 function isAdmin_(telegramId) {
   if (!telegramId) return false;
-  var cleanId = String(telegramId).trim();
-  if (cleanId === '552858970' || (typeof MASTER_ADMIN_ID !== 'undefined' && cleanId === MASTER_ADMIN_ID)) {
-    return true;
-  }
+  return isMasterAdminId_(telegramId);
+}
+
+/**
+ * Founder's Telegram ID from Script Properties (ADMIN_TELEGRAM_ID, then ADMIN_ID).
+ * Returns '' when neither is set, so every check fails closed.
+ * @return {string}
+ */
+function getMasterAdminId_() {
   var props = PropertiesService.getScriptProperties();
-  var adminId = props.getProperty('ADMIN_TELEGRAM_ID') || props.getProperty('ADMIN_ID');
-  if (!adminId || String(adminId).trim() === '') return false;
-  return cleanId === String(adminId).trim();
+  return String(props.getProperty('ADMIN_TELEGRAM_ID') || props.getProperty('ADMIN_ID') || '').trim();
+}
+
+/**
+ * True only when the ID matches a configured founder ID. Blank never matches.
+ * @param {string|number} telegramId
+ * @return {boolean}
+ */
+function isMasterAdminId_(telegramId) {
+  var masterId = getMasterAdminId_();
+  var cleanId = String(telegramId || '').trim();
+  return masterId !== '' && cleanId === masterId;
 }
 
 /**
