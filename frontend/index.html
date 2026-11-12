@@ -1715,8 +1715,8 @@
       </div>
     </div>
 
-    <!-- TAB 1: DAILY HUB (Default visible) -->
-    <div id="tgTab-daily-hub" class="tg-student-tab space-y-4">
+    <!-- TAB 1: AAJ (Default visible) -->
+    <div id="tgTab-aaj" class="tg-student-tab space-y-4">
       <!-- REC-01 Late/Absent Recovery Drill Card -->
       <div id="tgRec01Card" class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 space-y-2.5">
         <div class="flex items-center justify-between">
@@ -1777,8 +1777,8 @@
       </div>
     </div>
 
-    <!-- TAB 2: PRACTICE BANK -->
-    <div id="tgTab-practice" class="tg-student-tab space-y-4" style="display: none;">
+    <!-- TAB 2: SYLLABUS & PRACTICE BANK -->
+    <div id="tgTab-syllabus" class="tg-student-tab space-y-4" style="display: none;">
       <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
         <div class="flex items-center justify-between">
           <h3 class="text-sm font-extrabold text-slate-900">Practice Question Vault</h3>
@@ -1808,8 +1808,8 @@
       </div>
     </div>
 
-    <!-- TAB 3: DIGITAL NOTEBOOK -->
-    <div id="tgTab-notebook" class="tg-student-tab space-y-4" style="display: none;">
+    <!-- TAB 4: NOTES & DIGITAL NOTEBOOK -->
+    <div id="tgTab-notes" class="tg-student-tab space-y-4" style="display: none;">
       <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
         <div class="flex items-center justify-between">
           <h3 class="text-sm font-extrabold text-slate-900">Student Digital Notebook</h3>
@@ -1884,8 +1884,8 @@
       </div>
     </div>
 
-    <!-- TAB 6: AI DOUBT, 2 AM SOS & 14-DAY CLAIM CODE BINDING -->
-    <div id="tgTab-ai-sos" class="tg-student-tab space-y-4" style="display: none;">
+    <!-- TAB 5: DOUBT, AI SOS & 14-DAY CLAIM CODE BINDING -->
+    <div id="tgTab-doubt" class="tg-student-tab space-y-4" style="display: none;">
       <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
         <span class="text-[10px] font-extrabold uppercase text-indigo-600">Step 6: 14-Day Claim Code Binding</span>
         <h3 class="text-sm font-extrabold text-slate-900">🔑 Bind Your Admission Claim Code (<code class="mono">bindStudentClaimCode</code>)</h3>
@@ -1911,23 +1911,23 @@
 
     <!-- FIXED 6-TAB BOTTOM NAVIGATION DOCK (0ms Client-Side Switching) -->
     <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-950/95 backdrop-blur-md border-t border-slate-800 flex items-center justify-around py-2.5 px-1 z-40 text-center">
-      <button id="tgNavBtn-daily-hub" onclick="switchStudentTab('daily-hub')" class="flex-1 text-[10px] font-bold text-amber-400 transition flex flex-col items-center">
-        <span>⚡</span><span>Daily Hub</span>
+      <button id="tgNavBtn-aaj" onclick="switchStudentTab('aaj')" class="flex-1 text-[10px] font-bold text-amber-400 transition flex flex-col items-center">
+        <span>📅</span><span>Aaj</span>
       </button>
-      <button id="tgNavBtn-practice" onclick="switchStudentTab('practice')" class="flex-1 text-[10px] font-medium text-slate-400 transition flex flex-col items-center">
-        <span>📚</span><span>Practice</span>
-      </button>
-      <button id="tgNavBtn-notebook" onclick="switchStudentTab('notebook')" class="flex-1 text-[10px] font-medium text-slate-400 transition flex flex-col items-center">
-        <span>📝</span><span>Notebook</span>
+      <button id="tgNavBtn-syllabus" onclick="switchStudentTab('syllabus')" class="flex-1 text-[10px] font-medium text-slate-400 transition flex flex-col items-center">
+        <span>📚</span><span>Syllabus</span>
       </button>
       <button id="tgNavBtn-fees" onclick="switchStudentTab('fees')" class="flex-1 text-[10px] font-medium text-slate-400 transition flex flex-col items-center">
-        <span>🧾</span><span>Fees</span>
+        <span>💰</span><span>Fees</span>
+      </button>
+      <button id="tgNavBtn-notes" onclick="switchStudentTab('notes')" class="flex-1 text-[10px] font-medium text-slate-400 transition flex flex-col items-center">
+        <span>📓</span><span>Notes</span>
+      </button>
+      <button id="tgNavBtn-doubt" onclick="switchStudentTab('doubt')" class="flex-1 text-[10px] font-medium text-slate-400 transition flex flex-col items-center">
+        <span>🤔</span><span>Doubt</span>
       </button>
       <button id="tgNavBtn-progress" onclick="switchStudentTab('progress')" class="flex-1 text-[10px] font-medium text-slate-400 transition flex flex-col items-center">
-        <span>🏆</span><span>Stars</span>
-      </button>
-      <button id="tgNavBtn-ai-sos" onclick="switchStudentTab('ai-sos')" class="flex-1 text-[10px] font-medium text-slate-400 transition flex flex-col items-center">
-        <span>🌙</span><span>AI &amp; SOS</span>
+        <span>📈</span><span>Progress</span>
       </button>
     </nav>
   </div>
@@ -4692,15 +4692,22 @@
   
   <script>
     // ─────────────────────────────────────────────────────────────────────────
-    // COMMERCE GYAN — 0MS STUDENT TAB ENGINE & HARDWARE BRIDGE
+    // COMMERCE GYAN — 0MS STUDENT TAB ENGINE & HARDWARE BRIDGE (6 TABS)
     // ─────────────────────────────────────────────────────────────────────────
-    window.switchStudentTab = function(tabId) {
+    window.switchStudentTab = function(rawTabId) {
       try {
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
           window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
         }
       } catch (e) {}
-      const tabs = ['daily-hub', 'practice', 'notebook', 'fees', 'progress', 'ai-sos'];
+      var map = {
+        'daily-hub': 'aaj',
+        'practice': 'syllabus',
+        'notebook': 'notes',
+        'ai-sos': 'doubt'
+      };
+      var tabId = map[rawTabId] || rawTabId;
+      const tabs = ['aaj', 'syllabus', 'fees', 'notes', 'doubt', 'progress'];
       tabs.forEach(t => {
         const el = document.getElementById('tgTab-' + t);
         const btn = document.getElementById('tgNavBtn-' + t);
