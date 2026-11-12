@@ -1,0 +1,134 @@
+{
+  "ok": true,
+  "data": {
+    "environment": "PRODUCTION",
+    "timestamp": "2026-11-12T07:13:30.629Z",
+    "bindings": {
+      "MASTER_ERP": {
+        "ok": true,
+        "id": "1Muw7PEocEQjdXSlwMBCiFVrCtAu-HYJk0fXi1AblUhc",
+        "name": "Commerce_Gyan_Master_ERP",
+        "sheets": [
+          "Students",
+          "00_ATTENDANCE_DASHBOARD",
+          "WA_Templates",
+          "Expense_Tracker",
+          "Claim_Codes",
+          "Telegram_Bindings",
+          "Drill_Schedule",
+          "Homework_Submissions",
+          "Drill_Attempts",
+          "DAILY_EVALUATION_LOG",
+          "Access_Events",
+          "Access_Overrides",
+          "Teacher_Alerts",
+          "Leave_Notes",
+          "Recovery_Tasks",
+          "Coin_Ledger",
+          "Attendance_State",
+          "Attendance_Logs",
+          "Batches",
+          "Students_Master",
+          "Fee_Ledger",
+          "CONFIG_FEE_SETTINGS",
+          "Archived_Attendance_2025",
+          "Fee_Transactions",
+          "Questions_Bank",
+          "Vault_Resources",
+          "Admissions_Leads",
+          "Theory_Bank",
+          "INQUIRY_CRM",
+          "PROMISE_LOG",
+          "DEMO_TRACKER"
+        ]
+      },
+      "SYLLABUS": {
+        "ok": true,
+        "id": "1-LrOhyGDDAwxm-eNF-kJX6JldbllQYulZ9wLo_63hFY",
+        "name": "1. Syllabus Planner",
+        "sheets": [
+          "Master_Syllabus",
+          "Chapter_Weightage",
+          "Setup"
+        ]
+      },
+      "QUESTION_BANK": {
+        "ok": true,
+        "id": "1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs",
+        "name": "2. Question Bank",
+        "sheets": [
+          "QuestionBank",
+          "DailyQuestions",
+          "StudentAnswers",
+          "Leaderboard",
+          "Doubts",
+          "Notebook_Notes",
+          "Notebook_Favourites",
+          "Notebook_Summary",
+          "Revision_Queue",
+          "Audit_Mysteries",
+          "RedPen_Submissions"
+        ]
+      },
+      "FEE_MGMT": {
+        "ok": true,
+        "id": "1Dka1y2r-2cDjkZxDyJZ__-GOqvNjwIhR9Eurvu3srwI",
+        "name": "3. Fee Management",
+        "sheets": [
+          "Plans",
+          "Students",
+          "Payments",
+          "Fee_Schedule",
+          "Fee_Summary",
+          "Fee_Reminders",
+          "Receipts"
+        ]
+      },
+      "TELEGRAM": {
+        "ok": true,
+        "id": "1KslovmOPwDvCStvjljzhvC4wRpRnTWplcamTq_10pQY",
+        "name": "4. Telegram Delivery",
+        "sheets": [
+          "Bot_Logs",
+          "PDF_Log",
+          "Subjective_PDF_Log",
+          "Broadcasts",
+          "Settings",
+          "Errors",
+          "Audio_Pills_Log"
+        ]
+      },
+      "BOOKS_EXPENSES": {
+        "ok": true,
+        "id": "15bM321-hqqvbZRsSKKUfYNwWcOkv9l3EsOAodLZhksQ",
+        "name": "5. Books & Expenses",
+        "sheets": [
+          "Expenses",
+          "Assets",
+          "Liabilities",
+          "Capital_Drawings",
+          "Opening_Balances",
+          "Monthly_Reports"
+        ]
+      },
+      "MASTER_Q_REPO": {
+        "ok": true,
+        "id": "1FMk5KBCaEBLj7rwmGI9lIEpM02aGWrC-6tD8GXApDCY",
+        "name": "Master Question Repository",
+        "sheets": [
+          "DASHBOARD",
+          "11_ACC",
+          "11_BST",
+          "11_ECO_MICRO",
+          "11_STAT",
+          "12_ACC",
+          "12_BST",
+          "12_ECO_MACRO",
+          "12_ECO_IED",
+          "PROMPT_ENGINE",
+          "LOOKUP_DATA"
+        ]
+      }
+    }
+  }
+}
