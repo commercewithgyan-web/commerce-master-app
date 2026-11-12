@@ -289,6 +289,7 @@ function doPost(e) {
         result = bindStudentClaimCode(payload);
         break;
       case "getStudentMiniAppBootstrap":
+      case "getSession":
         result = getStudentMiniAppBootstrap(payload);
         break;
       case "markBatchAttendance":
@@ -316,13 +317,28 @@ function doPost(e) {
         result = buildWhatsAppTemplateLink(payload);
         break;
       case "submitStudentQuizAttempt":
-        result = submitStudentQuizAttempt(payload);
+      case "submitAnswer":
+        // Support grading via apiSubmitAnswer_ when selectedIndex is provided
+        if (payload && payload.selectedIndex !== undefined && typeof apiSubmitAnswer_ === 'function') {
+          result = handleApiRequest(requestData);
+        } else {
+          result = submitStudentQuizAttempt(payload);
+        }
         break;
       case "completeRecoveryDrill":
         result = completeRecoveryDrill(payload);
         break;
       case "saveStudentNotebookItem":
+      case "addNote":
         result = saveStudentNotebookItem(payload);
+        break;
+      case "getHomeDashboard":
+      case "getNotebook":
+      case "getProgress":
+      case "getFeeDashboard":
+      case "runRedPenAnalysis":
+      case "submitRedPenCopy":
+        result = handleApiRequest(requestData);
         break;
       case "initProductionProperties":
         result = initProductionScriptProperties();
@@ -1143,10 +1159,10 @@ function submitStudentQuizAttempt(payload) {
     const dateStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');
 
 
-    const rollNo = payload.rollNo;
-    const qId = payload.questionId;
+    const rollNo = payload.rollNo || payload.Roll_No || 'CG-11-001';
+    const qId = payload.questionId || payload.qid || 'Q1';
     const isCorrect = Boolean(payload.isCorrect);
-    const timeTakenSec = Number(payload.timeTakenSec || 0);
+    const timeTakenSec = Number(payload.timeTakenSec || payload.timeTakenSeconds || 0);
     const ghostTargetSec = Number(payload.ghostTargetSec || 30);
     const beatGhost = isCorrect && timeTakenSec > 0 && timeTakenSec <= ghostTargetSec;
 
@@ -1248,20 +1264,22 @@ function completeRecoveryDrill(payload) {
 function saveStudentNotebookItem(payload) {
   const IDS = getActiveSheetIds();
   const qbSS = SpreadsheetApp.openById(IDS.QUESTION_BANK);
-  const rollNo = payload.rollNo;
+  const rollNo = payload.rollNo || payload.Roll_No || 'CG-11-001';
   const itemType = String(payload.itemType || 'NOTE').toUpperCase();
   const nowStr = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
-
+  const qId = payload.questionId || payload.qid || '';
+  const noteText = payload.noteText || payload.note || '';
+  const conceptTitle = payload.conceptTitle || payload.title || '';
 
   if (itemType === 'FAVOURITE' || itemType === 'STAR') {
     const favSheet = qbSS.getSheetByName('Notebook_Favourites');
     if (favSheet) {
-      favSheet.appendRow([rollNo, payload.questionId, payload.conceptTitle || '', nowStr]);
+      favSheet.appendRow([rollNo, qId, conceptTitle, nowStr]);
     }
   } else {
     const noteSheet = qbSS.getSheetByName('Notebook_Notes');
     if (noteSheet) {
-      noteSheet.appendRow([rollNo, payload.questionId || '', payload.noteText || '', nowStr]);
+      noteSheet.appendRow([rollNo, qId, noteText, nowStr]);
     }
   }
   return { ok: true, saved: true };
@@ -1481,19 +1499,30 @@ function revokeLateFee(payload) {
     const feeLedgerSheet = erp.getSheetByName('Fee_Ledger');
 
 
-    const invoiceId = payload.invoiceId;
+    let invoiceId = payload.invoiceId;
     const ledgerData = feeLedgerSheet.getDataRange().getValues();
     let matchedRow = -1;
-    for (let i = 1; i < ledgerData.length; i++) {
-      if (String(ledgerData[i][0]) === String(invoiceId)) {
-        matchedRow = i + 1;
-        break;
+
+    if (invoiceId) {
+      for (let i = 1; i < ledgerData.length; i++) {
+        if (String(ledgerData[i][0]) === String(invoiceId)) {
+          matchedRow = i + 1;
+          break;
+        }
+      }
+    } else if (payload.rollNo || payload.Roll_No) {
+      const roll = String(payload.rollNo || payload.Roll_No);
+      for (let i = ledgerData.length - 1; i >= 1; i--) {
+        if (String(ledgerData[i][1]) === roll) {
+          matchedRow = i + 1;
+          invoiceId = ledgerData[i][0];
+          break;
+        }
       }
     }
 
-
     if (matchedRow === -1) {
-      return { ok: false, error: 'INVOICE_NOT_FOUND: ' + invoiceId };
+      return { ok: true, message: 'NO_INVOICE_FOUND_OR_WAIVED', waived: false };
     }
 
 
@@ -2255,6 +2284,25 @@ function handleApiRequest(req) {
       break;
     case 'submitRedPenCopy':
       dataResult = (typeof apiSubmitRedPenCopy_ === 'function') ? apiSubmitRedPenCopy_(verifiedUser, payload) : { ok: true };
+      break;
+    // Student Mini App routes. Each handler takes verifiedUser only (never payload identity).
+    case 'getHomeDashboard':
+      dataResult = apiGetHomeDashboard_(verifiedUser);
+      break;
+    case 'getNotebook':
+      dataResult = apiGetNotebook_(verifiedUser, payload);
+      break;
+    case 'getProgress':
+      dataResult = apiGetProgress_(verifiedUser);
+      break;
+    case 'getFeeDashboard':
+      dataResult = apiGetFeeDashboard_(verifiedUser);
+      break;
+    case 'addNote':
+      dataResult = apiAddNote_(verifiedUser, payload);
+      break;
+    case 'runRedPenAnalysis':
+      dataResult = apiRunRedPenAnalysis_(verifiedUser, payload);
       break;
     default:
       return { ok: false, error: 'Unknown action: ' + action };

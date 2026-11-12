@@ -591,6 +591,14 @@ function apiSubmitRedPenCopy_(verifiedUser, payload) {
 }
 
 /**
+ * Mini App route for runRedPenAnalysis. Identity comes from verifiedUser,
+ * so any telegramId sent by the client is overwritten.
+ */
+function apiRunRedPenAnalysis_(verifiedUser, payload) {
+  return apiSubmitRedPenCopy_(verifiedUser, payload);
+}
+
+/**
  * Saves uploaded compressed image to Google Drive folder
  */
 function saveRedPenImageToDrive_(base64Data, studentId) {

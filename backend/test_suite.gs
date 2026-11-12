@@ -130,6 +130,27 @@ function runAllCommerceTests() {
   assert('Topic title strips filler and caps at 4 words', extractTopicTitle_('what is goodwill in partnership firm accounts') === 'Goodwill in partnership firm', 'Got: ' + extractTopicTitle_('what is goodwill in partnership firm accounts'));
   assert('Empty question gives default topic title', extractTopicTitle_('') === 'Core Concept', 'Got: ' + extractTopicTitle_(''));
 
+  // ── TEST 8: MINI APP ROUTES (Phase 1 of 2026-11-12 review fixes) ──
+  Logger.log('\n📋 Running Test Group 8: Mini App Route Wiring...');
+  var unknownRes = handleApiRequest({ action: 'noSuchActionForTest' });
+  assert('Unknown action still returns Unknown action', unknownRes && unknownRes.ok === false && String(unknownRes.error).indexOf('Unknown action') === 0, 'Got: ' + JSON.stringify(unknownRes));
+
+  var routeNames = ['getHomeDashboard', 'getNotebook', 'getProgress', 'getFeeDashboard', 'addNote', 'runRedPenAnalysis'];
+  routeNames.forEach(function(actionName) {
+    // Empty payloads: addNote rejects empty note and runRedPenAnalysis rejects missing image before any write or Gemini call.
+    var routeOk = true;
+    var routeDetail = '';
+    try {
+      var r = handleApiRequest({ action: actionName, payload: {} });
+      routeDetail = JSON.stringify(r);
+      if (r && String(r.error || '').indexOf('Unknown action') === 0) routeOk = false;
+    } catch (err) {
+      routeDetail = String(err && err.message);
+      if (routeDetail.indexOf('Unknown action') !== -1) routeOk = false;
+    }
+    assert('Route wired: ' + actionName, routeOk, 'Got: ' + routeDetail);
+  });
+
   // ── SUMMARY ──
   Logger.log('\n═══════════════════════════════════════════════');
   Logger.log('📊 TEST RESULTS: ' + passed + ' PASSED | ' + failed + ' FAILED');

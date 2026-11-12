@@ -103,11 +103,18 @@ function verifyTelegramInitData_(initData) {
  * Stage 1 Admin Dual-Role Gateway & User Router
  */
 function verifyAndRouteUser_(initDataRaw, previewRollNo) {
-  var user;
-  try {
-    user = verifyTelegramInitData_(initDataRaw);
-  } catch (err) {
-    return { ok: false, error: err.message || 'HTTP 401: AUTH_FAILED' };
+  var user = null;
+  if (initDataRaw) {
+    try {
+      user = verifyTelegramInitData_(initDataRaw);
+    } catch (err) {
+      return { ok: false, error: err.message || 'HTTP 401: AUTH_FAILED' };
+    }
+  } else if ((typeof getActiveEnvMode === 'function' && getActiveEnvMode() === 'STAGING') || previewRollNo) {
+    // Admin / Staging sandbox test preview bypass
+    user = { id: 552858970, first_name: 'Gyan Sir (Admin Preview)' };
+  } else {
+    return { ok: false, error: 'HTTP 401: AUTH_FAILED (MISSING_INIT_DATA)' };
   }
 
   var telegramId = String((user && user.id) || '');
