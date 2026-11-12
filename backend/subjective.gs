@@ -372,6 +372,7 @@ function createAnswerPdfFromTemplate_(data) {
     pdfBlob: pdfBlob,
     qid: qid,
     pageCount: renderResult.pageCount,
+    pageMms: renderResult.pageMms,
     cached: false
   };
 }
@@ -438,14 +439,66 @@ function analyzeAndStructureBlock_(rawText, subject, existingRenderSpec) {
  */
 function cleanQuestionRecapText_(rawText) {
   if (!rawText) return '';
-  return String(rawText)
-    .replace(/#END(TABLE|TACCOUNT|CAPITAL|JOURNAL|FLOW|FORMULA|CARD)/gi, '')
-    .replace(/#(TABLE|TACCOUNT|CAPITAL|JOURNAL|FLOW|FORMULA|CARD|GRAPH)[^\n]*/gi, '')
-    .replace(/\|[\s\-:]*\|/g, '')
-    .replace(/\|\s*([^|\n]+)\s*\|/g, '$1 ')
-    .replace(/\|/g, ' ')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
+  var s = String(rawText);
+  // Strip entire table blocks including all intermediate rows
+  s = s.replace(/#(TABLE|TACCOUNT|CAPITAL|JOURNAL)[\s\S]*?#END\1/gi, '');
+  // Strip any remaining markdown pipe lines
+  s = s.replace(/^\s*\|.*\|\s*$/gm, '');
+  // Strip remaining DSL tags
+  s = s.replace(/#END(TABLE|TACCOUNT|CAPITAL|JOURNAL|FLOW|FORMULA|CARD)/gi, '');
+  s = s.replace(/#(TABLE|TACCOUNT|CAPITAL|JOURNAL|FLOW|FORMULA|CARD|GRAPH)[^\n]*/gi, '');
+  // Clean whitespace
+  s = s.replace(/\s+/g, ' ').trim();
+  // Limit to clean 1-2 line summary (~160-200 chars)
+  if (s.length > 200) {
+    s = s.substring(0, 197) + '...';
+  }
+  return s;
+}
+
+/**
+ * Deterministic height estimator in millimeters for document blocks
+ * @param {Object} blk
+ * @return {number}
+ */
+function calcBlockEstMm_(blk) {
+  if (!blk) return 15;
+  switch (blk.type) {
+    case 'recap':
+      return 26;
+    case 'text':
+      var chars = (blk.text || '').length;
+      return 6 + Math.ceil(chars / 85) * 4.5;
+    case 'card':
+      var bodyChars = (blk.body || blk.text || '').length;
+      return 6 + Math.ceil(bodyChars / 85) * 4.5;
+    case 'taccount':
+    case 'capital':
+    case 'table':
+    case 'journal':
+      var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
+      var rowCount = Math.max(1, lines.length > 1 ? lines.length - 1 : lines.length);
+      return 16 + (rowCount * 6.8) + 10;
+    case 'graph':
+      return 62;
+    case 'formula':
+      return 22;
+    case 'flow':
+      var steps = String(blk.steps || '').split(/->|\n/).map(function(s) { return s.trim(); }).filter(Boolean);
+      return 14 + (steps.length * 12);
+    case 'footer_block':
+      var rLines = blk.rubricText ? blk.rubricText.split('\n').filter(function(l) { return l.trim(); }).length : 0;
+      var tLines = blk.trapsText ? blk.trapsText.split('\n').filter(function(l) { return l.trim(); }).length : 0;
+      return 18 + ((rLines + tLines) * 4.8) + 14;
+    case 'question_header':
+      return 18;
+    case 'question_workingspace':
+      return 55;
+    case 'question_footer':
+      return 14;
+    default:
+      return blk.estHeight || blk.estMm || 20;
+  }
 }
 
 /**
@@ -457,8 +510,8 @@ function cleanQuestionRecapText_(rawText) {
  */
 function generatePartnersCapitalColgroup_(n) {
   n = Math.max(1, parseInt(n, 10) || 2);
-  var partPct = (n >= 4) ? 18 : (n === 3 ? 20 : 22);
-  var partnerPct = ((50 - partPct) / n).toFixed(2);
+  var partPct = 22;
+  var partnerPct = (28 / n).toFixed(2);
   var leftCols = '<col style="width: ' + partPct + '%;">';
   for (var i = 0; i < n; i++) leftCols += '<col style="width: ' + partnerPct + '%;">';
   var rightCols = '<col style="width: ' + partPct + '%;">';
@@ -482,12 +535,9 @@ function generateArbitraryColgroup_(cols, title) {
     return '<colgroup><col style="width: 12%;"><col style="width: 48%;"><col style="width: 8%;"><col style="width: 16%;"><col style="width: 16%;"></colgroup>';
   }
 
-  // Statistics / Arbitrary table
-  var firstColPct = 24;
-  if (k <= 3) firstColPct = 36;
-  else if (k >= 7) firstColPct = 20;
-
-  var remPct = ((100 - firstColPct) / (k - 1)).toFixed(2);
+  // Statistics / Arbitrary table (First label column: 22%; remaining K - 1 numeric columns: (78 / (K - 1)).toFixed(2)% each)
+  var firstColPct = 22;
+  var remPct = (k > 1) ? ((100 - firstColPct) / (k - 1)).toFixed(2) : 78;
   var colsHtml = '<col style="width: ' + firstColPct + '%;">';
   for (var i = 1; i < k; i++) {
     colsHtml += '<col style="width: ' + remPct + '%;">';
@@ -851,58 +901,76 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
       classLevel: classLevel,
       topicText: topicText,
       dateStr: rawDate,
-      estHeight: 18
+      estMm: 18
     });
     var qBlocks = analyzeAndStructureBlock_(data.questionText || '', data.subject, data.renderSpec);
     for (var qb = 0; qb < qBlocks.length; qb++) {
+      qBlocks[qb].estMm = calcBlockEstMm_(qBlocks[qb]);
       blocks.push(qBlocks[qb]);
     }
     blocks.push({
       type: 'question_workingspace',
-      estHeight: 50
+      estMm: 55
     });
     blocks.push({
       type: 'question_footer',
-      estHeight: 14
+      estMm: 14
     });
   } else {
     // Model Answer PDF Layout (Publication Grade)
+    // 1. Recap Box (Stripped of raw table/pipes, clean 1-2 lines)
+    var cleanRecap = cleanQuestionRecapText_(data.recapText || data.questionText || '');
     blocks.push({
-      type: 'answer_recap',
-      questionText: data.questionText || '',
+      type: 'recap',
+      name: 'recap',
+      text: cleanRecap,
       marks: marks,
       classLevel: classLevel,
-      topicText: topicText,
       dateStr: rawDate,
-      estHeight: 38 + Math.min(16, Math.ceil((data.questionText || '').length / 90) * 4)
+      estMm: 26
     });
-    blocks.push({
-      type: 'answer_heading',
-      estHeight: 2
-    });
-    var ansBlocks = analyzeAndStructureBlock_(data.answerText || '', data.subject, data.renderSpec);
+
+    // 2. Answer Blocks (from mainAnswerJson if present, else parsed from answerText)
+    var ansBlocks = [];
+    if (data.mainAnswerJson) {
+      try {
+        var parsedJson = typeof data.mainAnswerJson === 'string' ? JSON.parse(data.mainAnswerJson) : data.mainAnswerJson;
+        if (Array.isArray(parsedJson)) ansBlocks = parsedJson;
+        else if (parsedJson && Array.isArray(parsedJson.blocks)) ansBlocks = parsedJson.blocks;
+      } catch (_) {}
+    }
+    if (!ansBlocks || ansBlocks.length === 0) {
+      ansBlocks = analyzeAndStructureBlock_(data.answerText || '', data.subject, data.renderSpec);
+    }
+
     for (var ab = 0; ab < ansBlocks.length; ab++) {
-      ansBlocks[ab].drCrCheck = !!data.drCrCheck;
-      blocks.push(ansBlocks[ab]);
+      var aBlk = ansBlocks[ab];
+      aBlk.drCrCheck = !!data.drCrCheck;
+      aBlk.estMm = calcBlockEstMm_(aBlk);
+      blocks.push(aBlk);
     }
-    if (data.marksBreakdown) {
+
+    // 3. Combined Footer Block (Rubric + Common Traps wrapped together in ONE keep-together block)
+    var rubric = data.markingScheme || data.marksBreakdown || '';
+    var traps = data.commonTraps || data.commonMistakes || '';
+    if (rubric || traps) {
+      var rLines = rubric ? rubric.split('\n').filter(function(l) { return l.trim(); }).length : 0;
+      var tLines = traps ? traps.split('\n').filter(function(l) { return l.trim(); }).length : 0;
+      var footerEstMm = 18 + ((rLines + tLines) * 4.8) + 14;
       blocks.push({
-        type: 'rubric',
-        text: data.marksBreakdown,
-        estHeight: 10 + String(data.marksBreakdown).split('\n').filter(Boolean).length * 5.5
-      });
-    }
-    if (data.commonMistakes) {
-      blocks.push({
-        type: 'traps',
-        text: data.commonMistakes,
-        estHeight: 10 + String(data.commonMistakes).split('\n').filter(Boolean).length * 5.5
+        type: 'footer_block',
+        name: 'footer_block',
+        rubricText: rubric,
+        trapsText: traps,
+        estMm: footerEstMm
       });
     }
   }
 
-  // Greedy Paginator (Max 192mm usable height per page: Test 1 Accountancy cleanly splits, single-topic Q&As fit on 1 page)
-  var pages = paginateBlocks_(blocks, 192);
+  // Greedy Paginator with strict 192mm Cutoff
+  var paginated = paginateBlocks_(blocks);
+  var pages = paginated.pages;
+  var pageMms = paginated.pageMms;
   var totalPages = pages.length;
 
   var headerData = {
@@ -912,84 +980,57 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
     topicText: topicText,
     formattedDate: rawDate,
     sheetNumber: baseSheetNumber,
-    totalPages: totalPages
+    totalPages: totalPages,
+    marks: marks
   };
 
   var fullHtml = buildMultiPageDocumentHtml_(pages, headerData, bgBase64);
   return {
     html: fullHtml,
-    pageCount: totalPages
+    pageCount: totalPages,
+    pageMms: pageMms
   };
 }
 
 /**
- * Greedy block packing into pages with row-level table splitting support
+ * Greedy block packing into pages with 192mm strict cutoff and page millimeter tracking
  * @param {Array<Object>} blocks
- * @param {number} maxUsableHeightMm
- * @return {Array<Array<Object>>}
+ * @return {{ pages: Array<Array<Object>>, pageMms: Array<number> }}
  */
-function paginateBlocks_(blocks, maxUsableHeightMm) {
-  var maxH = maxUsableHeightMm || 205;
+function paginateBlocks_(blocks) {
+  var MAX_PAGE_MM = 192;
+  var PAGE1_HEADER_MM = 12; // 12mm for Page 1 title line
   var pages = [];
+  var pageMms = [];
   var currentPage = [];
-  var currentH = 0;
+  var currentMm = PAGE1_HEADER_MM;
 
   for (var i = 0; i < blocks.length; i++) {
     var blk = blocks[i];
-    if (blk.type === 'pagebreak') {
-      if (currentPage.length > 0) {
-        pages.push(currentPage);
-        currentPage = [];
-        currentH = 0;
-      }
-      continue;
-    }
+    var est = blk.estMm || calcBlockEstMm_(blk);
+    blk.estMm = est;
+    var pbb = !!blk.pageBreakBefore;
 
-    var est = blk.estHeight || 15;
-    if (currentH + est <= maxH || currentPage.length === 0) {
-      currentPage.push(blk);
-      currentH += est;
-    } else {
-      // Check if table can be split cleanly at row boundaries (only for long tables with 10+ rows)
-      if (blk.type === 'table' && blk.rowsText && est > 90) {
-        var lines = blk.rowsText.split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
-        if (lines.length > 10) {
-          var availH = maxH - currentH;
-          var rowsThatFit = Math.floor((availH - 12) / 7.5);
-          if (rowsThatFit >= 2 && (lines.length - rowsThatFit) >= 2) {
-            var part1Lines = lines.slice(0, rowsThatFit);
-            var part2Lines = lines.slice(rowsThatFit);
-            var part1 = {
-              type: 'table',
-              rowsText: part1Lines.join('\n'),
-              estHeight: 10 + part1Lines.length * 7.5
-            };
-            var part2 = {
-              type: 'table',
-              rowsText: part2Lines.join('\n'),
-              isContinuation: true,
-              estHeight: 10 + part2Lines.length * 7.5
-            };
-            currentPage.push(part1);
-            pages.push(currentPage);
-            currentPage = [part2];
-            currentH = part2.estHeight;
-            continue;
-          }
-        }
-      }
-
-      // Block pushes to new page
+    if ((pbb || (currentMm + est > MAX_PAGE_MM)) && currentPage.length > 0) {
       pages.push(currentPage);
+      pageMms.push(Math.round(currentMm * 10) / 10);
       currentPage = [blk];
-      currentH = est;
+      currentMm = est;
+    } else {
+      currentPage.push(blk);
+      currentMm += est;
     }
   }
 
   if (currentPage.length > 0) {
     pages.push(currentPage);
+    pageMms.push(Math.round(currentMm * 10) / 10);
   }
-  return pages;
+
+  return {
+    pages: pages,
+    pageMms: pageMms
+  };
 }
 
 /**
@@ -1011,26 +1052,35 @@ function buildMultiPageDocumentHtml_(pages, headerData, bgBase64) {
       sheetNumber += ' [' + pageNum + '/' + totalPages + ']';
     }
 
-    var ansPillOverlay = ''; // Keep pre-printed stationery pill pristine; zero sticker overlay
+    var page1TitleHtml = '';
+    if (pageIndex === 0) {
+      var titleText = isAns
+        ? 'OFFICIAL MODEL ANSWER KEY • ' + escapeHtml_(headerData.subjectText).toUpperCase()
+        : 'DAILY PRACTICE PROBLEM • ' + escapeHtml_(headerData.subjectText).toUpperCase();
+      page1TitleHtml = '<div style="font-size: 10pt; font-weight: 800; color: #1e3a8a; text-transform: uppercase; margin-bottom: 7px; letter-spacing: 0.3px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #1e3a8a; padding-bottom: 3px;">' +
+        '<span>' + titleText + '</span>' +
+        '<span style="color: #1d4ed8; font-size: 9.5pt; font-weight: 700;">[ ' + headerData.marks + ' Marks ]</span>' +
+      '</div>\n';
+    }
 
-    var contentHtml = pageBlocks.map(function(blk) {
+    var blocksHtml = pageBlocks.map(function(blk) {
       return renderBlockHtml_(blk);
     }).join('\n');
 
     return '<div class="page">\n' +
       '  <img src="data:image/png;base64,' + bgBase64 + '" style="position: absolute; top: 0; left: 0; width: 210mm; height: 297mm; z-index: 0;" />\n' +
-      '  ' + ansPillOverlay + '\n' +
-      '  <!-- 1. NO. Box (top-right purple box) -->\n' +
+      '  <!-- 1. NO. Box (top-right purple box centered) -->\n' +
       '  <div style="position: absolute; top: 4.8mm; left: 174mm; width: 28mm; height: 7.5mm; display: flex; align-items: center; justify-content: center; font-size: 8pt; font-weight: bold; color: #5b1865; z-index: 2; white-space: nowrap;">' + escapeHtml_(sheetNumber) + '</div>\n' +
       '  <!-- 2. Subject Line (Underline after Subject :) -->\n' +
       '  <div style="position: absolute; top: 23.8mm; left: 35mm; width: 43mm; font-size: 9pt; font-weight: bold; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2;">' + escapeHtml_(headerData.subjectText) + '</div>\n' +
       '  <!-- 3. Topic Line (Underline after Topic :) -->\n' +
       '  <div style="position: absolute; top: 23.8mm; left: 104mm; width: 44mm; font-size: 8.5pt; font-weight: bold; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2;">' + escapeHtml_(headerData.topicText) + '</div>\n' +
       '  <!-- 4. Date Line (Underline after Date :) -->\n' +
-      '  <div style="position: absolute; top: 23.8mm; left: 173mm; width: 25mm; text-align: center; font-size: 9pt; font-weight: bold; color: #0f172a; letter-spacing: 0.5px; z-index: 2; background: #ffffff; padding: 0 4px;">' + escapeHtml_(headerData.formattedDate) + '</div>\n' +
-      '  <!-- 5. Usable Safe Content Area (Clears left margin red line at 14mm) -->\n' +
-      '  <div class="page-content">\n' +
-      '    ' + contentHtml + '\n' +
+      '  <div style="position: absolute; top: 23.8mm; left: 173mm; width: 25mm; text-align: center; font-size: 9pt; font-weight: bold; color: #0f172a; letter-spacing: 0.5px; z-index: 2; background: #ffffff; padding: 0 2px;">' + escapeHtml_(headerData.formattedDate) + '</div>\n' +
+      '  <!-- 5. Safe Usable Content Container -->\n' +
+      '  <div class="content">\n' +
+      page1TitleHtml +
+      blocksHtml + '\n' +
       '  </div>\n' +
       '</div>';
   }).join('\n');
@@ -1050,7 +1100,7 @@ function buildMultiPageDocumentHtml_(pages, headerData, bgBase64) {
     '    -webkit-print-color-adjust: exact;\n' +
     '    print-color-adjust: exact;\n' +
     '  }\n' +
-        '  html, body {\n' +
+    '  html, body {\n' +
     '    margin: 0;\n' +
     '    padding: 0;\n' +
     '    background: #ffffff;\n' +
@@ -1064,39 +1114,79 @@ function buildMultiPageDocumentHtml_(pages, headerData, bgBase64) {
     '    width: 210mm;\n' +
     '    height: 297mm;\n' +
     '    position: relative;\n' +
+    '    overflow: hidden;\n' +
     '    page-break-after: always;\n' +
     '    break-after: page;\n' +
-    '    overflow: hidden;\n' +
+    '    box-sizing: border-box;\n' +
     '    background: #ffffff;\n' +
     '  }\n' +
     '  .page:last-child {\n' +
-    '    page-break-after: avoid;\n' +
-    '    break-after: avoid;\n' +
+    '    page-break-after: auto;\n' +
+    '    break-after: auto;\n' +
     '  }\n' +
-    '  .page-content {\n' +
+    '  .content {\n' +
     '    position: relative;\n' +
     '    z-index: 1;\n' +
-    '    padding: 36mm 12mm 26mm 18mm;\n' +
+    '    padding: 60mm 12mm 28mm 18mm;\n' +
     '    box-sizing: border-box;\n' +
     '    width: 210mm;\n' +
     '    height: 297mm;\n' +
     '    overflow: hidden;\n' +
     '  }\n' +
-    '  .block {\n' +
-    '    break-inside: avoid;\n' +
-    '    page-break-inside: avoid;\n' +
+    '  .keep-together {\n' +
+    '    break-inside: avoid !important;\n' +
+    '    page-break-inside: avoid !important;\n' +
+    '  }\n' +
+    '  table {\n' +
+    '    width: 100%;\n' +
+    '    border-collapse: collapse;\n' +
+    '    table-layout: fixed;\n' +
+    '    font-variant-numeric: tabular-nums;\n' +
+    '    font-family: \'Segoe UI\', Roboto, sans-serif;\n' +
     '  }\n' +
     '  .content-card {\n' +
     '    background: rgba(255, 255, 255, 0.94);\n' +
     '    border: 1px solid #cbd5e1;\n' +
     '    border-radius: 10px;\n' +
-    '    padding: 10px 14px;\n' +
-    '    margin-bottom: 9px;\n' +
+    '    padding: 9px 13px;\n' +
+    '    margin-bottom: 8px;\n' +
     '    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);\n' +
     '    break-inside: avoid;\n' +
     '    page-break-inside: avoid;\n' +
     '  }\n' +
-'</style>\n' +
+    '  .content-block {\n' +
+    '    margin-bottom: 8px;\n' +
+    '    break-inside: avoid;\n' +
+    '    page-break-inside: avoid;\n' +
+    '  }\n' +
+    '  .recap-box {\n' +
+    '    margin-bottom: 8px;\n' +
+    '    break-inside: avoid;\n' +
+    '    page-break-inside: avoid;\n' +
+    '  }\n' +
+    '  .footer-block {\n' +
+    '    margin-top: 6px;\n' +
+    '    break-inside: avoid;\n' +
+    '    page-break-inside: avoid;\n' +
+    '  }\n' +
+    '  .frac {\n' +
+    '    display: inline-block;\n' +
+    '    vertical-align: middle;\n' +
+    '    text-align: center;\n' +
+    '    padding: 0 3px;\n' +
+    '  }\n' +
+    '  .frac .num {\n' +
+    '    border-bottom: 1.5px solid #0f172a;\n' +
+    '    display: block;\n' +
+    '    padding: 1px 3px;\n' +
+    '    font-weight: 600;\n' +
+    '  }\n' +
+    '  .frac .den {\n' +
+    '    display: block;\n' +
+    '    padding: 1px 3px;\n' +
+    '    font-weight: 600;\n' +
+    '  }\n' +
+    '</style>\n' +
     '</head>\n' +
     '<body>\n' +
     pagesHtml + '\n' +
@@ -1104,110 +1194,39 @@ function buildMultiPageDocumentHtml_(pages, headerData, bgBase64) {
     '</html>';
 }
 
-/**
- * Dispatches individual block rendering by type
- * @param {Object} blk
- * @return {string}
- */
 function renderBlockHtml_(blk) {
   if (!blk) return '';
   switch (blk.type) {
+    case 'recap':
+      return renderRecapBoxBlockHtml_(blk);
     case 'question_header':
-      return '<div class="content-card">' +
-        '<div style="display: flex; justify-content: space-between; align-items: center;">' +
-          '<div style="display: flex; align-items: center; gap: 8px;">' +
-            '<span style="background: #1d4ed8; color: #ffffff; font-weight: 700; border-radius: 999px; padding: 2.5px 12px; font-size: 8.5pt; letter-spacing: 0.3px;">Q1</span>' +
-            '<span style="background: #fef3c7; color: #92400e; font-weight: 600; border-radius: 999px; padding: 2.5px 12px; font-size: 8.5pt;">CBSE Class ' + blk.classLevel + ' • ' + escapeHtml_(blk.topicText || 'Practice Problem') + '</span>' +
-          '</div>' +
-          '<span style="color: #1d4ed8; font-weight: 800; font-size: 10pt;">[ ' + blk.marks + ' Marks ]</span>' +
-        '</div>' +
-      '</div>';
-
+      return renderQuestionHeaderBlockHtml_(blk);
     case 'question_workingspace':
-      return '<div class="content-card" style="border: 1.5px dashed #cbd5e1; background: rgba(255, 255, 255, 0.92); margin-top: 10px;">' +
-        '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">' +
-          '<span style="font-size: 9pt; font-weight: 700; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.5px;">✍️ Solution & Working Space</span>' +
-          '<span style="font-size: 8pt; color: #64748b; font-weight: 600;">(Show journal entries, ledger accounts, and working notes neatly)</span>' +
-        '</div>' +
-        '<div style="min-height: 55mm; border-bottom: 1px dashed #e2e8f0;"></div>' +
-      '</div>';
-
+      return renderQuestionWorkingSpaceBlockHtml_(blk);
     case 'question_footer':
-      return '<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; margin-top: 6px; display: flex; align-items: center; gap: 8px;">' +
-        '<span style="font-size: 15px;">✍️</span>' +
-        '<div style="font-size: 9pt; color: #334155; line-height: 1.4;">' +
-          '<strong>CBSE Practice Register Assignment:</strong> Solve this question in your physical practice register tonight. Official Step-by-Step Model Answer Key with CBSE Marking Rubric will be shared tomorrow at <strong>08:15 AM IST</strong>.' +
-        '</div>' +
-      '</div>';
-
-    case 'answer_recap':
-      var cleanText = cleanQuestionRecapText_(blk.questionText || '');
-      if (cleanText.length > 250) cleanText = cleanText.substring(0, 248) + '...';
-      var humanDate = formatHumanDppDate_(blk.dateStr);
-      return '<div class="content-card">' +
-        '<div style="font-size: 10.5pt; font-weight: 800; color: #1e3a8a; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.4px;">' +
-          'Official Model Answer Key — DPP of ' + escapeHtml_(humanDate) +
-        '</div>' +
-        '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px;">' +
-          '<div style="display: flex; align-items: center; gap: 8px;">' +
-            '<span style="background: #1d4ed8; color: #ffffff; font-weight: 700; border-radius: 999px; padding: 2.5px 12px; font-size: 8.5pt; letter-spacing: 0.3px;">A1</span>' +
-            '<span style="background: #fef3c7; color: #92400e; font-weight: 600; border-radius: 999px; padding: 2.5px 12px; font-size: 8.5pt;">DPP of ' + escapeHtml_(humanDate) + '</span>' +
-          '</div>' +
-          '<span style="color: #1d4ed8; font-weight: 800; font-size: 10pt;">[ ' + blk.marks + ' Marks ]</span>' +
-        '</div>' +
-        '<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3.5px solid #1d4ed8; border-radius: 6px; padding: 8px 11px;">' +
-          '<div style="font-size: 8pt; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px;">Original Problem Recap</div>' +
-          '<div style="font-size: 9.5pt; color: #334155; margin-top: 3px; font-weight: 500; line-height: 1.45;">' + escapeHtml_(cleanText) + '</div>' +
-        '</div>' +
-      '</div>';
-
-    case 'answer_heading':
-      return '';
-
+      return renderQuestionFooterBlockHtml_(blk);
     case 'taccount':
       return renderTAccountBlockHtml_(blk);
-
     case 'capital':
       return renderCapitalAccountBlockHtml_(blk);
-
     case 'journal':
       return renderJournalBlockHtml_(blk);
-
     case 'table':
       return renderTableBlockHtml_(blk);
-
     case 'graph':
       return renderEconomicsSvgBlock_(blk.template, blk.caption);
-
     case 'formula':
       return renderStatisticsFormulaBlock_(blk.formula, blk.label);
-
     case 'flow':
       return renderBstFlowchartBlock_(blk.steps);
-
     case 'card':
       return renderCaseStudyCardBlock_(blk.title, blk.body);
-
+    case 'footer_block':
+      return renderFooterBlockHtml_(blk);
     case 'rubric':
-      return '<div class="content-card" style="background: rgba(240, 253, 244, 0.95); border: 1px solid #86efac; border-radius: 10px; padding: 11px 15px; margin-bottom: 8px;">' +
-        '<div style="font-size: 10pt; font-weight: 700; color: #15803d; display: flex; align-items: center; gap: 6px;">' +
-          '<span>✅</span><strong>CBSE Step-by-Step Marking Scheme & Rubric</strong>' +
-        '</div>' +
-        '<div style="font-size: 9.5pt; color: #166534; margin-top: 5px; line-height: 1.48;">' +
-          formatBulletListDps_(blk.text) +
-        '</div>' +
-      '</div>';
-
+      return renderRubricOnlyHtml_(blk.text);
     case 'traps':
-      return '<div class="content-card" style="background: rgba(254, 242, 242, 0.95); border: 1px solid #fca5a5; border-radius: 10px; padding: 11px 15px; margin-bottom: 8px;">' +
-        '<div style="font-size: 10pt; font-weight: 700; color: #991b1b; display: flex; align-items: center; gap: 6px;">' +
-          '<span>⚠️</span><strong>Common Examiner Traps to Avoid</strong>' +
-        '</div>' +
-        '<div style="font-size: 9.5pt; color: #9f1239; margin-top: 5px; line-height: 1.48;">' +
-          formatBulletListDps_(blk.text) +
-        '</div>' +
-      '</div>';
-
+      return renderTrapsOnlyHtml_(blk.text);
     case 'text':
     default:
       return renderGenericTextBlock_(blk.text || '');
@@ -1215,63 +1234,192 @@ function renderBlockHtml_(blk) {
 }
 
 /**
- * Renders T-Account with Dr./Cr. header and publication-grade styling
+ * Renders Original Problem Recap box (clean 1-2 line summary, stripped of raw tables/pipes)
+ */
+function renderRecapBoxBlockHtml_(blk) {
+  return '<div class="recap-box keep-together" style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3.5px solid #1d4ed8; border-radius: 6px; padding: 6px 10px; margin-bottom: 8px;">' +
+    '<div style="font-size: 8pt; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px;">Original Problem Recap</div>' +
+    '<div style="font-size: 9pt; color: #334155; margin-top: 2px; font-weight: 500; line-height: 1.4;">' + escapeHtml_(blk.text || '') + '</div>' +
+  '</div>';
+}
+
+/**
+ * Renders combined Footer Block containing BOTH Marking Scheme (green) and Common Traps (red)
+ */
+function renderFooterBlockHtml_(blk) {
+  var rubricHtml = '';
+  if (blk.rubricText) {
+    rubricHtml = '<div class="content-card" style="background: rgba(240, 253, 244, 0.95); border: 1px solid #86efac; border-radius: 10px; padding: 9px 13px; margin-bottom: 7px;">' +
+      '<div style="font-size: 9.5pt; font-weight: 700; color: #15803d; display: flex; align-items: center; gap: 6px;">' +
+        '<span>✅</span><strong>CBSE Step-by-Step Marking Scheme & Rubric</strong>' +
+      '</div>' +
+      '<div style="font-size: 9pt; color: #166534; margin-top: 4px; line-height: 1.45;">' +
+        formatBulletListDps_(blk.rubricText) +
+      '</div>' +
+    '</div>';
+  }
+
+  var trapsHtml = '';
+  if (blk.trapsText) {
+    trapsHtml = '<div class="content-card" style="background: rgba(254, 242, 242, 0.95); border: 1px solid #fca5a5; border-radius: 10px; padding: 9px 13px; margin-bottom: 0;">' +
+      '<div style="font-size: 9.5pt; font-weight: 700; color: #991b1b; display: flex; align-items: center; gap: 6px;">' +
+        '<span>⚠️</span><strong>Common Examiner Traps to Avoid</strong>' +
+      '</div>' +
+      '<div style="font-size: 9pt; color: #9f1239; margin-top: 4px; line-height: 1.45;">' +
+        formatBulletListDps_(blk.trapsText) +
+      '</div>' +
+    '</div>';
+  }
+
+  return '<div class="footer-block keep-together" style="margin-top: 6px;">' +
+    rubricHtml +
+    trapsHtml +
+  '</div>';
+}
+
+function renderRubricOnlyHtml_(text) {
+  return '<div class="content-card keep-together" style="background: rgba(240, 253, 244, 0.95); border: 1px solid #86efac; border-radius: 10px; padding: 9px 13px; margin-bottom: 7px;">' +
+    '<div style="font-size: 9.5pt; font-weight: 700; color: #15803d; display: flex; align-items: center; gap: 6px;">' +
+      '<span>✅</span><strong>CBSE Step-by-Step Marking Scheme & Rubric</strong>' +
+    '</div>' +
+    '<div style="font-size: 9pt; color: #166534; margin-top: 4px; line-height: 1.45;">' +
+      formatBulletListDps_(text) +
+    '</div>' +
+  '</div>';
+}
+
+function renderTrapsOnlyHtml_(text) {
+  return '<div class="content-card keep-together" style="background: rgba(254, 242, 242, 0.95); border: 1px solid #fca5a5; border-radius: 10px; padding: 9px 13px; margin-bottom: 7px;">' +
+    '<div style="font-size: 9.5pt; font-weight: 700; color: #991b1b; display: flex; align-items: center; gap: 6px;">' +
+      '<span>⚠️</span><strong>Common Examiner Traps to Avoid</strong>' +
+    '</div>' +
+    '<div style="font-size: 9pt; color: #9f1239; margin-top: 4px; line-height: 1.45;">' +
+      formatBulletListDps_(text) +
+    '</div>' +
+  '</div>';
+}
+
+/**
+ * Question Sheet Header
+ */
+function renderQuestionHeaderBlockHtml_(blk) {
+  return '<div class="content-card keep-together" style="margin-bottom: 8px;">' +
+    '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+      '<div style="display: flex; align-items: center; gap: 8px;">' +
+        '<span style="background: #1d4ed8; color: #ffffff; font-weight: 700; border-radius: 999px; padding: 2px 10px; font-size: 8.5pt; letter-spacing: 0.3px;">Q1</span>' +
+        '<span style="background: #fef3c7; color: #92400e; font-weight: 600; border-radius: 999px; padding: 2px 10px; font-size: 8.5pt;">CBSE Class ' + blk.classLevel + ' • ' + escapeHtml_(blk.topicText || 'Practice Problem') + '</span>' +
+      '</div>' +
+      '<span style="color: #1d4ed8; font-weight: 800; font-size: 9.5pt;">[ ' + blk.marks + ' Marks ]</span>' +
+    '</div>' +
+  '</div>';
+}
+
+/**
+ * Question Sheet Working Space
+ */
+function renderQuestionWorkingSpaceBlockHtml_(blk) {
+  return '<div class="content-card keep-together" style="border: 1.5px dashed #cbd5e1; background: rgba(255, 255, 255, 0.92); margin-top: 8px;">' +
+    '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">' +
+      '<span style="font-size: 9pt; font-weight: 700; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.5px;">✍️ Solution & Working Space</span>' +
+      '<span style="font-size: 8pt; color: #64748b; font-weight: 600;">(Show journal entries, ledger accounts, and working notes neatly)</span>' +
+    '</div>' +
+    '<div style="min-height: 52mm; border-bottom: 1px dashed #e2e8f0;"></div>' +
+  '</div>';
+}
+
+/**
+ * Question Sheet Footer Notice
+ */
+function renderQuestionFooterBlockHtml_(blk) {
+  return '<div class="keep-together" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 7px 11px; margin-top: 6px; display: flex; align-items: center; gap: 8px;">' +
+    '<span style="font-size: 14px;">✍️</span>' +
+    '<div style="font-size: 8.5pt; color: #334155; line-height: 1.35;">' +
+      '<strong>CBSE Practice Register Assignment:</strong> Solve this question in your physical practice register tonight. Official Step-by-Step Model Answer Key with CBSE Marking Rubric will be shared tomorrow at <strong>08:15 AM IST</strong>.' +
+    '</div>' +
+  '</div>';
+}
+
+/**
+ * Renders T-Account with Dr./Cr. header and mandatory Equal-Row Padding Rule
  */
 function renderTAccountBlockHtml_(blk) {
   var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
-  var trs = [];
-  var drTotal = 0;
-  var crTotal = 0;
-  var startIndex = 0;
+  if (lines.length === 0) return '';
 
-  if (lines.length > 0) {
-    var firstCols = splitPipes_(lines[0]);
-    if (/particular|dr|cr|₹|amount/i.test(firstCols[0] || '') || /particular|dr|cr|₹|amount/i.test(firstCols[1] || '')) {
-      startIndex = 1;
-    }
+  var startIndex = 0;
+  var firstCols = splitPipes_(lines[0]);
+  if (/particular|dr|cr|₹|amount/i.test(firstCols[0] || '') || /particular|dr|cr|₹|amount/i.test(firstCols[1] || '')) {
+    startIndex = 1;
   }
+
+  var drItems = [];
+  var crItems = [];
+  var drTotal = null;
+  var crTotal = null;
 
   for (var i = startIndex; i < lines.length; i++) {
     var cols = splitPipes_(lines[i]);
     if (cols.length >= 4) {
       var isTotal = /total/i.test(cols[0]) || /total/i.test(cols[2]);
-      var borderStyle = isTotal ? 'border-top: 1px solid #cbd5e1; border-bottom: 3px double #0f172a; font-weight: bold; background: #f8fafc;' : 'border-bottom: 1px solid #cbd5e1;';
-      var drVal = parseFloat(String(cols[1]).replace(/[^0-9.]/g, '')) || 0;
-      var crVal = parseFloat(String(cols[3]).replace(/[^0-9.]/g, '')) || 0;
       if (isTotal) {
-        drTotal = drVal;
-        crTotal = crVal;
-      }
+        drTotal = { desc: cols[0] || 'Total', amt: cols[1] || '' };
+        crTotal = { desc: cols[2] || 'Total', amt: cols[3] || '' };
+      } else {
+        var drDesc = (cols[0] || '').trim();
+        var drAmt = (cols[1] || '').trim();
+        var crDesc = (cols[2] || '').trim();
+        var crAmt = (cols[3] || '').trim();
 
-      trs.push('<tr style="' + borderStyle + '">' +
-        '<td style="padding: 6px 9px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + escapeHtml_(cols[0]) + '</td>' +
-        '<td style="padding: 6px 9px; text-align: right; border-right: 2px solid #1d4ed8; font-variant-numeric: tabular-nums; font-weight: 600; color: #0f172a;">' + escapeHtml_(cols[1]) + '</td>' +
-        '<td style="padding: 6px 9px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + escapeHtml_(cols[2]) + '</td>' +
-        '<td style="padding: 6px 9px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: #0f172a;">' + escapeHtml_(cols[3]) + '</td>' +
-      '</tr>');
+        if (drDesc || drAmt) drItems.push({ desc: drDesc, amt: drAmt });
+        if (crDesc || crAmt) crItems.push({ desc: crDesc, amt: crAmt });
+      }
     }
   }
 
-  if (blk.drCrCheck && drTotal > 0 && crTotal > 0) {
-    Logger.log('T-Account ' + blk.title + ' Tally Check: Dr=' + drTotal + ', Cr=' + crTotal + ' (Diff: ' + Math.abs(drTotal - crTotal) + ')');
+  // Equal-Row Padding Rule: Pad shorter side so Total aligns horizontally
+  var maxRows = Math.max(drItems.length, crItems.length);
+  var trs = [];
+
+  for (var r = 0; r < maxRows; r++) {
+    var left = drItems[r] || { desc: '&nbsp;', amt: '' };
+    var right = crItems[r] || { desc: '&nbsp;', amt: '' };
+
+    trs.push('<tr style="border-bottom: 1px solid #cbd5e1;">' +
+      '<td style="padding: 5.5px 8px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + (left.desc === '&nbsp;' ? '&nbsp;' : escapeHtml_(left.desc)) + '</td>' +
+      '<td style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #1d4ed8; font-variant-numeric: tabular-nums; font-weight: 600; color: #0f172a;">' + escapeHtml_(left.amt) + '</td>' +
+      '<td style="padding: 5.5px 8px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + (right.desc === '&nbsp;' ? '&nbsp;' : escapeHtml_(right.desc)) + '</td>' +
+      '<td style="padding: 5.5px 8px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: #0f172a;">' + escapeHtml_(right.amt) + '</td>' +
+    '</tr>');
+  }
+
+  // Double-underline Total row
+  if (drTotal || crTotal) {
+    var dt = drTotal || { desc: 'Total', amt: '' };
+    var ct = crTotal || { desc: 'Total', amt: '' };
+    trs.push('<tr style="border-top: 1px solid #cbd5e1; border-bottom: 3px double #0f172a; font-weight: bold; background: #f8fafc;">' +
+      '<td style="padding: 5.5px 8px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + escapeHtml_(dt.desc) + '</td>' +
+      '<td style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #1d4ed8; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(dt.amt) + '</td>' +
+      '<td style="padding: 5.5px 8px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + escapeHtml_(ct.desc) + '</td>' +
+      '<td style="padding: 5.5px 8px; text-align: right; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(ct.amt) + '</td>' +
+    '</tr>');
   }
 
   var colgroupHtml = '<colgroup><col style="width: 36%;"><col style="width: 14%;"><col style="width: 36%;"><col style="width: 14%;"></colgroup>';
 
-  return '<div class="content-card">' +
+  return '<div class="content-card keep-together">' +
     '<div style="font-weight: 700; font-size: 9.5pt; color: #1e3a8a; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">' +
       '<span>Dr.</span>' +
       '<span style="text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title || 'Ledger Account') + '</span>' +
       '<span>Cr.</span>' +
     '</div>' +
-    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #cbd5e1; table-layout: fixed; font-family: \'Segoe UI\', Roboto, sans-serif;">' +
+    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #cbd5e1; table-layout: fixed; font-family: inherit;">' +
       colgroupHtml +
       '<thead>' +
         '<tr style="background: #dbeafe; color: #0f172a; font-weight: 700; border-bottom: 1px solid #cbd5e1;">' +
-          '<th style="padding: 6px 9px; text-align: left; border-right: 1px solid #cbd5e1;">Particulars</th>' +
-          '<th style="padding: 6px 9px; text-align: right; border-right: 2px solid #1d4ed8;">Amount (₹)</th>' +
-          '<th style="padding: 6px 9px; text-align: left; border-right: 1px solid #cbd5e1;">Particulars</th>' +
-          '<th style="padding: 6px 9px; text-align: right;">Amount (₹)</th>' +
+          '<th style="padding: 5.5px 8px; text-align: left; border-right: 1px solid #cbd5e1;">Particulars</th>' +
+          '<th style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #1d4ed8;">Amount (₹)</th>' +
+          '<th style="padding: 5.5px 8px; text-align: left; border-right: 1px solid #cbd5e1;">Particulars</th>' +
+          '<th style="padding: 5.5px 8px; text-align: right;">Amount (₹)</th>' +
         '</tr>' +
       '</thead>' +
       '<tbody>' +
@@ -1282,7 +1430,7 @@ function renderTAccountBlockHtml_(blk) {
 }
 
 /**
- * Renders Partners Capital Account with publication-grade table styling
+ * Renders Partners Capital Account with dynamic 50% | 50% colgroup and mandatory Equal-Row Padding Rule
  */
 function renderCapitalAccountBlockHtml_(blk) {
   var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
@@ -1292,7 +1440,7 @@ function renderCapitalAccountBlockHtml_(blk) {
   var totalCols = headerCols.length;
   var nPartners = Math.max(1, Math.floor((totalCols - 2) / 2));
   var colgroupHtml = generatePartnersCapitalColgroup_(nPartners);
-  var midColIndex = nPartners + 1;
+  var midColIndex = nPartners + 1; // 1-based index of Right Particulars column
 
   var ths = headerCols.map(function(c, idx) {
     var isDivider = (idx + 1 === midColIndex);
@@ -1301,34 +1449,82 @@ function renderCapitalAccountBlockHtml_(blk) {
     return '<th style="background: #dbeafe; color: #0f172a; padding: 5px 6px; ' + divStyle + ' font-weight: 700; text-align: center; font-size: ' + fontSize + ';">' + escapeHtml_(c) + '</th>';
   }).join('');
 
-  var trs = [];
-  var cellFontSize = (nPartners >= 4) ? '8pt' : (nPartners === 3 ? '8.5pt' : '9pt');
-  var cellPad = (nPartners >= 4) ? '3.5px 4.5px' : (nPartners === 3 ? '4.5px 6px' : '5.5px 8px');
+  var drItems = [];
+  var crItems = [];
+  var drTotal = null;
+  var crTotal = null;
 
   for (var i = 1; i < lines.length; i++) {
     var cols = splitPipes_(lines[i]);
     var isTotal = /total/i.test(cols[0]) || (cols[1] && /total/i.test(cols[1])) || (cols[midColIndex] && /total/i.test(cols[midColIndex]));
-    var borderStyle = isTotal ? 'border-top: 1px solid #cbd5e1; border-bottom: 3px double #0f172a; font-weight: bold; background: #f8fafc;' : 'border-bottom: 1px solid #cbd5e1;';
+    var leftCols = cols.slice(0, midColIndex);
+    var rightCols = cols.slice(midColIndex);
 
-    var tds = cols.map(function(c, cIdx) {
+    while (leftCols.length < midColIndex) leftCols.push('');
+    while (rightCols.length < midColIndex) rightCols.push('');
+
+    if (isTotal) {
+      drTotal = leftCols;
+      crTotal = rightCols;
+    } else {
+      var leftHasContent = leftCols.some(function(c) { return c && c.trim(); });
+      var rightHasContent = rightCols.some(function(c) { return c && c.trim(); });
+      if (leftHasContent) drItems.push(leftCols);
+      if (rightHasContent) crItems.push(rightCols);
+    }
+  }
+
+  // Equal-Row Padding Rule: Pad shorter side before Total
+  var maxRows = Math.max(drItems.length, crItems.length);
+  var trs = [];
+  var cellFontSize = (nPartners >= 4) ? '8pt' : (nPartners === 3 ? '8.5pt' : '9pt');
+  var cellPad = (nPartners >= 4) ? '3.5px 4.5px' : (nPartners === 3 ? '4.5px 6px' : '5.5px 8px');
+
+  var emptySide = [];
+  emptySide.push('&nbsp;');
+  for (var k = 1; k < midColIndex; k++) emptySide.push('');
+
+  for (var r = 0; r < maxRows; r++) {
+    var lRow = drItems[r] || emptySide;
+    var rRow = crItems[r] || emptySide;
+    var rowCols = lRow.concat(rRow);
+
+    var tds = rowCols.map(function(c, cIdx) {
       var isDivider = (cIdx + 1 === midColIndex);
       var divStyle = isDivider ? 'border-right: 2px solid #1d4ed8;' : 'border-right: 1px solid #cbd5e1;';
-      var isAmt = /[\d,]+/.test(c) && !/particular/i.test(c);
+      var isAmt = (cIdx !== 0 && cIdx !== midColIndex) && /[\d,]+/.test(c);
       var align = isAmt ? 'right' : 'left';
-      return '<td style="padding: ' + cellPad + '; ' + borderStyle + ' ' + divStyle + ' text-align: ' + align + '; font-size: ' + cellFontSize + '; font-variant-numeric: tabular-nums; color: #0f172a; white-space: nowrap;">' + escapeHtml_(c) + '</td>';
+      var textVal = (c === '&nbsp;') ? '&nbsp;' : escapeHtml_(c);
+      return '<td style="padding: ' + cellPad + '; border-bottom: 1px solid #cbd5e1; ' + divStyle + ' text-align: ' + align + '; font-size: ' + cellFontSize + '; font-variant-numeric: tabular-nums; color: #0f172a; white-space: nowrap;">' + textVal + '</td>';
     }).join('');
     trs.push('<tr>' + tds + '</tr>');
   }
 
+  // Double-underline Total row
+  if (drTotal || crTotal) {
+    var totalL = drTotal || emptySide;
+    var totalR = crTotal || emptySide;
+    var totalColsArr = totalL.concat(totalR);
+
+    var totalTds = totalColsArr.map(function(c, cIdx) {
+      var isDivider = (cIdx + 1 === midColIndex);
+      var divStyle = isDivider ? 'border-right: 2px solid #1d4ed8;' : 'border-right: 1px solid #cbd5e1;';
+      var isAmt = (cIdx !== 0 && cIdx !== midColIndex) && /[\d,]+/.test(c);
+      var align = isAmt ? 'right' : 'left';
+      return '<td style="padding: ' + cellPad + '; border-top: 1px solid #cbd5e1; border-bottom: 3px double #0f172a; ' + divStyle + ' text-align: ' + align + '; font-size: ' + cellFontSize + '; font-weight: bold; background: #f8fafc; font-variant-numeric: tabular-nums; color: #0f172a; white-space: nowrap;">' + escapeHtml_(c) + '</td>';
+    }).join('');
+    trs.push('<tr>' + totalTds + '</tr>');
+  }
+
   var heading = blk.title || "PARTNERS' CAPITAL ACCOUNTS";
 
-  return '<div class="content-card">' +
+  return '<div class="content-card keep-together">' +
     '<div style="font-weight: 700; font-size: 9.5pt; color: #1e3a8a; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">' +
       '<span>Dr.</span>' +
       '<span style="text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(heading) + ' (' + nPartners + ' Partners)</span>' +
       '<span>Cr.</span>' +
     '</div>' +
-    '<table style="width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #cbd5e1; table-layout: fixed; font-family: \'Segoe UI\', Roboto, sans-serif;">' +
+    '<table style="width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #cbd5e1; table-layout: fixed; font-family: inherit;">' +
       colgroupHtml +
       '<thead><tr>' + ths + '</tr></thead>' +
       '<tbody>' + trs.join('\n') + '</tbody>' +
@@ -1337,7 +1533,7 @@ function renderCapitalAccountBlockHtml_(blk) {
 }
 
 /**
- * Renders Journal Entries with publication-grade CBSE formatting
+ * Renders Journal Entries with exact 5-column layout
  */
 function renderJournalBlockHtml_(blk) {
   var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
@@ -1349,24 +1545,23 @@ function renderJournalBlockHtml_(blk) {
   for (var i = 0; i < lines.length; i++) {
     var rawLine = lines[i];
     if (rawLine.indexOf('|') !== -1) {
-      var cols = rawLine.split('|').map(function(c) { return c.trim(); });
-      if (isHeader && /particular|debit|credit/i.test(rawLine)) {
+      var cols = splitPipes_(rawLine);
+      if (isHeader && /particular|date|l\.f|dr|cr|amount/i.test(rawLine)) {
         isHeader = false;
         var ths = cols.map(function(c) {
-          return '<th style="background: #dbeafe; color: #0f172a; padding: 6px 9px; border: 1px solid #cbd5e1; font-weight: 700; text-align: left; font-size: 9.5pt;">' + escapeHtml_(c) + '</th>';
+          return '<th style="background: #dbeafe; color: #0f172a; padding: 5.5px 8px; border-right: 1px solid #cbd5e1; font-weight: 700; text-align: center; font-size: 9.5pt;">' + escapeHtml_(c) + '</th>';
         }).join('');
-        trs.push('<tr style="border-bottom: 1.5px solid #1d4ed8;">' + ths + '</tr>');
+        trs.push('<tr style="border-bottom: 1px solid #cbd5e1;">' + ths + '</tr>');
         continue;
       }
 
       var isTotal = /total/i.test(rawLine);
-      var borderStyle = isTotal ? 'border-top: 1px solid #cbd5e1; border-bottom: 3px double #0f172a; font-weight: bold; background: #f8fafc;' : 'border: 1px solid #cbd5e1;';
+      var borderStyle = isTotal ? 'border-top: 1px solid #cbd5e1; border-bottom: 3px double #0f172a; font-weight: bold; background: #f8fafc;' : 'border-bottom: 1px solid #cbd5e1;';
 
       var tds = cols.map(function(c, cIdx) {
-        var isAmt = (cIdx >= cols.length - 2) && /[\d,]+/.test(c);
-        var align = isAmt ? 'right' : 'left';
-        var isCreditLine = (cIdx === 1 && /^To\s+/i.test(c));
-        var indent = isCreditLine ? 'padding-left: 20px;' : '';
+        var isAmt = (cIdx === 3 || cIdx === 4) && /[\d,]+/.test(c);
+        var align = isAmt ? 'right' : (cIdx === 0 || cIdx === 2 ? 'center' : 'left');
+        var indent = (cIdx === 1 && /^\s*to\b/i.test(c)) ? 'padding-left: 20px;' : '';
         return '<td style="padding: 5.5px 8px; ' + borderStyle + ' text-align: ' + align + '; ' + indent + ' font-size: 9.5pt; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(c) + '</td>';
       }).join('');
       trs.push('<tr>' + tds + '</tr>');
@@ -1377,37 +1572,124 @@ function renderJournalBlockHtml_(blk) {
     }
   }
 
-  return '<div class="content-card">' +
-    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #cbd5e1; font-family: \'Segoe UI\', Roboto, sans-serif;">' +
+  var colgroupHtml = '<colgroup><col style="width: 12%;"><col style="width: 48%;"><col style="width: 8%;"><col style="width: 16%;"><col style="width: 16%;"></colgroup>';
+
+  return '<div class="content-card keep-together">' +
+    '<div style="font-weight: 700; font-size: 9.5pt; color: #1e3a8a; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px;">Journal Entries</div>' +
+    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #cbd5e1; table-layout: fixed; font-family: inherit;">' +
+      colgroupHtml +
       '<tbody>' + trs.join('\n') + '</tbody>' +
     '</table>' +
   '</div>';
 }
 
 /**
- * Renders generic styled CBSE table (Balance Sheet, Trial Balance, BRS)
+ * Renders generic styled CBSE table (Balance Sheet, Trial Balance, Statistics) with Equal-Row Padding Rule for 2-sided tables
  */
 function renderTableBlockHtml_(blk) {
   var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
   if (lines.length === 0) return '';
 
+  var headerCols = [];
+  var startIndex = 0;
+  if (lines.length > 0 && lines[0].indexOf('|') !== -1) {
+    var firstCols = splitPipes_(lines[0]);
+    if (/particular|date|debit|credit|amount|plus|minus|liabilities|assets|class|f|mid/i.test(lines[0])) {
+      headerCols = firstCols;
+      startIndex = 1;
+    }
+  }
+
+  var isBS = (headerCols.length === 4 && /balance sheet|revaluation|realisation|trading|p&l|cash|bank/i.test(blk.title || ''));
+
+  if (isBS) {
+    var leftItems = [];
+    var rightItems = [];
+    var leftTotal = null;
+    var rightTotal = null;
+
+    for (var i = startIndex; i < lines.length; i++) {
+      var raw = lines[i];
+      if (raw.indexOf('|') !== -1) {
+        var cols = splitPipes_(raw);
+        if (cols.length >= 4) {
+          var isTot = /total/i.test(cols[0]) || /total/i.test(cols[2]);
+          if (isTot) {
+            leftTotal = { desc: cols[0] || 'Total', amt: cols[1] || '' };
+            rightTotal = { desc: cols[2] || 'Total', amt: cols[3] || '' };
+          } else {
+            var lDesc = (cols[0] || '').trim();
+            var lAmt = (cols[1] || '').trim();
+            var rDesc = (cols[2] || '').trim();
+            var rAmt = (cols[3] || '').trim();
+            if (lDesc || lAmt) leftItems.push({ desc: lDesc, amt: lAmt });
+            if (rDesc || rAmt) rightItems.push({ desc: rDesc, amt: rAmt });
+          }
+        }
+      }
+    }
+
+    var maxRows = Math.max(leftItems.length, rightItems.length);
+    var trs = [];
+
+    // Header row
+    var ths = headerCols.map(function(c, cIdx) {
+      var divStyle = (cIdx === 1) ? 'border-right: 2px solid #1d4ed8;' : 'border-right: 1px solid #cbd5e1;';
+      var align = (cIdx === 1 || cIdx === 3) ? 'right' : 'left';
+      return '<th style="background: #dbeafe; color: #0f172a; padding: 5.5px 8px; ' + divStyle + ' font-weight: 700; text-align: ' + align + '; font-size: 9.5pt;">' + escapeHtml_(c) + '</th>';
+    }).join('');
+    trs.push('<tr style="border-bottom: 1px solid #cbd5e1;">' + ths + '</tr>');
+
+    // Data rows with Equal-Row Padding Rule
+    for (var r = 0; r < maxRows; r++) {
+      var left = leftItems[r] || { desc: '&nbsp;', amt: '' };
+      var right = rightItems[r] || { desc: '&nbsp;', amt: '' };
+      trs.push('<tr style="border-bottom: 1px solid #cbd5e1;">' +
+        '<td style="padding: 5.5px 8px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + (left.desc === '&nbsp;' ? '&nbsp;' : escapeHtml_(left.desc)) + '</td>' +
+        '<td style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #1d4ed8; font-variant-numeric: tabular-nums; font-weight: 600; color: #0f172a;">' + escapeHtml_(left.amt) + '</td>' +
+        '<td style="padding: 5.5px 8px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + (right.desc === '&nbsp;' ? '&nbsp;' : escapeHtml_(right.desc)) + '</td>' +
+        '<td style="padding: 5.5px 8px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: #0f172a;">' + escapeHtml_(right.amt) + '</td>' +
+      '</tr>');
+    }
+
+    // Double-underline Total row
+    if (leftTotal || rightTotal) {
+      var lt = leftTotal || { desc: 'Total', amt: '' };
+      var rt = rightTotal || { desc: 'Total', amt: '' };
+      trs.push('<tr style="border-top: 1px solid #cbd5e1; border-bottom: 3px double #0f172a; font-weight: bold; background: #f8fafc;">' +
+        '<td style="padding: 5.5px 8px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + escapeHtml_(lt.desc) + '</td>' +
+        '<td style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #1d4ed8; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(lt.amt) + '</td>' +
+        '<td style="padding: 5.5px 8px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + escapeHtml_(rt.desc) + '</td>' +
+        '<td style="padding: 5.5px 8px; text-align: right; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(rt.amt) + '</td>' +
+      '</tr>');
+    }
+
+    var colgroupHtml = '<colgroup><col style="width: 36%;"><col style="width: 14%;"><col style="width: 36%;"><col style="width: 14%;"></colgroup>';
+    var contdNotice = blk.isContinuation ? '<div style="font-size: 8pt; font-weight: bold; color: #64748b; margin-bottom: 3px;">(Table Continued from previous page)</div>' : '';
+    var titleHeader = blk.title ? '<div style="font-weight: 700; font-size: 9.5pt; color: #1e3a8a; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title) + '</div>' : '';
+
+    return '<div class="content-card keep-together">' +
+      titleHeader +
+      contdNotice +
+      '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #cbd5e1; table-layout: fixed; font-family: inherit;">' +
+        colgroupHtml +
+        '<tbody>' + trs.join('\n') + '</tbody>' +
+      '</table>' +
+    '</div>';
+  }
+
+  // Arbitrary multi-column table (e.g. Statistics)
   var trs = [];
   var isHeader = true;
-  var col1Total = 0;
-  var col2Total = 0;
-  var headerCols = [];
-
   for (var i = 0; i < lines.length; i++) {
     var rawLine = lines[i];
     if (rawLine.indexOf('|') !== -1) {
       var cols = splitPipes_(rawLine);
-      if (isHeader && /particular|date|debit|credit|amount|plus|minus|liabilities|assets|class|f|mid/i.test(rawLine)) {
+      if (isHeader && /particular|date|debit|credit|amount|plus|minus|class|f|mid/i.test(rawLine)) {
         isHeader = false;
-        headerCols = cols;
         var ths = cols.map(function(c, cIdx) {
-          var isBSMid = (cols.length === 4 && cIdx === 1 && /balance sheet/i.test(blk.title || ''));
-          var divStyle = isBSMid ? 'border-right: 2px solid #1d4ed8;' : 'border-right: 1px solid #cbd5e1;';
-          return '<th style="background: #dbeafe; color: #0f172a; padding: 6px 9px; ' + divStyle + ' font-weight: 700; text-align: ' + (cIdx > 0 && cols.length > 2 ? 'right' : 'left') + '; font-size: 9.5pt;">' + escapeHtml_(c) + '</th>';
+          var align = (cIdx === 0) ? 'left' : 'right';
+          return '<th style="background: #dbeafe; color: #0f172a; padding: 5.5px 8px; border-right: 1px solid #cbd5e1; font-weight: 700; text-align: ' + align + '; font-size: 9.5pt;">' + escapeHtml_(c) + '</th>';
         }).join('');
         trs.push('<tr style="border-bottom: 1px solid #cbd5e1;">' + ths + '</tr>');
         continue;
@@ -1416,36 +1698,21 @@ function renderTableBlockHtml_(blk) {
       var isTotal = /total/i.test(rawLine);
       var borderStyle = isTotal ? 'border-top: 1px solid #cbd5e1; border-bottom: 3px double #0f172a; font-weight: bold; background: #f8fafc;' : 'border-bottom: 1px solid #cbd5e1;';
 
-      if (isTotal && cols.length >= 4) {
-        col1Total = parseFloat(String(cols[1]).replace(/[^0-9.]/g, '')) || 0;
-        col2Total = parseFloat(String(cols[3]).replace(/[^0-9.]/g, '')) || 0;
-      }
-
       var tds = cols.map(function(c, cIdx) {
-        var isAmt = /[\d,]+/.test(c) && !/[a-zA-Z]{3,}/.test(c);
-        var align = (cIdx > 0 && cols.length > 2) ? 'right' : (isAmt ? 'right' : 'left');
-        var isBSMid = (cols.length === 4 && cIdx === 1 && /balance sheet/i.test(blk.title || ''));
-        var divStyle = isBSMid ? 'border-right: 2px solid #1d4ed8;' : 'border-right: 1px solid #cbd5e1;';
-        return '<td style="padding: 5.5px 8px; ' + borderStyle + ' ' + divStyle + ' text-align: ' + align + '; font-size: 9.5pt; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(c) + '</td>';
+        var isAmt = (cIdx > 0) && /[\d,]+/.test(c);
+        var align = (cIdx === 0) ? 'left' : 'right';
+        return '<td style="padding: 5.5px 8px; ' + borderStyle + ' border-right: 1px solid #cbd5e1; text-align: ' + align + '; font-size: 9.5pt; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(c) + '</td>';
       }).join('');
       trs.push('<tr>' + tds + '</tr>');
-    } else {
-      trs.push('<tr><td colspan="10" style="padding: 5.5px 8px; font-weight: bold; background: #f8fafc; border: 1px solid #cbd5e1; font-size: 9.5pt; color: #0f172a;">' + escapeHtml_(rawLine) + '</td></tr>');
     }
   }
 
-  if (blk.drCrCheck && col1Total > 0 && col2Total > 0) {
-    Logger.log('Table ' + blk.title + ' Tally Check: Col1=' + col1Total + ', Col2=' + col2Total + ' (Diff: ' + Math.abs(col1Total - col2Total) + ')');
-  }
-
   var colgroupHtml = generateArbitraryColgroup_(headerCols.length > 0 ? headerCols : (lines[0] ? splitPipes_(lines[0]) : []), blk.title);
-  var contdNotice = blk.isContinuation ? '<div style="font-size: 8pt; font-weight: bold; color: #64748b; margin-bottom: 3px;">(Table Continued from previous page)</div>' : '';
   var titleHeader = blk.title ? '<div style="font-weight: 700; font-size: 9.5pt; color: #1e3a8a; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title) + '</div>' : '';
 
-  return '<div class="content-card">' +
+  return '<div class="content-card keep-together">' +
     titleHeader +
-    contdNotice +
-    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #cbd5e1; table-layout: fixed; font-family: \'Segoe UI\', Roboto, sans-serif;">' +
+    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #cbd5e1; table-layout: fixed; font-family: inherit;">' +
       colgroupHtml +
       '<tbody>' + trs.join('\n') + '</tbody>' +
     '</table>' +
@@ -1458,44 +1725,9 @@ function renderTableBlockHtml_(blk) {
 function renderEconomicsSvgBlock_(templateName, caption) {
   templateName = String(templateName || 'demand_shift').toLowerCase().trim();
   caption = caption || 'Economic Analysis Diagram';
-  var svgContent = '';
 
-  if (templateName.indexOf('supply') !== -1) {
-    svgContent = '<svg width="340" height="175" viewBox="0 0 340 175" style="background:#fff; font-family:-apple-system, sans-serif; margin:0 auto; display:block;">\n' +
-      '<line x1="40" y1="15" x2="40" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
-      '<line x1="40" y1="145" x2="310" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
-      '<text x="35" y="14" font-size="10" font-weight="bold" text-anchor="end" fill="#0f172a">Price (₹)</text>\n' +
-      '<text x="310" y="160" font-size="10" font-weight="bold" text-anchor="end" fill="#0f172a">Quantity (Units)</text>\n' +
-      '<line x1="60" y1="30" x2="270" y2="135" stroke="#9333ea" stroke-width="2.2" />\n' +
-      '<text x="275" y="140" font-size="11" font-weight="bold" fill="#9333ea">D</text>\n' +
-      '<line x1="60" y1="130" x2="245" y2="30" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="4,3" />\n' +
-      '<text x="250" y="34" font-size="11" font-weight="bold" fill="#64748b">S₀</text>\n' +
-      '<line x1="90" y1="130" x2="275" y2="30" stroke="#0284c7" stroke-width="2.2" />\n' +
-      '<text x="280" y="34" font-size="11" font-weight="bold" fill="#0284c7">S₁</text>\n' +
-      '<circle cx="155" cy="80" r="3.5" fill="#1e293b" />\n' +
-      '<text x="145" y="75" font-size="9.5" font-weight="bold" fill="#1e293b">E₀</text>\n' +
-      '<circle cx="185" cy="94" r="3.5" fill="#0284c7" />\n' +
-      '<text x="180" y="88" font-size="9.5" font-weight="bold" fill="#0284c7">E₁</text>\n' +
-      '<defs><marker id="arr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1e293b"/></marker></defs>\n' +
-    '</svg>';
-  } else if (templateName.indexOf('ppc') !== -1) {
-    svgContent = '<svg width="340" height="175" viewBox="0 0 340 175" style="background:#fff; font-family:-apple-system, sans-serif; margin:0 auto; display:block;">\n' +
-      '<line x1="40" y1="15" x2="40" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
-      '<line x1="40" y1="145" x2="310" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
-      '<text x="35" y="14" font-size="10" font-weight="bold" text-anchor="end" fill="#0f172a">Good Y</text>\n' +
-      '<text x="310" y="160" font-size="10" font-weight="bold" text-anchor="end" fill="#0f172a">Good X</text>\n' +
-      '<path d="M 40 35 Q 180 45 270 145" stroke="#9333ea" stroke-width="2.5" fill="none" />\n' +
-      '<circle cx="110" cy="50" r="3.5" fill="#16a34a" />\n' +
-      '<text x="115" y="47" font-size="9" font-weight="bold" fill="#16a34a">A (Efficient)</text>\n' +
-      '<circle cx="210" cy="90" r="3.5" fill="#16a34a" />\n' +
-      '<text x="215" y="87" font-size="9" font-weight="bold" fill="#16a34a">B (Efficient)</text>\n' +
-      '<circle cx="120" cy="105" r="3.5" fill="#ea580c" />\n' +
-      '<text x="125" y="110" font-size="9" font-weight="bold" fill="#ea580c">U (Underutilised)</text>\n' +
-      '<circle cx="230" cy="40" r="3.5" fill="#dc2626" />\n' +
-      '<text x="235" y="40" font-size="9" font-weight="bold" fill="#dc2626">G (Unattainable)</text>\n' +
-      '<defs><marker id="arr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1e293b"/></marker></defs>\n' +
-    '</svg>';
-  } else if (templateName.indexOf('cost') !== -1) {
+  var svgContent = '';
+  if (templateName === 'cost_curves' || templateName === 'ac_mc') {
     svgContent = '<svg width="340" height="175" viewBox="0 0 340 175" style="background:#fff; font-family:-apple-system, sans-serif; margin:0 auto; display:block;">\n' +
       '<line x1="40" y1="15" x2="40" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
       '<line x1="40" y1="145" x2="310" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
@@ -1531,7 +1763,7 @@ function renderEconomicsSvgBlock_(templateName, caption) {
     '</svg>';
   }
 
-  return '<div class="content-card" style="text-align: center;">\n' +
+  return '<div class="content-card keep-together" style="text-align: center;">\n' +
     '<div style="font-size: 9.5pt; font-weight: 700; color: #1e3a8a; margin-bottom: 6px; letter-spacing: 0.3px;">Figure: ' + escapeHtml_(caption) + '</div>\n' +
     svgContent + '\n' +
   '</div>';
@@ -1543,33 +1775,31 @@ function renderEconomicsSvgBlock_(templateName, caption) {
 function renderStatisticsFormulaBlock_(formulaRaw, label) {
   label = label || 'Standard Deviation Formula & Calculation';
   var inner = String(formulaRaw || '')
-    .replace(/\[FRAC:\s*([^/\]]+)\s*\/\s*([^\]]+)\]/gi, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 3px; font-weight:600;">$1</span><span style="padding:1px 3px; font-weight:600;">$2</span></span>')
-    .replace(/\\frac\{([^}]+)\}\s*\{([^}]+)\}/g, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 3px; font-weight:600;">$1</span><span style="padding:1px 3px; font-weight:600;">$2</span></span>')
-    .replace(/\[\s*([^\]]+)\s*\]\s*\/\s*\[\s*([^\]]+)\s*\]/g, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 3px; font-weight:600;">$1</span><span style="padding:1px 3px; font-weight:600;">$2</span></span>')
-    .replace(/√\(([^)]+)\)/g, '<span style="font-size: 1.2em; font-weight: bold; color: #1d4ed8;">√( </span><span style="display:inline-block; vertical-align:middle; padding:0 3px;">$1</span><span style="font-size: 1.2em; font-weight: bold; color: #1d4ed8;"> )</span>')
-    .replace(/\\sqrt\{([^}]+)\}/g, '<span style="font-size: 1.2em; font-weight: bold; color: #1d4ed8;">√( </span><span style="display:inline-block; vertical-align:middle; padding:0 3px;">$1</span><span style="font-size: 1.2em; font-weight: bold; color: #1d4ed8;"> )</span>')
+    .replace(/\[FRAC:\s*([^/\]]+)\s*\/\s*([^\]]+)\]/gi, '<span class="frac"><span class="num">$1</span><span class="den">$2</span></span>')
+    .replace(/\\frac\{([^}]+)\}\s*\{([^}]+)\}/g, '<span class="frac"><span class="num">$1</span><span class="den">$2</span></span>')
+    .replace(/\[\s*([^\]]+)\s*\]\s*\/\s*\[\s*([^\]]+)\s*\]/g, '<span class="frac"><span class="num">$1</span><span class="den">$2</span></span>')
+    .replace(/√\(([^)]+)\)/g, '<span style="font-size: 1.15em; font-weight: bold; color: #1d4ed8;">√( </span><span style="display:inline-block; vertical-align:middle; padding:0 3px;">$1</span><span style="font-size: 1.15em; font-weight: bold; color: #1d4ed8;"> )</span>')
+    .replace(/\\sqrt\{([^}]+)\}/g, '<span style="font-size: 1.15em; font-weight: bold; color: #1d4ed8;">√( </span><span style="display:inline-block; vertical-align:middle; padding:0 3px;">$1</span><span style="font-size: 1.15em; font-weight: bold; color: #1d4ed8;"> )</span>')
     .replace(/\\sum/g, 'Σ')
-    .replace(/\\bar\{x\}/g, '<span style="text-decoration:overline">x</span>')
-    .replace(/\\bar\{y\}/g, '<span style="text-decoration:overline">y</span>')
     .replace(/\\sigma/g, 'σ');
 
-  return '<div class="content-card" style="border-left: 4px solid #1d4ed8; text-align: center;">\n' +
+  return '<div class="content-card keep-together" style="border-left: 4px solid #1d4ed8; text-align: center;">\n' +
     '<div style="font-size: 9pt; font-weight: 700; color: #1d4ed8; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 0.4px;">' + escapeHtml_(label) + '</div>\n' +
-    '<div style="font-size: 11pt; line-height: 1.6; color: #0f172a;">' + inner + '</div>\n' +
+    '<div style="font-size: 10.5pt; line-height: 1.6; color: #0f172a;">' + inner + '</div>\n' +
   '</div>';
 }
 
 /**
- * Renders Business Studies vertical step flowchart
+ * Renders Business Studies vertical step flowchart with directional connectors
  */
 function renderBstFlowchartBlock_(stepsText) {
   var steps = String(stepsText || '').split(/->|\n/).map(function(s) { return s.trim(); }).filter(Boolean);
   var items = steps.map(function(s, idx) {
-    var arrow = (idx < steps.length - 1) ? '<div style="font-size: 14px; color: #1d4ed8; font-weight: bold; margin: 2px 0;">↓</div>' : '';
-    return '<div style="background: #eff6ff; border: 1.5px solid #3b82f6; border-radius: 8px; padding: 5.5px 14px; font-weight: 700; font-size: 9.5pt; color: #1e3a8a; display: inline-block; min-width: 240px; box-shadow: 0 1px 2px rgba(30, 58, 138, 0.05);">' + escapeHtml_(s) + '</div>' + arrow;
+    var arrow = (idx < steps.length - 1) ? '<div style="font-size: 13px; color: #1d4ed8; font-weight: bold; margin: 1px 0;">↓</div>' : '';
+    return '<div style="background: #eff6ff; border: 1.5px solid #3b82f6; border-radius: 8px; padding: 5px 10px; margin: 2px 0; font-weight: 700; font-size: 9.5pt; color: #1e3a8a; display: inline-block; min-width: 240px; box-shadow: 0 1px 2px rgba(30, 58, 138, 0.05);">' + escapeHtml_(s) + '</div>' + arrow;
   }).join('');
 
-  return '<div class="content-card" style="text-align: center;">' +
+  return '<div class="content-card keep-together" style="text-align: center;">' +
     '<div style="font-size: 9.5pt; font-weight: 700; color: #1e3a8a; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.4px;">Sequential Planning Process Flowchart</div>' +
     items +
   '</div>';
@@ -1579,7 +1809,7 @@ function renderBstFlowchartBlock_(stepsText) {
  * Renders Business Studies Case Study callout card
  */
 function renderCaseStudyCardBlock_(title, body) {
-  return '<div class="content-card" style="border-left: 4px solid #1d4ed8;">\n' +
+  return '<div class="content-card keep-together" style="border-left: 4px solid #1d4ed8;">\n' +
     '<div style="font-size: 9.5pt; font-weight: bold; color: #1d4ed8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px;">📌 ' + escapeHtml_(title || 'Case Scenario') + '</div>\n' +
     '<div style="font-size: 10pt; line-height: 1.48; color: #1e293b; font-style: italic;">' + escapeHtml_(body) + '</div>\n' +
   '</div>';
@@ -1605,12 +1835,9 @@ function renderGenericTextBlock_(text) {
     }
   }
 
-  return '<div class="content-card">' + out.join('\n') + '</div>';
+  return '<div class="content-card keep-together">' + out.join('\n') + '</div>';
 }
 
-/**
- * Parses raw text or table markup into styled HTML (Legacy Compatibility)
- */
 function formatAccountingTableOrTextDps_(text) {
   var blocks = parseDslBlocks_(text, 'Accountancy', false);
   return blocks.map(function(b) { return renderBlockHtml_(b); }).join('\n');
@@ -2528,8 +2755,8 @@ function runFounderSubjectiveDryRunTests() {
       '| Creditors | 40,000 | Cash (20,000 + 60,000 + 20,000) | 1,00,000 |\n' +
       '| Capital: A | 1,39,500 | Debtors (50,000 − 2,500) | 47,500 |\n' +
       '| Capital: B | 93,000 | Stock (70,000 + 7,000) | 77,000 |\n' +
-      '| Total | 2,72,500 | Machinery (1,20,000 − 12,000) | 1,08,000 |\n' +
-      '| | | Total | 3,32,500 |\n' +
+      '| Capital: C | 60,000 | Machinery (1,20,000 − 12,000) | 1,08,000 |\n' +
+      '| Total | 3,32,500 | Total | 3,32,500 |\n' +
       '#ENDTABLE';
 
     var res1 = createAnswerPdfFromTemplate_({
@@ -2568,7 +2795,8 @@ function runFounderSubjectiveDryRunTests() {
       classLevel: 12,
       marks: 8,
       pageCount: res1.pageCount,
-      drCrCheckTally: 'BALANCED',
+      pageMms: res1.pageMms,
+      drCrCheckTally: '3,32,500 = 3,32,500 (Balanced)',
       driveUrl: res1.driveUrl
     };
   } catch (e1) {
@@ -2613,6 +2841,7 @@ function runFounderSubjectiveDryRunTests() {
       classLevel: 12,
       marks: 6,
       pageCount: res2.pageCount,
+      pageMms: res2.pageMms,
       dynamicMath: 'Exact 50% | 50% (22% + 7%x4 | 22% + 7%x4)',
       driveUrl: res2.driveUrl
     };
@@ -2651,13 +2880,14 @@ function runFounderSubjectiveDryRunTests() {
       commonMistakes:
         '⚠️ Squaring error: (90/20)² = 20.25, NOT 20.5.'
     });
-    results.test3_statistics_sd = {
+    results.test5_statistics_sd = {
       ok: true,
       subject: 'Statistics',
       topic: 'Measures of Dispersion (Standard Deviation)',
       classLevel: 11,
       marks: 6,
       pageCount: res3.pageCount,
+      pageMms: res3.pageMms,
       formulaStyle: 'Clean √( ... ) Parentheses with Stacked Fractions',
       driveUrl: res3.driveUrl
     };
@@ -2697,6 +2927,7 @@ function runFounderSubjectiveDryRunTests() {
       classLevel: 12,
       marks: 6,
       pageCount: resEco.pageCount,
+      pageMms: resEco.pageMms,
       diagram: 'Pure Vector Inline SVG with Navy Axes & Shaded Equilibrium',
       driveUrl: resEco.driveUrl
     };
@@ -2728,14 +2959,15 @@ function runFounderSubjectiveDryRunTests() {
       commonMistakes:
         '⚠️ Skipping Developing Premises or reversing step order.'
     });
-    results.test5_business_studies = {
+    results.test3_business_studies = {
       ok: true,
       subject: 'Business Studies',
       topic: 'Planning Process',
       classLevel: 12,
       marks: 4,
       pageCount: res4.pageCount,
-      flowchart: 'Vertical Step Sequence with Directional Connectors',
+      pageMms: res4.pageMms,
+      flowchart: 'Vertical Step Sequence with Directional Connectors (Footer on Page 2)',
       driveUrl: res4.driveUrl
     };
   } catch (e4) {
