@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Commerce Gyan Quiz Engine V7</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#0f172a;color:white}
+.top{padding:15px;background:#111827;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.tabs button,.controls button,label{padding:10px 14px;margin:4px;border:none;border-radius:8px;cursor:pointer}
+.tabs button{background:#374151;color:white}
+.controls button,label{background:#2563eb;color:white}
+input[type=file]{display:none}
+.page{display:none;padding:20px}
+.active{display:block}
+.card{background:white;color:black;border-radius:16px;padding:20px}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opt{padding:16px;border-radius:12px;color:white;font-weight:bold}
+.a{background:#2563eb}.b{background:#16a34a}.c{background:#ea580c}.d{background:#9333ea}
+.bigOption{font-size:36px;padding:25px;margin:10px 0;border-radius:14px;color:white}
+.timer{font-size:28px;font-weight:bold}
+</style>
+</head>
+<body>
+
+<div class="top">
+<div><h2>Commerce Gyan Quiz Engine V7</h2></div>
+<div class="controls">
+<label for="csv">Import CSV</label>
+<input type="file" id="csv" accept=".csv">
+<button onclick="startQuiz()">Start</button>
+<button onclick="nextQuestion()">Next</button>
+<button onclick="toggleAnswer()">Reveal Answer</button>
+</div>
+</div>
+
+<div class="tabs">
+<button onclick="showTab('quiz')">Quiz</button>
+<button onclick="showTab('board')">Option Board</button>
+<button onclick="showTab('teacher')">Teacher Dashboard</button>
+<button onclick="showTab('analytics')">Analytics</button>
+</div>
+
+<div id="quiz" class="page active">
+<div class="card">
+<div id="qtext">Import CSV</div>
+<div class="timer">⏱ <span id="timer">0</span></div>
+<div class="options">
+<div id="qa" class="opt a"></div>
+<div id="qb" class="opt b"></div>
+<div id="qc" class="opt c"></div>
+<div id="qd" class="opt d"></div>
+</div>
+</div>
+</div>
+
+<div id="board" class="page">
+<div class="card">
+<h2>Option Board</h2>
+<div id="ba" class="bigOption a"></div>
+<div id="bb" class="bigOption b"></div>
+<div id="bc" class="bigOption c"></div>
+<div id="bd" class="bigOption d"></div>
+</div>
+</div>
+
+<div id="teacher" class="page">
+<div class="card">
+<h2>Teacher Dashboard</h2>
+<p><b>Difficulty:</b> <span id="tdiff"></span></p>
+<p><b>Category:</b> <span id="tcat"></span></p>
+<p><b>Correct Answer:</b> <span id="tans"></span></p>
+</div>
+</div>
+
+<div id="analytics" class="page">
+<div class="card">
+<h2>Analytics</h2>
+<p>Total Questions: <span id="totalQ">0</span></p>
+<p>Current Question: <span id="currentQ">0</span></p>
+</div>
+</div>
+
+<script>
+let questions=[],idx=0,remaining=0,intv=null;
+
+function showTab(id){
+document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+document.getElementById(id).classList.add('active');
+}
+
+document.getElementById('csv').addEventListener('change',e=>{
+const f=e.target.files[0];
+const r=new FileReader();
+r.onload=x=>{
+const rows=x.target.result.trim().split(/\r?\n/).slice(1);
+questions=rows.map(v=>{
+const c=v.split(',');
+return {
+q:c[0],a:c[1],b:c[2],c:c[3],d:c[4],
+ans:c[5],diff:c[6]||'Medium',cat:c[7]||'General'
+};
+});
+document.getElementById('totalQ').innerText=questions.length;
+alert('Loaded '+questions.length+' questions');
+};
+r.readAsText(f);
+});
+
+function getTime(d){
+d=d.toLowerCase();
+if(d==='easy') return 30;
+if(d==='medium') return 60;
+if(d==='hard') return 120;
+if(d==='expert') return 180;
+return 60;
+}
+
+function loadQ(){
+const q=questions[idx];
+if(!q) return;
+
+remaining=getTime(q.diff);
+
+qtext.innerText=q.q;
+qa.innerText='A) '+q.a;
+qb.innerText='B) '+q.b;
+qc.innerText='C) '+q.c;
+qd.innerText='D) '+q.d;
+
+ba.innerText='A) '+q.a;
+bb.innerText='B) '+q.b;
+bc.innerText='C) '+q.c;
+bd.innerText='D) '+q.d;
+
+tdiff.innerText=q.diff;
+tcat.innerText=q.cat;
+tans.innerText='Hidden';
+
+currentQ.innerText=(idx+1);
+}
+
+function startQuiz(){
+if(!questions.length) return alert('Import CSV first');
+idx=0;
+loadQ();
+clearInterval(intv);
+intv=setInterval(()=>{
+timer.innerText=remaining;
+if(remaining<=0) nextQuestion();
+remaining--;
+},1000);
+}
+
+function nextQuestion(){
+idx++;
+if(idx>=questions.length){
+clearInterval(intv);
+alert('Quiz Finished');
+return;
+}
+loadQ();
+}
+
+function toggleAnswer(){
+if(!questions[idx]) return;
+tans.innerText=questions[idx].ans;
+}
+</script>
+</body>
+</html>

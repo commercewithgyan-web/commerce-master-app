@@ -1,0 +1,24 @@
+[
+  {
+    "op": "write",
+    "range": "PROMISE_LOG!A4:N4",
+    "data": [
+      [
+        "PRM-261111-003",
+        "2026-11-11",
+        "ENQ-261111-004",
+        "",
+        "Rohan Kumar",
+        "9800099887",
+        "MATERIAL_WAIVER",
+        0,
+        200,
+        "2026-11-15",
+        "Gyan Deep Sir",
+        "PENDING",
+        "",
+        "Counseling agreed: ₹200 Study Material kit fee waived on same-day combo admission"
+      ]
+    ]
+  }
+]

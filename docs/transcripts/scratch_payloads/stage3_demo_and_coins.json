@@ -1,0 +1,66 @@
+[
+  {
+    "op": "write",
+    "range": "INQUIRY_CRM!M5:R5",
+    "data": [
+      [
+        "Day 3/3",
+        "C11_AFT",
+        "2026-11-11",
+        true,
+        true,
+        true
+      ]
+    ]
+  },
+  {
+    "op": "write",
+    "range": "INQUIRY_CRM!W5",
+    "data": [
+      [
+        "DEMO_DAY3_COUNSELING"
+      ]
+    ]
+  },
+  {
+    "op": "write",
+    "range": "INQUIRY_CRM!Y5",
+    "data": [
+      [
+        "FOLLOW_UP"
+      ]
+    ]
+  },
+  {
+    "op": "write",
+    "range": "DEMO_TRACKER!K5:L5",
+    "data": [
+      [
+        "3/3",
+        "Completed"
+      ]
+    ]
+  },
+  {
+    "op": "write",
+    "range": "DEMO_TRACKER!O5",
+    "data": [
+      [
+        "Completed 3/3 demo classes; Stage-1 Referral +10 Coins triggered for CG-11-001"
+      ]
+    ]
+  },
+  {
+    "op": "write",
+    "range": "Coin_Ledger!A4:E4",
+    "data": [
+      [
+        "2026-11-11",
+        "CG-11-001",
+        "REFERRAL_STAGE1",
+        "ENQ-261111-004|DM-004",
+        10
+      ]
+    ]
+  }
+]

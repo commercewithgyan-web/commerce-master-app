@@ -1,0 +1,60 @@
+[
+  {
+    "op": "write",
+    "range": "INQUIRY_CRM!A5:AA5",
+    "data": [
+      [
+        "ENQ-261111-004",
+        "2026-11-11",
+        "Rohan Kumar",
+        "Rajesh Kumar",
+        "9800099887",
+        "9800099887",
+        "11",
+        "CBSE",
+        "DAV Public School, Begusarai",
+        "COMBO_MONTHLY",
+        "REFERRAL",
+        "HOT",
+        "Day 1/3",
+        "C11_AFT",
+        "2026-11-11",
+        false,
+        false,
+        false,
+        "=IF(ISBLANK(B5),\"\",B5+2)",
+        "2026-11-13",
+        "CG-11-001",
+        false,
+        "DEMO_INVITE",
+        "=IF(ISBLANK(E5),\"\",HYPERLINK(\"https://wa.me/91\"&E5&\"?text=\"&ENCODEURL(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(IFERROR(VLOOKUP(W5,WA_Templates!$A$2:$B$15,2,FALSE),\"Namaste {Name}, Welcome to Commerce Gyan!\"),\"{Name}\",C5),\"{Student_Name}\",C5),\"{Class}\",G5)),\"Send WhatsApp\"))",
+        "DEMO_SCHEDULED",
+        "",
+        "Dry-Run Test: Referred by Aarav Sharma (CG-11-001); Class 11 CBSE Combo"
+      ]
+    ]
+  },
+  {
+    "op": "write",
+    "range": "DEMO_TRACKER!A5:O5",
+    "data": [
+      [
+        "DM-004",
+        "ENQ-261111-004",
+        "Rohan Kumar",
+        "9800099887",
+        "CBSE",
+        "11",
+        "COMBO_MONTHLY",
+        "C11_AFT",
+        "2026-11-11",
+        "2026-11-13",
+        "0/3",
+        "Scheduled",
+        "",
+        "",
+        "Dry-Run Test: 3-Day Free Demo scheduled for C11_AFT"
+      ]
+    ]
+  }
+]

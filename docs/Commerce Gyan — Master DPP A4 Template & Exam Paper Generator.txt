@@ -1,0 +1,207 @@
+﻿COMMERCE GYAN • BEGUSARAI
+MISSION 100/100 • LIVE STUDENT WORKSHEET
+TOPIC: VALUATION OF GOODWILL (AVERAGE, SUPER PROFIT & CAPITALISATION)
+Class 12 Accountancy • CBSE & BSEB Boards 2027
+Mentor: Gyan deep Kumar (Gyan Sir) | Institute: Commerce Gyan (Begusarai, Bihar)
+Online Presence: Commerce with Gyan (@CommerceWithGyan) | Motto: "Be the Best from the Rest"
+________________
+
+
+📋 THREE-TIER MASTERY STRUCTURE
+
+
+1️⃣ PYQs (Board Questions)
+	2️⃣ Competency-Based Case Studies
+	3️⃣ Objective Radar & Traps
+	3, 4 & 6 Mark Numericals
+Past 10-Year CBSE & BSEB Archives
+	Adjusted Profits & Balance Sheets
+Closing stock, abnormal items & ratios
+	MCQs & Assertion-Reasoning
+Concept pitfalls & examiner traps
+	________________
+
+
+👤 STUDENT ASSESSMENT PROFILE
+1. Student Name: ___________________________ | Roll No (ID): _____________________
+2. Batch Timing: [ ] 3:00 PM – 4:45 PM  [ ] 4:45 PM – 6:30 PM (Evening Combo)
+3. Target Score: 15 / 15 Marks | Time Allowed: 25 Minutes | Date: _______________
+________________
+
+
+PART 1: PREVIOUS YEARS' BOARD QUESTIONS (PYQs)
+________________
+
+
+[Q1] CBSE 2024 (Set 67/5/1) — [3 Marks]
+Sunny and Rohan were partners in a firm sharing profits and losses in the ratio of 2 : 1. The capital employed by the firm was ₹7,00,000. The average profits of the firm were ₹90,000 and the normal rate of return was 10%.
+Calculate the value of goodwill of the firm on the basis of 5 years' purchase of super profits.
+
+
+✍️ STEP-BY-STEP WORKING NOTES & SOLUTION:
+
+
+Normal Profit = Capital Employed × Normal Rate of Return
+              = ₹ 7,00,000 × 10% = ₹ ________________________
+
+
+Super Profit  = Average Profit − Normal Profit
+              = ₹ 90,000 − ₹ _______________ = ₹ ________________________
+
+
+Goodwill      = Super Profit × Number of Years' Purchase
+              = ₹ _______________ × 5 Years = ₹ ________________________
+
+________________
+[Q2] CBSE 2024 (Set 67/4/1) — [3 Marks]
+Aayush and Krish were partners in a firm sharing profits and losses equally. They decided to admit Vansh for an equal share in the profits. For this purpose, goodwill is to be valued at 4 years' purchase of super profits. The normal rate of return is 12% p.a. and the average profit of the firm for the last four years is ₹30,000.
+Their Balance Sheet as at 31st March 2023 was:
+
+
+Liabilities
+	Amount (₹)
+	Assets
+	Amount (₹)
+	Capital: Aayush
+	90,000
+	Machinery
+	75,000
+	Capital: Krish
+	50,000
+	Furniture
+	15,000
+	General Reserve
+	20,000
+	Stock
+	30,000
+	Loan
+	25,000
+	Debtors
+	20,000
+	Creditors
+	5,000
+	Cash
+	50,000
+	Total
+	1,90,000
+	Total
+	1,90,000
+	Calculate Vansh's share of goodwill.
+
+
+✍️ STEP-BY-STEP WORKING NOTES & SOLUTION:
+
+
+Capital Employed = Total Assets − Outside Liabilities
+                 = ₹ 1,90,000 − (₹ 25,000 + ₹ 5,000) = ₹ ____________________
+(OR Capital Employed = Capital A/cs + General Reserve = ₹ 90,000 + ₹ 50,000 + ₹ 20,000 = ₹ 1,60,000)
+
+
+Normal Profit    = ₹ 1,60,000 × 12% = ₹ ____________________
+Super Profit     = Average Profit − Normal Profit = ₹ 30,000 − ₹ ___________ = ₹ ___________
+Firm's Goodwill  = Super Profit × 4 Years = ₹ ___________ × 4 = ₹ ____________________
+Vansh's Share    = Firm's Goodwill × 1/3 Share = ₹ ____________________
+
+________________
+PART 2: COMPETENCY-BASED CASE STUDY (CBSE PATTERN)
+________________
+
+
+[Q3] Competency Case Study — Adjusted Normal Profits & Overvaluation — [6 Marks]
+Pearl and Ruby were partners in a firm with a combined capital of ₹2,50,000. The normal rate of return was 10%. The profits of the firm for the last four years were:
+• 2021-22: ₹35,000
+• 2022-23: ₹25,000
+• 2023-24: ₹32,000
+• 2024-25: ₹33,000
+
+On scrutiny of accounting records, it was revealed that:
+1. Closing stock for the year 2024-25 was overvalued by ₹5,000.
+2. An abnormal loss of ₹4,000 due to fire was debited to Profit & Loss Account in 2022-23.
+3. Profit of 2023-24 included an insurance claim received of ₹2,000 (non-recurring).
+
+Task: Complete the table of adjusted normal profits and calculate the value of goodwill on the basis of 3 years' purchase of average super profits.
+📊 TABLE OF ADJUSTED PROFITS
+
+
+Year
+	Reported Profit (₹)
+	Adjustments (Add / Less) (₹)
+	Adjusted Normal Profit (₹)
+	2021-22
+	35,000
+	—
+	35,000
+	2022-23
+	25,000
+	+ 4,000 (Abnormal Loss)
+	____________________
+	2023-24
+	32,000
+	− 2,000 (Non-recurring Income)
+	____________________
+	2024-25
+	33,000
+	− 5,000 (Closing Stock Overvalued)
+	____________________
+	TOTAL
+	
+
+	
+
+	₹ ____________________
+	
+
+✍️ CALCULATION OF GOODWILL:
+
+
+Average Normal Profit = Total Adjusted Profits ÷ 4 Years = ₹ ____________ ÷ 4 = ₹ ____________
+Normal Profit         = Capital Employed × 10% = ₹ 2,50,000 × 10% = ₹ 25,000
+Super Profit          = Average Normal Profit − Normal Profit = ₹ __________ − ₹ 25,000 = ₹ __________
+Firm's Goodwill       = Super Profit × 3 Years' Purchase = ₹ __________ × 3 = ₹ ____________________
+
+________________
+PART 3: OBJECTIVE RADAR & EXAMINER TRAPS (1 MARK EACH)
+________________
+
+
+[Q4] CBSE 2026 Board Pattern — [1 Mark]
+The capital employed by a firm is ₹6,00,000, its normal profit is ₹60,000 and its super profit is ₹20,000. What is the Normal Rate of Return (NRR)?
+[A] 6%
+[B] 15%
+[C] 10%
+[D] 30%
+Answer with working note: __________________________________________________________________
+________________
+
+
+[Q5] Assertion-Reasoning Board Trap — [1 Mark]
+Assertion (A): Goodwill is considered an intangible asset, but it is never a fictitious asset.
+Reason (R): Goodwill possesses a realisable value when the business is sold as a going concern, whereas fictitious assets have zero market value.
+[A] Both (A) and (R) are true, and (R) is the correct explanation of (A).
+[B] Both (A) and (R) are true, but (R) is not the correct explanation of (A).
+[C] (A) is true, but (R) is false.
+[D] (A) is false, but (R) is true.
+Selected Option: [ _____ ]
+________________
+
+
+[Q6] CBSE Pitfall Radar — [1 Mark]
+Under the Capitalisation of Super Profits method, which formula correctly computes Goodwill?
+[A] Average Profit × (100 / NRR)
+[B] Capitalised Value − Net Assets
+[C] Super Profit × (100 / NRR)
+[D] Super Profit × Number of Years' Purchase
+Selected Option: [ _____ ]
+________________
+
+
+🚀 DIGITAL SUBMISSION & DOUBT RESOLUTION (TELEGRAM MINI APP)
+4. Snap & Upload: Finish solving your working notes above or on your register page -> Open the Telegram Mini App (📚 DPP Vault) -> Upload your handwritten photo (up to 2 pages).
+5. AI Instant Correction: Gemini Vision grades your working notes, pinpoints calculation mistakes, and credits +10 CG Coins to your student wallet!
+6. Model Solutions Release: Step-by-step verified CBSE marking solutions unlock tomorrow morning at 6:00 AM (T+1).
+7. Video Explanation by Gyan Sir: Stuck on Question 2 or 3? Tap [ 🎬 Watch Video Explanation by Gyan Sir ] in your Telegram Mini App.
+________________
+
+
+Commerce Gyan • Begusarai, Bihar | Mentor: Gyan deep Kumar | "Be the Best from the Rest"
+Official Telegram Channel: @CommerceGyanDostbot | YouTube: Commerce with Gyan

@@ -1,0 +1,50 @@
+[
+  {
+    "op": "write",
+    "range": "Students!A8:H8",
+    "data": [
+      [
+        "CG-11-004",
+        "Rohan Kumar",
+        "11",
+        "CBSE",
+        "9800099887",
+        "",
+        "COMBO_MONTHLY",
+        "All-Subject Monthly Combo"
+      ]
+    ]
+  },
+  {
+    "op": "write",
+    "range": "Payments!A5:I5",
+    "data": [
+      [
+        "PAY-2026-004",
+        "2026-11-11",
+        "CG-11-004",
+        "₹1,433",
+        "Rohan Kumar",
+        "UPI",
+        "UPI261111998871",
+        "Nov-2026",
+        "INV-2026-004"
+      ]
+    ]
+  },
+  {
+    "op": "write",
+    "range": "Receipts!A5:G5",
+    "data": [
+      [
+        "RCP-2026-004",
+        "2026-11-11",
+        "CG-11-004",
+        "PAY-2026-004",
+        "₹1,433",
+        "INV-2026-004",
+        "https://drive.google.com/rec/RCP-2026-004.pdf"
+      ]
+    ]
+  }
+]

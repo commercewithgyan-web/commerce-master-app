@@ -1,0 +1,156 @@
+[
+  {
+    "op": "write",
+    "range": "Students_Master!A8:AI8",
+    "data": [
+      [
+        "CG-11-004",
+        "Rohan Kumar",
+        "11",
+        "C11_AFT",
+        "Active",
+        "9800099887",
+        "OK",
+        "CBSE",
+        "COMBO_MONTHLY",
+        "2026-11-11",
+        "ENQ-261111-004",
+        "DM-004",
+        "2026",
+        "2010-08-20",
+        "Male",
+        "9800099887",
+        "Rajesh Kumar",
+        "rajesh.kumar@example.com",
+        "Begusarai Town",
+        "DAV Public School, Begusarai",
+        "84.20%",
+        "COMBO_MONTHLY",
+        "Regular",
+        "Morning",
+        false,
+        0,
+        "CG-11-001",
+        true,
+        "4eb9a448e99ac3bd08fad2290e7b6449f5131abbe026e3eff45f4abf57118bfa",
+        "2026-11-25",
+        "",
+        933,
+        500,
+        200,
+        "None"
+      ]
+    ]
+  },
+  {
+    "op": "write",
+    "range": "Claim_Codes!A8:F8",
+    "data": [
+      [
+        "4eb9a448e99ac3bd08fad2290e7b6449f5131abbe026e3eff45f4abf57118bfa",
+        "CG-11-004",
+        "2026-11-11 18:43:00",
+        "2026-11-25 18:43:00",
+        "",
+        "ISSUED"
+      ]
+    ]
+  },
+  {
+    "op": "write",
+    "range": "Fee_Ledger!A2:R2",
+    "data": [
+      [
+        1,
+        "RCP-2026-001",
+        "2026-11-11 18:43:00",
+        "CG-11-004",
+        "2026-11",
+        "COMBO_MONTHLY_ADMISSION",
+        "CREDIT",
+        "BANK_UPI",
+        "FEE_REVENUE",
+        143300,
+        1433,
+        "ENQ-261111-004|PRM-261111-003",
+        "Admission Fee (Prorated Tuition Rs 933 + Reg Rs 500 + Kit Rs 200 - Promise Rs 200)",
+        "UPI",
+        "UPI261111998871",
+        "Gyan Deep Sir",
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "adf5b436cc42440e5f63fec1bc5e021abbe9927bae2da177c77bfdb0411b00f3"
+      ]
+    ]
+  },
+  {
+    "op": "write",
+    "range": "Coin_Ledger!A5:E5",
+    "data": [
+      [
+        "2026-11-11",
+        "CG-11-001",
+        "REFERRAL_STAGE2",
+        "CG-11-004|ADMISSION",
+        90
+      ]
+    ]
+  },
+  {
+    "op": "write",
+    "range": "PROMISE_LOG!D4",
+    "data": [
+      [
+        "CG-11-004"
+      ]
+    ]
+  },
+  {
+    "op": "write",
+    "range": "PROMISE_LOG!L4:M4",
+    "data": [
+      [
+        "FULFILLED",
+        "RCP-2026-001"
+      ]
+    ]
+  },
+  {
+    "op": "write",
+    "range": "DEMO_TRACKER!L5:O5",
+    "data": [
+      [
+        "Converted",
+        "CG-11-004",
+        "2026-11-11",
+        "Converted to confirmed admission CG-11-004; +90 Coins credited to CG-11-001"
+      ]
+    ]
+  },
+  {
+    "op": "write",
+    "range": "INQUIRY_CRM!W5",
+    "data": [
+      [
+        "JOIN_THANKS"
+      ]
+    ]
+  },
+  {
+    "op": "write",
+    "range": "INQUIRY_CRM!Y5",
+    "data": [
+      [
+        "ADMITTED"
+      ]
+    ]
+  },
+  {
+    "op": "write",
+    "range": "INQUIRY_CRM!AA5",
+    "data": [
+      [
+        "Dry-Run Test: Converted to confirmed Roll_No CG-11-004 on 2026-11-11 (Receipt RCP-2026-001)"
+      ]
+    ]
+  }
+]
