@@ -80,11 +80,12 @@ document.addEventListener('DOMContentLoaded', function() {
       btnAnalyze.disabled = true;
 
       var studentName = "Champion";
-      var telegramId = "552858970";
+      // No fallback ID here. The server takes identity from verified initData and overwrites this field.
+      var telegramId = "";
       try {
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
           studentName = window.Telegram.WebApp.initDataUnsafe.user.first_name || "Champion";
-          telegramId = String(window.Telegram.WebApp.initDataUnsafe.user.id || "552858970");
+          telegramId = String(window.Telegram.WebApp.initDataUnsafe.user.id || "");
         }
       } catch (tgErr) {}
 

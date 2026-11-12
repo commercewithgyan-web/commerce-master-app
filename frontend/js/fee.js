@@ -102,7 +102,7 @@ function renderFeeDashboard(data) {
   var nameEl = document.getElementById('studentNameDisplay');
   if (nameEl) nameEl.innerText = data.name || (tgUser.first_name || 'Enrolled Student');
 
-  var idEl = document.getElementById('studentIdDisplay');
+  var idEl = document.getElementById('rollNoDisplay');
   if (idEl) idEl.innerText = activeStudentRoll;
 
   var planEl = document.getElementById('planNameBadge');
