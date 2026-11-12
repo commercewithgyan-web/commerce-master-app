@@ -5068,17 +5068,20 @@
       var buttons = list.querySelectorAll('button');
       buttons.forEach(function (b) { b.disabled = true; });
       fb.textContent = 'Checking…';
+      var selectedLabel = ['A', 'B', 'C', 'D'][i];
       api('submitAnswer', {
-        qid: q.qid,
+        qid: q.qid || q.id,
+        selectedOption: selectedLabel,
         selectedIndex: i,
-        optionMap: q.optionMap,
         timeTakenSeconds: Math.round((Date.now() - startedAt) / 1000)
       }).then(function (r) {
-        if (r.isCorrect) { score++; haptic('success'); } else { haptic('error'); }
-        coins += Number(r.coinsEarned || 0);
-        buttons[i].style.borderColor = r.isCorrect ? '#10b981' : '#ef4444';
-        if (!r.isCorrect && buttons[r.correctOptionIndex]) buttons[r.correctOptionIndex].style.borderColor = '#10b981';
-        fb.textContent = (r.isCorrect ? '✅ Sahi! ' : '❌ Galat. ') + (r.explanation || '') + (r.trapAlert ? '  ⚠️ ' + r.trapAlert : '');
+        var isCorrect = Boolean(r && (r.isCorrect === true || r.correct === true));
+        if (isCorrect) { score++; haptic('success'); } else { haptic('error'); }
+        coins += Number((r && (r.coinsEarned || r.coinsAwarded)) || 0);
+        buttons[i].style.borderColor = isCorrect ? '#10b981' : '#ef4444';
+        var corrIdx = r && (r.correctOptionIndex !== undefined ? r.correctOptionIndex : (r.correctOption ? 'ABCD'.indexOf(r.correctOption) : -1));
+        if (!isCorrect && corrIdx >= 0 && buttons[corrIdx]) buttons[corrIdx].style.borderColor = '#10b981';
+        fb.textContent = (isCorrect ? '✅ Sahi! ' : '❌ Galat. ') + ((r && r.explanation) || '') + ((r && r.trapAlert) ? '  ⚠️ ' + r.trapAlert : '');
         var next = document.createElement('button');
         next.type = 'button';
         next.className = 'mt-2 w-full py-2.5 rounded-lg bg-indigo-600 text-white text-xs font-bold';

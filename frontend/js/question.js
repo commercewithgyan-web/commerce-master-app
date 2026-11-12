@@ -413,23 +413,31 @@ async function handleOptionSelect(optIdx, selectedCard) {
 
   var q = loadedQuestions[currentQuestionIndex] || (state.questions && state.questions[state.currentIndex]);
   var timeTaken = state.secondsElapsed;
+  var selectedLabel = ['A', 'B', 'C', 'D'][optIdx];
 
   selectedCard.classList.add('selected');
 
-  var correctIdx = getCorrectIndex(q);
-  var isCorrect = (optIdx === correctIdx);
-  var selectedLabel = ['A', 'B', 'C', 'D'][optIdx];
-
-  // Try API submission if online
+  var serverResult = null;
+  // Await server-side grading for anti-cheat verification
   try {
     if (window.API_CLIENT && typeof window.API_CLIENT.call === 'function') {
-      API_CLIENT.call('submitAnswer', {
+      serverResult = await API_CLIENT.call('submitAnswer', {
         qid: q.id || q.qid,
         selectedOption: selectedLabel,
         timeTakenSeconds: timeTaken
-      }).catch(function(e) { console.warn('Submit background sync:', e); });
+      });
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('Submit background sync notice:', e);
+  }
+
+  var isCorrect = serverResult ? Boolean(serverResult.isCorrect || serverResult.correct) : (optIdx === getCorrectIndex(q));
+  var correctIdx = -1;
+  if (serverResult && (serverResult.correctOption || serverResult.correctOptionIndex !== undefined)) {
+    correctIdx = serverResult.correctOptionIndex !== undefined ? serverResult.correctOptionIndex : ['A','B','C','D'].indexOf(serverResult.correctOption);
+  } else {
+    correctIdx = getCorrectIndex(q);
+  }
 
   if (isCorrect) {
     selectedCard.classList.remove('selected');
@@ -438,15 +446,18 @@ async function handleOptionSelect(optIdx, selectedCard) {
     else if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
 
     var ghostSec = q.teacherGhostSeconds || q.ghostSec || 35;
-    if (timeTaken < ghostSec) {
+    var beatGhost = (serverResult && serverResult.beatGhost !== undefined) ? serverResult.beatGhost : (timeTaken < ghostSec);
+    var coinsAwarded = (serverResult && (serverResult.coinsAwarded || serverResult.coinsEarned)) || (beatGhost ? 20 : 10);
+
+    if (beatGhost) {
       triggerConfettiBurst();
       document.getElementById('feedbackIcon').innerText = '⚡';
-      document.getElementById('feedbackTitle').innerText = 'RECORD BEATEN! Faster than Gyan Sir! (+20 Coins)';
-      state.currentCoins += 20;
+      document.getElementById('feedbackTitle').innerText = 'RECORD BEATEN! Faster than Gyan Sir! (+' + coinsAwarded + ' Coins)';
+      state.currentCoins += coinsAwarded;
     } else {
       document.getElementById('feedbackIcon').innerText = '✅';
-      document.getElementById('feedbackTitle').innerText = 'Correct Answer! (+10 Coins)';
-      state.currentCoins += 10;
+      document.getElementById('feedbackTitle').innerText = 'Correct Answer! (+' + coinsAwarded + ' Coins)';
+      state.currentCoins += coinsAwarded;
     }
     var coinsEl = document.getElementById('currentCoins');
     if (coinsEl) coinsEl.innerText = state.currentCoins;
@@ -459,7 +470,7 @@ async function handleOptionSelect(optIdx, selectedCard) {
 
     // Highlight the actual correct option
     var allCards = document.querySelectorAll('.option-card');
-    if (allCards[correctIdx]) {
+    if (correctIdx >= 0 && allCards[correctIdx]) {
       allCards[correctIdx].classList.add('correct');
     }
 
@@ -467,12 +478,13 @@ async function handleOptionSelect(optIdx, selectedCard) {
     document.getElementById('feedbackTitle').innerText = 'Incorrect (Added to Mistakes Notebook)';
   }
 
-  // Display Explanation and Trap Alert
+  // Display Explanation and Trap Alert from server if present, else question
   var explEl = document.getElementById('feedbackExplanation');
   if (explEl) {
-    var text = q.explanation || 'Review CBSE concepts carefully.';
-    if (q.trapAlert) {
-      text += '\n\n⚠️ CBSE Board Trap Alert: ' + q.trapAlert;
+    var text = (serverResult && serverResult.explanation) || q.explanation || 'Review CBSE concepts carefully.';
+    var trap = (serverResult && serverResult.trapAlert) || q.trapAlert;
+    if (trap) {
+      text += '\n\n⚠️ CBSE Board Trap Alert: ' + trap;
     }
     explEl.innerText = text;
   }
