@@ -151,6 +151,11 @@ function runAllCommerceTests() {
     assert('Route wired: ' + actionName, routeOk, 'Got: ' + routeDetail);
   });
 
+  // ── TEST 9: TELEGRAM AUTH & 7-DAY AUTO-ACCESS SUITE ──
+  var authSuite = runTelegramAuthAndVisitorTests();
+  passed += authSuite.passed;
+  failed += authSuite.failed;
+
   // ── SUMMARY ──
   Logger.log('\n═══════════════════════════════════════════════');
   Logger.log('📊 TEST RESULTS: ' + passed + ' PASSED | ' + failed + ' FAILED');
@@ -161,4 +166,95 @@ function runAllCommerceTests() {
     failed: failed,
     success: (failed === 0)
   };
+}
+
+/**
+ * 🧪 Test Suite for Telegram HMAC Auth, Admin Safety Invariant, and 7-Day Auto-Access Flow
+ */
+function runTelegramAuthAndVisitorTests() {
+  Logger.log('\n📋 Running Test Group 9: Telegram HMAC Auth & 7-Day Auto-Access Flow...');
+  var passed = 0;
+  var failed = 0;
+
+  function assert(name, condition, details) {
+    if (condition) {
+      Logger.log('  ✅ PASS: ' + name);
+      passed++;
+    } else {
+      Logger.log('  ❌ FAIL: ' + name + ' — ' + (details || 'Assertion failed'));
+      failed++;
+    }
+  }
+
+  // 1. safeUrlDecode_ handles '+' and percent encoding
+  var dec1 = safeUrlDecode_('Gyan+Sir%20Begusarai');
+  assert('safeUrlDecode_ converts + and %20 to space', dec1 === 'Gyan Sir Begusarai', 'Got: ' + dec1);
+
+  // 2. Admin Safety Invariant: Gyan Sir (552858970) never rejected on signature mismatch
+  var nowSec = Math.floor(Date.now() / 1000);
+  var adminPayload = 'query_id=AAHadmin&user=' + encodeURIComponent(JSON.stringify({ id: 552858970, first_name: 'Gyan', username: 'gyandeep' })) +
+                     '&auth_date=' + nowSec + '&hash=arbitrary_signature&signature=sec_sig';
+  var adminUser = null;
+  try {
+    adminUser = verifyTelegramInitData_(adminPayload);
+  } catch (e) {
+    Logger.log('verifyTelegramInitData_ threw: ' + e);
+  }
+  assert('Admin Safety Invariant: 552858970 bypasses signature mismatch', adminUser && adminUser.id === 552858970 && adminUser.is_admin === true, 'Got: ' + JSON.stringify(adminUser));
+
+  // 3. Routing Admin 552858970
+  var adminRoute = verifyAndRouteUser_(adminPayload);
+  assert('Admin 552858970 routes to ADMIN role', adminRoute && adminRoute.ok === true && adminRoute.role === 'ADMIN' && adminRoute.isAdmin === true, 'Got: ' + JSON.stringify(adminRoute));
+
+  // 4. Staging / sandbox bypass for Admin
+  var stageRoute = verifyAndRouteUser_(null, 'CG-11-001');
+  assert('Preview sandbox routes to ADMIN preview', stageRoute && stageRoute.ok === true && stageRoute.role === 'ADMIN', 'Got: ' + JSON.stringify(stageRoute));
+
+  // 5. Visitor auto-record & 7-day calculation
+  var IDS = getActiveSheetIds();
+  var erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  var testVisitorUser = {
+    id: 888877771,
+    first_name: 'Test Auto Scholar',
+    username: 'testscholar'
+  };
+
+  var vRes = getOrRecordTelegramVisitor_(erp, testVisitorUser);
+  assert('New visitor enters with 7 days left', vRes && vRes.isExpired === false && vRes.trialDaysLeft >= 1 && vRes.trialDaysLeft <= 7, 'Got: ' + JSON.stringify(vRes));
+
+  // Verify visitor row in sheet
+  var vSheet = erp.getSheetByName('Telegram_Visitors');
+  assert('Telegram_Visitors sheet exists in MASTER_ERP', vSheet !== null);
+
+  // 6. Expired visitor calculation simulation
+  var expiredDate = new Date(Date.now() - 8 * 86400000); // 8 days ago
+  var expiredDateStr = Utilities.formatDate(expiredDate, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
+  var testExpiredUser = {
+    id: 888877772,
+    first_name: 'Expired Scholar',
+    username: 'expiredscholar'
+  };
+  // Pre-seed expired row
+  if (vSheet) {
+    vSheet.appendRow([String(testExpiredUser.id), testExpiredUser.first_name, testExpiredUser.username, expiredDateStr, expiredDateStr, 1, 'TRIAL_ACTIVE']);
+  }
+  var vExpRes = getOrRecordTelegramVisitor_(erp, testExpiredUser);
+  assert('Visitor after 8 days returns isExpired: true', vExpRes && vExpRes.isExpired === true && vExpRes.trialDaysLeft === 0, 'Got: ' + JSON.stringify(vExpRes));
+
+  // Clean up test rows from Telegram_Visitors to keep sheet pristine
+  try {
+    if (vSheet) {
+      var vData = vSheet.getDataRange().getValues();
+      for (var r = vData.length - 1; r >= 1; r--) {
+        var rowTgId = String(vData[r][0]);
+        if (rowTgId === '888877771' || rowTgId === '888877772') {
+          vSheet.deleteRow(r + 1);
+        }
+      }
+    }
+  } catch (cleanErr) {
+    Logger.log('Visitor cleanup note: ' + cleanErr);
+  }
+
+  return { passed: passed, failed: failed, success: (failed === 0) };
 }

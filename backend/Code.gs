@@ -377,6 +377,9 @@ function doPost(e) {
       case "getAcademicCalendar":
         result = getAcademicCalendar();
         break;
+      case "runTelegramAuthTests":
+        result = { ok: true, data: runTelegramAuthAndVisitorTests() };
+        break;
       case "saveCalendarEvent":
         result = saveCalendarEvent(payload);
         break;
