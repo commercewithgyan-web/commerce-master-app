@@ -138,6 +138,7 @@ function renderHomeDashboard(data) {
   }
 
   // Admin / Founder Console Banner (Strict Role-Gating: Gyan Sir 552858970 ONLY)
+  // Display only: this only decides whether to show the banner. The server makes the real admin decision.
   var adminBanner = document.getElementById('adminPanelBanner');
   if (adminBanner) {
     var isGyanSir = false;

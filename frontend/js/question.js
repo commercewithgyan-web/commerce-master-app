@@ -78,7 +78,7 @@ async function callBackendApi(action, payload) {
     // Direct fetch fallback if API_CLIENT is not available
     const backendUrl = window.COMMERCE_BACKEND_URL ||
       localStorage.getItem('cg_backend_url') ||
-      'https://script.google.com/macros/s/AKfycbywJKoynUbc2fY7caEx9hZ-FARG71J9v1F6uXaL5z7XxBS_NKhwFiKCZIVeaYVJ0QS4jQ/exec';
+      'https://script.google.com/macros/s/AKfycbzmOtPr1jYIG6ktQymaVNrrJ7SGkB2KglPxyXzIK-ha94M66ilYn_dr92T-Aj1Fh0DrBQ/exec';
     const initData = (window.TG_APP && TG_APP.getInitData) ? TG_APP.getInitData() : '';
     const response = await fetch(backendUrl, {
       method: 'POST',
@@ -421,10 +421,13 @@ async function handleOptionSelect(optIdx, selectedCard) {
   // Await server-side grading for anti-cheat verification
   try {
     if (window.API_CLIENT && typeof window.API_CLIENT.call === 'function') {
-      serverResult = await API_CLIENT.call('submitAnswer', {
+      serverResult = await API_CLIENT.call('submitStudentQuizAttempt', {
         qid: q.id || q.qid,
+        questionId: q.id || q.qid,
         selectedOption: selectedLabel,
-        timeTakenSeconds: timeTaken
+        selectedIndex: optIdx,
+        timeTakenSeconds: timeTaken,
+        timeTakenSec: timeTaken
       });
     }
   } catch (e) {
@@ -559,10 +562,14 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (!q) return;
       try {
         if (window.API_CLIENT && API_CLIENT.call) {
-          await API_CLIENT.call('addNote', {
+          await API_CLIENT.call('saveStudentNotebookItem', {
             qid: q.id || q.qid,
+            questionId: q.id || q.qid,
             title: q.topic || 'Class Concept',
+            conceptTitle: q.topic || 'Class Concept',
             note: (q.explanation || '') + (q.trapAlert ? ' | ' + q.trapAlert : ''),
+            noteText: (q.explanation || '') + (q.trapAlert ? ' | ' + q.trapAlert : ''),
+            itemType: 'NOTE',
             topic: currentSubject
           });
         }

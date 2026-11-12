@@ -655,9 +655,12 @@ async function saveActiveLensToNotes(msgId) {
   var noteTitle = '(' + lensName + '): ' + topicClean;
 
   try {
-    await API_CLIENT.call('addNote', {
+    await API_CLIENT.call('saveStudentNotebookItem', {
       title: noteTitle,
+      conceptTitle: noteTitle,
       note: textToSave,
+      noteText: textToSave,
+      itemType: 'NOTE',
       topic: data.subject || activeSubject
     });
     alert('✅ Saved ' + lensName + ' to your Personal Notebook!');

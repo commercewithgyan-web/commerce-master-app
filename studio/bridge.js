@@ -14,7 +14,7 @@
 (function () {
   'use strict';
 
-  var DEFAULT_BACKEND = 'https://script.google.com/macros/s/AKfycbywJKoynUbc2fY7caEx9hZ-FARG71J9v1F6uXaL5z7XxBS_NKhwFiKCZIVeaYVJ0QS4jQ/exec';
+  var DEFAULT_BACKEND = 'https://script.google.com/macros/s/AKfycbzmOtPr1jYIG6ktQymaVNrrJ7SGkB2KglPxyXzIK-ha94M66ilYn_dr92T-Aj1Fh0DrBQ/exec';
   var tg = (window.Telegram && window.Telegram.WebApp) || null;
   var initData = (tg && tg.initData) || '';
   var isLocal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.protocol === 'file:';

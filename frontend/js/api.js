@@ -26,7 +26,7 @@ var API_CLIENT = {
   // Can be overridden via window.COMMERCE_BACKEND_URL or localStorage
   backendUrl: window.COMMERCE_BACKEND_URL ||
               localStorage.getItem('cg_backend_url') ||
-              'https://script.google.com/macros/s/AKfycbywJKoynUbc2fY7caEx9hZ-FARG71J9v1F6uXaL5z7XxBS_NKhwFiKCZIVeaYVJ0QS4jQ/exec',
+              'https://script.google.com/macros/s/AKfycbzmOtPr1jYIG6ktQymaVNrrJ7SGkB2KglPxyXzIK-ha94M66ilYn_dr92T-Aj1Fh0DrBQ/exec',
 
   /**
    * Reads cached response from localStorage for instant Stale-While-Revalidate UI rendering
@@ -146,7 +146,7 @@ var API_CLIENT = {
       }
 
       // Offline answer queuing
-      if (action === 'submitAnswer') {
+      if (action === 'submitAnswer' || action === 'submitStudentQuizAttempt') {
         this.queueOfflineSubmission(payload);
         return {
           isOfflineQueued: true,
@@ -190,7 +190,7 @@ var API_CLIENT = {
 
     for (var i = 0; i < queue.length; i++) {
       try {
-        await this.call('submitAnswer', queue[i].payload);
+        await this.call('submitStudentQuizAttempt', queue[i].payload);
         console.log('✅ Synced submission for ' + queue[i].payload.qid);
       } catch (e) {
         remaining.push(queue[i]);

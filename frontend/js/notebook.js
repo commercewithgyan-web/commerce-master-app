@@ -29,9 +29,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     TG_APP.hapticLight();
     try {
-      await API_CLIENT.call('addNote', {
+      await API_CLIENT.call('saveStudentNotebookItem', {
         title: title || 'Quick Note',
+        conceptTitle: title || 'Quick Note',
         note: content,
+        noteText: content,
+        itemType: 'NOTE',
         topic: 'General'
       });
       document.getElementById('quickNoteTitle').value = '';

@@ -5219,11 +5219,13 @@
       buttons.forEach(function (b) { b.disabled = true; });
       fb.textContent = 'Checking…';
       var selectedLabel = ['A', 'B', 'C', 'D'][i];
-      api('submitAnswer', {
+      api('submitStudentQuizAttempt', {
         qid: q.qid || q.id,
+        questionId: q.qid || q.id,
         selectedOption: selectedLabel,
         selectedIndex: i,
-        timeTakenSeconds: Math.round((Date.now() - startedAt) / 1000)
+        timeTakenSeconds: Math.round((Date.now() - startedAt) / 1000),
+        timeTakenSec: Math.round((Date.now() - startedAt) / 1000)
       }).then(function (r) {
         var isCorrect = Boolean(r && (r.isCorrect === true || r.correct === true));
         if (isCorrect) { score++; haptic('success'); } else { haptic('error'); }
@@ -5285,7 +5287,9 @@
     // Inside Telegram: Authenticate server-side via HMAC initData
     showGate('Commerce Gyan', 'Verifying your account…', true);
 
-    api('getSession').catch(function () {
+    api('getStudentMiniAppBootstrap').catch(function () {
+      return api('getSession');
+    }).catch(function () {
       return api('verifyAuth', { initData: initData });
     }).then(function (s) {
       hideGate();
