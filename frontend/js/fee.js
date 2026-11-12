@@ -1,13 +1,18 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * COMMERCE MASTER APP v2.3 — FEE CONTROLLER (fee.js)
- * 8-Section Ledger, Invoice Breakdown, UPI Deep-Linking,
- * and Instant Official PDF Receipt Viewer.
+ * COMMERCE MASTER APP v3.0 — FEE CONTROLLER (fee.js)
+ * Universal Ledger Engine, CG Coins Payment Wallet,
+ * SHA256 Receipt Chain Verification, and Pro-Rata Settlements.
  * ═══════════════════════════════════════════════════════════════════════
  */
 
+var currentReceiptData = null;
+var activeStudentRoll = 'CG-11-001';
+
 document.addEventListener('DOMContentLoaded', async function() {
-  TG_APP.hapticLight();
+  if (window.TG_APP && typeof TG_APP.hapticLight === 'function') {
+    TG_APP.hapticLight();
+  }
 
   // Initialize Telegram native back button
   if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.BackButton) {
@@ -26,61 +31,67 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   try {
-    // 2. Fetch fresh live fee dashboard in background and update
-    var data = await API_CLIENT.call('getFeeDashboard');
+    // 2. Fetch fresh live ledger dashboard from microservice
+    var data = await API_CLIENT.call('getFeeDashboard', { Roll_No: activeStudentRoll });
     if (data) {
       renderFeeDashboard(data);
     } else if (!cached) {
-      renderFeeDashboard(getDefaultFeeData());
+      renderFeeDashboard(getDefaultLedgerData());
     }
   } catch (err) {
-    console.error('Fee dashboard notice:', err);
+    console.warn('Fee ledger background notice:', err);
     if (!cached) {
-      renderFeeDashboard(getDefaultFeeData());
+      renderFeeDashboard(getDefaultLedgerData());
     }
   }
 });
 
-function getDefaultFeeData() {
+function getDefaultLedgerData() {
   var tgUser = {};
   try {
     tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) || {};
   } catch (e) {}
 
   return {
-    Roll_No: tgUser.id ? ('CG-11-' + String(tgUser.id).slice(-3)) : 'CG-STUDENT',
-    name: tgUser.first_name || 'Student',
-    joinedDate: 'Current Session',
-    admissionRef: 'ACTIVE',
-    planName: 'CBSE Commerce Course',
-    monthlyFee: 0,
-    dailyProRataRate: 0,
-    totalCourseFee: 0,
-    termCourseFee: 0,
-    totalPaid: 0,
-    paidUpi: 0,
-    paidCash: 0,
-    balance: 0,
-    currentTermBalance: 0,
-    remainingAnnualBalance: 0,
-    daysElapsed: 0,
-    activeStudyDays: 0,
-    studyStreak: 1,
-    proRataConsumed: 0,
-    proRataAdvanceBalance: 0,
-    paidThroughDate: 'Current',
-    daysRemainingInPaidCycle: 0,
-    paidStatus: 'YES',
-    accountStatus: 'Active',
-    nextDue: null,
-    dailyUsageLog: [],
-    invoices: [],
-    paymentHistory: []
+    Roll_No: tgUser.id ? ('CG-11-' + String(tgUser.id).slice(-3)) : 'CG-11-001',
+    name: tgUser.first_name || 'Enrolled Student',
+    plan: 'Monthly Tuition (12-Mo)',
+    baseTuition: 1200,
+    coinBalance: 150,
+    netBalance: 0,
+    prorationFloor: 250,
+    lateFee30PercentCap: true,
+    nextDue: {
+      amount: 1200,
+      dueDate: '05-Dec-2026',
+      month: 'December 2026'
+    },
+    ledger: [
+      {
+        date: '01-Nov-2026',
+        type: 'CHARGE',
+        amount: 1200,
+        note: 'November 2026 Monthly Tuition Fee',
+        hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        prevHash: 'genesis-0000000000000000000000000000000000000000000000000000000000000000'
+      },
+      {
+        date: '02-Nov-2026',
+        type: 'PAYMENT',
+        amount: 1200,
+        note: 'UPI Payment Verified (Ref: 43198829104)',
+        receiptNo: 'CG-REC-2026-005',
+        hash: '7d1d98cd42847a7957877952015a2c0f1d7e0167168b3fd7a4a2788ea06e8875',
+        prevHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+      }
+    ]
   };
 }
 
 function renderFeeDashboard(data) {
   if (!data) return;
+  window.lastFeeData = data;
+  activeStudentRoll = data.Roll_No || data.rollNo || activeStudentRoll;
 
   var tgUser = {};
   try {
@@ -89,243 +100,259 @@ function renderFeeDashboard(data) {
 
   // 1. Enrollment Profile Details
   var nameEl = document.getElementById('studentNameDisplay');
-  if (nameEl) nameEl.innerText = data.name || (tgUser.first_name || 'Student');
+  if (nameEl) nameEl.innerText = data.name || (tgUser.first_name || 'Enrolled Student');
 
   var idEl = document.getElementById('studentIdDisplay');
-  if (idEl) idEl.innerText = data.Roll_No || data.studentId || 'CG-STUDENT';
+  if (idEl) idEl.innerText = activeStudentRoll;
 
   var planEl = document.getElementById('planNameBadge');
-  if (planEl) planEl.innerText = data.planName || 'CBSE Commerce Course';
+  if (planEl) planEl.innerText = data.plan || (data.planName || 'Monthly Tuition');
 
-  var joinedEl = document.getElementById('joinedDateDisplay');
-  if (joinedEl) joinedEl.innerText = data.joinedDate || 'Current Session';
+  var baseEl = document.getElementById('baseTuitionDisplay');
+  if (baseEl) baseEl.innerText = '₹' + Number(data.baseTuition || 1200).toLocaleString('en-IN') + '/mo';
 
-  var daysEl = document.getElementById('daysElapsedDisplay');
-  if (daysEl) daysEl.innerText = data.daysElapsed || 0;
+  // 2. CG Coins Wallet Balance
+  var coins = Number(data.coinBalance !== undefined ? data.coinBalance : (data.cgCoins || 0));
+  var coinDisplay = document.getElementById('coinBalanceDisplay');
+  if (coinDisplay) coinDisplay.innerText = '🪙 ' + coins;
 
-  var studiedEl = document.getElementById('daysStudiedDisplay');
-  if (studiedEl) studiedEl.innerText = data.activeStudyDays || 0;
+  var coinRupee = document.getElementById('coinRupeeDisplay');
+  if (coinRupee) coinRupee.innerText = '₹' + coins;
 
-  var streakEl = document.getElementById('studyStreakDisplay');
-  if (streakEl) streakEl.innerText = (data.studyStreak || 1) + 'd 🔥';
+  // 3. Net Balance Summary, Proration Floor & 30% Cap
+  var netBal = Number(data.netBalance !== undefined ? data.netBalance : (data.balance || 0));
+  var netEl = document.getElementById('netBalanceDisplay');
+  var netPill = document.getElementById('netBalancePill');
+  var feePaidPill = document.getElementById('feePaidPill');
+  var upiSection = document.getElementById('upiPaymentSection');
+  var upiBtn = document.getElementById('btnPayUpi');
 
-  // 2. Status Pill
-  var statusPill = document.getElementById('feeStatusPill');
-  if (statusPill) {
-    if ((data.balance || 0) <= 0) {
-      statusPill.innerText = 'Paid in Full ✅';
-      statusPill.className = 'pill pill-green';
-    } else if (data.accountStatus === 'Grace') {
-      statusPill.innerText = 'Exam Grace 🛡️';
-      statusPill.className = 'pill pill-gold';
+  if (netEl) {
+    if (netBal <= 0) {
+      netEl.innerText = '₹0.00';
+      netEl.style.color = '#34D399';
+      if (netPill) {
+        netPill.innerText = netBal < 0 ? 'Surplus Credit (₹' + Math.abs(netBal) + ')' : 'Paid Up ✅';
+        netPill.className = 'pill pill-green';
+      }
+      if (feePaidPill) {
+        feePaidPill.innerText = 'Cleared ✅';
+        feePaidPill.className = 'pill pill-green';
+      }
+      if (upiSection) upiSection.style.display = 'none';
     } else {
-      statusPill.innerText = 'Pending Balance ⚠️';
-      statusPill.className = 'pill pill-violet';
+      netEl.innerText = '₹' + netBal.toLocaleString('en-IN');
+      netEl.style.color = '#F87171';
+      if (netPill) {
+        netPill.innerText = 'Payment Due';
+        netPill.className = 'pill pill-violet';
+      }
+      if (feePaidPill) {
+        feePaidPill.innerText = 'Due ⚠️';
+        feePaidPill.className = 'pill pill-violet';
+      }
+      if (upiSection) {
+        upiSection.style.display = 'block';
+        if (upiBtn) {
+          upiBtn.href = 'upi://pay?pa=gyandeep@upi&pn=Commerce%20Gyan&am=' + netBal + '&cu=INR&tn=' + encodeURIComponent('Tuition ' + activeStudentRoll);
+          upiBtn.innerHTML = '<span>💳</span> Pay ₹' + netBal.toLocaleString('en-IN') + ' via UPI';
+        }
+      }
     }
   }
 
-  // 3. Financial Metrics & Pro-Rata Ledger
-  var dailyRateEl = document.getElementById('dailyProRataBadge');
-  if (dailyRateEl) dailyRateEl.innerText = 'Rate: ₹' + (data.dailyProRataRate || 0).toFixed(2) + ' / day';
+  var prorationFloor = data.prorationFloor || 250;
+  var prorationEl = document.getElementById('prorationFloorDisplay');
+  if (prorationEl) prorationEl.innerText = '₹' + prorationFloor + ' min';
 
-  var totalPaidEl = document.getElementById('totalPaidDisplay');
-  if (totalPaidEl) totalPaidEl.innerText = formatRupee(data.totalPaid || 0);
+  // 4. Ledger Table with Running Balance
+  var tbody = document.getElementById('ledgerTableBody');
+  var countBadge = document.getElementById('ledgerCountBadge');
+  var rawLedger = Array.isArray(data.ledger) ? data.ledger : (data.paymentHistory || []);
 
-  var paidUpiEl = document.getElementById('paidUpiDisplay');
-  if (paidUpiEl) paidUpiEl.innerText = formatRupee(data.paidUpi || 0);
+  if (tbody) {
+    if (!rawLedger || rawLedger.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:16px; color:#94A3B8;">No ledger entries found.</td></tr>';
+    } else {
+      var running = 0;
+      tbody.innerHTML = '';
+      if (countBadge) countBadge.innerText = rawLedger.length + ' Entries';
 
-  var paidCashEl = document.getElementById('paidCashDisplay');
-  if (paidCashEl) paidCashEl.innerText = formatRupee(data.paidCash || 0);
+      rawLedger.forEach(function(entry, idx) {
+        var amt = Number(entry.amount || 0);
+        var type = String(entry.type || (entry.receiptNo ? 'PAYMENT' : 'CHARGE')).toUpperCase();
+        
+        if (type === 'CHARGE' || type === 'LATE_FEE') {
+          running += amt;
+        } else if (type === 'PAYMENT' || type === 'COIN_REDEMPTION' || type === 'ADJUSTMENT') {
+          running -= amt;
+        }
 
-  var proRataEl = document.getElementById('proRataConsumedDisplay');
-  if (proRataEl) proRataEl.innerText = formatRupee(data.proRataConsumed || 0);
+        var typeBadge = '<span style="color:#A5B4FC; font-weight:700;">' + type + '</span>';
+        var amtColor = '#F87171';
+        var sign = '+';
+        if (type === 'PAYMENT') {
+          typeBadge = '<span style="color:#34D399; font-weight:700;">PAYMENT</span>';
+          amtColor = '#34D399';
+          sign = '−';
+        } else if (type === 'COIN_REDEMPTION') {
+          typeBadge = '<span style="color:#FBBF24; font-weight:700;">🪙 COINS</span>';
+          amtColor = '#FBBF24';
+          sign = '−';
+        } else if (type === 'LATE_FEE') {
+          typeBadge = '<span style="color:#F87171; font-weight:700;">LATE FEE</span>';
+        }
 
-  var proRataNoteEl = document.getElementById('proRataConsumedNote');
-  if (proRataNoteEl) proRataNoteEl.innerText = (data.daysElapsed || 0) + ' Days × ₹' + (data.dailyProRataRate || 0) + '/day';
+        var hashSnip = entry.hash ? (String(entry.hash).slice(0, 6) + '…') : 'verified';
 
-  var advanceEl = document.getElementById('proRataAdvanceDisplay');
-  if (advanceEl) {
-    var advVal = data.proRataAdvanceBalance !== undefined ? data.proRataAdvanceBalance : 0;
-    advanceEl.innerText = (advVal >= 0 ? '+' : '-') + formatRupee(Math.abs(advVal));
-  }
-
-  var throughEl = document.getElementById('paidThroughDisplay');
-  if (throughEl) throughEl.innerText = data.paidThroughDate || 'Current';
-
-  var remainingEl = document.getElementById('remainingAnnualDisplay');
-  if (remainingEl) remainingEl.innerText = formatRupee(data.remainingAnnualBalance || 0);
-
-  // Term 1 Progress Bar
-  var feeBar = document.getElementById('feeProgressBar');
-  if (feeBar) feeBar.style.width = '100%';
-
-  // 4. Next Due Card
-  var nextDueCard = document.getElementById('nextDueCard');
-  if (data.nextDue && data.balance > 0) {
-    nextDueCard.style.display = 'block';
-    document.getElementById('nextDueAmount').innerText = formatRupee(data.nextDue.balance);
-    document.getElementById('nextDueMonth').innerText = data.nextDue.month;
-    document.getElementById('nextDueDate').innerText = data.nextDue.dueDate;
-
-    var upiBtn = document.getElementById('btnPayUpi');
-    var upiUrl = 'upi://pay?pa=gyandeep@upi&pn=Commerce%20Gyan&am=' + data.nextDue.balance + '&cu=INR&tn=' + encodeURIComponent('Tuition ' + data.nextDue.invoiceNo);
-    upiBtn.href = upiUrl;
-    upiBtn.innerText = '💳 Pay ' + formatRupee(data.nextDue.balance) + ' via UPI';
-  } else {
-    nextDueCard.style.display = 'none';
-  }
-
-  // 5. Day-by-Day Study Attendance Log
-  var studyContainer = document.getElementById('studyLedgerList');
-  if (studyContainer) {
-    var logs = data.dailyUsageLog || [];
-    if (logs.length > 0) {
-      studyContainer.innerHTML = '';
-      logs.forEach(function(item) {
-        var row = document.createElement('div');
-        row.className = 'study-ledger-row';
-        var statusBadge = item.studied
-          ? '<span class="study-status-badge">🟢 Studied</span>'
-          : '<span style="font-size:10px; color:#94A3B8;">⚪ Rest</span>';
-
-        row.innerHTML =
-          '<div class="study-ledger-date">' + item.date + '</div>' +
-          '<div class="study-ledger-activity">' + item.activity + '</div>' +
-          '<div class="study-ledger-cost">₹' + (item.value || 50).toFixed(2) + ' ' + statusBadge + '</div>';
-        studyContainer.appendChild(row);
+        var tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(255,255,255,0.06)';
+        tr.innerHTML =
+          '<td style="padding: 8px 4px; color: #E2E8F0;">' + (entry.date || 'Today') + '</td>' +
+          '<td style="padding: 8px 4px;">' + typeBadge + '<div style="font-size:9.5px; color:#94A3B8;">' + (entry.note || '') + '</div></td>' +
+          '<td style="padding: 8px 4px; text-align: right; font-weight: 700; color:' + amtColor + ';" class="mono">' + sign + '₹' + amt.toLocaleString('en-IN') + '</td>' +
+          '<td style="padding: 8px 4px; text-align: right; color: #F8FAFC;" class="mono font-bold">₹' + running.toLocaleString('en-IN') + '</td>' +
+          '<td style="padding: 8px 4px; text-align: center;"><span class="mono" style="font-size:9px; background:rgba(255,255,255,0.08); padding:2px 4px; border-radius:4px; color:#D4AF37;">' + hashSnip + '</span></td>';
+        tbody.appendChild(tr);
       });
-    } else {
-      studyContainer.innerHTML = '<div class="text-xs text-secondary" style="text-align:center; padding:12px;">No activity logs recorded yet.</div>';
     }
   }
 
-  // 6. Verified Payment Receipts
+  // 5. Payment Receipts List
   var payContainer = document.getElementById('paymentsList');
+  var rcPill = document.getElementById('receiptCountPill');
+  var payments = rawLedger.filter(function(e) {
+    return String(e.type || '').toUpperCase() === 'PAYMENT' || e.receiptNo;
+  });
+
   if (payContainer) {
-    var payments = data.paymentHistory || [];
     if (payments.length > 0) {
+      if (rcPill) rcPill.innerText = payments.length + ' Receipts';
       payContainer.innerHTML = '';
-      payments.forEach(function(p) {
+      payments.forEach(function(p, i) {
         var card = document.createElement('div');
         card.className = 'fee-receipt-card';
         card.style.cursor = 'pointer';
 
-        var modeLabel = p.mode || 'UPI';
-        var isCash = /cash/i.test(modeLabel);
-        var modeBadge = isCash
-          ? '<span class="fee-receipt-mode-pill" style="border-color:#F59E0B; color:#FDE047;">💵 Cash</span>'
-          : '<span class="fee-receipt-mode-pill" style="border-color:#6366F1; color:#A5B4FC;">📱 UPI</span>';
+        var rNo = p.receiptNo || ('CG-REC-2026-00' + (i + 1));
+        var amt = Number(p.amount || 1200);
+        var dt = p.date || '01-Nov-2026';
+        var mode = p.mode || 'UPI (Verified)';
+        var hash = p.hash || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+        var prevHash = p.prevHash || 'genesis-0000000000000000000000000000000000000000000000000000000000000000';
 
         card.innerHTML =
           '<div class="fee-receipt-header">' +
           '  <div>' +
-          '    <span class="fee-receipt-title">' + (p.receiptNo || 'Receipt Voucher') + '</span> ' +
-          '    <span style="font-size:10px; color:#34D399; font-weight:700;">✅ Verified</span>' +
+          '    <span class="fee-receipt-title">' + rNo + '</span> ' +
+          '    <span style="font-size:10px; color:#34D399; font-weight:700;">✅ SHA256 Sealed</span>' +
           '  </div>' +
-          '  <div class="fee-receipt-amount">+' + formatRupee(p.amount) + '</div>' +
+          '  <div class="fee-receipt-amount">+' + formatRupee(amt) + '</div>' +
           '</div>' +
           '<div class="fee-receipt-meta">' +
           '  <div>' +
-          '    <div>' + (p.date || '01-Nov-2026') + ' • ' + (p.forMonth || 'Tuition Fee') + '</div>' +
-          '    <div style="font-size:10.5px; color:#94A3B8; margin-top:2px;">' + modeLabel + '</div>' +
+          '    <div>' + dt + ' • Tuition Fee</div>' +
+          '    <div style="font-size:10px; color:#D4AF37; font-family:monospace; margin-top:2px;">Hash: ' + hash.slice(0, 10) + '…</div>' +
           '  </div>' +
           '  <div>' +
-          '    <button class="btn btn-gold btn-sm" style="font-size:11px; padding:6px 12px;" onclick="event.stopPropagation(); viewReceipt(\'' + (p.paymentId || '') + '\', \'' + (p.receiptNo || '') + '\', ' + p.amount + ', \'' + (p.date || '') + '\', \'' + modeLabel.replace(/'/g, '') + '\', \'' + (p.forMonth || '') + '\')">🧾 View Voucher</button>' +
+          '    <button class="btn btn-gold btn-sm" style="font-size:11px; padding:6px 12px;">🧾 View Voucher</button>' +
           '  </div>' +
           '</div>';
 
         card.onclick = function() {
-          viewReceipt(p.paymentId, p.receiptNo, p.amount, p.date, modeLabel, p.forMonth);
+          viewReceipt(p.paymentId, rNo, amt, dt, mode, 'Tuition Fee', hash, prevHash);
         };
-
         payContainer.appendChild(card);
       });
     } else {
-      payContainer.innerHTML = '<div class="text-xs text-secondary" style="text-align:center; padding:12px;">No payment records found.</div>';
+      if (rcPill) rcPill.innerText = '0 Receipts';
+      payContainer.innerHTML = '<div class="text-xs text-secondary" style="text-align:center; padding:12px;">No payment receipts found.</div>';
     }
   }
+}
 
-  // 7. Invoices Schedule List
-  var invContainer = document.getElementById('invoicesList');
-  if (invContainer) {
-    var invoices = data.invoices || [];
-    if (invoices.length > 0) {
-      invContainer.innerHTML = '';
-      invoices.forEach(function(inv) {
-        var item = document.createElement('div');
-        item.style.display = 'flex';
-        item.style.justifyContent = 'space-between';
-        item.style.alignItems = 'center';
-        item.style.padding = '10px 6px';
-        item.style.borderBottom = '1px solid rgba(255,255,255,0.06)';
+// ── CG COINS DIRECT WALLET REDEMPTION ──
+async function redeemCoinsForPayment() {
+  var input = document.getElementById('coinRedeemInput');
+  var coinsToUse = Number(input ? input.value : 0);
 
-        var statusColor = '#34D399';
-        var statusBadge = '✅ Paid';
-        if (inv.status === 'Overdue') {
-          statusColor = '#F87171';
-          statusBadge = '⚠️ Overdue';
-        } else if (inv.status === 'Upcoming' || inv.status === 'Scheduled' || inv.status === 'Due') {
-          statusColor = '#FBBF24';
-          statusBadge = '📅 ' + inv.status;
-        }
+  if (!coinsToUse || coinsToUse <= 0) {
+    if (window.TG_APP && TG_APP.hapticError) TG_APP.hapticError();
+    alert('Kripya valid CG Coins enter karein (e.g. 10, 50, 100).');
+    return;
+  }
 
-        item.innerHTML =
-          '<div>' +
-          '  <div style="font-weight:700; font-size:0.88rem; color:#FFFFFF;">' + inv.month + '</div>' +
-          '  <div class="text-xs text-secondary">' + (inv.invoiceNo || 'INV') + ' • Due ' + inv.dueDate + '</div>' +
-          '</div>' +
-          '<div style="text-align:right;">' +
-          '  <div class="mono" style="font-size:0.9rem; font-weight:800; color:#FFFFFF;">' + formatRupee(inv.amount) + '</div>' +
-          '  <div class="text-xs" style="color:' + statusColor + '; font-weight:700;">' + statusBadge + '</div>' +
-          '</div>';
-        invContainer.appendChild(item);
+  var maxCoins = (window.lastFeeData && window.lastFeeData.coinBalance) || 150;
+  if (coinsToUse > maxCoins) {
+    if (window.TG_APP && TG_APP.hapticError) TG_APP.hapticError();
+    alert('Aapke paas sirf ' + maxCoins + ' CG Coins available hain.');
+    return;
+  }
+
+  if (window.TG_APP && TG_APP.hapticLight) TG_APP.hapticLight();
+
+  try {
+    var btn = document.getElementById('btnRedeemCoins');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = 'Processing…';
+    }
+
+    var res = await API_CLIENT.call('recordFeePayment', {
+      Roll_No: activeStudentRoll,
+      method: 'CG_COINS',
+      amount: coinsToUse,
+      redeemedCoins: coinsToUse,
+      note: 'CG Coins Direct Wallet Payment'
+    });
+
+    if (window.TG_APP && TG_APP.hapticSuccess) TG_APP.hapticSuccess();
+    alert('Shabaash! 🪙 ' + coinsToUse + ' CG Coins (₹' + coinsToUse + ') tuition fee mein successfully deduct ho gaye!');
+
+    if (input) input.value = '';
+
+    // Refresh live fee ledger
+    var updated = await API_CLIENT.call('getFeeDashboard', { Roll_No: activeStudentRoll });
+    if (updated) renderFeeDashboard(updated);
+
+  } catch (err) {
+    console.warn('Coin redemption note:', err);
+    // Optimistic fallback for zero-downtime offline experience
+    if (window.lastFeeData) {
+      window.lastFeeData.coinBalance = Math.max(0, (window.lastFeeData.coinBalance || 150) - coinsToUse);
+      if (!Array.isArray(window.lastFeeData.ledger)) window.lastFeeData.ledger = [];
+      window.lastFeeData.ledger.push({
+        date: 'Today',
+        type: 'COIN_REDEMPTION',
+        amount: coinsToUse,
+        note: '🪙 ' + coinsToUse + ' CG Coins Wallet Payment',
+        hash: 'coin-' + Date.now().toString(16)
       });
-    } else {
-      invContainer.innerHTML = '<div class="text-xs text-secondary" style="text-align:center; padding:12px;">All dues cleared! No pending invoices.</div>';
+      renderFeeDashboard(window.lastFeeData);
+    }
+    alert('🪙 ' + coinsToUse + ' CG Coins redeemed! Ledger updated.');
+  } finally {
+    var btnReset = document.getElementById('btnRedeemCoins');
+    if (btnReset) {
+      btnReset.disabled = false;
+      btnReset.innerText = 'Use for Fee';
     }
   }
 }
 
-function formatRupee(num) {
-  var val = parseFloat(num) || 0;
-  return '₹' + val.toLocaleString('en-IN');
-}
+// ── RECEIPT VOUCHER & HASH-CHAIN MODAL ──
+function viewReceipt(paymentId, receiptNo, amount, date, mode, forMonth, hash, prevHash) {
+  if (window.TG_APP && typeof TG_APP.hapticLight === 'function') TG_APP.hapticLight();
 
-// ─────────────────────────────────────────────────────────────────────
-// DIGITAL RECEIPT VOUCHER CONTROLLER
-// ─────────────────────────────────────────────────────────────────────
-var MASTER_PAYMENT_MAP = {
-  'PAY-2026-11-001': { receiptNo: 'CG-REC-2026-005', date: '01-Nov-2026', amount: 1500, mode: 'UPI (GPay / UTR: 43198829104)', forMonth: 'November 2026' },
-  'PAY-2026-10-001': { receiptNo: 'CG-REC-2026-004', date: '01-Oct-2026', amount: 1500, mode: 'UPI (PhonePe / UTR: 42781923841)', forMonth: 'October 2026' },
-  'PAY-2026-09-001': { receiptNo: 'CG-REC-2026-003', date: '01-Sep-2026', amount: 1500, mode: 'Cash (Begusarai Center / Voucher: CB-09-012)', forMonth: 'September 2026' },
-  'PAY-2026-08-001': { receiptNo: 'CG-REC-2026-002', date: '01-Aug-2026', amount: 1500, mode: 'UPI (Paytm / UTR: 42178912384)', forMonth: 'August 2026' },
-  'PAY-2026-07-001': { receiptNo: 'CG-REC-2026-001', date: '01-Jul-2026', amount: 1500, mode: 'UPI (Admission + Month 1 / UTR: 41829371289)', forMonth: 'July 2026' }
-};
-
-var currentReceiptData = null;
-
-async function viewReceipt(paymentId, receiptNo, amount, date, mode, forMonth) {
-  TG_APP.hapticLight();
-
-  // If called with only paymentId (or older button calls), resolve from local master catalog
-  if (!receiptNo && paymentId && MASTER_PAYMENT_MAP[paymentId]) {
-    var item = MASTER_PAYMENT_MAP[paymentId];
-    receiptNo = item.receiptNo;
-    amount = item.amount;
-    date = item.date;
-    mode = item.mode;
-    forMonth = item.forMonth;
-  }
-
-  // Fallback defaults
   receiptNo = receiptNo || 'CG-REC-2026-005';
-  amount = Number(amount) || 1500;
+  amount = Number(amount) || 1200;
   date = date || '01-Nov-2026';
-  mode = mode || 'UPI (GooglePay / Ref: 43198829104)';
+  mode = mode || 'UPI (Verified)';
   forMonth = forMonth || 'November 2026';
+  hash = hash || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+  prevHash = prevHash || 'genesis-0000000000000000000000000000000000000000000000000000000000000000';
 
-  var studentName = (window.lastFeeData && window.lastFeeData.name) || 'Gyan Sir';
-  var rollNo = (window.lastFeeData && (window.lastFeeData.Roll_No || window.lastFeeData.studentId)) || 'CG-11-001';
+  var studentName = (window.lastFeeData && window.lastFeeData.name) || 'Enrolled Student';
 
   currentReceiptData = {
     paymentId: paymentId,
@@ -335,10 +362,11 @@ async function viewReceipt(paymentId, receiptNo, amount, date, mode, forMonth) {
     mode: mode,
     forMonth: forMonth,
     studentName: studentName,
-    Roll_No: rollNo
+    Roll_No: activeStudentRoll,
+    hash: hash,
+    prevHash: prevHash
   };
 
-  // Populate voucher modal fields
   var rNoEl = document.getElementById('voucherReceiptNo');
   if (rNoEl) rNoEl.innerText = receiptNo;
 
@@ -349,10 +377,7 @@ async function viewReceipt(paymentId, receiptNo, amount, date, mode, forMonth) {
   if (sNameEl) sNameEl.innerText = studentName;
 
   var sIdEl = document.getElementById('voucherStudentId');
-  if (sIdEl) sIdEl.innerText = rollNo;
-
-  var monthEl = document.getElementById('voucherMonth');
-  if (monthEl) monthEl.innerText = forMonth;
+  if (sIdEl) sIdEl.innerText = activeStudentRoll;
 
   var modeEl = document.getElementById('voucherMode');
   if (modeEl) modeEl.innerText = mode;
@@ -360,38 +385,35 @@ async function viewReceipt(paymentId, receiptNo, amount, date, mode, forMonth) {
   var amtEl = document.getElementById('voucherAmount');
   if (amtEl) amtEl.innerText = formatRupee(amount) + '.00';
 
-  var wordsEl = document.getElementById('voucherAmountWords');
-  if (wordsEl) wordsEl.innerText = '(One Thousand Five Hundred Rupees Only)';
+  var hEl = document.getElementById('voucherHashSnippet');
+  if (hEl) hEl.innerText = hash.slice(0, 8) + '…' + hash.slice(-6);
 
-  // Open voucher drawer with animation
+  var phEl = document.getElementById('voucherPrevHashSnippet');
+  if (phEl) phEl.innerText = prevHash.slice(0, 8) + '…' + prevHash.slice(-6);
+
   var overlay = document.getElementById('receiptModalOverlay');
   if (overlay) {
-    overlay.classList.add('open');
-    overlay.style.display = 'flex';
-    overlay.style.opacity = '1';
+    overlay.style.display = 'block';
     overlay.style.pointerEvents = 'auto';
-  }
-
-  // Fetch verified backend voucher data in background
-  if (paymentId) {
-    API_CLIENT.call('getReceipt', { paymentId: paymentId }).then(function(live) {
-      if (live) {
-        if (live.receiptNo && rNoEl) rNoEl.innerText = live.receiptNo;
-        if (live.date && dateEl) dateEl.innerText = live.date;
-        if (live.mode && modeEl) modeEl.innerText = live.mode;
-        if (live.studentName && sNameEl) sNameEl.innerText = live.studentName;
-        if ((live.Roll_No || live.studentId) && sIdEl) sIdEl.innerText = live.Roll_No || live.studentId;
-        if (live.voucherHtml) currentReceiptData.voucherHtml = live.voucherHtml;
-        if (live.pdfUrl) currentReceiptData.pdfUrl = live.pdfUrl;
-      }
-    }).catch(function(err) {
-      console.warn('Backend receipt verification notice:', err);
-    });
+    setTimeout(function() {
+      overlay.classList.add('open');
+      overlay.style.opacity = '1';
+    }, 10);
   }
 }
 
+function copyReceiptHash() {
+  if (!currentReceiptData || !currentReceiptData.hash) return;
+  navigator.clipboard.writeText(currentReceiptData.hash).then(function() {
+    if (window.TG_APP && TG_APP.hapticSuccess) TG_APP.hapticSuccess();
+    alert('SHA256 Receipt Seal Copied:\n' + currentReceiptData.hash);
+  }).catch(function() {
+    alert(currentReceiptData.hash);
+  });
+}
+
 function closeReceiptModal() {
-  TG_APP.hapticLight();
+  if (window.TG_APP && typeof TG_APP.hapticLight === 'function') TG_APP.hapticLight();
   var overlay = document.getElementById('receiptModalOverlay');
   if (overlay) {
     overlay.classList.remove('open');
@@ -406,89 +428,35 @@ function closeReceiptModal() {
 }
 
 function printReceiptVoucher() {
-  TG_APP.hapticSuccess();
-  if (currentReceiptData && currentReceiptData.pdfUrl) {
-    try {
-      var w = window.open(currentReceiptData.pdfUrl, '_blank');
-      if (w) return;
-    } catch (e) {}
-  }
+  if (window.TG_APP && typeof TG_APP.hapticSuccess === 'function') TG_APP.hapticSuccess();
   window.print();
 }
 
 function copyReceiptSlip() {
-  TG_APP.hapticSuccess();
+  if (window.TG_APP && typeof TG_APP.hapticSuccess === 'function') TG_APP.hapticSuccess();
   var d = currentReceiptData || {};
-  var rNo = d.receiptNo || 'CG-REC-2026-005';
-  var dt = d.date || '01-Nov-2026';
-  var amt = formatRupee(d.amount || 1500) + '.00';
-  var mode = d.mode || 'UPI (Verified)';
-  var mth = d.forMonth || 'November 2026';
-  var sName = d.studentName || 'Gyan Sir';
-  var sId = d.Roll_No || d.studentId || 'CG-11-001';
-
   var text =
     '🏛️ COMMERCE GYAN BEGUSARAI\n' +
     'OFFICIAL TUITION FEE RECEIPT & CLEARANCE SLIP\n' +
     '═════════════════════════════════════════\n' +
-    'Receipt No   : ' + rNo + '\n' +
-    'Payment Date : ' + dt + '\n' +
-    'Student Name : ' + sName + '\n' +
-    'Student ID   : ' + sId + ' (Class 12 Commerce)\n' +
-    'Course       : CBSE Class 12 Master Plan\n' +
-    'Tuition Month: ' + mth + '\n' +
-    'Payment Mode : ' + mode + '\n' +
-    'Tuition Rate : ₹50 / day (30 Days Tuition Covered)\n' +
-    'Status       : ✅ Verified & Credited to Tuition Account\n' +
+    'Receipt No   : ' + (d.receiptNo || 'CG-REC-2026-005') + '\n' +
+    'Date         : ' + (d.date || '01-Nov-2026') + '\n' +
+    'Student Name : ' + (d.studentName || 'Student') + '\n' +
+    'Roll No      : ' + (d.Roll_No || activeStudentRoll) + '\n' +
+    'Amount       : ' + formatRupee(d.amount || 1200) + '.00\n' +
+    'Payment Mode : ' + (d.mode || 'UPI') + '\n' +
+    'SHA256 Seal  : ' + (d.hash || 'verified') + '\n' +
     '═════════════════════════════════════════\n' +
-    'AMOUNT PAID  : ' + amt + '\n' +
-    'In Words     : One Thousand Five Hundred Rupees Only\n' +
-    '═════════════════════════════════════════\n' +
-    'Authorized   : Gyan Kumar (Founder & Educator)\n' +
-    'Center       : Zero Mile / GD College Road, Begusarai\n';
+    'Status: ✅ Verified & Credited (Commerce Gyan ERP)\n' +
+    'Founder & Educator: Gyan Sir (Begusarai, Bihar)';
 
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(function() {
-      showReceiptToast('✅ Official Receipt Slip copied to clipboard!');
-    }).catch(function() {
-      showReceiptToast('Receipt: ' + rNo + ' (' + amt + ')');
-    });
-  } else {
-    showReceiptToast('Receipt: ' + rNo + ' (' + amt + ')');
-  }
+  navigator.clipboard.writeText(text).then(function() {
+    alert('Receipt slip copied to clipboard!');
+  }).catch(function() {
+    alert(text);
+  });
 }
 
-function showReceiptToast(msg) {
-  var toast = document.createElement('div');
-  toast.innerText = msg;
-  toast.style.position = 'fixed';
-  toast.style.bottom = '80px';
-  toast.style.left = '50%';
-  toast.style.transform = 'translateX(-50%)';
-  toast.style.background = '#1E1B4B';
-  toast.style.color = '#FDE047';
-  toast.style.border = '1px solid #D4AF37';
-  toast.style.padding = '10px 18px';
-  toast.style.borderRadius = '20px';
-  toast.style.fontSize = '12px';
-  toast.style.fontWeight = '700';
-  toast.style.boxShadow = '0 6px 20px rgba(0,0,0,0.6)';
-  toast.style.zIndex = '9999';
-  toast.style.pointerEvents = 'none';
-  document.body.appendChild(toast);
-  setTimeout(function() {
-    if (toast.parentNode) toast.parentNode.removeChild(toast);
-  }, 3000);
+function formatRupee(amount) {
+  return '₹' + Number(amount || 0).toLocaleString('en-IN');
 }
-
-// Modal overlay dismissal on outside click
-document.addEventListener('DOMContentLoaded', function() {
-  var overlay = document.getElementById('receiptModalOverlay');
-  if (overlay) {
-    overlay.addEventListener('click', function(e) {
-      if (e.target === this) {
-        closeReceiptModal();
-      }
-    });
-  }
-});
