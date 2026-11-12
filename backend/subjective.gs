@@ -531,28 +531,28 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
         type: 'graph',
         template: parts[0] || 'demand_shift',
         caption: parts[1] || 'Economic Diagram',
-        estHeight: 52
+        estHeight: 50
       });
     } else if (currentBlockType === 'formula') {
       blocks.push({
         type: 'formula',
         formula: bufText,
         label: currentMeta || 'Key Formula',
-        estHeight: 22
+        estHeight: 20
       });
     } else if (currentBlockType === 'flow') {
       var stepLines = bufText.split(/->|\n/).map(function(s) { return s.trim(); }).filter(Boolean);
       blocks.push({
         type: 'flow',
         steps: bufText,
-        estHeight: 12 + stepLines.length * 11
+        estHeight: 12 + stepLines.length * 6.5
       });
     } else if (currentBlockType === 'card') {
       blocks.push({
         type: 'card',
         title: currentMeta || 'Case Scenario',
         body: bufText,
-        estHeight: 14 + Math.ceil(bufText.length / 80) * 5
+        estHeight: 14 + Math.ceil(bufText.length / 85) * 4.5
       });
     } else if (currentBlockType === 'taccount') {
       var tLines = bufText.split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
@@ -560,7 +560,7 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
         type: 'taccount',
         title: currentMeta || 'Ledger Account',
         rowsText: bufText,
-        estHeight: 14 + tLines.length * 7.5
+        estHeight: 16 + tLines.length * 6.5
       });
     } else if (currentBlockType === 'capital') {
       var cLines = bufText.split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
@@ -568,14 +568,14 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
         type: 'capital',
         partnersText: currentMeta || 'Partners',
         rowsText: bufText,
-        estHeight: 14 + cLines.length * 7.5
+        estHeight: 16 + cLines.length * 6.5
       });
     } else if (currentBlockType === 'journal') {
       var jLines = bufText.split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
       blocks.push({
         type: 'journal',
         rowsText: bufText,
-        estHeight: 14 + jLines.length * 7.5
+        estHeight: 16 + jLines.length * 6.5
       });
     } else if (currentBlockType === 'table') {
       var tblLines = bufText.split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
@@ -583,7 +583,7 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
         type: 'table',
         title: currentMeta,
         rowsText: bufText,
-        estHeight: (currentMeta ? 18 : 12) + tblLines.length * 7.5
+        estHeight: (currentMeta ? 18 : 14) + tblLines.length * 6.5
       });
     } else {
       classifyAndPushUnmarked_(bufText, subject, blocks);
@@ -709,7 +709,7 @@ function classifyAndPushUnmarked_(text, subject, blocks) {
       blocks.push({
         type: 'journal',
         rowsText: text,
-        estHeight: 14 + tableLines.length * 7.5
+        estHeight: 16 + tableLines.length * 6.5
       });
       return;
     }
@@ -719,7 +719,7 @@ function classifyAndPushUnmarked_(text, subject, blocks) {
         type: 'capital',
         partnersText: 'Partners',
         rowsText: text,
-        estHeight: 14 + tableLines.length * 7.5
+        estHeight: 16 + tableLines.length * 6.5
       });
       return;
     }
@@ -730,7 +730,7 @@ function classifyAndPushUnmarked_(text, subject, blocks) {
         type: 'taccount',
         title: 'Ledger Account',
         rowsText: text,
-        estHeight: 14 + tableLines.length * 7.5
+        estHeight: 16 + tableLines.length * 6.5
       });
       return;
     }
@@ -738,7 +738,7 @@ function classifyAndPushUnmarked_(text, subject, blocks) {
     blocks.push({
       type: 'table',
       rowsText: text,
-      estHeight: 12 + tableLines.length * 7.5
+      estHeight: 14 + tableLines.length * 6.5
     });
     return;
   }
@@ -749,7 +749,7 @@ function classifyAndPushUnmarked_(text, subject, blocks) {
       type: 'formula',
       formula: text,
       label: 'Formula',
-      estHeight: 22
+      estHeight: 20
     });
     return;
   }
@@ -759,7 +759,7 @@ function classifyAndPushUnmarked_(text, subject, blocks) {
     blocks.push({
       type: 'flow',
       steps: text,
-      estHeight: 12 + text.split('->').length * 11
+      estHeight: 12 + text.split('->').length * 6.5
     });
     return;
   }
@@ -844,32 +844,41 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
   // Build content blocks
   var blocks = [];
   if (!isAns) {
-    // Question PDF Layout
+    // Question PDF Layout (Publication Grade)
     blocks.push({
       type: 'question_header',
       marks: marks,
       classLevel: classLevel,
-      estHeight: 12
+      topicText: topicText,
+      dateStr: rawDate,
+      estHeight: 18
     });
     var qBlocks = analyzeAndStructureBlock_(data.questionText || '', data.subject, data.renderSpec);
     for (var qb = 0; qb < qBlocks.length; qb++) {
       blocks.push(qBlocks[qb]);
     }
     blocks.push({
+      type: 'question_workingspace',
+      estHeight: 50
+    });
+    blocks.push({
       type: 'question_footer',
-      estHeight: 20
+      estHeight: 14
     });
   } else {
-    // Model Answer PDF Layout
+    // Model Answer PDF Layout (Publication Grade)
     blocks.push({
       type: 'answer_recap',
       questionText: data.questionText || '',
       marks: marks,
-      estHeight: 26
+      classLevel: classLevel,
+      topicText: topicText,
+      dateStr: rawDate,
+      estHeight: 38 + Math.min(16, Math.ceil((data.questionText || '').length / 90) * 4)
     });
     blocks.push({
       type: 'answer_heading',
-      estHeight: 8
+      estHeight: 2
     });
     var ansBlocks = analyzeAndStructureBlock_(data.answerText || '', data.subject, data.renderSpec);
     for (var ab = 0; ab < ansBlocks.length; ab++) {
@@ -880,20 +889,20 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
       blocks.push({
         type: 'rubric',
         text: data.marksBreakdown,
-        estHeight: 12 + String(data.marksBreakdown).split('\n').filter(Boolean).length * 6.5
+        estHeight: 10 + String(data.marksBreakdown).split('\n').filter(Boolean).length * 5.5
       });
     }
     if (data.commonMistakes) {
       blocks.push({
         type: 'traps',
         text: data.commonMistakes,
-        estHeight: 12 + String(data.commonMistakes).split('\n').filter(Boolean).length * 6.5
+        estHeight: 10 + String(data.commonMistakes).split('\n').filter(Boolean).length * 5.5
       });
     }
   }
 
-  // Greedy Paginator (Max 205mm usable height per page)
-  var pages = paginateBlocks_(blocks, 205);
+  // Greedy Paginator (Max 192mm usable height per page: Test 1 Accountancy cleanly splits, single-topic Q&As fit on 1 page)
+  var pages = paginateBlocks_(blocks, 192);
   var totalPages = pages.length;
 
   var headerData = {
@@ -941,10 +950,10 @@ function paginateBlocks_(blocks, maxUsableHeightMm) {
       currentPage.push(blk);
       currentH += est;
     } else {
-      // Check if table can be split cleanly at row boundaries
-      if (blk.type === 'table' && blk.rowsText && est > 50) {
+      // Check if table can be split cleanly at row boundaries (only for long tables with 10+ rows)
+      if (blk.type === 'table' && blk.rowsText && est > 90) {
         var lines = blk.rowsText.split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
-        if (lines.length > 4) {
+        if (lines.length > 10) {
           var availH = maxH - currentH;
           var rowsThatFit = Math.floor((availH - 12) / 7.5);
           if (rowsThatFit >= 2 && (lines.length - rowsThatFit) >= 2) {
@@ -1041,12 +1050,15 @@ function buildMultiPageDocumentHtml_(pages, headerData, bgBase64) {
     '    -webkit-print-color-adjust: exact;\n' +
     '    print-color-adjust: exact;\n' +
     '  }\n' +
-    '  html, body {\n' +
+        '  html, body {\n' +
     '    margin: 0;\n' +
     '    padding: 0;\n' +
     '    background: #ffffff;\n' +
-    '    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;\n' +
-    '    color: #1e293b;\n' +
+    '    font-family: \'Segoe UI\', Roboto, \'Helvetica Neue\', Arial, sans-serif;\n' +
+    '    font-size: 10pt;\n' +
+    '    line-height: 1.48;\n' +
+    '    color: #0f172a;\n' +
+    '    -webkit-font-smoothing: antialiased;\n' +
     '  }\n' +
     '  .page {\n' +
     '    width: 210mm;\n' +
@@ -1064,7 +1076,7 @@ function buildMultiPageDocumentHtml_(pages, headerData, bgBase64) {
     '  .page-content {\n' +
     '    position: relative;\n' +
     '    z-index: 1;\n' +
-    '    padding: 55mm 12mm 22mm 18mm;\n' +
+    '    padding: 36mm 12mm 26mm 18mm;\n' +
     '    box-sizing: border-box;\n' +
     '    width: 210mm;\n' +
     '    height: 297mm;\n' +
@@ -1074,7 +1086,17 @@ function buildMultiPageDocumentHtml_(pages, headerData, bgBase64) {
     '    break-inside: avoid;\n' +
     '    page-break-inside: avoid;\n' +
     '  }\n' +
-    '</style>\n' +
+    '  .content-card {\n' +
+    '    background: rgba(255, 255, 255, 0.94);\n' +
+    '    border: 1px solid #cbd5e1;\n' +
+    '    border-radius: 10px;\n' +
+    '    padding: 10px 14px;\n' +
+    '    margin-bottom: 9px;\n' +
+    '    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);\n' +
+    '    break-inside: avoid;\n' +
+    '    page-break-inside: avoid;\n' +
+    '  }\n' +
+'</style>\n' +
     '</head>\n' +
     '<body>\n' +
     pagesHtml + '\n' +
@@ -1091,35 +1113,52 @@ function renderBlockHtml_(blk) {
   if (!blk) return '';
   switch (blk.type) {
     case 'question_header':
-      return '<div class="block" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">' +
-        '<div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Official CBSE Class ' + blk.classLevel + ' Problem</div>' +
-        '<div style="background: #f3e8ff; border: 1.5px solid #a855f7; color: #581c87; font-weight: 800; padding: 2px 10px; border-radius: 6px; font-size: 11px;">[ ' + blk.marks + ' Marks ]</div>' +
-      '</div>';
-
-    case 'question_footer':
-      return '<div class="block" style="margin-top: 20px; background: #faf5ff; border: 1.5px dashed #c084fc; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px;">' +
-        '<span style="font-size: 18px;">✍️</span>' +
-        '<div style="font-size: 11px; color: #581c87; font-weight: 600; line-height: 1.4;">' +
-          '<strong>CBSE Register Assignment:</strong> Solve this question in your physical practice register tonight. Official Step-by-Step Model Answer Key with CBSE Marking Rubric will be shared tomorrow at <strong>08:15 AM IST</strong>.' +
+      return '<div class="content-card">' +
+        '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+          '<div style="display: flex; align-items: center; gap: 8px;">' +
+            '<span style="background: #1d4ed8; color: #ffffff; font-weight: 700; border-radius: 999px; padding: 2.5px 12px; font-size: 8.5pt; letter-spacing: 0.3px;">Q1</span>' +
+            '<span style="background: #fef3c7; color: #92400e; font-weight: 600; border-radius: 999px; padding: 2.5px 12px; font-size: 8.5pt;">CBSE Class ' + blk.classLevel + ' • ' + escapeHtml_(blk.topicText || 'Practice Problem') + '</span>' +
+          '</div>' +
+          '<span style="color: #1d4ed8; font-weight: 800; font-size: 10pt;">[ ' + blk.marks + ' Marks ]</span>' +
         '</div>' +
       '</div>';
 
-    case 'question_header':
-      return '<div class="block" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px; margin-bottom: 6px;">' +
-        '<span style="font-size: 8.5pt; font-weight: 700; color: #5b1865; text-transform: uppercase;">Official CBSE Practice Problem — Class ' + blk.classLevel + '</span>' +
-        '<span style="background: #f3e8ff; border: 1px solid #a855f7; color: #581c87; font-weight: 800; padding: 1px 7px; border-radius: 4px; font-size: 8pt;">[ ' + blk.marks + ' Marks ]</span>' +
+    case 'question_workingspace':
+      return '<div class="content-card" style="border: 1.5px dashed #cbd5e1; background: rgba(255, 255, 255, 0.92); margin-top: 10px;">' +
+        '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">' +
+          '<span style="font-size: 9pt; font-weight: 700; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.5px;">✍️ Solution & Working Space</span>' +
+          '<span style="font-size: 8pt; color: #64748b; font-weight: 600;">(Show journal entries, ledger accounts, and working notes neatly)</span>' +
+        '</div>' +
+        '<div style="min-height: 55mm; border-bottom: 1px dashed #e2e8f0;"></div>' +
+      '</div>';
+
+    case 'question_footer':
+      return '<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; margin-top: 6px; display: flex; align-items: center; gap: 8px;">' +
+        '<span style="font-size: 15px;">✍️</span>' +
+        '<div style="font-size: 9pt; color: #334155; line-height: 1.4;">' +
+          '<strong>CBSE Practice Register Assignment:</strong> Solve this question in your physical practice register tonight. Official Step-by-Step Model Answer Key with CBSE Marking Rubric will be shared tomorrow at <strong>08:15 AM IST</strong>.' +
+        '</div>' +
       '</div>';
 
     case 'answer_recap':
       var cleanText = cleanQuestionRecapText_(blk.questionText || '');
-      if (cleanText.length > 220) cleanText = cleanText.substring(0, 218) + '...';
-      return '<div class="block" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px; margin-bottom: 6px;">' +
-        '<span style="font-size: 8.5pt; font-weight: 700; color: #5b1865; text-transform: uppercase;">Official Model Answer Key — DPP Solution</span>' +
-        '<span style="background: #f3e8ff; border: 1px solid #a855f7; color: #581c87; font-weight: 800; padding: 1px 7px; border-radius: 4px; font-size: 8pt;">[ ' + blk.marks + ' Marks ]</span>' +
-      '</div>' +
-      '<div class="block" style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3.5px solid #5b1865; border-radius: 5px; padding: 5px 9px; margin-bottom: 6px;">' +
-        '<div style="font-size: 8pt; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px;">Original Problem Recap</div>' +
-        '<div style="font-size: 8.5pt; color: #334155; margin-top: 2px; font-weight: 500; line-height: 1.35;">' + escapeHtml_(cleanText) + '</div>' +
+      if (cleanText.length > 250) cleanText = cleanText.substring(0, 248) + '...';
+      var humanDate = formatHumanDppDate_(blk.dateStr);
+      return '<div class="content-card">' +
+        '<div style="font-size: 10.5pt; font-weight: 800; color: #1e3a8a; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.4px;">' +
+          'Official Model Answer Key — DPP of ' + escapeHtml_(humanDate) +
+        '</div>' +
+        '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px;">' +
+          '<div style="display: flex; align-items: center; gap: 8px;">' +
+            '<span style="background: #1d4ed8; color: #ffffff; font-weight: 700; border-radius: 999px; padding: 2.5px 12px; font-size: 8.5pt; letter-spacing: 0.3px;">A1</span>' +
+            '<span style="background: #fef3c7; color: #92400e; font-weight: 600; border-radius: 999px; padding: 2.5px 12px; font-size: 8.5pt;">DPP of ' + escapeHtml_(humanDate) + '</span>' +
+          '</div>' +
+          '<span style="color: #1d4ed8; font-weight: 800; font-size: 10pt;">[ ' + blk.marks + ' Marks ]</span>' +
+        '</div>' +
+        '<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3.5px solid #1d4ed8; border-radius: 6px; padding: 8px 11px;">' +
+          '<div style="font-size: 8pt; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px;">Original Problem Recap</div>' +
+          '<div style="font-size: 9.5pt; color: #334155; margin-top: 3px; font-weight: 500; line-height: 1.45;">' + escapeHtml_(cleanText) + '</div>' +
+        '</div>' +
       '</div>';
 
     case 'answer_heading':
@@ -1150,21 +1189,21 @@ function renderBlockHtml_(blk) {
       return renderCaseStudyCardBlock_(blk.title, blk.body);
 
     case 'rubric':
-      return '<div class="block" style="margin-top: 8px; background: #f0fdf4; border: 1.5px solid #22c55e; border-radius: 7px; padding: 7px 12px;">' +
-        '<div style="font-size: 11px; font-weight: 700; color: #15803d; display: flex; align-items: center; gap: 5px;">' +
+      return '<div class="content-card" style="background: rgba(240, 253, 244, 0.95); border: 1px solid #86efac; border-radius: 10px; padding: 11px 15px; margin-bottom: 8px;">' +
+        '<div style="font-size: 10pt; font-weight: 700; color: #15803d; display: flex; align-items: center; gap: 6px;">' +
           '<span>✅</span><strong>CBSE Step-by-Step Marking Scheme & Rubric</strong>' +
         '</div>' +
-        '<div style="font-size: 10px; color: #166534; margin-top: 4px; line-height: 1.4;">' +
+        '<div style="font-size: 9.5pt; color: #166534; margin-top: 5px; line-height: 1.48;">' +
           formatBulletListDps_(blk.text) +
         '</div>' +
       '</div>';
 
     case 'traps':
-      return '<div class="block" style="margin-top: 6px; background: #fff1f2; border: 1.5px solid #f43f5e; border-radius: 7px; padding: 7px 12px;">' +
-        '<div style="font-size: 11px; font-weight: 700; color: #be123c; display: flex; align-items: center; gap: 5px;">' +
+      return '<div class="content-card" style="background: rgba(254, 242, 242, 0.95); border: 1px solid #fca5a5; border-radius: 10px; padding: 11px 15px; margin-bottom: 8px;">' +
+        '<div style="font-size: 10pt; font-weight: 700; color: #991b1b; display: flex; align-items: center; gap: 6px;">' +
           '<span>⚠️</span><strong>Common Examiner Traps to Avoid</strong>' +
         '</div>' +
-        '<div style="font-size: 10px; color: #9f1239; margin-top: 4px; line-height: 1.4;">' +
+        '<div style="font-size: 9.5pt; color: #9f1239; margin-top: 5px; line-height: 1.48;">' +
           formatBulletListDps_(blk.text) +
         '</div>' +
       '</div>';
@@ -1176,7 +1215,7 @@ function renderBlockHtml_(blk) {
 }
 
 /**
- * Renders T-Account with Dr./Cr. header and optional tally validator
+ * Renders T-Account with Dr./Cr. header and publication-grade styling
  */
 function renderTAccountBlockHtml_(blk) {
   var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
@@ -1196,7 +1235,7 @@ function renderTAccountBlockHtml_(blk) {
     var cols = splitPipes_(lines[i]);
     if (cols.length >= 4) {
       var isTotal = /total/i.test(cols[0]) || /total/i.test(cols[2]);
-      var borderStyle = isTotal ? 'border-top: 1px solid #d8b4fe; border-bottom: 3px double #1e293b; font-weight: bold; background: #faf5ff;' : 'border-bottom: 1px solid #f1f5f9;';
+      var borderStyle = isTotal ? 'border-top: 1px solid #cbd5e1; border-bottom: 3px double #0f172a; font-weight: bold; background: #f8fafc;' : 'border-bottom: 1px solid #cbd5e1;';
       var drVal = parseFloat(String(cols[1]).replace(/[^0-9.]/g, '')) || 0;
       var crVal = parseFloat(String(cols[3]).replace(/[^0-9.]/g, '')) || 0;
       if (isTotal) {
@@ -1205,10 +1244,10 @@ function renderTAccountBlockHtml_(blk) {
       }
 
       trs.push('<tr style="' + borderStyle + '">' +
-        '<td style="padding: 2.5px 5px; border-right: 1px solid #f1f5f9;">' + escapeHtml_(cols[0]) + '</td>' +
-        '<td style="padding: 2.5px 5px; text-align: right; border-right: 1.5px solid #5b1865; font-family: monospace; font-weight: 600;">' + escapeHtml_(cols[1]) + '</td>' +
-        '<td style="padding: 2.5px 5px; border-right: 1px solid #f1f5f9;">' + escapeHtml_(cols[2]) + '</td>' +
-        '<td style="padding: 2.5px 5px; text-align: right; font-family: monospace; font-weight: 600;">' + escapeHtml_(cols[3]) + '</td>' +
+        '<td style="padding: 6px 9px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + escapeHtml_(cols[0]) + '</td>' +
+        '<td style="padding: 6px 9px; text-align: right; border-right: 2px solid #1d4ed8; font-variant-numeric: tabular-nums; font-weight: 600; color: #0f172a;">' + escapeHtml_(cols[1]) + '</td>' +
+        '<td style="padding: 6px 9px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + escapeHtml_(cols[2]) + '</td>' +
+        '<td style="padding: 6px 9px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: #0f172a;">' + escapeHtml_(cols[3]) + '</td>' +
       '</tr>');
     }
   }
@@ -1219,20 +1258,20 @@ function renderTAccountBlockHtml_(blk) {
 
   var colgroupHtml = '<colgroup><col style="width: 36%;"><col style="width: 14%;"><col style="width: 36%;"><col style="width: 14%;"></colgroup>';
 
-  return '<div class="block" style="margin: 4px 0;">' +
-    '<div style="font-weight: 700; font-size: 8.5pt; color: #5b1865; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center;">' +
+  return '<div class="content-card">' +
+    '<div style="font-weight: 700; font-size: 9.5pt; color: #1e3a8a; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">' +
       '<span>Dr.</span>' +
-      '<span style="text-transform: uppercase; letter-spacing: 0.3px;">' + escapeHtml_(blk.title || 'Ledger Account') + '</span>' +
+      '<span style="text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title || 'Ledger Account') + '</span>' +
       '<span>Cr.</span>' +
     '</div>' +
-    '<table style="width: 100%; border-collapse: collapse; font-size: 8pt; background: #ffffff; border: 1.5px solid #5b1865; table-layout: fixed;">' +
+    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #cbd5e1; table-layout: fixed; font-family: \'Segoe UI\', Roboto, sans-serif;">' +
       colgroupHtml +
       '<thead>' +
-        '<tr style="background: #f3e8ff; color: #5b1865; font-weight: bold; border-bottom: 1.5px solid #5b1865;">' +
-          '<th style="padding: 2.5px 5px; text-align: left; border-right: 1px solid #d8b4fe;">Particulars</th>' +
-          '<th style="padding: 2.5px 5px; text-align: right; border-right: 1.5px solid #5b1865;">Amount (₹)</th>' +
-          '<th style="padding: 2.5px 5px; text-align: left; border-right: 1px solid #d8b4fe;">Particulars</th>' +
-          '<th style="padding: 2.5px 5px; text-align: right;">Amount (₹)</th>' +
+        '<tr style="background: #dbeafe; color: #0f172a; font-weight: 700; border-bottom: 1px solid #cbd5e1;">' +
+          '<th style="padding: 6px 9px; text-align: left; border-right: 1px solid #cbd5e1;">Particulars</th>' +
+          '<th style="padding: 6px 9px; text-align: right; border-right: 2px solid #1d4ed8;">Amount (₹)</th>' +
+          '<th style="padding: 6px 9px; text-align: left; border-right: 1px solid #cbd5e1;">Particulars</th>' +
+          '<th style="padding: 6px 9px; text-align: right;">Amount (₹)</th>' +
         '</tr>' +
       '</thead>' +
       '<tbody>' +
@@ -1243,7 +1282,7 @@ function renderTAccountBlockHtml_(blk) {
 }
 
 /**
- * Renders Partners Capital Account with multi-partner columns
+ * Renders Partners Capital Account with publication-grade table styling
  */
 function renderCapitalAccountBlockHtml_(blk) {
   var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
@@ -1251,45 +1290,45 @@ function renderCapitalAccountBlockHtml_(blk) {
 
   var headerCols = splitPipes_(lines[0]);
   var totalCols = headerCols.length;
-  // Calculate N partners = (totalCols - 2) / 2
   var nPartners = Math.max(1, Math.floor((totalCols - 2) / 2));
   var colgroupHtml = generatePartnersCapitalColgroup_(nPartners);
-
-  var midColIndex = nPartners + 1; // 1-based index where left side ends
+  var midColIndex = nPartners + 1;
 
   var ths = headerCols.map(function(c, idx) {
     var isDivider = (idx + 1 === midColIndex);
-    var divStyle = isDivider ? 'border-right: 1.5px solid #5b1865;' : 'border-right: 1px solid #d8b4fe;';
-    return '<th style="background: #f3e8ff; color: #5b1865; padding: 3px 4px; ' + divStyle + ' font-weight: 700; text-align: center; font-size: 8pt;">' + escapeHtml_(c) + '</th>';
+    var divStyle = isDivider ? 'border-right: 2px solid #1d4ed8;' : 'border-right: 1px solid #cbd5e1;';
+    var fontSize = (nPartners >= 4) ? '8pt' : '9pt';
+    return '<th style="background: #dbeafe; color: #0f172a; padding: 5px 6px; ' + divStyle + ' font-weight: 700; text-align: center; font-size: ' + fontSize + ';">' + escapeHtml_(c) + '</th>';
   }).join('');
 
   var trs = [];
-  var cellFontSize = (nPartners >= 4) ? '7pt' : '8pt';
-  var cellPad = (nPartners >= 4) ? '2px 2px' : '2.5px 4px';
+  var cellFontSize = (nPartners >= 4) ? '8pt' : (nPartners === 3 ? '8.5pt' : '9pt');
+  var cellPad = (nPartners >= 4) ? '3.5px 4.5px' : (nPartners === 3 ? '4.5px 6px' : '5.5px 8px');
+
   for (var i = 1; i < lines.length; i++) {
     var cols = splitPipes_(lines[i]);
     var isTotal = /total/i.test(cols[0]) || (cols[1] && /total/i.test(cols[1])) || (cols[midColIndex] && /total/i.test(cols[midColIndex]));
-    var borderStyle = isTotal ? 'border-top: 1px solid #d8b4fe; border-bottom: 3px double #1e293b; font-weight: bold; background: #faf5ff;' : 'border-bottom: 1px solid #e2e8f0;';
+    var borderStyle = isTotal ? 'border-top: 1px solid #cbd5e1; border-bottom: 3px double #0f172a; font-weight: bold; background: #f8fafc;' : 'border-bottom: 1px solid #cbd5e1;';
 
     var tds = cols.map(function(c, cIdx) {
       var isDivider = (cIdx + 1 === midColIndex);
-      var divStyle = isDivider ? 'border-right: 1.5px solid #5b1865;' : 'border-right: 1px solid #f1f5f9;';
+      var divStyle = isDivider ? 'border-right: 2px solid #1d4ed8;' : 'border-right: 1px solid #cbd5e1;';
       var isAmt = /[\d,]+/.test(c) && !/particular/i.test(c);
       var align = isAmt ? 'right' : 'left';
-      return '<td style="padding: ' + cellPad + '; ' + borderStyle + ' ' + divStyle + ' text-align: ' + align + '; font-size: ' + cellFontSize + '; font-family: ' + (isAmt ? 'monospace' : 'inherit') + '; white-space: nowrap;">' + escapeHtml_(c) + '</td>';
+      return '<td style="padding: ' + cellPad + '; ' + borderStyle + ' ' + divStyle + ' text-align: ' + align + '; font-size: ' + cellFontSize + '; font-variant-numeric: tabular-nums; color: #0f172a; white-space: nowrap;">' + escapeHtml_(c) + '</td>';
     }).join('');
     trs.push('<tr>' + tds + '</tr>');
   }
 
   var heading = blk.title || "PARTNERS' CAPITAL ACCOUNTS";
 
-  return '<div class="block" style="margin: 4px 0;">' +
-    '<div style="font-weight: 700; font-size: 8.5pt; color: #5b1865; margin-bottom: 2px; display: flex; justify-content: space-between;">' +
+  return '<div class="content-card">' +
+    '<div style="font-weight: 700; font-size: 9.5pt; color: #1e3a8a; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">' +
       '<span>Dr.</span>' +
-      '<span style="text-transform: uppercase;">' + escapeHtml_(heading) + ' (' + nPartners + ' Partners)</span>' +
+      '<span style="text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(heading) + ' (' + nPartners + ' Partners)</span>' +
       '<span>Cr.</span>' +
     '</div>' +
-    '<table style="width: 100%; border-collapse: collapse; font-size: 8pt; border: 1.5px solid #5b1865; table-layout: fixed;">' +
+    '<table style="width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #cbd5e1; table-layout: fixed; font-family: \'Segoe UI\', Roboto, sans-serif;">' +
       colgroupHtml +
       '<thead><tr>' + ths + '</tr></thead>' +
       '<tbody>' + trs.join('\n') + '</tbody>' +
@@ -1298,7 +1337,7 @@ function renderCapitalAccountBlockHtml_(blk) {
 }
 
 /**
- * Renders Journal Entries with standard CBSE formatting
+ * Renders Journal Entries with publication-grade CBSE formatting
  */
 function renderJournalBlockHtml_(blk) {
   var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
@@ -1314,33 +1353,32 @@ function renderJournalBlockHtml_(blk) {
       if (isHeader && /particular|debit|credit/i.test(rawLine)) {
         isHeader = false;
         var ths = cols.map(function(c) {
-          return '<th style="background: #f3e8ff; color: #5b1865; padding: 4px 6px; border: 1px solid #d8b4fe; font-weight: 700; text-align: left; font-size: 8.5pt;">' + escapeHtml_(c) + '</th>';
+          return '<th style="background: #dbeafe; color: #0f172a; padding: 6px 9px; border: 1px solid #cbd5e1; font-weight: 700; text-align: left; font-size: 9.5pt;">' + escapeHtml_(c) + '</th>';
         }).join('');
-        trs.push('<tr style="border-bottom: 1.5px solid #5b1865;">' + ths + '</tr>');
+        trs.push('<tr style="border-bottom: 1.5px solid #1d4ed8;">' + ths + '</tr>');
         continue;
       }
 
       var isTotal = /total/i.test(rawLine);
-      var borderStyle = isTotal ? 'border-top: 1px solid #d8b4fe; border-bottom: 3px double #1e293b; font-weight: bold; background: #faf5ff;' : 'border: 1px solid #e2e8f0;';
+      var borderStyle = isTotal ? 'border-top: 1px solid #cbd5e1; border-bottom: 3px double #0f172a; font-weight: bold; background: #f8fafc;' : 'border: 1px solid #cbd5e1;';
 
       var tds = cols.map(function(c, cIdx) {
         var isAmt = (cIdx >= cols.length - 2) && /[\d,]+/.test(c);
         var align = isAmt ? 'right' : 'left';
         var isCreditLine = (cIdx === 1 && /^To\s+/i.test(c));
         var indent = isCreditLine ? 'padding-left: 20px;' : '';
-        return '<td style="padding: 3px 6px; ' + borderStyle + ' text-align: ' + align + '; ' + indent + ' font-size: 8.5pt;">' + escapeHtml_(c) + '</td>';
+        return '<td style="padding: 5.5px 8px; ' + borderStyle + ' text-align: ' + align + '; ' + indent + ' font-size: 9.5pt; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(c) + '</td>';
       }).join('');
       trs.push('<tr>' + tds + '</tr>');
     } else {
-      // Narration or separator
       var isNarration = /^\s*\(Being/i.test(rawLine);
-      var fontStyle = isNarration ? 'font-style: italic; color: #475569; padding-left: 20px;' : 'font-weight: bold;';
-      trs.push('<tr><td colspan="10" style="padding: 2px 6px; ' + fontStyle + ' font-size: 8pt; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">' + escapeHtml_(rawLine) + '</td></tr>');
+      var fontStyle = isNarration ? 'font-style: italic; color: #475569; padding-left: 20px;' : 'font-weight: bold; color: #0f172a;';
+      trs.push('<tr><td colspan="10" style="padding: 4px 8px; ' + fontStyle + ' font-size: 9pt; border-left: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1;">' + escapeHtml_(rawLine) + '</td></tr>');
     }
   }
 
-  return '<div class="block" style="margin: 6px 0;">' +
-    '<table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; border: 1.5px solid #5b1865;">' +
+  return '<div class="content-card">' +
+    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #cbd5e1; font-family: \'Segoe UI\', Roboto, sans-serif;">' +
       '<tbody>' + trs.join('\n') + '</tbody>' +
     '</table>' +
   '</div>';
@@ -1368,15 +1406,15 @@ function renderTableBlockHtml_(blk) {
         headerCols = cols;
         var ths = cols.map(function(c, cIdx) {
           var isBSMid = (cols.length === 4 && cIdx === 1 && /balance sheet/i.test(blk.title || ''));
-          var divStyle = isBSMid ? 'border-right: 1.5px solid #5b1865;' : 'border-right: 1px solid #d8b4fe;';
-          return '<th style="background: #f3e8ff; color: #5b1865; padding: 3px 5px; ' + divStyle + ' font-weight: 700; text-align: ' + (cIdx > 0 && cols.length > 2 ? 'right' : 'left') + '; font-size: 8pt;">' + escapeHtml_(c) + '</th>';
+          var divStyle = isBSMid ? 'border-right: 2px solid #1d4ed8;' : 'border-right: 1px solid #cbd5e1;';
+          return '<th style="background: #dbeafe; color: #0f172a; padding: 6px 9px; ' + divStyle + ' font-weight: 700; text-align: ' + (cIdx > 0 && cols.length > 2 ? 'right' : 'left') + '; font-size: 9.5pt;">' + escapeHtml_(c) + '</th>';
         }).join('');
-        trs.push('<tr style="border-bottom: 1.5px solid #5b1865;">' + ths + '</tr>');
+        trs.push('<tr style="border-bottom: 1px solid #cbd5e1;">' + ths + '</tr>');
         continue;
       }
 
       var isTotal = /total/i.test(rawLine);
-      var borderStyle = isTotal ? 'border-top: 1px solid #d8b4fe; border-bottom: 3px double #1e293b; font-weight: bold; background: #faf5ff;' : 'border-bottom: 1px solid #e2e8f0;';
+      var borderStyle = isTotal ? 'border-top: 1px solid #cbd5e1; border-bottom: 3px double #0f172a; font-weight: bold; background: #f8fafc;' : 'border-bottom: 1px solid #cbd5e1;';
 
       if (isTotal && cols.length >= 4) {
         col1Total = parseFloat(String(cols[1]).replace(/[^0-9.]/g, '')) || 0;
@@ -1387,12 +1425,12 @@ function renderTableBlockHtml_(blk) {
         var isAmt = /[\d,]+/.test(c) && !/[a-zA-Z]{3,}/.test(c);
         var align = (cIdx > 0 && cols.length > 2) ? 'right' : (isAmt ? 'right' : 'left');
         var isBSMid = (cols.length === 4 && cIdx === 1 && /balance sheet/i.test(blk.title || ''));
-        var divStyle = isBSMid ? 'border-right: 1.5px solid #5b1865;' : 'border-right: 1px solid #f1f5f9;';
-        return '<td style="padding: 2.5px 5px; ' + borderStyle + ' ' + divStyle + ' text-align: ' + align + '; font-size: 8pt; font-family: ' + (isAmt ? 'monospace' : 'inherit') + ';">' + escapeHtml_(c) + '</td>';
+        var divStyle = isBSMid ? 'border-right: 2px solid #1d4ed8;' : 'border-right: 1px solid #cbd5e1;';
+        return '<td style="padding: 5.5px 8px; ' + borderStyle + ' ' + divStyle + ' text-align: ' + align + '; font-size: 9.5pt; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(c) + '</td>';
       }).join('');
       trs.push('<tr>' + tds + '</tr>');
     } else {
-      trs.push('<tr><td colspan="10" style="padding: 2.5px 5px; font-weight: bold; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 8pt;">' + escapeHtml_(rawLine) + '</td></tr>');
+      trs.push('<tr><td colspan="10" style="padding: 5.5px 8px; font-weight: bold; background: #f8fafc; border: 1px solid #cbd5e1; font-size: 9.5pt; color: #0f172a;">' + escapeHtml_(rawLine) + '</td></tr>');
     }
   }
 
@@ -1401,13 +1439,13 @@ function renderTableBlockHtml_(blk) {
   }
 
   var colgroupHtml = generateArbitraryColgroup_(headerCols.length > 0 ? headerCols : (lines[0] ? splitPipes_(lines[0]) : []), blk.title);
-  var contdNotice = blk.isContinuation ? '<div style="font-size: 7.5pt; font-weight: bold; color: #64748b; margin-bottom: 2px;">(Table Continued from previous page)</div>' : '';
-  var titleHeader = blk.title ? '<div style="font-weight: 700; font-size: 8.5pt; color: #5b1865; margin-bottom: 2px; text-transform: uppercase;">' + escapeHtml_(blk.title) + '</div>' : '';
+  var contdNotice = blk.isContinuation ? '<div style="font-size: 8pt; font-weight: bold; color: #64748b; margin-bottom: 3px;">(Table Continued from previous page)</div>' : '';
+  var titleHeader = blk.title ? '<div style="font-weight: 700; font-size: 9.5pt; color: #1e3a8a; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title) + '</div>' : '';
 
-  return '<div class="block" style="margin: 4px 0;">' +
+  return '<div class="content-card">' +
     titleHeader +
     contdNotice +
-    '<table style="width: 100%; border-collapse: collapse; font-size: 8pt; border: 1.5px solid #5b1865; table-layout: fixed;">' +
+    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #cbd5e1; table-layout: fixed; font-family: \'Segoe UI\', Roboto, sans-serif;">' +
       colgroupHtml +
       '<tbody>' + trs.join('\n') + '</tbody>' +
     '</table>' +
@@ -1493,9 +1531,9 @@ function renderEconomicsSvgBlock_(templateName, caption) {
     '</svg>';
   }
 
-  return '<div class="block" style="text-align: center; margin: 6px 0;">\n' +
+  return '<div class="content-card" style="text-align: center;">\n' +
+    '<div style="font-size: 9.5pt; font-weight: 700; color: #1e3a8a; margin-bottom: 6px; letter-spacing: 0.3px;">Figure: ' + escapeHtml_(caption) + '</div>\n' +
     svgContent + '\n' +
-    '<div style="font-size: 8.5pt; font-weight: 700; color: #5b1865; margin-top: 2px;">Figure: ' + escapeHtml_(caption) + '</div>\n' +
   '</div>';
 }
 
@@ -1503,20 +1541,21 @@ function renderEconomicsSvgBlock_(templateName, caption) {
  * Renders LaTeX / Stats formula via pure stacked fraction CSS
  */
 function renderStatisticsFormulaBlock_(formulaRaw, label) {
-  label = label || 'Formula';
+  label = label || 'Standard Deviation Formula & Calculation';
   var inner = String(formulaRaw || '')
-    .replace(/\[FRAC:\s*([^/\]]+)\s*\/\s*([^\]]+)\]/gi, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 2px;">$1</span><span style="padding:1px 2px;">$2</span></span>')
-    .replace(/\\frac\{([^}]+)\}\s*\{([^}]+)\}/g, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 2px;">$1</span><span style="padding:1px 2px;">$2</span></span>')
-    .replace(/\[\s*([^\]]+)\s*\]\s*\/\s*\[\s*([^\]]+)\s*\]/g, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 2px;">$1</span><span style="padding:1px 2px;">$2</span></span>')
-    .replace(/√\(([^)]+)\)/g, '<span style="font-size: 1.15em; font-weight: bold; color: #5b1865;">√( </span><span style="display:inline-block; vertical-align:middle; padding:0 2px;">$1</span><span style="font-size: 1.15em; font-weight: bold; color: #5b1865;"> )</span>')
-    .replace(/\\sqrt\{([^}]+)\}/g, '<span style="font-size: 1.15em; font-weight: bold; color: #5b1865;">√( </span><span style="display:inline-block; vertical-align:middle; padding:0 2px;">$1</span><span style="font-size: 1.15em; font-weight: bold; color: #5b1865;"> )</span>')
+    .replace(/\[FRAC:\s*([^/\]]+)\s*\/\s*([^\]]+)\]/gi, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 3px; font-weight:600;">$1</span><span style="padding:1px 3px; font-weight:600;">$2</span></span>')
+    .replace(/\\frac\{([^}]+)\}\s*\{([^}]+)\}/g, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 3px; font-weight:600;">$1</span><span style="padding:1px 3px; font-weight:600;">$2</span></span>')
+    .replace(/\[\s*([^\]]+)\s*\]\s*\/\s*\[\s*([^\]]+)\s*\]/g, '<span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; padding:0 3px;"><span style="border-bottom:1.5px solid #0f172a; padding:1px 3px; font-weight:600;">$1</span><span style="padding:1px 3px; font-weight:600;">$2</span></span>')
+    .replace(/√\(([^)]+)\)/g, '<span style="font-size: 1.2em; font-weight: bold; color: #1d4ed8;">√( </span><span style="display:inline-block; vertical-align:middle; padding:0 3px;">$1</span><span style="font-size: 1.2em; font-weight: bold; color: #1d4ed8;"> )</span>')
+    .replace(/\\sqrt\{([^}]+)\}/g, '<span style="font-size: 1.2em; font-weight: bold; color: #1d4ed8;">√( </span><span style="display:inline-block; vertical-align:middle; padding:0 3px;">$1</span><span style="font-size: 1.2em; font-weight: bold; color: #1d4ed8;"> )</span>')
     .replace(/\\sum/g, 'Σ')
     .replace(/\\bar\{x\}/g, '<span style="text-decoration:overline">x</span>')
     .replace(/\\bar\{y\}/g, '<span style="text-decoration:overline">y</span>')
     .replace(/\\sigma/g, 'σ');
 
-  return '<div class="block" style="background: #fbf5ff; border: 1px solid #d8b4fe; border-left: 4px solid #5b1865; border-radius: 6px; padding: 7px 12px; margin: 6px 0; font-size: 10pt; text-align: center;">\n' +
-    '<strong>' + escapeHtml_(label) + ':</strong> ' + inner + '\n' +
+  return '<div class="content-card" style="border-left: 4px solid #1d4ed8; text-align: center;">\n' +
+    '<div style="font-size: 9pt; font-weight: 700; color: #1d4ed8; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 0.4px;">' + escapeHtml_(label) + '</div>\n' +
+    '<div style="font-size: 11pt; line-height: 1.6; color: #0f172a;">' + inner + '</div>\n' +
   '</div>';
 }
 
@@ -1526,20 +1565,23 @@ function renderStatisticsFormulaBlock_(formulaRaw, label) {
 function renderBstFlowchartBlock_(stepsText) {
   var steps = String(stepsText || '').split(/->|\n/).map(function(s) { return s.trim(); }).filter(Boolean);
   var items = steps.map(function(s, idx) {
-    var arrow = (idx < steps.length - 1) ? '<div style="font-size: 13px; color: #5b1865; font-weight: bold; margin: 1px 0;">↓</div>' : '';
-    return '<div style="background: #fbf5ff; border: 1.5px solid #a855f7; border-radius: 6px; padding: 4px 10px; font-weight: 700; font-size: 9pt; color: #5b1865; display: inline-block; min-width: 220px;">' + escapeHtml_(s) + '</div>' + arrow;
+    var arrow = (idx < steps.length - 1) ? '<div style="font-size: 14px; color: #1d4ed8; font-weight: bold; margin: 2px 0;">↓</div>' : '';
+    return '<div style="background: #eff6ff; border: 1.5px solid #3b82f6; border-radius: 8px; padding: 5.5px 14px; font-weight: 700; font-size: 9.5pt; color: #1e3a8a; display: inline-block; min-width: 240px; box-shadow: 0 1px 2px rgba(30, 58, 138, 0.05);">' + escapeHtml_(s) + '</div>' + arrow;
   }).join('');
 
-  return '<div class="block" style="text-align: center; margin: 8px 0;">' + items + '</div>';
+  return '<div class="content-card" style="text-align: center;">' +
+    '<div style="font-size: 9.5pt; font-weight: 700; color: #1e3a8a; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.4px;">Sequential Planning Process Flowchart</div>' +
+    items +
+  '</div>';
 }
 
 /**
  * Renders Business Studies Case Study callout card
  */
 function renderCaseStudyCardBlock_(title, body) {
-  return '<div class="block" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-left: 4px solid #5b1865; border-radius: 6px; padding: 7px 12px; margin: 6px 0;">\n' +
-    '<div style="font-size: 9.5pt; font-weight: bold; color: #5b1865; margin-bottom: 3px; text-transform: uppercase;">📌 ' + escapeHtml_(title || 'Case Scenario') + '</div>\n' +
-    '<div style="font-size: 9pt; line-height: 1.45; color: #334155; font-style: italic;">' + escapeHtml_(body) + '</div>\n' +
+  return '<div class="content-card" style="border-left: 4px solid #1d4ed8;">\n' +
+    '<div style="font-size: 9.5pt; font-weight: bold; color: #1d4ed8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px;">📌 ' + escapeHtml_(title || 'Case Scenario') + '</div>\n' +
+    '<div style="font-size: 10pt; line-height: 1.48; color: #1e293b; font-style: italic;">' + escapeHtml_(body) + '</div>\n' +
   '</div>';
 }
 
@@ -1555,15 +1597,15 @@ function renderGenericTextBlock_(text) {
     var line = lines[i];
     var formatted = escapeHtml_(line).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
     if (/^\s*([0-9]+\.|\-|\•)\s+/.test(line)) {
-      out.push('<div style="padding-left: 12px; margin-bottom: 4px; font-size: 9.5pt; line-height: 1.45;">' + formatted + '</div>');
+      out.push('<div style="padding-left: 12px; margin-bottom: 4px; font-size: 10pt; line-height: 1.48; color: #0f172a;">' + formatted + '</div>');
     } else if (line.indexOf('Adjustments:') === 0 || line.indexOf('Instructions:') === 0 || line.indexOf('Working Notes:') === 0) {
-      out.push('<div style="font-weight: bold; margin-top: 6px; margin-bottom: 3px; color: #5b1865; font-size: 9.5pt;">' + formatted + '</div>');
+      out.push('<div style="font-weight: bold; margin-top: 6px; margin-bottom: 4px; color: #1e3a8a; font-size: 10pt; letter-spacing: 0.3px;">' + formatted + '</div>');
     } else {
-      out.push('<div style="margin-bottom: 5px; font-size: 9.5pt; line-height: 1.45;">' + formatted + '</div>');
+      out.push('<div style="margin-bottom: 6px; font-size: 10.5pt; line-height: 1.48; color: #0f172a;">' + formatted + '</div>');
     }
   }
 
-  return '<div class="block">' + out.join('\n') + '</div>';
+  return '<div class="content-card">' + out.join('\n') + '</div>';
 }
 
 /**
@@ -1591,6 +1633,27 @@ function formatBulletListDps_(text) {
 /**
  * Formats date into DD / MM / YYYY
  */
+/**
+ * Formats date into clean human DD-MMM-YYYY for DPP card headers
+ * @param {*} dateVal
+ * @return {string}
+ */
+function formatHumanDppDate_(dateVal) {
+  if (!dateVal) return Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd-MMM-yyyy');
+  var s = String(dateVal).trim();
+  var m = s.match(/^(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})$/);
+  if (m) {
+    var d = new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+    return Utilities.formatDate(d, 'Asia/Kolkata', 'dd-MMM-yyyy');
+  }
+  var m2 = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m2) {
+    var d2 = new Date(parseInt(m2[1], 10), parseInt(m2[2], 10) - 1, parseInt(m2[3], 10));
+    return Utilities.formatDate(d2, 'Asia/Kolkata', 'dd-MMM-yyyy');
+  }
+  return s;
+}
+
 function formatDateDps_(dateVal) {
   if (!dateVal) return Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd / MM / yyyy');
   if (dateVal instanceof Date) return Utilities.formatDate(dateVal, 'Asia/Kolkata', 'dd / MM / yyyy');
@@ -2602,7 +2665,46 @@ function runFounderSubjectiveDryRunTests() {
     results.test3_statistics_sd = { ok: false, error: e3.message };
   }
 
-  // Test 4: Business Studies (Case Study + Flowchart)
+  // Test 4: Economics (Demand Shift pure vector SVG)
+  try {
+    var resEco = createAnswerPdfFromTemplate_({
+      date: todayStr,
+      classLevel: 12,
+      subject: 'Economics',
+      chapter: 'Theory of Consumer Behaviour (Demand Shift)',
+      qid: 'DRYRUN-ECO-ADAPTIVE',
+      bypassCache: true,
+      marks: 6,
+      questionText: 'Explain the effect of an increase in the income of a consumer on the demand for a normal good with the help of a suitable diagram.',
+      answerText:
+        '#CARD Economic Analysis: Increase in Consumer Income\n' +
+        'When consumer income increases for a normal good, purchasing power expands. At the prevailing price (P1), consumers demand more units. This causes a complete parallel rightward shift in the demand curve from D0 to D1, resulting in higher equilibrium price and quantity.\n' +
+        '#ENDCARD\n\n' +
+        '#GRAPH:demand_shift Demand Shift Analysis\n\n' +
+        '• Initial Equilibrium (E0): Price ₹20, Quantity 100 units.\n' +
+        '• New Equilibrium (E1): Price rises to ₹25, Quantity expands to 140 units.',
+      marksBreakdown:
+        '• 2.0 Marks: Accurate conceptual analysis of income effect on normal good\n' +
+        '• 2.5 Marks: Pure vector diagram showing parallel rightward shift D0 -> D1\n' +
+        '• 1.5 Marks: Specific price & quantity adjustment remarks',
+      commonMistakes:
+        '⚠️ Confusing shift in demand (shift in curve) with expansion in demand (movement along curve).'
+    });
+    results.test4_economics_demand = {
+      ok: true,
+      subject: 'Economics',
+      topic: 'Theory of Consumer Behaviour (Demand Shift)',
+      classLevel: 12,
+      marks: 6,
+      pageCount: resEco.pageCount,
+      diagram: 'Pure Vector Inline SVG with Navy Axes & Shaded Equilibrium',
+      driveUrl: resEco.driveUrl
+    };
+  } catch (eEco) {
+    results.test4_economics_demand = { ok: false, error: eEco.message };
+  }
+
+  // Test 5: Business Studies (Case Study + Flowchart)
   try {
     var res4 = createAnswerPdfFromTemplate_({
       date: todayStr,
@@ -2626,7 +2728,7 @@ function runFounderSubjectiveDryRunTests() {
       commonMistakes:
         '⚠️ Skipping Developing Premises or reversing step order.'
     });
-    results.test4_business_studies = {
+    results.test5_business_studies = {
       ok: true,
       subject: 'Business Studies',
       topic: 'Planning Process',
@@ -2637,7 +2739,45 @@ function runFounderSubjectiveDryRunTests() {
       driveUrl: res4.driveUrl
     };
   } catch (e4) {
-    results.test4_business_studies = { ok: false, error: e4.message };
+    results.test5_business_studies = { ok: false, error: e4.message };
+  }
+
+  // Test 6: Question Sheet PDF (Goodwill Question with Working Space)
+  try {
+    var resQ = createQuestionPdfFromTemplate_({
+      date: todayStr,
+      classLevel: 12,
+      subject: 'Accountancy',
+      chapter: 'Valuation of Goodwill (Weighted Average Profit)',
+      qid: 'DRYRUN-GOODWILL-Q1',
+      bypassCache: true,
+      marks: 6,
+      questionText:
+        'Calculate the value of goodwill of a firm on the basis of 3 years\' purchase of weighted average profits of the last 4 years. The appropriate weights and profits are:\n' +
+        '#TABLE Past Profits & Weights\n' +
+        '| Year | Profit (₹) | Weight |\n' +
+        '| 2021–22 | 20,200 | 1 |\n' +
+        '| 2022–23 | 24,800 | 2 |\n' +
+        '| 2023–24 | 20,000 | 3 |\n' +
+        '| 2024–25 | 30,000 | 4 |\n' +
+        '#ENDTABLE\n' +
+        'Adjustments:\n' +
+        '1. On 1st December 2023, a major repair to machinery was charged to revenue ₹6,000, on which depreciation @ 10% p.a. on reducing balance method was to be charged.\n' +
+        '2. The closing stock for 2022–23 was undervalued by ₹2,400.\n' +
+        '3. Annual management cost of ₹4,800 is to be charged to profits.'
+    });
+    results.test6_question_sheet = {
+      ok: true,
+      subject: 'Accountancy',
+      topic: 'Valuation of Goodwill (Working Space Scaffolding)',
+      classLevel: 12,
+      marks: 6,
+      pageCount: resQ.pageCount,
+      type: '7:30 PM Question Sheet with Solution & Working Space Card',
+      driveUrl: resQ.driveUrl
+    };
+  } catch (eQ) {
+    results.test6_question_sheet = { ok: false, error: eQ.message };
   }
 
   return results;
