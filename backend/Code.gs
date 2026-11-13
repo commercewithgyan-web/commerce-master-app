@@ -678,7 +678,7 @@ function getDashboardSummary() {
 function getSyllabusTree(board, classLevel, subject) {
   const IDS = getActiveSheetIds();
   const ss = SpreadsheetApp.openById(IDS.SYLLABUS);
-  const rows = sheetToObjects(ss.getSheetByName('01_Master_Syllabus'));
+  const rows = sheetToObjects(ss.getSheetByName('Master_Syllabus') || ss.getSheetByName('01_Master_Syllabus'));
   const filtered = rows.filter(r =>
     (!board || String(r.Board).toUpperCase() === String(board).toUpperCase()) &&
     (!classLevel || String(r.Class) === String(classLevel)) &&
@@ -1750,7 +1750,7 @@ function getCommerceGyanAppUrl_() {
   try {
     const IDS = getActiveSheetIds();
     const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
-    const cfgSheet = erp.getSheetByName('CONFIG_APP_SETTINGS');
+    const cfgSheet = erp.getSheetByName('CONFIG_APP_SETTINGS') || erp.getSheetByName('CONFIG_FEE_SETTINGS');
     if (cfgSheet) {
       const vals = cfgSheet.getDataRange().getValues();
       for (let i = 0; i < vals.length; i++) {
@@ -1760,7 +1760,7 @@ function getCommerceGyanAppUrl_() {
       }
     }
   } catch (_) {}
-  return 'https://play.google.com/store/apps/details?id=com.commercegyan.app';
+  return 'https://play.google.com/store/apps/details?id=co.classplus.comg';
 }
 
 function submitStudentQuizAttempt(payload) {
@@ -1850,13 +1850,26 @@ function submitStudentQuizAttempt(payload) {
     const revQueueSheet = qbSS.getSheetByName('Revision_Queue');
 
     if (answersSheet) {
+      const confidence = payload.confidence || payload.confidenceLevel || 'HIGH';
+      const heatmapColor = isCorrect ? 'GREEN' : (timeTakenSec > ghostTargetSec ? 'YELLOW' : 'RED');
+      const studentName = payload.studentName || payload.name || rollNo;
       answersSheet.appendRow([
-        rollNo,
+        nowStr,
+        payload.telegramId || payload.TelegramID || '',
+        studentName,
         qId,
         selectedOpt,
-        isCorrect,
+        1,
+        isCorrect ? 1 : 0,
         timeTakenSec,
-        nowStr
+        beatGhost ? 'BEAT_RECORD' : 'STANDARD',
+        'Submitted',
+        subject,
+        chapter,
+        topic,
+        subtopic || '',
+        confidence,
+        heatmapColor
       ]);
     }
 
@@ -2043,7 +2056,7 @@ function setActiveSubtopic(payload) {
 
 
     // 2. Update Syllabus Master
-    const sylSheet = sylSS.getSheetByName('01_Master_Syllabus');
+    const sylSheet = (sylSS.getSheetByName('Master_Syllabus') || sylSS.getSheetByName('01_Master_Syllabus'));
     if (sylSheet) {
       const sylData = sylSheet.getDataRange().getValues();
       const headers = sylData[0].map(h => String(h).trim());
@@ -3757,7 +3770,7 @@ function toggleAcademicHoliday(payload) {
     if (shiftTopics) {
       try {
         const sylSS = SpreadsheetApp.openById(IDS.SYLLABUS);
-        const sylSheet = sylSS.getSheetByName('01_Master_Syllabus');
+        const sylSheet = (sylSS.getSheetByName('Master_Syllabus') || sylSS.getSheetByName('01_Master_Syllabus'));
         if (sylSheet) {
           const sylData = sylSheet.getDataRange().getValues();
           const headers = sylData[0].map(h => String(h).trim());
