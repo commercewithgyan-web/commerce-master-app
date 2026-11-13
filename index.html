@@ -2009,48 +2009,29 @@
       </div>
     </div>
 
-    <!-- TAB 4: NOTES & DIGITAL NOTEBOOK -->
+    <!-- TAB 4: DAILY CLASS NOTES & DPPs (#S6) -->
     <div id="tgTab-notes" class="tg-student-tab space-y-4" style="display: none;">
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
+      <div class="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm space-y-3.5">
         <div class="flex items-center justify-between">
           <div>
-            <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">5-Layer Spaced Memory</span>
-            <h3 class="text-sm font-extrabold text-slate-900 mt-0.5">Student 5-Layer Digital Notebook</h3>
+            <span class="text-[10px] font-extrabold uppercase text-indigo-600 tracking-wider">Classroom Chalkboard Archive</span>
+            <h3 class="text-base font-extrabold text-slate-900 mt-0.5">Daily Class Notes &amp; DPPs</h3>
           </div>
-          <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold">Encrypted Vault</span>
+          <span class="text-xs px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 font-extrabold">Goodnotes Live</span>
+        </div>
+        <p class="text-xs text-slate-500">Missed writing notes in class? Recover date-wise teacher chalkboard notes &amp; Daily DPP PDFs right here.</p>
+
+        <!-- 4 Subject Tabs -->
+        <div class="grid grid-cols-4 gap-1.5 p-1 rounded-2xl bg-slate-100 border border-slate-200 text-center">
+          <button type="button" data-notes-subj="Accountancy" class="stu-notes-tab-btn py-2 px-1 rounded-xl text-xs font-black bg-indigo-600 text-white shadow-sm transition">Accountancy</button>
+          <button type="button" data-notes-subj="Business Studies" class="stu-notes-tab-btn py-2 px-1 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 transition">BST</button>
+          <button type="button" data-notes-subj="Economics" class="stu-notes-tab-btn py-2 px-1 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 transition">Economics</button>
+          <button type="button" data-notes-subj="Statistics" class="stu-notes-tab-btn py-2 px-1 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 transition">Statistics</button>
         </div>
 
-        <!-- 5-Layer Notebook Switcher Tabs -->
-        <div class="flex items-center gap-1.5 overflow-x-auto custom-scroll pb-1 border-b border-slate-100 text-[11px] font-bold">
-          <button type="button" class="notebook-layer-tab px-3 py-1.5 rounded-xl bg-indigo-600 text-white shadow-sm" data-layer="notes">📝 Class Notes</button>
-          <button type="button" class="notebook-layer-tab px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200" data-layer="mistakes">⚠️ Mistakes</button>
-          <button type="button" class="notebook-layer-tab px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200" data-layer="bookmarks">⭐ Bookmarks</button>
-          <button type="button" class="notebook-layer-tab px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200" data-layer="summary">📊 Sunday Summary</button>
-          <button type="button" class="notebook-layer-tab px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200" data-layer="queue">🔄 Revision Queue</button>
-        </div>
-
-        <!-- Layer Content Container -->
-        <div id="notebookLayerContent" class="space-y-2">
-          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
-            <div class="flex items-center justify-between text-xs font-bold text-slate-800">
-              <span>Partnership — Interest on Drawings Formula</span>
-              <span class="text-[10px] text-indigo-600">Saved</span>
-            </div>
-            <p class="text-[11px] text-slate-500 mt-1">Total Drawings × (Rate/100) × (Average Period/12). When drawings made beginning of each month: Avg Period = 6.5 months.</p>
-          </div>
-          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
-            <div class="flex items-center justify-between text-xs font-bold text-slate-800">
-              <span>Working Capital Cycle Mistake Alert</span>
-              <span class="text-[10px] text-amber-600">Mistake Log</span>
-            </div>
-            <p class="text-[11px] text-slate-500 mt-1">Remember to deduct Creditors Payment Period from Gross Operating Cycle to get Net Operating Cycle.</p>
-          </div>
-        </div>
-
-        <div id="stuSavedNotesList" class="space-y-2"></div>
-        <div class="pt-2 border-t border-slate-100 space-y-2">
-          <input id="stuNewNoteInput" type="text" placeholder="Write formula, key rule, or mistake note to save to Sheet..." class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-slate-50" />
-          <button id="stuSaveNoteBtn" type="button" class="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-sm transition">💾 Save Note to Digital Notebook (saveStudentNotebookItem)</button>
+        <!-- Date-Wise Notes Container -->
+        <div id="stuDailyClassNotesContainer" class="space-y-3 pt-1">
+          <!-- Populated dynamically -->
         </div>
       </div>
     </div>
@@ -2768,33 +2749,6 @@
     </div>
   </div>
 
-  <!-- ==================== NOTEBOOK SAVE REASON MODAL (#44) ==================== -->
-  <div id="notebookReasonModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
-      <div class="text-center space-y-1">
-        <span class="text-2xl">📓</span>
-        <h3 class="text-base font-extrabold text-slate-900">Why are you saving this to Notebook?</h3>
-        <p class="text-xs text-slate-500">Tagging your note helps the Smart Review Vault prioritize your board exam revisions.</p>
-      </div>
-      <div class="grid grid-cols-3 gap-2 pt-2">
-        <button type="button" onclick="confirmSaveNotebookReason('Important')" class="p-3 rounded-2xl bg-amber-50 hover:bg-amber-100 border-2 border-amber-300 text-center transition">
-          <div class="text-lg">📌</div>
-          <div class="text-xs font-extrabold text-amber-950 mt-1">Important</div>
-          <div class="text-[9px] text-amber-800">Board Exam Favorite</div>
-        </button>
-        <button type="button" onclick="confirmSaveNotebookReason('Confusing')" class="p-3 rounded-2xl bg-rose-50 hover:bg-rose-100 border-2 border-rose-300 text-center transition">
-          <div class="text-lg">❓</div>
-          <div class="text-xs font-extrabold text-rose-950 mt-1">Confusing</div>
-          <div class="text-[9px] text-rose-800">Tricky Adjustment</div>
-        </button>
-        <button type="button" onclick="confirmSaveNotebookReason('Formula')" class="p-3 rounded-2xl bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-300 text-center transition">
-          <div class="text-lg">📐</div>
-          <div class="text-xs font-extrabold text-indigo-950 mt-1">Formula</div>
-          <div class="text-[9px] text-indigo-800">Ratio or Equation</div>
-        </button>
-      </div>
-    </div>
-  </div>
 
   <!-- ==================== FIRST-RUN SETUP WIZARD (A14) ==================== -->
   <div id="setupWizardModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
@@ -3120,32 +3074,7 @@
 
     // ==================== UNIFIED LIVE GAS API CALLER ====================
 
-    // ── NOTEBOOK REASON-TAGGED SAVES (#44) ──
-    let pendingNoteToSave = null;
-    function promptSaveNotebookWithReason(item) {
-      pendingNoteToSave = item;
-      const overlay = document.getElementById('notebookReasonModalOverlay');
-      if (overlay) overlay.classList.remove('hidden');
-    }
 
-    window.confirmSaveNotebookReason = function(reason) {
-      const overlay = document.getElementById('notebookReasonModalOverlay');
-      if (overlay) overlay.classList.add('hidden');
-      if (!pendingNoteToSave) return;
-      if (!appState.notebook) appState.notebook = [];
-      appState.notebook.unshift({
-        id: 'NOTE-' + Date.now(),
-        type: reason,
-        title: pendingNoteToSave.title,
-        content: pendingNoteToSave.content,
-        date: new Date().toISOString().slice(0, 10),
-        starred: true,
-        daysDue: reason === 'Confusing' ? 3 : (reason === 'Important' ? 7 : 15)
-      });
-      saveState();
-      showToast(`Saved to Digital Notebook tagged as [${reason}]!`, 'emerald');
-      pendingNoteToSave = null;
-    };
 
 
     // ── SUB-ADMIN UI GATING (R1) ──
@@ -5009,6 +4938,103 @@
       `;
       document.getElementById('swotModalOverlay').classList.remove('hidden');
     }
+
+    // ==================== DAILY CLASS NOTES & CHALKBOARD ENGINE (#S6) ====================
+    let activeNotesSubject = 'Accountancy';
+
+    window.renderDailyClassNotes = function(subject) {
+      if (subject) activeNotesSubject = subject;
+      const classLevel = (window.session && window.session.student && window.session.student.class) || '12';
+      const container = document.getElementById('stuDailyClassNotesContainer');
+      if (!container) return;
+
+      // Update Tab Buttons UI
+      document.querySelectorAll('.stu-notes-tab-btn').forEach(btn => {
+        const s = btn.getAttribute('data-notes-subj');
+        if (s === activeNotesSubject) {
+          btn.className = 'stu-notes-tab-btn py-2 px-1 rounded-xl text-xs font-black bg-indigo-600 text-white shadow-sm transition';
+        } else {
+          btn.className = 'stu-notes-tab-btn py-2 px-1 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 transition';
+        }
+      });
+
+      container.innerHTML = `
+        <div class="py-8 text-center text-slate-400 space-y-2">
+          <div class="inline-block animate-spin text-lg">⏳</div>
+          <p class="text-xs font-bold">Loading ${activeNotesSubject} Chalkboard Notes &amp; DPPs…</p>
+        </div>
+      `;
+
+      window.cgCallGas('getDailyClassNotes', { subject: activeNotesSubject, classLevel: classLevel })
+        .then(res => {
+          if (!res || !res.ok || !Array.isArray(res.notes) || res.notes.length === 0) {
+            container.innerHTML = `
+              <div class="p-6 text-center rounded-2xl bg-slate-50 border border-slate-200 text-slate-500 space-y-1">
+                <p class="text-base">📭</p>
+                <p class="text-xs font-extrabold text-slate-800">No Class Notes Available</p>
+                <p class="text-[11px]">Chalkboard exports for ${activeNotesSubject} will appear here after class.</p>
+              </div>
+            `;
+            return;
+          }
+
+          container.innerHTML = res.notes.map(note => {
+            const hasGoodnotes = note.Goodnotes_PDF_URL && note.Goodnotes_PDF_URL.trim().length > 0;
+            const hasDpp = note.DPP_PDF_URL && note.DPP_PDF_URL.trim().length > 0;
+            return `
+              <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3 hover:border-indigo-200 transition">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-lg bg-indigo-100 text-indigo-800 text-[11px] font-black">${note.Date || 'Recent'}</span>
+                    <span class="text-[11px] font-extrabold text-slate-500">${note.Subject || activeNotesSubject} • Class ${note.Class || classLevel}</span>
+                  </div>
+                  <span class="text-[10px] font-bold text-slate-400">Verified Board Sync</span>
+                </div>
+                <div>
+                  <h4 class="text-sm font-extrabold text-slate-900 leading-snug">${note.Topic || 'Classroom Discussion'}</h4>
+                  <div class="flex items-center gap-2 mt-1 text-[11px] text-slate-500">
+                    <span>👨‍🏫 ${note.Teacher || 'Gyan Sir'}</span>
+                    <span>•</span>
+                    <span class="text-emerald-600 font-medium">${note.Attendance_Status || 'Class Held'}</span>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                  ${hasGoodnotes ? `
+                    <a href="${note.Goodnotes_PDF_URL}" target="_blank" rel="noopener noreferrer" class="py-2 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-extrabold flex items-center justify-center gap-1.5 transition">
+                      <span>📝</span><span>Chalkboard Notes</span>
+                    </a>
+                  ` : `
+                    <span class="py-2 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-400 text-xs font-bold text-center">No Notes PDF</span>
+                  `}
+                  ${hasDpp ? `
+                    <a href="${note.DPP_PDF_URL}" target="_blank" rel="noopener noreferrer" class="py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-extrabold flex items-center justify-center gap-1.5 transition">
+                      <span>📄</span><span>Daily DPP Sheet</span>
+                    </a>
+                  ` : `
+                    <span class="py-2 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-400 text-xs font-bold text-center">No DPP PDF</span>
+                  `}
+                </div>
+              </div>
+            `;
+          }).join('');
+        })
+        .catch(err => {
+          container.innerHTML = `
+            <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold text-center">
+              Unable to load notes right now (${err.message || 'Network error'}).
+            </div>
+          `;
+        });
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.stu-notes-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const s = btn.getAttribute('data-notes-subj');
+          if (s) window.renderDailyClassNotes(s);
+        });
+      });
+    });
 
     // ==================== TAB NAVIGATION & EVENT LISTENERS ====================
     const ADMIN_TAB_MAPPING = {
@@ -7348,29 +7374,7 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
         });
       });
 
-      const stuSaveNoteBtn = document.getElementById('stuSaveNoteBtn');
-      if (stuSaveNoteBtn) {
-        stuSaveNoteBtn.addEventListener('click', () => {
-          const noteText = document.getElementById('stuNewNoteInput').value.trim();
-          if (!noteText) return;
-          const rollNo = document.getElementById('tgStudentSelect').value || 'CG-1201';
-          const list = document.getElementById('stuSavedNotesList');
-          if (list) {
-            const d = document.createElement('div');
-            d.className = 'p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs';
-            d.innerHTML = `<div class="flex justify-between font-bold text-emerald-950"><span>Saved Note (${rollNo})</span><span class="text-[10px]">Synced</span></div><p class="text-[11px] text-emerald-900 mt-1">${noteText}</p>`;
-            list.prepend(d);
-          }
-          document.getElementById('stuNewNoteInput').value = '';
-          promptSaveNotebookWithReason({
-            title: `Note (${rollNo})`,
-            content: noteText
-          });
-          window.cgCallGas('saveStudentNotebookItem', { rollNo, itemType: 'NOTE', noteText })
-            .then(() => showToast('Saved Note to Notebook_Notes in Google Sheets!', 'emerald'))
-            .catch(err => showToast(`Failed to save note: ${err.message || err}`, 'rose'));
-        });
-      }
+
 
       const stuBindClaimBtn = document.getElementById('stuBindClaimBtn');
       if (stuBindClaimBtn) {
@@ -7845,6 +7849,9 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
       });
       if (tabId === 'fees' && typeof window.renderStudentFeeTab === 'function') {
         window.renderStudentFeeTab();
+      }
+      if (tabId === 'notes' && typeof window.renderDailyClassNotes === 'function') {
+        window.renderDailyClassNotes();
       }
     };
 
@@ -8761,10 +8768,7 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
             const saveBtn = document.getElementById('saveDoubtToNotesBtn');
             if (saveBtn) {
               saveBtn.addEventListener('click', () => {
-                promptSaveNotebookWithReason({
-                  title: `${subj}: Sacrificing Ratio Rule`,
-                  content: 'Sacrificing Ratio = Old Ratio − New Ratio. Used for Goodwill premium distribution.'
-                });
+                showToast('Doubt saved to your study notes!', 'emerald');
               });
             }
           }
