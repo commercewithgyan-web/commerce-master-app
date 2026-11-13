@@ -1986,14 +1986,25 @@
       <!-- Hierarchical Chapter -> Topic -> Subtopic with Learning Objectives & Delivery Modes (#5 & #3) -->
       <div id="stuChapterTreeContainer" class="space-y-3"></div>
 
-      <!-- Practice Questions Box (MCQs from live vault) -->
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-2.5">
+      <!-- Practice Questions Box (MCQs from live vault #S4) -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
         <div class="flex items-center justify-between">
-          <h4 class="text-xs font-extrabold text-slate-900">Interactive Topic Practice Questions</h4>
-          <span class="text-[10px] text-slate-500 font-bold">1-Mark MCQs</span>
+          <div>
+            <h4 class="text-xs font-extrabold text-slate-900">Self-Paced Practice Vault</h4>
+            <p class="text-[10px] text-slate-500">Pick chapters and practice CBSE MCQs with instant explanations</p>
+          </div>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold">Question Bank</span>
         </div>
-        <div id="stuPracticeQuestionsBox" class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
-          <p class="text-slate-500">Tap any subject above to preview practice problems.</p>
+        <div id="stuPracticeQuestionsBox" class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-3">
+          <div>
+            <label for="stuPracticeChapterSelect" class="block text-[11px] font-bold text-slate-700 mb-1">Select Chapter:</label>
+            <select id="stuPracticeChapterSelect" class="w-full p-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-800">
+              <!-- Dynamically populated per subject -->
+            </select>
+          </div>
+          <button id="btnStartPracticeVault" type="button" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5 cursor-pointer">
+            <span>🎯 Launch Self-Paced Practice MCQs</span>
+          </button>
         </div>
       </div>
     </div>
@@ -2556,6 +2567,30 @@
       <button id="mcqNextBtn" type="button" class="hidden px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer">
         <span>Next Question →</span>
       </button>
+    </div>
+  </div>
+
+  <!-- ==================== SYLLABUS VIDEO MODAL (PUBLIC & UNLISTED S3) ==================== -->
+  <div id="syllabusVideoModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 rounded-3xl max-w-xl w-full p-4 sm:p-5 shadow-2xl border border-slate-800 space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div>
+          <span id="syllabusVideoTypeBadge" class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-rose-600 text-white">YouTube Public</span>
+          <h4 id="syllabusVideoTitle" class="text-xs sm:text-sm font-extrabold text-white mt-1">Class Lecture Stream</h4>
+        </div>
+        <button id="closeSyllabusVideoModalBtn" type="button" class="w-7 h-7 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center font-bold text-xs cursor-pointer">✕</button>
+      </div>
+
+      <div id="syllabusVideoEmbedContainer" class="relative rounded-2xl overflow-hidden bg-black aspect-video flex items-center justify-center">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div id="syllabusVideoFooter" class="flex items-center justify-between pt-1 text-[11px]">
+        <a id="syllabusYoutubeChannelLink" href="https://www.youtube.com/@CommerceGyan" target="_blank" rel="noopener" class="text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1">
+          <span>📺</span><span>Visit Commerce Gyan YouTube Channel</span>
+        </a>
+        <span class="text-slate-400 text-[10px]">Official Gyan Sir Lecture</span>
+      </div>
     </div>
   </div>
 
@@ -4445,9 +4480,73 @@
       });
     };
 
-    // ==================== STUDENT SYLLABUS & LEARNING OBJECTIVES ROADMAP (#5 & #3) ====================
+    // ==================== STUDENT SYLLABUS & LEARNING OBJECTIVES ROADMAP (#S3 & #S4) ====================
+    window.currentSyllabusSubject = 'Accountancy';
+    window.commerceGyanAppUrl = 'https://play.google.com/store/apps/details?id=com.commercegyan.app';
+
+    window.playSyllabusVideo = function(subtopicId, type, videoUrl, title) {
+      const modal = document.getElementById('syllabusVideoModalOverlay');
+      const typeBadge = document.getElementById('syllabusVideoTypeBadge');
+      const titleEl = document.getElementById('syllabusVideoTitle');
+      const container = document.getElementById('syllabusVideoEmbedContainer');
+      const channelLink = document.getElementById('syllabusYoutubeChannelLink');
+
+      if (!modal || !container) return;
+      modal.classList.remove('hidden');
+
+      if (titleEl) titleEl.textContent = title || 'Class Lecture Stream';
+
+      if (type === 'unlisted') {
+        if (typeBadge) {
+          typeBadge.textContent = '🔒 Unlisted Class Lecture';
+          typeBadge.className = 'px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-600 text-white';
+        }
+        if (channelLink) channelLink.classList.add('hidden');
+
+        // S1: Desktop restriction applies to unlisted class videos to prevent screen recording
+        if (typeof window.isDesktopOrWebPlatform === 'function' && window.isDesktopOrWebPlatform()) {
+          container.innerHTML = `
+            <div class="p-6 bg-slate-900 border border-amber-500/40 rounded-2xl text-center space-y-2 select-none w-full">
+              <div class="text-3xl">📱</div>
+              <p class="text-sm font-extrabold text-amber-300">Videos sirf mobile par chalenge</p>
+              <p class="text-xs text-slate-400">Class lectures and unlisted videos are strictly protected and can only be played inside the Telegram Mobile App (Android / iOS).</p>
+            </div>
+          `;
+          return;
+        }
+
+        const embedSrc = (videoUrl && videoUrl.indexOf('http') !== -1) ? videoUrl : 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ';
+        const finalUrl = embedSrc.indexOf('?') === -1 ? `${embedSrc}?enablejsapi=1&playsinline=1&rel=0` : `${embedSrc}&playsinline=1&rel=0`;
+        container.innerHTML = `
+          <iframe class="w-full h-full border-0"
+            src="${finalUrl}"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen>
+          </iframe>
+        `;
+      } else {
+        // YouTube Public
+        if (typeBadge) {
+          typeBadge.textContent = '▶️ YouTube Public';
+          typeBadge.className = 'px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-rose-600 text-white';
+        }
+        if (channelLink) channelLink.classList.remove('hidden');
+
+        const embedSrc = (videoUrl && videoUrl.indexOf('http') !== -1) ? videoUrl : 'https://www.youtube.com/embed/dQw4w9WgXcQ';
+        const finalUrl = embedSrc.indexOf('?') === -1 ? `${embedSrc}?enablejsapi=1&playsinline=1&rel=0` : `${embedSrc}&playsinline=1&rel=0`;
+        container.innerHTML = `
+          <iframe class="w-full h-full border-0"
+            src="${finalUrl}"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen>
+          </iframe>
+        `;
+      }
+    };
+
     window.renderStudentSyllabusTree = function(subject) {
       subject = subject || 'Accountancy';
+      window.currentSyllabusSubject = subject;
       const container = document.getElementById('stuChapterTreeContainer');
       if (!container) return;
 
@@ -4481,10 +4580,10 @@
             weightage: '10 Marks',
             status: 'Completed',
             subtopics: [
-              { id: 'ACC12-CH01-S1', name: 'Profit & Loss Appropriation A/c', obj: 'Prepare P&L Appropriation Account for interest on capital, partner salaries, and commission as per partnership deed.', mode: 'Offline Direct' },
-              { id: 'ACC12-CH01-S2', name: 'Partners Capital A/c (Fixed vs Fluctuating)', obj: 'Distinguish between fixed and fluctuating capital methods and post current accounts accurately.', mode: 'CG Native App (Unshareable)' },
-              { id: 'ACC12-CH01-S3', name: 'Past Adjustments (Single Journal Entry)', obj: 'Calculate net effect of omitted interest/salary and pass single adjusting journal entry.', mode: 'YouTube Public', ytUrl: 'https://www.youtube.com/@CommerceGyan' },
-              { id: 'ACC12-CH01-S4', name: 'Guarantee of Profit to a Partner', obj: 'Calculate personal and firm guarantee deficiency and apportion among partners.', mode: 'YouTube Unlisted' }
+              { id: 'ACC12-CH01-S1', name: 'Profit & Loss Appropriation A/c', obj: 'Prepare P&L Appropriation Account for interest on capital, partner salaries, and commission as per partnership deed.', mode: 'Offline class', completionDate: '04-Oct-2026', importance: 'Very High (6M)' },
+              { id: 'ACC12-CH01-S2', name: 'Partners Capital A/c (Fixed vs Fluctuating)', obj: 'Distinguish between fixed and fluctuating capital methods and post current accounts accurately.', mode: 'Commerce Gyan App', completionDate: '06-Oct-2026', importance: 'High (4M)' },
+              { id: 'ACC12-CH01-S3', name: 'Past Adjustments (Single Journal Entry)', obj: 'Calculate net effect of omitted interest/salary and pass single adjusting journal entry.', mode: 'YouTube Public', completionDate: '08-Oct-2026', importance: 'Vital (6M)', ytUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
+              { id: 'ACC12-CH01-S4', name: 'Guarantee of Profit to a Partner', obj: 'Calculate personal and firm guarantee deficiency and apportion among partners.', mode: 'YouTube Unlisted', completionDate: '10-Oct-2026', importance: 'High (4M)', videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ' }
             ]
           },
           {
@@ -4492,8 +4591,8 @@
             weightage: '6 Marks',
             status: 'Completed',
             subtopics: [
-              { id: 'ACC12-CH02-S1', name: 'Average & Super Profit Methods', obj: 'Value goodwill via simple average, weighted average, and super profit under capital employed.', mode: 'CG Native App (Unshareable)' },
-              { id: 'ACC12-CH02-S2', name: 'Capitalisation of Profit Method', obj: 'Compute goodwill by capitalising average profit and super profit at normal rate of return.', mode: 'YouTube Public', ytUrl: 'https://www.youtube.com/@CommerceGyan' }
+              { id: 'ACC12-CH02-S1', name: 'Average & Super Profit Methods', obj: 'Value goodwill via simple average, weighted average, and super profit under capital employed.', mode: 'Commerce Gyan App', completionDate: '15-Oct-2026', importance: 'High (3M)' },
+              { id: 'ACC12-CH02-S2', name: 'Capitalisation of Profit Method', obj: 'Compute goodwill by capitalising average profit and super profit at normal rate of return.', mode: 'YouTube Public', completionDate: '18-Oct-2026', importance: 'High (3M)', ytUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ' }
             ]
           },
           {
@@ -4501,8 +4600,8 @@
             weightage: '14 Marks',
             status: 'In Progress',
             subtopics: [
-              { id: 'ACC12-CH03-S1', name: 'Sacrificing Ratio & Hidden Goodwill', obj: 'Determine sacrificing ratio, new profit-sharing ratio, and deduce hidden goodwill from incoming capital.', mode: 'Offline Direct' },
-              { id: 'ACC12-CH03-S2', name: 'Revaluation Account & Capital Adjustments', obj: 'Prepare Revaluation A/c, adjust accumulated reserves, and re-proportion partner capitals based on new ratio.', mode: 'Offline Direct' }
+              { id: 'ACC12-CH03-S1', name: 'Sacrificing Ratio & Hidden Goodwill', obj: 'Determine sacrificing ratio, new profit-sharing ratio, and deduce hidden goodwill from incoming capital.', mode: 'Offline class', completionDate: '28-Oct-2026', importance: 'Vital (6M)' },
+              { id: 'ACC12-CH03-S2', name: 'Revaluation Account & Capital Adjustments', obj: 'Prepare Revaluation A/c, adjust accumulated reserves, and re-proportion partner capitals based on new ratio.', mode: 'YouTube Unlisted', completionDate: 'Pending', importance: 'Crucial (8M)', videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ' }
             ]
           },
           {
@@ -4510,8 +4609,8 @@
             weightage: '16 Marks',
             status: 'In Progress',
             subtopics: [
-              { id: 'ACC12-CH06-S1', name: 'Pro-Rata Allotment Calculations', obj: 'Calculate category-wise application money, excess adjusted to allotment, and calls in advance.', mode: 'Offline Direct' },
-              { id: 'ACC12-CH06-S2', name: 'Forfeiture & Reissue of Shares', obj: 'Master journal entries for forfeited shares originally issued at par/premium and credit Capital Reserve.', mode: 'YouTube Public', ytUrl: 'https://www.youtube.com/@CommerceGyan' }
+              { id: 'ACC12-CH06-S1', name: 'Pro-Rata Allotment Calculations', obj: 'Calculate category-wise application money, excess adjusted to allotment, and calls in advance.', mode: 'Offline class', completionDate: 'Pending', importance: 'Crucial (8M)' },
+              { id: 'ACC12-CH06-S2', name: 'Forfeiture & Reissue of Shares', obj: 'Master journal entries for forfeited shares originally issued at par/premium and credit Capital Reserve.', mode: 'YouTube Public', completionDate: 'Pending', importance: 'Crucial (8M)', ytUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ' }
             ]
           }
         ],
@@ -4521,8 +4620,8 @@
             weightage: '6 Marks',
             status: 'Completed',
             subtopics: [
-              { id: 'BST12-CH01-S1', name: 'Effectiveness vs Efficiency', obj: 'Define management and analyse trade-offs between timely completion and resource optimisation.', mode: 'YouTube Public', ytUrl: 'https://www.youtube.com/@CommerceGyan' },
-              { id: 'BST12-CH01-S2', name: 'Coordination — Essence of Management', obj: 'Explain coordination as the synchronising thread linking planning, organising, and controlling.', mode: 'CG Native App (Unshareable)' }
+              { id: 'BST12-CH01-S1', name: 'Effectiveness vs Efficiency', obj: 'Define management and analyse trade-offs between timely completion and resource optimisation.', mode: 'YouTube Public', completionDate: '02-Oct-2026', importance: 'High (3M)', ytUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
+              { id: 'BST12-CH01-S2', name: 'Coordination — Essence of Management', obj: 'Explain coordination as the synchronising thread linking planning, organising, and controlling.', mode: 'Commerce Gyan App', completionDate: '05-Oct-2026', importance: 'High (4M)' }
             ]
           },
           {
@@ -4530,8 +4629,8 @@
             weightage: '7 Marks',
             status: 'In Progress',
             subtopics: [
-              { id: 'BST12-CH02-S1', name: 'Fayol\'s 14 Administrative Principles', obj: 'Apply Unity of Command, Unity of Direction, and Scalar Chain to modern corporate case scenarios.', mode: 'Offline Direct' },
-              { id: 'BST12-CH02-S2', name: 'Taylor\'s Scientific Techniques', obj: 'Evaluate Functional Foremanship, Time Study, Motion Study, and Differential Piece Wage System.', mode: 'YouTube Public', ytUrl: 'https://www.youtube.com/@CommerceGyan' }
+              { id: 'BST12-CH02-S1', name: 'Fayol\'s 14 Administrative Principles', obj: 'Apply Unity of Command, Unity of Direction, and Scalar Chain to modern corporate case scenarios.', mode: 'Offline class', completionDate: '12-Oct-2026', importance: 'Crucial (6M)' },
+              { id: 'BST12-CH02-S2', name: 'Taylor\'s Scientific Techniques', obj: 'Evaluate Functional Foremanship, Time Study, Motion Study, and Differential Piece Wage System.', mode: 'YouTube Unlisted', completionDate: 'Pending', importance: 'High (4M)', videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ' }
             ]
           }
         ],
@@ -4541,8 +4640,8 @@
             weightage: '12 Marks',
             status: 'Completed',
             subtopics: [
-              { id: 'MAC12-CH01-S1', name: 'Value Added Method (Product Method)', obj: 'Calculate Gross Value Added at Market Price (GVA_mp) and eliminate double counting of intermediate consumption.', mode: 'Offline Direct' },
-              { id: 'MAC12-CH01-S2', name: 'Income & Expenditure Methods', obj: 'Reconcile Operating Surplus, COE, Mixed Income, and Gross Domestic Capital Formation to compute NNP_fc.', mode: 'YouTube Public', ytUrl: 'https://www.youtube.com/@CommerceGyan' }
+              { id: 'MAC12-CH01-S1', name: 'Value Added Method (Product Method)', obj: 'Calculate Gross Value Added at Market Price (GVA_mp) and eliminate double counting of intermediate consumption.', mode: 'Offline class', completionDate: '03-Oct-2026', importance: 'Crucial (6M)' },
+              { id: 'MAC12-CH01-S2', name: 'Income & Expenditure Methods', obj: 'Reconcile Operating Surplus, COE, Mixed Income, and Gross Domestic Capital Formation to compute NNP_fc.', mode: 'YouTube Public', completionDate: '07-Oct-2026', importance: 'Crucial (6M)', ytUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ' }
             ]
           },
           {
@@ -4550,7 +4649,7 @@
             weightage: '6 Marks',
             status: 'In Progress',
             subtopics: [
-              { id: 'MAC12-CH02-S1', name: 'Credit Creation by Commercial Banks', obj: 'Calculate money multiplier (1/LRR) and illustrate banking fractional reserve deposit multiplication.', mode: 'YouTube Public', ytUrl: 'https://www.youtube.com/@CommerceGyan' }
+              { id: 'MAC12-CH02-S1', name: 'Credit Creation by Commercial Banks', obj: 'Calculate money multiplier (1/LRR) and illustrate banking fractional reserve deposit multiplication.', mode: 'YouTube Unlisted', completionDate: 'Pending', importance: 'High (4M)', videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ' }
             ]
           }
         ],
@@ -4560,20 +4659,45 @@
             weightage: '10 Marks',
             status: 'In Progress',
             subtopics: [
-              { id: 'STA11-CH03-S1', name: 'Mean in Continuous Grouped Series', obj: 'Calculate arithmetic mean using direct, shortcut, and step-deviation formulas with unequal class intervals.', mode: 'Offline Direct' },
-              { id: 'STA11-CH03-S2', name: 'Median & Mode Interpolation', obj: 'Locate median and modal classes and apply linear interpolation formulas in cumulative frequencies.', mode: 'YouTube Public', ytUrl: 'https://www.youtube.com/@CommerceGyan' }
+              { id: 'STA11-CH03-S1', name: 'Mean in Continuous Grouped Series', obj: 'Calculate arithmetic mean using direct, shortcut, and step-deviation formulas with unequal class intervals.', mode: 'Offline class', completionDate: '11-Oct-2026', importance: 'Crucial (6M)' },
+              { id: 'STA11-CH03-S2', name: 'Median & Mode Interpolation', obj: 'Locate median and modal classes and apply linear interpolation formulas in cumulative frequencies.', mode: 'YouTube Public', completionDate: 'Pending', importance: 'High (4M)', ytUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ' }
             ]
           }
         ]
       };
 
       const chapters = tree[subject] || tree['Accountancy'];
-      const modeBadges = {
-        'Offline Direct': '<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-100 text-emerald-800">🟢 Live Offline</span>',
-        'CG Native App (Unshareable)': '<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-indigo-100 text-indigo-800">🔒 CG App (DRM)</span>',
-        'YouTube Unlisted': '<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-100 text-amber-800">📺 Unlisted Lecture</span>',
-        'YouTube Public': '<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-rose-100 text-rose-800">▶️ YouTube Public</span>'
-      };
+
+      // Populate Chapter Select in Self-Paced Practice Box (#S4)
+      const chSelect = document.getElementById('stuPracticeChapterSelect');
+      if (chSelect) {
+        chSelect.innerHTML = chapters.map(c => `<option value="${c.ch}">${c.ch}</option>`).join('');
+      }
+
+      function renderMediumAction(st) {
+        const mode = st.mode || 'Offline class';
+        if (mode === 'Commerce Gyan App') {
+          return `
+            <a href="${window.commerceGyanAppUrl || 'https://play.google.com/store/apps/details?id=com.commercegyan.app'}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-extrabold shadow-sm transition">
+              <span>📱</span><span>CG App</span>
+            </a>
+          `;
+        } else if (mode === 'YouTube Unlisted') {
+          return `
+            <button type="button" onclick="window.playSyllabusVideo('${st.id}', 'unlisted', '${st.videoUrl || ''}', '${st.name}')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-extrabold shadow-sm transition cursor-pointer">
+              <span>🔒</span><span>Watch Video</span>
+            </button>
+          `;
+        } else if (mode === 'YouTube Public') {
+          return `
+            <button type="button" onclick="window.playSyllabusVideo('${st.id}', 'public', '${st.ytUrl || ''}', '${st.name}')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-extrabold shadow-sm transition cursor-pointer">
+              <span>▶️</span><span>Watch Video</span>
+            </button>
+          `;
+        } else {
+          return `<span class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">🟢 Offline</span>`;
+        }
+      }
 
       container.innerHTML = chapters.map(c => `
         <details class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden group" open>
@@ -4589,25 +4713,83 @@
           </summary>
           <div class="p-3 divide-y divide-slate-100 space-y-2.5">
             ${c.subtopics.map(st => `
-              <div class="pt-2.5 space-y-1.5">
+              <div class="pt-2.5 space-y-2">
                 <div class="flex items-center justify-between gap-2">
-                  <span class="text-xs font-bold text-slate-900">${st.name}</span>
-                  ${modeBadges[st.mode] || modeBadges['Offline Direct']}
+                  <div class="min-w-0">
+                    <span class="text-xs font-bold text-slate-900 block truncate">${st.name}</span>
+                    <span class="text-[10px] text-slate-500 font-semibold">${st.completionDate && st.completionDate !== 'Pending' ? 'Completed: ' + st.completionDate : 'Status: Pending'} • ${st.importance || 'Board Topic'}</span>
+                  </div>
+                  <div class="shrink-0">
+                    ${renderMediumAction(st)}
+                  </div>
                 </div>
-                <p class="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 leading-snug">
+                <p class="text-[11px] text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 leading-snug">
                   <strong class="text-indigo-700">🎯 Learning Objective:</strong> ${st.obj}
                 </p>
-                ${st.mode === 'YouTube Public' ? `
-                  <button type="button" onclick="window.watchPublicYoutube('${st.id}', '${st.ytUrl || 'https://www.youtube.com/@CommerceGyan'}')" class="w-full mt-1.5 py-2 px-3 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow transition">
-                    <span>▶️ Watch on Gyan Sir\'s YouTube Channel (+5 CG Coins)</span>
-                  </button>
-                ` : ''}
               </div>
             `).join('')}
           </div>
         </details>
       `).join('');
     };
+
+    // Close Syllabus Video Modal
+    const closeSyllabusVideoBtn = document.getElementById('closeSyllabusVideoModalBtn');
+    if (closeSyllabusVideoBtn) {
+      closeSyllabusVideoBtn.addEventListener('click', () => {
+        const modal = document.getElementById('syllabusVideoModalOverlay');
+        const container = document.getElementById('syllabusVideoEmbedContainer');
+        if (container) container.innerHTML = '';
+        if (modal) modal.classList.add('hidden');
+      });
+    }
+
+    // Attach Subject Selector Listeners for S3
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.stu-practice-subj-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const subj = btn.dataset.practicesubj;
+          document.querySelectorAll('.stu-practice-subj-btn').forEach(b => {
+            b.className = b.dataset.practicesubj === subj
+              ? 'stu-practice-subj-btn p-3 rounded-xl bg-indigo-50 border-2 border-indigo-400 text-left transition shadow-sm'
+              : 'stu-practice-subj-btn p-3 rounded-xl bg-slate-50 border border-slate-200 text-left hover:border-indigo-400 transition';
+          });
+          window.renderStudentSyllabusTree(subj);
+        });
+      });
+
+      // Wire Self-Paced Practice Vault (#S4)
+      const btnStartVault = document.getElementById('btnStartPracticeVault');
+      if (btnStartVault) {
+        btnStartVault.addEventListener('click', () => {
+          const chSelect = document.getElementById('stuPracticeChapterSelect');
+          const selectedCh = chSelect ? chSelect.value : '';
+          const subj = window.currentSyllabusSubject || 'Accountancy';
+          showToast(`Loading Practice MCQs for ${selectedCh || subj}...`, 'indigo');
+
+          window.cgCallGas('getPracticeQuestions', {
+            subject: subj,
+            chapter: selectedCh,
+            classLevel: 12
+          }).then(res => {
+            const qList = (Array.isArray(res) && res.length > 0) ? res : defaultDailyQuestions;
+            window.mcqEngine.open({
+              mode: 'SELF_PRACTICE',
+              subject: subj,
+              chapter: selectedCh,
+              questions: qList
+            });
+          }).catch(err => {
+            window.mcqEngine.open({
+              mode: 'SELF_PRACTICE',
+              subject: subj,
+              chapter: selectedCh,
+              questions: defaultDailyQuestions
+            });
+          });
+        });
+      }
+    });
 
 
     // ==================== SWOT MODAL RENDERER (WITH 1-TAP CALL & WHATSAPP) ====================
@@ -7973,6 +8155,11 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
     var coins = b.coinBalance !== undefined ? b.coinBalance : (b.coins !== undefined ? b.coins : b.CG_Coins);
     if (coins !== undefined && $('tgStudentCoins')) {
       $('tgStudentCoins').textContent = '🪙 ' + coins;
+    }
+
+    // 5. Config App URL (Commerce Gyan mobile app)
+    if (b.appConfig && b.appConfig.commerceGyanAppUrl) {
+      window.commerceGyanAppUrl = b.appConfig.commerceGyanAppUrl;
     }
   }
 

@@ -252,6 +252,9 @@ function doGet(e) {
       case "getPracticeQuestions":
         result = handleGetPracticeQuestions_(e.parameter);
         break;
+      case "getAppConfig":
+        result = { ok: true, commerceGyanAppUrl: getCommerceGyanAppUrl_() };
+        break;
       case "getStudentMiniAppBootstrap":
         result = getStudentMiniAppBootstrap(e.parameter);
         break;
@@ -432,6 +435,9 @@ function doPost(e) {
         break;
       case "getPracticeQuestions":
         result = handleGetPracticeQuestions_(payload);
+        break;
+      case "getAppConfig":
+        result = { ok: true, commerceGyanAppUrl: getCommerceGyanAppUrl_() };
         break;
       case "getHomeDashboard":
       case "getNotebook":
@@ -1411,8 +1417,31 @@ function getStudentMiniAppBootstrap(params) {
     notebookFavs: studentFavs,
     revisionQueue: studentRevQueue,
     leaderboard: leaderboard.slice(0, 10),
-    studentRank: studentRank
+    studentRank: studentRank,
+    appConfig: {
+      commerceGyanAppUrl: getCommerceGyanAppUrl_()
+    }
   };
+}
+
+function getCommerceGyanAppUrl_() {
+  const props = PropertiesService.getScriptProperties();
+  let url = props.getProperty('COMMERCE_GYAN_APP_URL');
+  if (url) return url;
+  try {
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    const cfgSheet = erp.getSheetByName('CONFIG_APP_SETTINGS');
+    if (cfgSheet) {
+      const vals = cfgSheet.getDataRange().getValues();
+      for (let i = 0; i < vals.length; i++) {
+        if (String(vals[i][0]).trim() === 'COMMERCE_GYAN_APP_URL') {
+          return String(vals[i][1]).trim();
+        }
+      }
+    }
+  } catch (_) {}
+  return 'https://play.google.com/store/apps/details?id=com.commercegyan.app';
 }
 
 function submitStudentQuizAttempt(payload) {

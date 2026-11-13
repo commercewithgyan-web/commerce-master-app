@@ -234,6 +234,7 @@ function handleGetPracticeQuestions_(data) {
   var subject = (data && data.subject) || 'Accountancy';
   var diff = String((data && data.difficulty) || 'ALL').toUpperCase();
   var classLevel = (data && data.classLevel) || '12';
+  var chapterFilter = data && (data.chapter || data.chapterName);
   var targetSheetName = getMasterRepoSheetName_(subject, classLevel);
 
   var vaultRows = getMasterVaultQuestionsByTab_(targetSheetName, false);
@@ -249,6 +250,10 @@ function handleGetPracticeQuestions_(data) {
       continue;
     }
 
+    if (chapterFilter && String(q.Chapter).indexOf(chapterFilter) === -1 && String(q.ChapterName).toLowerCase().indexOf(String(chapterFilter).toLowerCase()) === -1) {
+      continue;
+    }
+
     questions.push({
       id: q.QID,
       canonicalTopicId: q.CanonicalSubtopicID,
@@ -259,18 +264,23 @@ function handleGetPracticeQuestions_(data) {
       subtopic: q.Subtopic,
       difficulty: q.Difficulty,
       text: q.Question,
+      Question: q.Question,
       options: [q.OptionA, q.OptionB, q.OptionC || 'Option C', q.OptionD || 'Option D'],
+      OptionA: q.OptionA,
+      OptionB: q.OptionB,
+      OptionC: q.OptionC || 'Option C',
+      OptionD: q.OptionD || 'Option D',
       correctIndex: q.CorrectIndexNum,
+      CorrectIndexNum: q.CorrectIndexNum,
       markingScheme: q.Rubric,
       explanation: q.Explanation,
+      Explanation: q.Explanation,
       trapAlert: q.TrapAlert || q.SharkTankHint || 'Watch out for CBSE conceptual traps.',
       sharkTankHint: q.SharkTankHint,
       teacherGhostSeconds: q.TeacherGhostSeconds
     });
   }
 
-  // No draft fallback: unreviewed rows must never reach students.
-  // An empty list lets the Mini App show its built-in practice set.
   return questions;
 }
 
