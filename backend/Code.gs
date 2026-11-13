@@ -1416,10 +1416,10 @@ function getStudentMiniAppBootstrap(params) {
 }
 
 function submitStudentQuizAttempt(payload) {
-  if (payload && payload.dryRun === true) {
-    const isCorrect = Boolean(payload.isCorrect);
-    const timeTakenSec = Number(payload.timeTakenSec || payload.timeTakenSeconds || 0);
-    const ghostTargetSec = Number(payload.ghostTargetSec || 30);
+  if (!payload || payload.dryRun === true || payload.isSandbox === true || payload.preview === true) {
+    const isCorrect = Boolean(payload && payload.isCorrect);
+    const timeTakenSec = Number((payload && (payload.timeTakenSec || payload.timeTakenSeconds)) || 0);
+    const ghostTargetSec = Number((payload && payload.ghostTargetSec) || 30);
     const beatGhost = isCorrect && timeTakenSec > 0 && timeTakenSec <= ghostTargetSec;
     return {
       ok: true,
@@ -1427,6 +1427,7 @@ function submitStudentQuizAttempt(payload) {
       beatGhost: beatGhost,
       earnedCoins: isCorrect ? (beatGhost ? 30 : 10) : 0,
       dryRun: true,
+      explanation: (payload && payload.explanation) || 'In fluctuating capital method, all partner adjustments (interest, salary, drawings) are recorded directly in Partner\'s Capital A/c.',
       message: 'Admin Preview Sandbox: Verified without recording live rows.'
     };
   }
@@ -1436,17 +1437,9 @@ function submitStudentQuizAttempt(payload) {
     const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
     const qbSS = SpreadsheetApp.openById(IDS.QUESTION_BANK);
 
-
-    const answersSheet = qbSS.getSheetByName('StudentAnswers');
-    const drillAttemptsSheet = erp.getSheetByName('Drill_Attempts');
-    const coinSheet = erp.getSheetByName('Coin_Ledger');
-    const revQueueSheet = qbSS.getSheetByName('Revision_Queue');
-
-
     const now = new Date();
     const nowStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
     const dateStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');
-
 
     const rollNo = payload.rollNo || payload.Roll_No || 'CG-11-001';
     const qId = payload.questionId || payload.qid || 'Q1';
@@ -1454,19 +1447,70 @@ function submitStudentQuizAttempt(payload) {
     const timeTakenSec = Number(payload.timeTakenSec || payload.timeTakenSeconds || 0);
     const ghostTargetSec = Number(payload.ghostTargetSec || 30);
     const beatGhost = isCorrect && timeTakenSec > 0 && timeTakenSec <= ghostTargetSec;
+    const mode = payload.mode || 'DAILY_MCQ';
+    const subject = payload.subject || 'Accountancy';
+    const chapter = payload.chapter || '';
+    const topic = payload.topic || '';
+    const subtopic = payload.subtopic || '';
+    const selectedOpt = payload.selectedOption || (payload.selectedIndex !== undefined ? String.fromCharCode(65 + Number(payload.selectedIndex)) : '');
 
+    // 1. Log to Student_MCQ_Attempts in Question Bank sheet
+    try {
+      let mcqSheet = qbSS.getSheetByName('Student_MCQ_Attempts');
+      if (!mcqSheet) {
+        mcqSheet = qbSS.insertSheet('Student_MCQ_Attempts');
+        mcqSheet.appendRow(['Timestamp', 'Roll_No', 'Question_ID', 'Selected_Option', 'Is_Correct', 'Subject', 'Chapter', 'Topic', 'Subtopic', 'Mode', 'Time_Taken_Sec']);
+      }
+      mcqSheet.appendRow([nowStr, rollNo, qId, selectedOpt, isCorrect, subject, chapter, topic, subtopic, mode, timeTakenSec]);
+    } catch (e) {
+      Logger.log('Error logging Student_MCQ_Attempts: ' + e);
+    }
+
+    // 2. Update Student_Weakness_Heatmap in MASTER_ERP (teacher-only analytics)
+    if (!isCorrect) {
+      try {
+        let heatSheet = erp.getSheetByName('Student_Weakness_Heatmap');
+        if (!heatSheet) {
+          heatSheet = erp.insertSheet('Student_Weakness_Heatmap');
+          heatSheet.appendRow(['Roll_No', 'Subject', 'Chapter', 'Topic', 'Subtopic', 'Wrong_Count', 'Last_Attempt_Timestamp']);
+        }
+        const data = heatSheet.getDataRange().getValues();
+        let foundRow = -1;
+        for (let i = 1; i < data.length; i++) {
+          if (String(data[i][0]) === String(rollNo) &&
+              String(data[i][1]) === String(subject) &&
+              String(data[i][2]) === String(chapter) &&
+              String(data[i][3]) === String(topic)) {
+            foundRow = i + 1;
+            const currentCount = Number(data[i][5]) || 0;
+            heatSheet.getRange(foundRow, 6).setValue(currentCount + 1);
+            heatSheet.getRange(foundRow, 7).setValue(nowStr);
+            break;
+          }
+        }
+        if (foundRow === -1) {
+          heatSheet.appendRow([rollNo, subject, chapter, topic, subtopic, 1, nowStr]);
+        }
+      } catch (e) {
+        Logger.log('Error updating Student_Weakness_Heatmap: ' + e);
+      }
+    }
+
+    const answersSheet = qbSS.getSheetByName('StudentAnswers');
+    const drillAttemptsSheet = erp.getSheetByName('Drill_Attempts');
+    const coinSheet = erp.getSheetByName('Coin_Ledger');
+    const revQueueSheet = qbSS.getSheetByName('Revision_Queue');
 
     if (answersSheet) {
       answersSheet.appendRow([
         rollNo,
         qId,
-        payload.selectedOption || '',
+        selectedOpt,
         isCorrect,
         timeTakenSec,
         nowStr
       ]);
     }
-
 
     if (drillAttemptsSheet) {
       drillAttemptsSheet.appendRow([
@@ -1480,17 +1524,16 @@ function submitStudentQuizAttempt(payload) {
       ]);
     }
 
-
     let earnedCoins = 0;
     if (isCorrect && coinSheet) {
-      earnedCoins = beatGhost ? 20 : 5;
+      earnedCoins = beatGhost ? 30 : 10;
       const txId = 'CTX-' + Utilities.formatDate(now, 'Asia/Kolkata', 'yyMMddHHmmss');
       coinSheet.appendRow([
         txId,
         rollNo,
         earnedCoins,
         'CREDIT',
-        beatGhost ? `Beat Ghost Time Record (${timeTakenSec}s <= ${ghostTargetSec}s)` : `Correct Quiz Answer: ${qId}`,
+        beatGhost ? `Beat Ghost Time Record (${timeTakenSec}s <= ${ghostTargetSec}s) [${qId}]` : `Correct MCQ Answer: ${qId}`,
         dateStr
       ]);
     } else if (!isCorrect && revQueueSheet) {
@@ -1507,12 +1550,12 @@ function submitStudentQuizAttempt(payload) {
       });
     }
 
-
     return {
       ok: true,
       isCorrect: isCorrect,
       beatGhost: beatGhost,
-      earnedCoins: earnedCoins
+      earnedCoins: earnedCoins,
+      explanation: (payload && payload.explanation) || ''
     };
   }, 10000);
 }

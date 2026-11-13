@@ -1822,9 +1822,9 @@
       </div>
     </div>
 
-    <!-- TAB 1: AAJ (Default visible) -->
+    <!-- TAB 1: DAILY HUB (Default visible) -->
     <div id="tgTab-aaj" class="tg-student-tab space-y-4">
-      <!-- Aaj Ki Classroom Attendance & Streak Card -->
+      <!-- Classroom Attendance & Streak Card -->
       <div class="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-between">
         <div class="flex items-center gap-2.5">
           <div class="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-lg">
@@ -1846,9 +1846,9 @@
       <div id="tgStreakExpiringAlert" class="hidden p-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-rose-600 text-white text-xs font-extrabold flex items-center justify-between gap-2 shadow-sm animate-pulse">
         <span class="flex items-center gap-1.5">
           <span>⏳</span>
-          <span>Streak Expiring Tonight! Complete 7:00 PM DPP before midnight.</span>
+          <span>Streak Expiring Tonight! Complete 7:00 PM Daily MCQ before midnight.</span>
         </span>
-        <button type="button" onclick="document.querySelector('.tg-track-btn') && document.querySelector('.tg-track-btn').click()" class="px-2.5 py-1 rounded-lg bg-white text-rose-700 text-[11px] font-black shrink-0 hover:bg-slate-100 transition">
+        <button id="tgStreakSolveNowBtn" type="button" class="px-2.5 py-1 rounded-lg bg-white text-rose-700 text-[11px] font-black shrink-0 hover:bg-slate-100 transition cursor-pointer">
           Solve Now 🔥
         </button>
       </div>
@@ -1905,40 +1905,22 @@
         </button>
       </div>
 
-      <!-- 7:00 PM Daily Practice Paper (3-Track Quiz) -->
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
+      <!-- 7:00 PM Daily MCQ / DPP Engine (#S2) -->
+      <div class="bg-gradient-to-br from-indigo-900 via-indigo-800 to-slate-900 rounded-3xl p-5 text-white shadow-lg space-y-3 border border-indigo-700/50">
         <div class="flex items-center justify-between">
-          <div>
-            <span class="text-[10px] font-bold uppercase text-indigo-600">7:00 PM IST Daily Practice Paper</span>
-            <h3 class="text-sm font-extrabold text-slate-900">3-Track Commerce Challenge</h3>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-amber-400 text-slate-950 tracking-wider">7:00 PM Daily DPP</span>
+            <span class="text-[11px] text-indigo-200 font-semibold">CBSE Board Exam Format</span>
           </div>
-          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">T+1 Solutions</span>
+          <span class="text-xs font-bold text-amber-300">🔥 +10 to +30 Coins</span>
         </div>
-
-        <div class="grid grid-cols-3 gap-2">
-          <button type="button" data-track="Open MCQ" class="tg-track-btn p-2.5 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-900 text-center">
-            <div class="text-xs font-extrabold">Track 1</div>
-            <div class="text-[10px] mt-0.5">Open MCQ</div>
-          </button>
-          <button type="button" data-track="Open Practice" class="tg-track-btn p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-800 text-center">
-            <div class="text-xs font-extrabold">Track 2</div>
-            <div class="text-[10px] mt-0.5">Open Practice</div>
-          </button>
-          <button type="button" data-track="Open AI Challenge" class="tg-track-btn p-2.5 rounded-xl border border-purple-200 bg-purple-50 text-purple-900 text-center">
-            <div class="text-xs font-extrabold">Track 3</div>
-            <div class="text-[10px] mt-0.5">AI Challenge</div>
-          </button>
+        <div>
+          <h3 class="text-base font-black text-white">Daily MCQ &amp; Speed Challenge</h3>
+          <p class="text-xs text-indigo-200 mt-0.5">Tonight's teacher-assigned board questions. Test your concept mastery, get instant explanation on wrong answer, &amp; beat Gyan Sir's Ghost Time!</p>
         </div>
-
-        <div id="tgQuizInteractiveBox" class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
-          <p id="tgQuizQuestion" class="text-xs font-bold text-slate-900">Q1 (Class 12 Accountancy): Under Fluctuating Capital Method, Interest on Partner's Capital is credited to:</p>
-          <div class="space-y-1.5">
-            <button type="button" data-option="A" data-correct="true" class="tg-ans-btn w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 text-xs font-medium transition cursor-pointer">A) Partner's Capital Account</button>
-            <button type="button" data-option="B" data-correct="false" class="tg-ans-btn w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 text-xs font-medium transition cursor-pointer">B) Partner's Current Account</button>
-            <button type="button" data-option="C" data-correct="false" class="tg-ans-btn w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 text-xs font-medium transition cursor-pointer">C) Profit &amp; Loss Account</button>
-            <button type="button" data-option="D" data-correct="false" class="tg-ans-btn w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 text-xs font-medium transition cursor-pointer">D) Revaluation Account</button>
-          </div>
-        </div>
+        <button id="btnOpenDailyMcq" type="button" class="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+          <span>⚡ Start Daily MCQ / DPP</span>
+        </button>
       </div>
 
       <!-- Today's Lectures & Watch-Gate -->
@@ -2226,7 +2208,7 @@
     <!-- FIXED 6-TAB BOTTOM NAVIGATION DOCK (0ms Client-Side Switching) -->
     <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-950/95 backdrop-blur-md border-t border-slate-800 flex items-center justify-around py-2.5 px-1 z-40 text-center">
       <button id="tgNavBtn-aaj" onclick="switchStudentTab('aaj')" class="flex-1 text-[10px] font-bold text-amber-400 transition flex flex-col items-center">
-        <span>📅</span><span>Aaj</span>
+        <span>📅</span><span>Daily Hub</span>
       </button>
       <button id="tgNavBtn-syllabus" onclick="switchStudentTab('syllabus')" class="flex-1 text-[10px] font-medium text-slate-400 transition flex flex-col items-center">
         <span>📚</span><span>Syllabus</span>
@@ -2520,6 +2502,60 @@
         <button id="cgConfirmCancelBtn" type="button" class="flex-1 py-2.5 px-3 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition">Cancel</button>
         <button id="cgConfirmOkBtn" type="button" class="flex-1 py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-md transition">Confirm</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ==================== FULL-SCREEN 4-OPTION MCQ ENGINE MODAL (S2 & S4) ==================== -->
+  <div id="dailyMcqModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-950/95 backdrop-blur-md flex flex-col justify-between p-4 sm:p-6 overflow-y-auto">
+    <!-- Header -->
+    <div class="max-w-xl w-full mx-auto flex items-center justify-between pb-3 border-b border-slate-800">
+      <div class="flex items-center gap-2">
+        <span id="mcqEngineModeBadge" class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-amber-400 text-slate-950">Daily MCQ / DPP</span>
+        <span id="mcqQuestionCounter" class="text-xs font-bold text-slate-300">Question 1 of 5</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <div id="mcqTimerDisplay" class="flex items-center gap-1 text-xs font-mono font-bold text-amber-300 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-xl">
+          <span>⏱️</span><span id="mcqTimerSeconds">00:00</span>
+        </div>
+        <button id="closeDailyMcqModalBtn" type="button" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center font-bold text-sm cursor-pointer">✕</button>
+      </div>
+    </div>
+
+    <!-- Question & Options Area -->
+    <div class="max-w-xl w-full mx-auto flex-1 py-6 flex flex-col justify-center space-y-5">
+      <div class="space-y-2">
+        <div class="flex items-center gap-2">
+          <span id="mcqSubjectPill" class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">Accountancy</span>
+          <span class="text-slate-600">•</span>
+          <span id="mcqTopicPill" class="text-[11px] font-semibold text-slate-400 truncate">Admission of a Partner</span>
+        </div>
+        <h2 id="mcqQuestionText" class="text-base sm:text-lg font-bold text-white leading-relaxed">
+          Loading question...
+        </h2>
+      </div>
+
+      <!-- 4 Options (A - D) -->
+      <div id="mcqOptionsContainer" class="space-y-3">
+        <!-- Rendered dynamically: 4 option buttons A, B, C, D -->
+      </div>
+
+      <!-- Explanation Box (Appears on Wrong Answer) -->
+      <div id="mcqExplanationBox" class="hidden p-4 rounded-2xl bg-slate-900 border border-rose-500/40 text-left space-y-2">
+        <div class="flex items-center gap-2 text-rose-400 text-xs font-extrabold uppercase">
+          <span>❌ Wrong Answer</span>
+          <span class="text-slate-500">•</span>
+          <span class="text-slate-300">Concept Explanation</span>
+        </div>
+        <p id="mcqExplanationText" class="text-xs text-slate-300 leading-relaxed"></p>
+      </div>
+    </div>
+
+    <!-- Footer Controls -->
+    <div class="max-w-xl w-full mx-auto pt-3 border-t border-slate-800 flex items-center justify-between">
+      <span id="mcqCoinsRewardBadge" class="text-xs font-bold text-amber-400">🔥 +10 to +30 CG Coins on beat ghost</span>
+      <button id="mcqNextBtn" type="button" class="hidden px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer">
+        <span>Next Question →</span>
+      </button>
     </div>
   </div>
 
@@ -5545,75 +5581,344 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
         });
       }
 
-      document.querySelectorAll('.tg-track-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const track = btn.dataset.track;
-          document.querySelectorAll('.tg-track-btn').forEach(b => {
-            b.className = b.dataset.track === track
-              ? 'tg-track-btn p-2.5 rounded-xl border border-indigo-400 bg-indigo-50 text-indigo-900 text-center shadow-sm'
-              : 'tg-track-btn p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-800 text-center';
-          });
-          const qEl = document.getElementById('tgQuizQuestion');
-          if (qEl) {
-            if (track === 'Open Practice') {
-              qEl.textContent = 'Q1 [Open Practice · BRS]: Overdraft as per Cash Book is ₹10,000. Cheques issued but not presented ₹3,000. Overdraft as per Pass Book is:';
-            } else if (track === 'Open AI Challenge') {
-              qEl.textContent = 'Q1 [AI Ghost Challenge · 25s Target]: A & B share profits 3:2. C admitted for 1/4 share brings ₹80,000 capital. Combined capital of A & B is ₹1,80,000. Hidden Goodwill is:';
-            } else {
-              qEl.textContent = "Q1 [Open MCQ]: Under Fluctuating Capital Method, Interest on Partner's Capital is credited to:";
-            }
-          }
-          showToast(`Switched 7 PM DPP to ${track}`, 'indigo');
-        });
-      });
+      // ==================== UNIFIED 4-OPTION MCQ ENGINE (S2 & S4) ====================
+      const defaultDailyQuestions = [
+        {
+          QID: 'DPP-12-ACC-01',
+          Subject: 'Accountancy',
+          Chapter: 'Admission of a Partner',
+          Topic: 'Partners\' Capital',
+          Subtopic: 'Fluctuating vs Fixed Capital',
+          Question: 'Under Fluctuating Capital Method, Interest on Partner\'s Capital is credited to:',
+          OptionA: 'Partner\'s Capital Account',
+          OptionB: 'Partner\'s Current Account',
+          OptionC: 'Profit & Loss Account',
+          OptionD: 'Revaluation Account',
+          CorrectIndex: 'A',
+          Explanation: 'In fluctuating capital method, no separate Current Account is maintained. All partner adjustments (interest, salary, drawings) are credited/debited directly to Partner\'s Capital Account.',
+          TeacherGhostSeconds: 25
+        },
+        {
+          QID: 'DPP-12-ACC-02',
+          Subject: 'Accountancy',
+          Chapter: 'Admission of a Partner',
+          Topic: 'Goodwill Treatment',
+          Subtopic: 'Premium for Goodwill',
+          Question: 'Goodwill brought in cash by an incoming partner is credited to:',
+          OptionA: 'Incoming Partner\'s Capital A/c',
+          OptionB: 'Premium for Goodwill A/c',
+          OptionC: 'Revaluation A/c',
+          OptionD: 'Old Partners\' Capital A/c in Old Ratio',
+          CorrectIndex: 'B',
+          Explanation: 'When an incoming partner brings cash for their share of goodwill, Cash A/c is debited and Premium for Goodwill A/c is credited. It is subsequently transferred to sacrificing partners in their sacrificing ratio.',
+          TeacherGhostSeconds: 20
+        },
+        {
+          QID: 'DPP-12-ACC-03',
+          Subject: 'Accountancy',
+          Chapter: 'Admission of a Partner',
+          Topic: 'Revaluation of Assets',
+          Subtopic: 'Unrecorded Liabilities',
+          Question: 'Unrecorded liability at the time of admission of a partner is:',
+          OptionA: 'Debited to Revaluation Account',
+          OptionB: 'Credited to Revaluation Account',
+          OptionC: 'Debited to Partners\' Capital Account',
+          OptionD: 'Credited to Cash Account',
+          CorrectIndex: 'A',
+          Explanation: 'An unrecorded liability represents a loss on revaluation. Therefore, it is debited to Revaluation Account.',
+          TeacherGhostSeconds: 20
+        }
+      ];
 
-      document.querySelectorAll('.tg-ans-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const roll = document.getElementById('tgStudentSelect').value || 'CG-1201';
-          const selectedOpt = btn.dataset.option || btn.textContent.trim().charAt(0);
-          btn.disabled = true;
-          showToast('Verifying answer with server...', 'indigo');
+      window.mcqEngine = {
+        questions: [],
+        currentIndex: 0,
+        mode: 'DAILY_MCQ',
+        startTime: null,
+        timerInterval: null,
+        subject: 'Accountancy',
+        chapter: '',
+        topic: '',
+        subtopic: '',
+
+        open: function(options) {
+          options = options || {};
+          this.mode = options.mode || 'DAILY_MCQ';
+          this.subject = options.subject || 'Accountancy';
+          this.chapter = options.chapter || '';
+          this.topic = options.topic || '';
+          this.subtopic = options.subtopic || '';
+          this.questions = (options.questions && options.questions.length > 0) ? options.questions : defaultDailyQuestions;
+          this.currentIndex = 0;
+
+          const modal = document.getElementById('dailyMcqModalOverlay');
+          if (!modal) return;
+          modal.classList.remove('hidden');
+
+          const modeBadge = document.getElementById('mcqEngineModeBadge');
+          if (modeBadge) {
+            modeBadge.textContent = this.mode === 'DAILY_MCQ' ? 'Daily MCQ / DPP' : 'Practice Vault';
+            modeBadge.className = this.mode === 'DAILY_MCQ' 
+              ? 'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-amber-400 text-slate-950'
+              : 'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-indigo-500 text-white';
+          }
+
+          this.renderCurrentQuestion();
+        },
+
+        close: function() {
+          this.stopTimer();
+          const modal = document.getElementById('dailyMcqModalOverlay');
+          if (modal) modal.classList.add('hidden');
+        },
+
+        startTimer: function() {
+          this.stopTimer();
+          this.startTime = Date.now();
+          const display = document.getElementById('mcqTimerSeconds');
+          if (display) display.textContent = '00:00';
+          this.timerInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+            const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+            const secs = String(elapsed % 60).padStart(2, '0');
+            if (display) display.textContent = `${mins}:${secs}`;
+          }, 1000);
+        },
+
+        stopTimer: function() {
+          if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+          }
+        },
+
+        renderCurrentQuestion: function() {
+          if (!this.questions || this.questions.length === 0) {
+            showToast('No questions available right now.', 'amber');
+            this.close();
+            return;
+          }
+
+          if (this.currentIndex >= this.questions.length) {
+            this.close();
+            showToast(`🎉 Challenge Completed! All ${this.questions.length} questions finished!`, 'emerald');
+            return;
+          }
+
+          const q = this.questions[this.currentIndex];
+          const total = this.questions.length;
+
+          const counter = document.getElementById('mcqQuestionCounter');
+          if (counter) counter.textContent = `Question ${this.currentIndex + 1} of ${total}`;
+
+          const subjPill = document.getElementById('mcqSubjectPill');
+          if (subjPill) subjPill.textContent = q.Subject || q.subject || this.subject;
+
+          const topicPill = document.getElementById('mcqTopicPill');
+          if (topicPill) topicPill.textContent = q.Topic || q.topic || q.Chapter || q.chapter || this.topic || 'CBSE Exam Drill';
+
+          const qText = document.getElementById('mcqQuestionText');
+          if (qText) qText.textContent = q.Question || q.question || 'Question content loading...';
+
+          const expBox = document.getElementById('mcqExplanationBox');
+          if (expBox) expBox.classList.add('hidden');
+
+          const nextBtn = document.getElementById('mcqNextBtn');
+          if (nextBtn) nextBtn.classList.add('hidden');
+
+          const container = document.getElementById('mcqOptionsContainer');
+          if (!container) return;
+
+          let optionsList = [];
+          if (Array.isArray(q.options) && q.options.length >= 4) {
+            optionsList = q.options.slice(0, 4);
+          } else {
+            optionsList = [
+              q.OptionA || (q.options && q.options[0]) || 'Option A',
+              q.OptionB || (q.options && q.options[1]) || 'Option B',
+              q.OptionC || (q.options && q.options[2]) || 'Option C',
+              q.OptionD || (q.options && q.options[3]) || 'Option D'
+            ];
+          }
+
+          let correctIdx = 0;
+          if (q.CorrectIndexNum !== undefined) correctIdx = Number(q.CorrectIndexNum);
+          else if (q.correctOptionIndex !== undefined) correctIdx = Number(q.correctOptionIndex);
+          else if (q.CorrectIndex) {
+            const char = String(q.CorrectIndex).trim().toUpperCase();
+            correctIdx = char.charCodeAt(0) - 65;
+          } else if (q.correctIndex !== undefined) correctIdx = Number(q.correctIndex);
+          if (isNaN(correctIdx) || correctIdx < 0 || correctIdx > 3) correctIdx = 0;
+
+          const letters = ['A', 'B', 'C', 'D'];
+          container.innerHTML = optionsList.map((optText, idx) => `
+            <button type="button" data-mcq-opt="${idx}" data-mcq-letter="${letters[idx]}" class="mcq-option-btn w-full text-left p-3.5 rounded-2xl bg-slate-900 border border-slate-700/80 hover:border-indigo-400 text-white font-medium text-xs sm:text-sm transition flex items-center gap-3 cursor-pointer">
+              <span class="w-7 h-7 rounded-xl bg-slate-800 text-slate-300 font-black text-xs flex items-center justify-center shrink-0 border border-slate-700">${letters[idx]}</span>
+              <span class="flex-1">${optText}</span>
+            </button>
+          `).join('');
+
+          this.startTimer();
+
+          container.querySelectorAll('.mcq-option-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const selectedIdx = Number(btn.dataset.mcqOpt);
+              const selectedLetter = btn.dataset.mcqLetter;
+              this.handleAnswerSelection(selectedIdx, selectedLetter, correctIdx, q);
+            });
+          });
+        },
+
+        handleAnswerSelection: function(selectedIdx, selectedLetter, correctIdx, q) {
+          const elapsedSec = Math.max(1, Math.floor((Date.now() - (this.startTime || Date.now())) / 1000));
+          this.stopTimer();
+
+          const container = document.getElementById('mcqOptionsContainer');
+          const allBtns = container ? container.querySelectorAll('.mcq-option-btn') : [];
+          allBtns.forEach(b => {
+            b.disabled = true;
+            b.classList.remove('cursor-pointer');
+          });
+
+          const isCorrect = (selectedIdx === correctIdx);
+          const chosenBtn = allBtns[selectedIdx];
+          const correctBtn = allBtns[correctIdx];
 
           const isSandbox = Boolean(window.isAdminPreview || (window.currentAppMode === 'teacher') || (window.isServerVerifiedAdmin && window.currentAppMode === 'student'));
+          const rollNo = (window.session && window.session.student && (window.session.student.Roll_No || window.session.student.roll)) ||
+                         (document.getElementById('tgStudentSelect') && document.getElementById('tgStudentSelect').value) ||
+                         'CG-1201';
 
+          const qid = q.QID || q.qid || `Q${this.currentIndex + 1}`;
+          const subject = q.Subject || q.subject || this.subject;
+          const chapter = q.Chapter || q.chapter || this.chapter;
+          const topic = q.Topic || q.topic || this.topic;
+          const subtopic = q.Subtopic || q.subtopic || this.subtopic;
+          const explanation = q.Explanation || q.explanation || 'Refer to NCERT / Question Bank concept notes.';
+
+          // Log attempt to server
           window.cgCallGas('submitStudentQuizAttempt', {
-            rollNo: roll,
-            questionId: 'DPP-Q1',
-            selectedOption: selectedOpt,
-            timeTakenSec: 18,
-            ghostTargetSec: 30,
-            dryRun: isSandbox
+            rollNo: rollNo,
+            qid: qid,
+            selectedOption: selectedLetter,
+            selectedIndex: selectedIdx,
+            isCorrect: isCorrect,
+            timeTakenSec: elapsedSec,
+            ghostTargetSec: q.TeacherGhostSeconds || 30,
+            dryRun: isSandbox,
+            mode: this.mode,
+            subject: subject,
+            chapter: chapter,
+            topic: topic,
+            subtopic: subtopic,
+            explanation: explanation
           }).then(res => {
             if (isSandbox) {
-              showToast('Admin Preview Sandbox: Attempt verified (dryRun: true, no sheet mutation).', 'amber');
+              showToast('Admin Preview Sandbox: Answer checked (dryRun: true, no sheet mutation).', 'amber');
             }
-            const isCorr = Boolean(res && (res.isCorrect === true || res.correct === true));
-            if (isCorr) {
-              btn.className = 'tg-ans-btn w-full text-left px-3 py-2 rounded-lg bg-emerald-50 border-2 border-emerald-500 text-xs font-bold text-emerald-950';
-              const stu = appState.students.find(s => s.roll === roll);
-              if (stu) { stu.coins += (res.earnedCoins || 5); renderAll(); }
-              showToast(`Correct! +${res.earnedCoins || 5} CG Coins credited to Coin_Ledger!`, 'emerald');
-            } else {
-              btn.className = 'tg-ans-btn w-full text-left px-3 py-2 rounded-lg bg-rose-50 border-2 border-rose-500 text-xs font-bold text-rose-950';
-              if (!appState.notebook) appState.notebook = [];
-              appState.notebook.unshift({
-                id: 'MST-' + Date.now(),
-                type: 'Mistake',
-                title: 'DPP Mistake: Partner Capital Adjustments',
-                content: res.explanation || 'Under Fluctuating Capital Method, Interest on Capital is credited to Capital Account.',
-                date: new Date().toISOString().slice(0, 10),
-                daysDue: 3,
-                starred: false
-              });
-              saveState();
-              showToast('Saved to Mistake Vault & scheduled in Spaced Repetition Queue (+3, +7, +15, +30d)!', 'amber');
+            if (isCorrect && !isSandbox) {
+              const coinEl = document.getElementById('tgStudentCoins');
+              if (coinEl) {
+                const cur = parseInt(coinEl.textContent.replace(/\D/g, '') || '0', 10);
+                coinEl.textContent = '🪙 ' + (cur + (res.earnedCoins || 10));
+              }
             }
           }).catch(err => {
-            btn.disabled = false;
-            showToast(`Answer recorded (Sync note: ${err.message})`, 'amber');
+            console.warn('Attempt recording note:', err);
           });
+
+          if (isCorrect) {
+            if (chosenBtn) {
+              chosenBtn.classList.remove('bg-slate-900', 'border-slate-700/80');
+              chosenBtn.classList.add('bg-emerald-600', 'border-emerald-400', 'text-white');
+              const badge = chosenBtn.querySelector('span');
+              if (badge) {
+                badge.classList.remove('bg-slate-800', 'text-slate-300');
+                badge.classList.add('bg-emerald-800', 'text-white');
+              }
+            }
+            showToast('✓ Correct! Auto-advancing...', 'emerald');
+            setTimeout(() => {
+              this.currentIndex++;
+              this.renderCurrentQuestion();
+            }, 850);
+          } else {
+            // Wrong answer: Highlight chosen as red, correct as green, show explanation, and reveal Next Question button
+            if (chosenBtn) {
+              chosenBtn.classList.remove('bg-slate-900', 'border-slate-700/80');
+              chosenBtn.classList.add('bg-rose-950/70', 'border-rose-500', 'text-rose-100');
+              const badge = chosenBtn.querySelector('span');
+              if (badge) {
+                badge.classList.remove('bg-slate-800', 'text-slate-300');
+                badge.classList.add('bg-rose-800', 'text-white');
+              }
+            }
+            if (correctBtn) {
+              correctBtn.classList.remove('bg-slate-900', 'border-slate-700/80');
+              correctBtn.classList.add('bg-emerald-950/40', 'border-emerald-400', 'text-emerald-200');
+              const cBadge = correctBtn.querySelector('span');
+              if (cBadge) {
+                cBadge.classList.remove('bg-slate-800', 'text-slate-300');
+                cBadge.classList.add('bg-emerald-700', 'text-white');
+              }
+            }
+
+            const expBox = document.getElementById('mcqExplanationBox');
+            const expText = document.getElementById('mcqExplanationText');
+            if (expBox && expText) {
+              expText.textContent = explanation;
+              expBox.classList.remove('hidden');
+            }
+
+            const nextBtn = document.getElementById('mcqNextBtn');
+            if (nextBtn) {
+              nextBtn.classList.remove('hidden');
+              nextBtn.onclick = () => {
+                this.currentIndex++;
+                this.renderCurrentQuestion();
+              };
+            }
+          }
+        }
+      };
+
+      // Wire Launchers for Daily MCQ
+      const btnOpenDaily = document.getElementById('btnOpenDailyMcq');
+      if (btnOpenDaily) {
+        btnOpenDaily.addEventListener('click', () => {
+          showToast('Loading tonight\'s Daily MCQ...', 'indigo');
+          const roll = (window.session && window.session.student && (window.session.student.Roll_No || window.session.student.roll)) || 'CG-1201';
+          const stu = appState.students.find(s => s.roll === roll) || appState.students[0];
+          const stuClass = (stu && stu.class) || 12;
+
+          window.cgCallGas('getDailyQuestion', { classLevel: stuClass, subject: 'Accountancy' })
+            .then(res => {
+              const qList = (Array.isArray(res) && res.length > 0) ? res : defaultDailyQuestions;
+              window.mcqEngine.open({
+                mode: 'DAILY_MCQ',
+                subject: 'Accountancy',
+                questions: qList
+              });
+            })
+            .catch(() => {
+              window.mcqEngine.open({
+                mode: 'DAILY_MCQ',
+                subject: 'Accountancy',
+                questions: defaultDailyQuestions
+              });
+            });
         });
-      });
+      }
+
+      const streakSolveBtn = document.getElementById('tgStreakSolveNowBtn');
+      if (streakSolveBtn && btnOpenDaily) {
+        streakSolveBtn.addEventListener('click', () => btnOpenDaily.click());
+      }
+
+      const closeDailyMcqBtn = document.getElementById('closeDailyMcqModalBtn');
+      if (closeDailyMcqBtn) {
+        closeDailyMcqBtn.addEventListener('click', () => window.mcqEngine.close());
+      }
       document.getElementById('tgOpenReceiptBtn').addEventListener('click', () => {
         const roll = document.getElementById('tgStudentSelect').value;
         openSwotModal(roll);

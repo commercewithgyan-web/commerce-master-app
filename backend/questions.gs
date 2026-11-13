@@ -667,9 +667,13 @@ function apiSubmitAnswer_(verifiedUser, payload) {
   var coinsEarned = isCorrect ? 10 : 0;
   if (ghostBeaten) coinsEarned += 20;
 
-  if (payload && payload.dryRun === true) {
+  if (payload && (payload.dryRun === true || payload.isSandbox === true || payload.preview === true)) {
     return {
+      qid: qid,
       isCorrect: isCorrect,
+      correctOptionIndex: expectedIndex,
+      explanation: q.Explanation,
+      trapAlert: q.TrapAlert || '',
       ghostBeaten: ghostBeaten,
       coinsEarned: coinsEarned,
       dryRun: true,
@@ -680,6 +684,39 @@ function apiSubmitAnswer_(verifiedUser, payload) {
   var student = requirePaidStudent_(verifiedUser.id);
   var todayStr = getKolkataDate();
   var timestamp = new Date().toISOString();
+
+  // Log to Student_MCQ_Attempts
+  try {
+    var rollNo = student.StudentID || (student.Roll_No || 'CG-11-001');
+    var selectedOpt = String.fromCharCode(65 + Number(selectedIndex));
+    appendRow_('SHEET_QB', 'Student_MCQ_Attempts', [
+      timestamp,
+      rollNo,
+      qid,
+      selectedOpt,
+      isCorrect,
+      payload.subject || q.Subject || 'Accountancy',
+      payload.chapter || q.Chapter || '',
+      payload.topic || q.Topic || '',
+      payload.subtopic || q.Subtopic || '',
+      payload.mode || 'DAILY_MCQ',
+      timeTakenSeconds
+    ]);
+
+    if (!isCorrect) {
+      appendRow_('SHEET_CORE', 'Student_Weakness_Heatmap', [
+        rollNo,
+        payload.subject || q.Subject || 'Accountancy',
+        payload.chapter || q.Chapter || '',
+        payload.topic || q.Topic || '',
+        payload.subtopic || q.Subtopic || '',
+        1,
+        timestamp
+      ]);
+    }
+  } catch (errMCQ) {
+    Logger.log('Student_MCQ_Attempts logging notice: ' + errMCQ);
+  }
 
   appendRow_('SHEET_QB', 'Submissions', [
     student.StudentID,
