@@ -752,42 +752,469 @@
       
         </div>
 
-        <!-- Subtab 1.4: Academic Calendar (A8) & Teacher Leave (A6) -->
+        <!-- Subtab 1.4: Academic Calendar (A5) & Teacher Leave (A6) -->
         <div id="subtab-today-calendar" class="subtab-pane-today hidden space-y-6">
-          <!-- Academic Calendar (A8) -->
+          <!-- Academic Calendar (A5) -->
           <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">Durable Record</span>
-                <h3 class="text-base font-extrabold text-slate-900 mt-1">📞 Parent Communication Log (Calls &amp; WhatsApp)</h3>
-                <p class="text-xs text-slate-500">Every parent interaction permanently logged to Google Sheets (Parent_Comm_Log). Zero dispute regarding fee commitments, attendance follow-ups, or demo feedback.</p>
+                <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[10px] font-extrabold uppercase">A5 • Institute Master Schedule</span>
+                <h3 class="text-base font-extrabold text-slate-900 mt-1">🗓️ Academic Calendar &amp; Exam Schedule</h3>
+                <p class="text-xs text-slate-500">Scheduled events, holidays, and tests recorded into <code class="mono">Academic_Calendar</code> sheet. Notifies students in advance.</p>
               </div>
               <div class="flex flex-wrap items-center gap-2">
-                <button id="openParentAnnouncementModalBtn" type="button" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow-sm transition cursor-pointer">
-                  📢 Send Announcement to Parents
-                </button>
-                <button id="openLogParentCommModalBtn" type="button" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-sm transition cursor-pointer">
-                  + Log Parent Interaction
+                <button id="addCalendarEventBtn" type="button" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow-sm transition cursor-pointer">
+                  + Add Calendar Event
                 </button>
               </div>
             </div>
 
-            <!-- Quick Filters for Parent Comm Log -->
-            <div class="flex flex-wrap items-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-              <span class="text-xs font-bold text-slate-600">Quick Filters:</span>
-              <select id="parentCommClassFilter" class="text-xs font-bold border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800">
-                <option value="ALL">All Classes (11 &amp; 12)</option>
-                <option value="11">Class 11</option>
-                <option value="12">Class 12</option>
-              </select>
-              <select id="parentCommTypeFilter" class="text-xs font-bold border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800">
-                <option value="ALL">All Comm Types</option>
-                <option value="Attendance">Attendance</option>
-                <option value="Fees">Fees</option>
-                <option value="Academic">Academic</option>
-                <option value="Discipline">Discipline</option>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase">
+                    <th class="py-2.5 px-3">Date</th>
+                    <th class="py-2.5 px-3">Event / Holiday Title</th>
+                    <th class="py-2.5 px-3">Type</th>
+                    <th class="py-2.5 px-3 text-center">7 PM DPP Status</th>
+                    <th class="py-2.5 px-3">Instructions / Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="academicCalendarTableBody" class="divide-y divide-slate-100 font-medium">
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-2.5 px-3 font-mono font-bold text-slate-900">2026-11-15</td>
+                    <td class="py-2.5 px-3 font-bold text-slate-800">🏖️ Chhath Puja Mahaparv (Bihar State Holiday)</td>
+                    <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">HOLIDAY</span></td>
+                    <td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">NO DPP (Suspended)</span></td>
+                    <td class="py-2.5 px-3 text-slate-500">Center closed. Planned syllabus topics shifted forward.</td>
+                  </tr>
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-2.5 px-3 font-mono font-bold text-slate-900">2026-11-20</td>
+                    <td class="py-2.5 px-3 font-bold text-slate-800">📝 Class 12 Partnership Comprehensive Test (80M)</td>
+                    <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">EXAM</span></td>
+                    <td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">ACTIVE</span></td>
+                    <td class="py-2.5 px-3 text-slate-500">3-Hour board pattern test. Bring admit card and working sheets.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Teacher Leave & Batch Cancellation (A5 / A6) -->
+          <div class="bg-gradient-to-r from-slate-900 via-rose-950 to-slate-900 rounded-2xl p-5 text-white shadow-md space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-400/30 text-[10px] font-extrabold uppercase">A5 • Emergency Operations</span>
+                <h3 class="text-base font-extrabold mt-1">📢 Teacher Leave &amp; Lecture Cancellation (Single Merged Action)</h3>
+                <p class="text-xs text-slate-300">Cancels lecture, shifts topic forward in Syllabus Planner, and reschedules tonight\'s 7 PM DPP with in-app confirmation.</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-300 mb-1">Target Batch</label>
+                <select id="cancelBatchSelect" class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-800 text-white font-bold">
+                  <option value="Class 12 Accounts">Class 12 Accounts (C12_EVE)</option>
+                  <option value="Class 11 Accounts">Class 11 Accounts (C11_MORN)</option>
+                  <option value="Class 12 BST">Class 12 Business Studies (BST12)</option>
+                  <option value="ALL">All Batches (Center Closed)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-300 mb-1">Cancellation Date</label>
+                <input id="cancelBatchDate" type="date" value="2026-11-13" class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-800 text-white font-mono" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-300 mb-1">Reason for Students</label>
+                <input id="cancelBatchReason" type="text" placeholder="e.g. Gyan Sir Out of Station" class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-800 text-white" />
+              </div>
+              <div>
+                <button id="btnExecuteBatchCancel" type="button" class="w-full py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold shadow transition">
+                  🚨 Cancel Lecture &amp; Reschedule DPP
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== GROUP TAB 2: STUDENTS & ADMISSIONS (A6, A7, A8) ==================== -->
+      <section id="tab-students" class="tab-panel hidden space-y-6">
+        <!-- Sub Navigation Pills -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200">
+          <button type="button" onclick="switchAdminSubtab('students', 'pipeline')" id="subtab-btn-students-pipeline" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-sm">
+            🎯 Inquiry &amp; Admission Hub
+          </button>
+          <button type="button" onclick="switchAdminSubtab('students', 'directory')" id="subtab-btn-students-directory" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            👥 Student Directory (A7)
+          </button>
+          <button type="button" onclick="switchAdminSubtab('students', 'parentcomm')" id="subtab-btn-students-parentcomm" class="subtab-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            📞 Parent Communication Log (A8)
+          </button>
+        </div>
+
+        <!-- Subtab 2.1: Pipeline & CRM (A6) -->
+        <div id="subtab-students-pipeline" class="subtab-pane-students space-y-6">
+
+        <!-- Dark Header Box (A6: Cleaned up to show ONLY pills, no long descriptive text) -->
+        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 sm:p-5 text-white shadow-md flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div class="space-y-2">
+            <h2 class="text-base sm:text-lg font-extrabold tracking-tight">Commerce Gyan CRM &amp; Admissions Hub</h2>
+            <!-- Clean Pills Row (A6) -->
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-500 text-slate-950">Walk-in Enquiry: <strong id="crmPillEnqCount">8</strong></span>
+              <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">Active CRM: <strong id="crmPillActiveCount">12</strong></span>
+              <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-purple-500/30 text-purple-200 border border-purple-400/30">3-Day Demo (D1-D2-D3): <strong id="crmPillDemoCount">5</strong></span>
+              <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-500/30 text-emerald-200 border border-emerald-400/30">Enrolled: <strong id="crmPillEnrolledCount">60</strong> (CBSE: <span id="crmCbseCount">42</span>, BSEB: <span id="crmBsebCount">18</span>)</span>
+              <span id="crmUnconvertedAlert" class="px-2.5 py-1 rounded-xl text-xs font-extrabold bg-rose-600 text-white">⚠️ <span id="crmUnconvertedCount">3</span> Unconverted Leads</span>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <button id="refreshCrmPipelineBtn" type="button" class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition cursor-pointer">
+              🔄 Sync Live CRM Sheet
+            </button>
+            <button id="openNewInquiryFormBtn" type="button" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow transition cursor-pointer">
+              + New Walk-In Inquiry
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Sub-Tab Switcher Pills -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+          <button type="button" data-pipesub="crm" class="pipe-subtab-btn py-2.5 px-3 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-sm text-center">
+            1. Walk-In / Referral CRM
+          </button>
+          <button type="button" data-pipesub="demo" class="pipe-subtab-btn py-2.5 px-3 rounded-xl text-xs font-bold bg-slate-50 hover:bg-slate-100 text-slate-700 text-center">
+            2. 3-Day Demo Tracker (D1/D2/D3)
+          </button>
+          <button type="button" data-pipesub="promise" class="pipe-subtab-btn py-2.5 px-3 rounded-xl text-xs font-bold bg-slate-50 hover:bg-slate-100 text-slate-700 text-center">
+            3. Counseling Promise Log
+          </button>
+          <button type="button" data-pipesub="wizard" class="pipe-subtab-btn py-2.5 px-3 rounded-xl text-xs font-bold bg-slate-50 hover:bg-slate-100 text-slate-700 text-center">
+            4. Pro-Rata Admission Wizard
+          </button>
+        </div>
+
+        <!-- Walk-In Inquiry Creation Form Drawer (A6) -->
+        <div id="walkInInquiryFormBox" class="hidden bg-amber-50/90 border-2 border-amber-300 rounded-2xl p-5 shadow-md space-y-4">
+          <div class="flex items-center justify-between border-b border-amber-200 pb-2.5">
+            <div>
+              <h3 class="text-sm font-extrabold text-slate-900">📋 New Walk-In / Referral Inquiry Registration</h3>
+              <p class="text-[11px] text-slate-600">Writes to INQUIRY_CRM, checks sibling discount, sets +2 Day Follow-up.</p>
+            </div>
+            <button id="closeWalkInFormBtn" type="button" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-600">✕ Close</button>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Student Full Name *</label>
+              <input id="inqStudentName" type="text" placeholder="e.g. Saurabh Kumar" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-semibold" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Parent / Guardian Name</label>
+              <input id="inqParentName" type="text" placeholder="e.g. Rajeshwar Prasad" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-semibold" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Student Mobile (10-digit) *</label>
+              <input id="inqStudentMobile" type="tel" placeholder="98350XXXXX" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-mono font-bold" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Parent Mobile (Sibling Check)</label>
+              <input id="inqParentMobile" type="tel" placeholder="98350XXXXX" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-mono font-bold" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Class Level</label>
+              <select id="inqClassLevel" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-bold">
+                <option value="11">Class 11 Commerce</option>
+                <option value="12">Class 12 Commerce</option>
               </select>
             </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Board</label>
+              <select id="inqBoard" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-bold">
+                <option value="CBSE">CBSE Board</option>
+                <option value="BSEB">BSEB (Bihar Board)</option>
+                <option value="ISC">ISC Board</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">School / College</label>
+              <input id="inqSchool" type="text" placeholder="e.g. GD College / DAV Begusarai" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Course Plan Interest</label>
+              <select id="inqCoursePlan" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-bold">
+                <option value="COMBO_MONTHLY">All Subjects Combo Monthly (₹1,400)</option>
+                <option value="SINGLE_MONTHLY">Single Subject Monthly (₹900)</option>
+                <option value="COMBO_QUARTERLY">Combo Quarterly Plan (₹3,300)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Lead Source</label>
+              <select id="inqLeadSource" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-semibold">
+                <option value="WALK_IN">Begusarai Center Walk-In</option>
+                <option value="STUDENT_REFERRAL">Student Referral (+10 Coins)</option>
+                <option value="TELEGRAM_BOT">Telegram Channel Funnel</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Demo Batch Slot</label>
+              <select id="inqBatchSlot" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-semibold">
+                <option value="C12_EVE">Class 12 Evening (04:00 PM)</option>
+                <option value="C11_MORN">Class 11 Morning (07:00 AM)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Referral Roll No</label>
+              <input id="inqReferralRoll" type="text" placeholder="e.g. CG-12-001" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-mono" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Counseling Notes</label>
+              <input id="inqNotes" type="text" placeholder="e.g. Interested in Partnership Accounts" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white" />
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-2">
+            <span id="inqSiblingAlertText" class="text-xs font-bold text-purple-800">💡 Sibling phone match is checked automatically on save.</span>
+            <div class="flex gap-2">
+              <button id="submitNewInquiryBtn" type="button" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow">
+                🚀 Save Inquiry to Google Sheets &amp; Start 3-Day Demo
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-TAB 1: WALK-IN & REFERRAL INQUIRY CRM -->
+        <div id="pipe-panel-crm" class="pipe-subpanel space-y-4">
+          <div id="inquiryCardsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+
+        <!-- SUB-TAB 2: 3-DAY DEMO TRACKER (D1 / D2 / D3) (B3) -->
+        <div id="pipe-panel-demo" class="pipe-subpanel hidden space-y-4">
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 class="text-sm font-extrabold text-slate-900">🎯 3-Day Demo Attendance Tracker (D1 / D2 / D3)</h3>
+              <p class="text-xs text-slate-500">Checkboxes trigger in-app confirmation before writing to Sheets. 3/3 credits +10 Gyan Coins to referrer.</p>
+            </div>
+          </div>
+          <div id="demoTrackerCardsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+
+        <!-- SUB-TAB 3: COUNSELING PROMISE LOG (A6) -->
+        <div id="pipe-panel-promise" class="pipe-subpanel hidden space-y-4">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+            <div>
+              <h3 class="text-sm font-extrabold text-slate-900">🤝 Counseling Fee Promise Log</h3>
+              <p class="text-xs text-slate-500">Log promised fee or discount during walk-in counseling. Pre-fills automatically at admission conversion.</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Select Inquiry ID</label>
+                <select id="prmEnquirySelect" class="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-slate-50 font-mono font-bold"></select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Student Name</label>
+                <input id="prmStudentName" type="text" placeholder="Student Name" class="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-white font-semibold" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Promised Fee (₹)</label>
+                <input id="prmPromisedFee" type="number" value="1200" min="500" class="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-white font-bold text-indigo-700" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Flat Discount (₹)</label>
+                <input id="prmFlatOff" type="number" value="200" min="0" class="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-white font-bold text-emerald-700" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Promise Notes</label>
+                <input id="prmNotes" type="text" placeholder="e.g. Early bird fee commitment" class="w-full text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-white" />
+              </div>
+              <div>
+                <button id="submitPromiseLogBtn" type="button" class="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow">
+                  💾 Log Promise (PRM)
+                </button>
+              </div>
+            </div>
+          </div>
+          <div id="promiseLogCardsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+
+        <!-- SUB-TAB 4: PRO-RATA ADMISSION CONVERSION WIZARD (A6) -->
+        <div id="pipe-panel-wizard" class="pipe-subpanel hidden space-y-4">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">Step 4 &amp; 5: Quote + Atomic Admission</span>
+                <h3 class="text-base font-extrabold text-slate-900 mt-1">🎓 Pro-Rata Admission Conversion Wizard</h3>
+                <p class="text-xs text-slate-500">Computes pro-rata fee, pre-fills counseling promises, auto-generates Roll No &amp; 14-Day Claim Code with in-app confirmation.</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Select Inquiry Lead</label>
+                <select id="wizEnquirySelect" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 font-mono font-bold"></select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Student Full Name *</label>
+                <input id="wizStudentName" type="text" placeholder="Required" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-bold" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Parent Mobile (10-digit)</label>
+                <input id="wizParentMobile" type="tel" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-mono font-bold" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Class &amp; Board</label>
+                <div class="grid grid-cols-2 gap-1.5">
+                  <select id="wizClassLevel" class="text-xs border border-slate-300 rounded-xl px-2 py-2 bg-white font-bold">
+                    <option value="11">Class 11</option>
+                    <option value="12">Class 12</option>
+                  </select>
+                  <select id="wizBoard" class="text-xs border border-slate-300 rounded-xl px-2 py-2 bg-white font-bold">
+                    <option value="CBSE">CBSE</option>
+                    <option value="BSEB">BSEB</option>
+                    <option value="ISC">ISC</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Fee Plan Key</label>
+                <select id="wizPlanKey" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-bold">
+                  <option value="COMBO_MONTHLY">COMBO_MONTHLY (₹1,400/mo)</option>
+                  <option value="SINGLE_MONTHLY">SINGLE_MONTHLY (₹900/mo)</option>
+                  <option value="COMBO_QUARTERLY">COMBO_QUARTERLY (₹3,300/qtr)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Paid Today (₹) *</label>
+                <input id="wizPaidAmount" type="number" value="1400" min="1" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-mono font-extrabold text-emerald-700" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Payment Mode</label>
+                <select id="wizPaymentMode" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-bold">
+                  <option value="CASH">CASH (Physical Drawer)</option>
+                  <option value="UPI">UPI / QR Transfer</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Referrer Roll (+90 Coins)</label>
+                <input id="wizReferralRoll" type="text" placeholder="e.g. CG-12-001" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-mono" />
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 pt-2">
+              <button id="calcAdmissionQuoteBtn" type="button" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow">
+                🧮 Calculate Live Pro-Rata Quote
+              </button>
+              <button id="confirmAdmissionBtn" type="button" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow">
+                ⚡ Confirm Admission &amp; Generate Roll No
+              </button>
+            </div>
+
+            <div id="wizardQuoteOutputBox" class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+              <p class="text-slate-500 font-medium">Select an inquiry to compute the live pro-rata invoice breakdown.</p>
+            </div>
+          </div>
+        </div>
+      
+        </div>
+
+        <!-- Subtab 2.2: Directory & SWOT (A7) -->
+        <div id="subtab-students-directory" class="subtab-pane-students hidden space-y-6">
+
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-lg font-extrabold text-slate-900">Student Directory &amp; Roster</h2>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Active Center Roster</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">Filter by Class, Subject, Board, and Search by Name. Distinguishes duplicate student names via Roll Number / Student ID.</p>
+          </div>
+          <!-- A7 Filters Row: Class, Subject, Board, and Name Search -->
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="studentClassFilter" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
+              <option value="ALL">All Classes (11 &amp; 12)</option>
+              <option value="Class 12">Class 12</option>
+              <option value="Class 11">Class 11</option>
+              <option value="Demo">3-Day Demo</option>
+            </select>
+            <select id="studentSubjectFilter" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
+              <option value="ALL">All Subjects</option>
+              <option value="ACC">Accountancy</option>
+              <option value="BST">Business Studies</option>
+              <option value="ECO">Economics</option>
+              <option value="STA">Statistics</option>
+            </select>
+            <select id="studentBoardFilter" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
+              <option value="ALL">All Boards</option>
+              <option value="CBSE">CBSE Board</option>
+              <option value="BSEB">BSEB (Bihar Board)</option>
+              <option value="ISC">ISC Board</option>
+            </select>
+            <input id="studentSearchInput" type="text" placeholder="🔍 Search name, roll, phone..." class="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+        </div>
+
+        <!-- Mobile Responsive Student Cards (< 768px) -->
+        <div id="studentsMobileCards" class="md:hidden space-y-3"></div>
+
+        <!-- Desktop Students Table (>= 768px) (A7: Clear Roll/ID Chips & Distinct Name Disambiguation) -->
+        <div class="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <th class="py-3 px-4">Student &amp; Roll / ID</th>
+                <th class="py-3 px-4">Class &amp; Board</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4">Attendance</th>
+                <th class="py-3 px-4">CG Coins</th>
+                <th class="py-3 px-4">Term Score</th>
+                <th class="py-3 px-4 text-right">Actions (+Coins / SWOT / Call)</th>
+              </tr>
+            </thead>
+            <tbody id="studentsTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
+          </table>
+        </div>
+      
+        </div>
+
+        <!-- Subtab 2.3: Parent Communication Log (A8) -->
+        <div id="subtab-students-parentcomm" class="subtab-pane-students hidden space-y-6">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">A8 • Parent Communication Log</span>
+                <h3 class="text-base font-extrabold text-slate-900 mt-1">📞 Parent Communication Log (Calls &amp; Serious Concerns)</h3>
+                <p class="text-xs text-slate-500">Reduced to 2 actions: (1) Contact parent, (2) Record serious concern note permanently to Google Sheets.</p>
+              </div>
+              <button id="openLogParentCommModalBtn" type="button" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-sm transition cursor-pointer">
+                + Add Serious Concern Note
+              </button>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase">
+                    <th class="py-2.5 px-3">Date</th>
+                    <th class="py-2.5 px-3">Student &amp; Roll</th>
+                    <th class="py-2.5 px-3">Parent Mobile</th>
+                    <th class="py-2.5 px-3">Channel</th>
+                    <th class="py-2.5 px-4">Serious Concern / Discussion Note</th>
+                    <th class="py-2.5 px-3">Follow-Up Date</th>
+                    <th class="py-2.5 px-3">Logged By</th>
+                  </tr>
+                </thead>
+                <tbody id="parentCommTableBody" class="divide-y divide-slate-100 font-medium">
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-2.5 px-3 font-mono font-bold text-slate-900">2026-11-12</td>
+                    <td class="py-2.5 px-3 font-bold text-slate-800">Aarav Sharma <span class="text-[10px] text-slate-400 font-mono">(CG-1201)</span></td>
+                    <td class="py-2.5 px-3 font-mono text-slate-600">9835011201</td>
+                    <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">Phone Call</span></td>
+                    <td class="py-2.5 px-4 text-slate-700">Discussed Unit Test 1 Partnership score. Father requested GoodNotes PDF watermarked copy.</td>
+                    <td class="py-2.5 px-3 font-mono text-slate-500">2026-11-20</td>
+                    <td class="py-2.5 px-3 text-slate-500">Gyan Sir</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -2197,6 +2624,31 @@
           <p class="text-xs text-slate-500">Begusarai, Bihar · CBSE & BSEB Class 11 & 12 Commerce</p>
         </div>
         <button id="closeSwotModalBtn" type="button" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">✕ Close</button>
+      </div>
+
+      <!-- A7: Dynamic Module Toggle Checkboxes -->
+      <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 no-print">
+        <span class="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">Include Modules in SWOT Report:</span>
+        <div class="flex flex-wrap gap-3 text-xs">
+          <label class="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700">
+            <input type="checkbox" id="swotModAttendance" checked class="swot-mod-toggle rounded text-indigo-600 focus:ring-indigo-500"> Attendance
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700">
+            <input type="checkbox" id="swotModTests" checked class="swot-mod-toggle rounded text-indigo-600 focus:ring-indigo-500"> Tests
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700">
+            <input type="checkbox" id="swotModDpp" checked class="swot-mod-toggle rounded text-indigo-600 focus:ring-indigo-500"> DPP
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700">
+            <input type="checkbox" id="swotModPractice" checked class="swot-mod-toggle rounded text-indigo-600 focus:ring-indigo-500"> Practice Paper
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700">
+            <input type="checkbox" id="swotModAttentive" checked class="swot-mod-toggle rounded text-indigo-600 focus:ring-indigo-500"> Attentiveness
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700">
+            <input type="checkbox" id="swotModNotes" checked class="swot-mod-toggle rounded text-indigo-600 focus:ring-indigo-500"> Notes
+          </label>
+        </div>
       </div>
 
       <div id="swotModalBody" class="space-y-4 text-xs"></div>
@@ -4879,8 +5331,8 @@
           <div><span class="text-[10px] uppercase text-indigo-300 font-bold block">Fee Plan</span><strong class="text-emerald-300">${stu.plan || 'Combo Tuition'}</strong></div>
         </div>
 
-        <!-- Cleared Months Grid (#S5 Requirement) -->
-        <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
+        <!-- Cleared Months Grid & Attendance Section (A7: Mod-Attendance) -->
+        <div id="swotSecAttendance" class="swot-section p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
           <div class="flex items-center justify-between">
             <span class="text-xs font-black text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
               <span>✅</span><span>Months Cleared &amp; Verified</span>
@@ -4897,27 +5349,27 @@
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-          <div><span class="text-[10px] uppercase text-slate-400 font-bold block">Batch Timing</span><strong class="text-slate-900">${stu.batch}</strong></div>
-          <div><span class="text-[10px] uppercase text-slate-400 font-bold block">Attendance %</span><strong class="text-emerald-700">${attPct}%</strong></div>
+          <div id="swotSecAttentiveness_sub"><span class="text-[10px] uppercase text-slate-400 font-bold block">Batch Timing</span><strong class="text-slate-900">${stu.batch}</strong></div>
+          <div id="swotSecAttendance_sub"><span class="text-[10px] uppercase text-slate-400 font-bold block">Attendance %</span><strong class="text-emerald-700">${attPct}%</strong></div>
           <div><span class="text-[10px] uppercase text-slate-400 font-bold block">Positive CG Coins</span><strong class="text-purple-700">🪙 ${stu.coins} (₹${coinDiscount} Off)</strong></div>
-          <div><span class="text-[10px] uppercase text-slate-400 font-bold block">Weighted Average</span><strong class="text-indigo-700">${avg}%</strong></div>
+          <div id="swotSecTests_sub"><span class="text-[10px] uppercase text-slate-400 font-bold block">Weighted Average</span><strong class="text-indigo-700">${avg}%</strong></div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200">
-            <h4 class="font-extrabold text-emerald-900 mb-1">💪 Strengths (S)</h4>
+          <div id="swotSecAttentive" class="swot-section p-3.5 rounded-xl bg-emerald-50 border border-emerald-200">
+            <h4 class="font-extrabold text-emerald-900 mb-1">💪 Strengths &amp; Attentiveness (S)</h4>
             <p class="text-emerald-950">High accuracy in Ledger Posting &amp; Viva (${stu.vivaScore}%). Consistent positive CG Coin earner.</p>
           </div>
-          <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200">
-            <h4 class="font-extrabold text-amber-900 mb-1">🎯 Weaknesses / Focus Area (W)</h4>
+          <div id="swotSecNotes" class="swot-section p-3.5 rounded-xl bg-amber-50 border border-amber-200">
+            <h4 class="font-extrabold text-amber-900 mb-1">🎯 Teacher Notes &amp; Focus Area (W)</h4>
             <p class="text-amber-950">${stu.note}. Needs speed improvement in 3-mark working note steps.</p>
           </div>
-          <div class="p-3.5 rounded-xl bg-indigo-50 border border-indigo-200">
-            <h4 class="font-extrabold text-indigo-900 mb-1">🚀 Opportunities (O)</h4>
+          <div id="swotSecDpp" class="swot-section p-3.5 rounded-xl bg-indigo-50 border border-indigo-200">
+            <h4 class="font-extrabold text-indigo-900 mb-1">🚀 DPP &amp; Daily Track (O)</h4>
             <p class="text-indigo-950">Completing the 7:00 PM Open AI Challenge track daily can push board score above 95%.</p>
           </div>
-          <div class="p-3.5 rounded-xl bg-rose-50 border border-rose-200">
-            <h4 class="font-extrabold text-rose-900 mb-1">⚠️ Exam Trap Alert (T)</h4>
+          <div id="swotSecPractice" class="swot-section p-3.5 rounded-xl bg-rose-50 border border-rose-200">
+            <h4 class="font-extrabold text-rose-900 mb-1">⚠️ Practice Paper Exam Traps (T)</h4>
             <p class="text-rose-950">Watch out for time-factor traps in Interest on Drawings and Pro-Rata Share Forfeiture limits.</p>
           </div>
         </div>
@@ -4938,6 +5390,18 @@
       `;
       document.getElementById('swotModalOverlay').classList.remove('hidden');
     }
+
+
+      // A7: SWOT Module Toggles wiring
+      ['Attendance', 'Tests', 'Dpp', 'Practice', 'Attentive', 'Notes'].forEach(mod => {
+        const chk = document.getElementById('swotMod' + mod);
+        if (chk) {
+          chk.addEventListener('change', () => {
+            const sec = document.getElementById('swotSec' + mod);
+            if (sec) sec.classList.toggle('hidden', !chk.checked);
+          });
+        }
+      });
 
     // ==================== DAILY CLASS NOTES & CHALKBOARD ENGINE (#S6) ====================
     let activeNotesSubject = 'Accountancy';
@@ -5777,61 +6241,7 @@
       document.getElementById('studentClassFilter').addEventListener('change', renderStudents);
       const stuBoardF = document.getElementById('studentBoardFilter');
       if (stuBoardF) stuBoardF.addEventListener('change', renderStudents);
-      const openAddBtn = document.getElementById('openAddStudentModalBtn');
-      if (openAddBtn) {
-        openAddBtn.addEventListener('click', () => {
-          const card = document.getElementById('addStudentCard');
-          if (card) card.classList.toggle('hidden');
-        });
-      }
-      const cancelAddBtn = document.getElementById('cancelNewStudentBtn');
-      if (cancelAddBtn) {
-        cancelAddBtn.addEventListener('click', () => {
-          const card = document.getElementById('addStudentCard');
-          if (card) card.classList.add('hidden');
-        });
-      }
-      const saveAddBtn = document.getElementById('saveNewStudentBtn');
-      if (saveAddBtn) {
-        saveAddBtn.addEventListener('click', () => {
-        if (appState.activeStudentCount >= 100) {
-          showToast('100-Student Free Tier Cap reached!', 'amber');
-          return;
-        }
-        const name = document.getElementById('newStuName').value.trim();
-        if (!name) return;
-        const batch = document.getElementById('newStuBatch').value;
-        const status = document.getElementById('newStuStatus').value;
-        const phone = document.getElementById('newStuPhone').value.trim() || '9835099999';
-        const classLevel = batch.includes('12') ? '12' : '11';
-        const board = batch.includes('BSEB') ? 'BSEB' : 'CBSE';
-        const siblingMatch = appState.students.some(s => s.phone === phone || s.parentPhone === phone);
-        const newRoll = generateNextRollNo(classLevel);
-
-        appState.students.unshift({
-          roll: newRoll, name, parentName: 'Guardian', batch, status, phone, parentPhone: phone, sibling: siblingMatch,
-          coins: 25, unitTest: 80, dppScore: 85, mockScore: 80, vivaScore: 85,
-          att: ['N','N','N','N','N','N','N'],
-          note: siblingMatch ? 'Auto-linked Sibling via Phone Match (ONB-09)' : 'Newly enrolled batch student',
-          plan: 'Monthly', baseFee: 1200, daysLate: 0, lateWaived: false, feePaid: false
-        });
-        appState.activeStudentCount += 1;
-        document.getElementById('newStuName').value = '';
-        document.getElementById('addStudentCard').classList.add('hidden');
-        renderAll();
-
-        const actionName = status.includes('Demo') ? 'createInquiry' : 'convertToAdmission';
-        window.cgCallGas(actionName, {
-          studentName: name, parentName: 'Guardian', contactNumber: phone, parentMobile: phone,
-          classLevel, board, planKey: 'COMBO_MONTHLY', paidAmountINR: status.includes('Demo') ? 0 : 1200
-        }).then(res => {
-          const rNo = (res && (res.rollNo || res.enquiryId)) || newRoll;
-          showToast(`Synced ${name} (${rNo}) to Google Sheets!`, 'emerald');
-        }).catch(err => {
-          showToast(`Enrollment failed: ${err.message || err}`, 'rose');
-        });
-      });
-    }
+      // A7: Direct enroll button removed in favor of Pro-Rata Admission Wizard (Step 4)
 
       // Attendance bulk & Commit buttons (wired to markBatchAttendance on GAS)
       // Attendance bulk & Commit buttons (with A2 10-Second Undo & A11 Offline Fallback)
@@ -6953,11 +7363,45 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
         if (addCoinBtn) {
           const stu = appState.students.find(s => s.roll === addCoinBtn.dataset.addcoinroll);
           if (stu) {
-            stu.coins += 10;
-            renderAll();
-            window.cgCallGas('awardSmartboardCoins', { rollNo: stu.roll, coins: 10, reason: 'Teacher Classroom Participation Bonus' })
-              .then(() => showToast(`Added +10 Positive CG Coins to ${stu.name} in Coin_Ledger!`, 'emerald'))
-              .catch(err => showToast(`Failed to award coins: ${err.message || err}`, 'rose'));
+            window.showAppConfirm({
+              title: `🪙 Award Gyan Coins to ${stu.name}`,
+              message: `Select positive coin rule to award <strong>${stu.name}</strong> (${stu.roll}) in <code class="mono">Coin_Ledger</code>:<br><br>
+                <div class="space-y-2 text-xs text-left">
+                  <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
+                    <input type="radio" name="coinReasonOpt" value="10|Daily DPP Submission" checked class="text-indigo-600">
+                    <span><strong>+10 Coins</strong> — Daily DPP Submission</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
+                    <input type="radio" name="coinReasonOpt" value="10|Classroom Participation" class="text-indigo-600">
+                    <span><strong>+10 Coins</strong> — Active Class Participation</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
+                    <input type="radio" name="coinReasonOpt" value="25|Weekly Test Topper" class="text-indigo-600">
+                    <span><strong>+25 Coins</strong> — Weekly Test Topper</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
+                    <input type="radio" name="coinReasonOpt" value="50|100% Monthly Attendance" class="text-indigo-600">
+                    <span><strong>+50 Coins</strong> — 100% Monthly Attendance</span>
+                  </label>
+                </div>`,
+              confirmText: 'Award Coins',
+              cancelText: 'Cancel'
+            }).then(confirmed => {
+              if (!confirmed) return;
+              const selected = document.querySelector('input[name="coinReasonOpt"]:checked');
+              const val = selected ? selected.value : '10|Daily DPP Submission';
+              const [coinsStr, reason] = val.split('|');
+              const coins = Number(coinsStr) || 10;
+              window.cgCallGas('awardSmartboardCoins', { rollNo: stu.roll, coins: coins, reason: reason })
+                .then(() => {
+                  stu.coins += coins;
+                  renderAll();
+                  showToast(`✓ Awarded +${coins} Positive CG Coins to ${stu.name} for ${reason}!`, 'emerald');
+                })
+                .catch(err => {
+                  showToast(`Failed to award coins: ${err.message || err}`, 'rose');
+                });
+            });
           }
           return;
         }
@@ -6995,11 +7439,23 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
         if (waiveBtn) {
           const stu = appState.students.find(s => s.roll === waiveBtn.dataset.waiveroll);
           if (stu) {
-            stu.lateWaived = true;
-            renderFees();
-            window.cgCallGas('revokeLateFee', { rollNo: stu.roll, reason: '1-Click Teacher Late Fee Waiver by Gyan Sir' })
-              .then(res => showToast(`Executed Revoke_Late_Fee in Sheet for ${stu.name} (Waived ₹${res.waivedAmountINR || 60})!`, 'emerald'))
-              .catch(err => showToast(`Failed to waive late fee: ${err.message || err}`, 'rose'));
+            window.showAppConfirm({
+              title: '⚖️ Waive Overdue Late Fee',
+              message: `Waive the overdue late fee for <strong>${stu.name}</strong> (${stu.roll})?<br><br>This will record an official teacher late-fee waiver by Gyan Sir in <code class="mono">Fee_Ledger</code>.`,
+              confirmText: 'Waive Late Fee',
+              cancelText: 'Cancel'
+            }).then(confirmed => {
+              if (!confirmed) return;
+              window.cgCallGas('revokeLateFee', { rollNo: stu.roll, reason: '1-Click Teacher Late Fee Waiver by Gyan Sir' })
+                .then(res => {
+                  stu.lateWaived = true;
+                  renderFees();
+                  showToast(`✓ Executed Revoke_Late_Fee in Sheet for ${stu.name} (Waived ₹${res.waivedAmountINR || 60})!`, 'emerald');
+                })
+                .catch(err => {
+                  showToast(`Failed to waive late fee: ${err.message || err}`, 'rose');
+                });
+            });
           }
           return;
         }
@@ -7007,39 +7463,42 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
         if (payBtn) {
           const stu = appState.students.find(s => s.roll === payBtn.dataset.payroll);
           if (stu) {
-            const modeInput = prompt(`Select Payment Mode for ${stu.name} (${stu.roll}):\n1. CASH\n2. UPI\n3. BANK`, 'CASH') || 'CASH';
-            const cleanMode = modeInput.toUpperCase().includes('UPI') ? 'UPI' : (modeInput.toUpperCase().includes('BANK') ? 'BANK' : 'CASH');
-            stu.feePaid = true;
-            renderFees();
-            const txn = {
-              id: 'TXN-' + Date.now(),
-              rollNo: stu.roll,
-              amount: stu.baseFee || 1200,
-              paymentMode: cleanMode,
-              date: new Date().toISOString().slice(0, 10),
-              receiptId: 'RCP-2026-' + stu.roll,
-              receiptHash: 'SHA256_' + Math.random().toString(16).slice(2, 10)
-            };
-            if (!appState.feeTransactions) appState.feeTransactions = [];
-            appState.feeTransactions.unshift(txn);
-            saveState();
-
-            window.cgCallGas('recordFeePayment', {
-              rollNo: stu.roll,
-              planKey: stu.plan === 'Quarterly' ? 'COMBO_QUARTERLY' : 'COMBO_MONTHLY',
-              paidAmountINR: stu.baseFee || 1200,
-              paymentMode: cleanMode,
-              contactNumber: stu.parentPhone || stu.phone
-            }).then(res => {
-              stu.receiptId = res.receiptId;
-              stu.receiptHash = res.sha256ReceiptHash;
-              txn.receiptId = res.receiptId || txn.receiptId;
-              txn.receiptHash = res.sha256ReceiptHash || txn.receiptHash;
-              saveState();
-              showToast(`Recorded ₹${res.paidAmountINR || stu.baseFee} via ${cleanMode} (${res.receiptId}) in Fee_Ledger!`, 'emerald');
-              openSwotModal(stu.roll);
-            }).catch(err => {
-              showToast(`Payment recording failed: ${err.message || err}`, 'rose');
+            const payableAmt = stu.baseFee || 1400;
+            window.showAppConfirm({
+              title: '💰 Record Fee Payment',
+              message: `Record fee payment of <strong>₹${payableAmt.toLocaleString('en-IN')}</strong> for <strong>${stu.name}</strong> (${stu.roll})?<br><br>Payment Mode: <strong>CASH</strong> (Physical Drawer)<br><br>This will append an official receipt transaction to <code class="mono">Fee_Ledger</code>.`,
+              confirmText: 'Record Cash Payment',
+              cancelText: 'Cancel'
+            }).then(confirmed => {
+              if (!confirmed) return;
+              window.cgCallGas('recordFeePayment', {
+                rollNo: stu.roll,
+                planKey: stu.plan === 'Quarterly' ? 'COMBO_QUARTERLY' : 'COMBO_MONTHLY',
+                paidAmountINR: payableAmt,
+                paymentMode: 'CASH',
+                contactNumber: stu.parentPhone || stu.phone
+              }).then(res => {
+                stu.feePaid = true;
+                stu.receiptId = res.receiptId;
+                stu.receiptHash = res.sha256ReceiptHash;
+                const txn = {
+                  id: (res && res.transactionId) || ('TXN-' + Date.now()),
+                  rollNo: stu.roll,
+                  amount: res.paidAmountINR || payableAmt,
+                  paymentMode: 'CASH',
+                  date: new Date().toISOString().slice(0, 10),
+                  receiptId: res.receiptId || ('RCP-2026-' + stu.roll),
+                  receiptHash: res.sha256ReceiptHash || ('SHA256_' + Math.random().toString(16).slice(2, 10))
+                };
+                if (!appState.feeTransactions) appState.feeTransactions = [];
+                appState.feeTransactions.unshift(txn);
+                renderFees();
+                saveState();
+                showToast(`✓ Recorded ₹${txn.amount} via CASH (${txn.receiptId}) in Fee_Ledger!`, 'emerald');
+                openSwotModal(stu.roll);
+              }).catch(err => {
+                showToast(`Payment recording failed: ${err.message || err}`, 'rose');
+              });
             });
           }
           return;
@@ -7722,29 +8181,49 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
             loggedBy: (appState && appState.userRole === 'SUB_ADMIN') ? 'Sub-Admin' : 'Gyan Sir'
           };
 
-          window.cgCallGas('logParentCommunication', payload).then(res => {
-            showToast('Parent communication record saved to Google Sheets!', 'emerald');
-            document.getElementById('parentCommModalOverlay').classList.add('hidden');
-          }).catch(err => {
-            showToast('Saved locally: ' + err.message, 'amber');
-            document.getElementById('parentCommModalOverlay').classList.add('hidden');
-          });
+          window.showAppConfirm({
+            title: '📞 Save Parent Communication Note',
+            message: `Log discussion for <strong>${rollNo}</strong> via <strong>${channel}</strong>?<br><br>• Summary: <em>${summary}</em><br>• Follow-Up: ${followUpDate || 'None'}<br><br>This will permanently append to Google Sheets (<code class="mono">Parent_Comm_Log</code>).`,
+            confirmText: 'Save Note to Sheets',
+            cancelText: 'Cancel'
+          }).then(confirmed => {
+            if (!confirmed) return;
+            btnSaveParentComm.disabled = true;
+            btnSaveParentComm.textContent = 'Saving to Sheets...';
 
-          const tbody = document.getElementById('parentCommTableBody');
-          if (tbody) {
-            const tr = document.createElement('tr');
-            tr.className = 'hover:bg-slate-50';
-            tr.innerHTML = `
-              <td class="py-2.5 px-3 font-mono font-bold text-slate-900">${new Date().toISOString().slice(0, 10)}</td>
-              <td class="py-2.5 px-3 font-bold text-slate-800">${rollNo}</td>
-              <td class="py-2.5 px-3 font-mono text-slate-600">${parentPhone}</td>
-              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">${channel}</span></td>
-              <td class="py-2.5 px-4 text-slate-700">${summary}</td>
-              <td class="py-2.5 px-3 font-mono text-slate-500">${followUpDate || '—'}</td>
-              <td class="py-2.5 px-3 text-slate-500">${payload.loggedBy}</td>
-            `;
-            tbody.prepend(tr);
-          }
+            window.cgCallGas('logParentCommunication', payload).then(res => {
+              btnSaveParentComm.disabled = false;
+              btnSaveParentComm.textContent = '💾 Save to Parent_Comm_Log (Google Sheets)';
+              showToast('✓ Parent communication record saved to Google Sheets!', 'emerald');
+              document.getElementById('parentCommModalOverlay').classList.add('hidden');
+
+              // Prepend to UI table only on successful backend persistence
+              const tbody = document.getElementById('parentCommTableBody');
+              if (tbody) {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50';
+                tr.innerHTML = `
+                  <td class="py-2.5 px-3 font-mono font-bold text-slate-900">${new Date().toISOString().slice(0, 10)}</td>
+                  <td class="py-2.5 px-3 font-bold text-slate-800">${rollNo}</td>
+                  <td class="py-2.5 px-3 font-mono text-slate-600">${parentPhone}</td>
+                  <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">${channel}</span></td>
+                  <td class="py-2.5 px-4 text-slate-700">${summary}</td>
+                  <td class="py-2.5 px-3 font-mono text-slate-500">${followUpDate || '—'}</td>
+                  <td class="py-2.5 px-3 text-slate-500">${payload.loggedBy}</td>
+                `;
+                tbody.prepend(tr);
+              }
+              // Reset form fields
+              document.getElementById('pcRollInput').value = '';
+              document.getElementById('pcPhoneInput').value = '';
+              document.getElementById('pcSummaryInput').value = '';
+              document.getElementById('pcFollowUpInput').value = '';
+            }).catch(err => {
+              btnSaveParentComm.disabled = false;
+              btnSaveParentComm.textContent = '💾 Save to Parent_Comm_Log (Google Sheets)';
+              showToast(`Failed to save parent communication: ${err.message || err}`, 'rose');
+            });
+          });
         });
       }
 

@@ -1002,10 +1002,36 @@ function getCrmData(statusFilter) {
   const students = sheetToObjects(erp.getSheetByName('Students_Master'));
   const feeLedger = sheetToObjects(erp.getSheetByName('Fee_Ledger'));
   const coinLedger = sheetToObjects(erp.getSheetByName('Coin_Ledger'));
+
+  // A6: Class-wise and board-wise summary breakdown + unconverted leads count
+  const breakdown = {
+    totalEnrolled: students.length,
+    byClass: { '11': 0, '12': 0 },
+    byBoard: { 'CBSE': 0, 'BSEB': 0, 'ISC': 0 },
+    unconvertedLeads: 0
+  };
+  students.forEach(s => {
+    const cl = String(s.Class || s.Class_Level || '12').trim();
+    if (cl.includes('11')) breakdown.byClass['11']++;
+    else breakdown.byClass['12']++;
+
+    const bd = String(s.Board || 'CBSE').toUpperCase().trim();
+    if (bd.includes('BSEB') || bd.includes('BIHAR')) breakdown.byBoard['BSEB']++;
+    else if (bd.includes('ISC') || bd.includes('ICSE')) breakdown.byBoard['ISC']++;
+    else breakdown.byBoard['CBSE']++;
+  });
+
+  const inquiries = pipe.inquiries || [];
+  inquiries.forEach(i => {
+    const st = String(i.Conversion_Status || '').toUpperCase();
+    if (st !== 'CONVERTED' && st !== 'ADMITTED') breakdown.unconvertedLeads++;
+  });
+
   return {
     ok: true,
     environment: pipe.environment,
     count: pipe.count,
+    breakdown: breakdown,
     inquiries: pipe.inquiries,
     demos: pipe.demos,
     promises: pipe.promises,
