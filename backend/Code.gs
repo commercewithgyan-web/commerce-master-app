@@ -237,7 +237,7 @@ function doGet(e) {
         result = getQuestionBankSummary();
         break;
       case "getStudentFeeLedger":
-        result = getStudentFeeLedger(e.parameter.rollNo);
+        result = getStudentFeeLedger(e.parameter.rollNo, verifiedUser);
         break;
       case "getInquiryPipeline":
       case "getCrmData":
@@ -565,7 +565,7 @@ function doPost(e) {
         result = getQuestionBankSummary();
         break;
       case "getStudentFeeLedger":
-        result = getStudentFeeLedger(payload.rollNo);
+        result = getStudentFeeLedger(payload.rollNo, verifiedUser);
         break;
       case "getInquiryPipeline":
       case "getCrmData":
@@ -666,7 +666,7 @@ function getQuestionBankSummary() {
   };
 }
 
-function getStudentFeeLedger(rollNo) {
+function getStudentFeeLedger(rollNo, verifiedUser) {
   const IDS = getActiveSheetIds();
   const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
   let feeSS = null;
@@ -689,8 +689,6 @@ function getStudentFeeLedger(rollNo) {
   if (!settingsSheet && feeSS) settingsSheet = feeSS.getSheetByName('Plans');
   const settings = settingsSheet ? sheetToObjects(settingsSheet) : [];
 
-  const cleanRoll = rollNo ? String(rollNo).trim().toUpperCase() : '';
-
   function getRollValue_(row) {
     if (!row || typeof row !== 'object') return '';
     for (const key of Object.keys(row)) {
@@ -700,6 +698,20 @@ function getStudentFeeLedger(rollNo) {
       }
     }
     return '';
+  }
+
+  let cleanRoll = rollNo ? String(rollNo).trim().toUpperCase() : '';
+
+  // B3: Validate student identity so students can never read another student's fee ledger data
+  if (verifiedUser && !isAdmin_(verifiedUser.id)) {
+    const vId = String(verifiedUser.id).trim();
+    const linkedStudent = students.find(s => {
+      const sTg = String(s.TelegramID || s.telegramId || s.Telegram_ID || s.TelegramId || '').trim();
+      return sTg === vId;
+    });
+    if (linkedStudent) {
+      cleanRoll = getRollValue_(linkedStudent);
+    }
   }
 
   let foundStudent = cleanRoll ? students.find(s => getRollValue_(s) === cleanRoll) : (students[0] || null);
@@ -2976,6 +2988,9 @@ function handleApiRequest(req, userFromCaller) {
       break;
     case 'getFeeDashboard':
       dataResult = apiGetFeeDashboard_(verifiedUser);
+      break;
+    case 'getStudentFeeLedger':
+      dataResult = getStudentFeeLedger(payload.rollNo, verifiedUser);
       break;
     case 'addNote':
       dataResult = apiAddNote_(verifiedUser, payload);
