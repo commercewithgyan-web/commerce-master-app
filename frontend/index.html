@@ -6,31 +6,73 @@
   <title>Commerce Gyan Studio — EMStudio Pro + ERP & Telegram Mini App</title>
     <!-- ==================== REC-01 BATCH PUSH MODAL (A9, B4) ==================== -->
   <div id="rec01BatchPushModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto custom-scroll">
       <div class="flex items-start justify-between border-b border-slate-200 pb-3">
         <div>
-          <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-extrabold uppercase">Recovery Assignment</span>
+          <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-extrabold uppercase">A9 • Concept Recovery Engine</span>
           <h3 class="text-base font-extrabold text-slate-900 mt-1">⚡ Push REC-01 Drills to Late / Absent Students</h3>
+          <p class="text-xs text-slate-500">Automated concept catch-up with video recap + 4-option instant verification MCQs.</p>
         </div>
         <button id="closeRec01BatchModalBtn" type="button" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">✕</button>
       </div>
-      <div class="space-y-3 text-xs">
+      <div class="space-y-3.5 text-xs">
         <div>
           <label class="block font-bold text-slate-700 mb-1">Target Late &amp; Absent Students Today</label>
-          <div id="rec01BatchStudentsList" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 max-h-40 overflow-y-auto"></div>
+          <div id="rec01BatchStudentsList" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 max-h-36 overflow-y-auto"></div>
         </div>
+
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Assigned Recovery Concept &amp; Topic</label>
-          <input id="rec01AssignedTopicInput" type="text" value="Ch 3: Hidden Goodwill & Sacrificing Ratio Calculation" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-800" />
-        </div>
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">Required Components</label>
-          <div class="space-y-1 text-slate-600">
-            <div>✓ 3-Minute Concept Recap Video (90% Watch-Gate)</div>
-            <div>✓ 2 Board MCQs (4-Option Instant Verification)</div>
-            <div>✓ Auto-credit +10 CG Coins upon correct verification</div>
+          <label class="block font-bold text-slate-700 mb-1.5">Select Recovery Concept Focus (8 Curated Board Modules):</label>
+          <div id="rec01DrillOptionsList" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto p-2 bg-slate-50 border border-slate-200 rounded-xl">
+            <label class="flex items-start gap-2 p-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 cursor-pointer">
+              <input type="radio" name="rec01OptionRadio" value="Hidden Goodwill & Sacrificing Ratio Calculation" checked class="mt-0.5 text-indigo-600">
+              <span class="text-[11px] font-medium text-slate-800"><strong>Hidden Goodwill</strong> &amp; Sacrificing Ratio</span>
+            </label>
+            <label class="flex items-start gap-2 p-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 cursor-pointer">
+              <input type="radio" name="rec01OptionRadio" value="Revaluation Account Adjustments & Unrecorded Items" class="mt-0.5 text-indigo-600">
+              <span class="text-[11px] font-medium text-slate-800"><strong>Revaluation Account</strong> &amp; Unrecorded Items</span>
+            </label>
+            <label class="flex items-start gap-2 p-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 cursor-pointer">
+              <input type="radio" name="rec01OptionRadio" value="Partners' Capital Account & New Balance Sheet" class="mt-0.5 text-indigo-600">
+              <span class="text-[11px] font-medium text-slate-800"><strong>Capital Accounts</strong> &amp; New Balance Sheet</span>
+            </label>
+            <label class="flex items-start gap-2 p-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 cursor-pointer">
+              <input type="radio" name="rec01OptionRadio" value="Forfeiture & Reissue of Shares (Pro-Rata Allotment)" class="mt-0.5 text-indigo-600">
+              <span class="text-[11px] font-medium text-slate-800"><strong>Share Forfeiture &amp; Reissue</strong> (Pro-Rata)</span>
+            </label>
+            <label class="flex items-start gap-2 p-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 cursor-pointer">
+              <input type="radio" name="rec01OptionRadio" value="Debentures Issued as Collateral Security" class="mt-0.5 text-indigo-600">
+              <span class="text-[11px] font-medium text-slate-800"><strong>Debentures</strong> as Collateral Security</span>
+            </label>
+            <label class="flex items-start gap-2 p-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 cursor-pointer">
+              <input type="radio" name="rec01OptionRadio" value="Cash Flow from Operating Activities (Direct Adjustments)" class="mt-0.5 text-indigo-600">
+              <span class="text-[11px] font-medium text-slate-800"><strong>Cash Flow: Operating</strong> Adjustments</span>
+            </label>
+            <label class="flex items-start gap-2 p-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 cursor-pointer">
+              <input type="radio" name="rec01OptionRadio" value="Price Elasticity of Demand & Expenditure Method" class="mt-0.5 text-indigo-600">
+              <span class="text-[11px] font-medium text-slate-800"><strong>Price Elasticity</strong> of Demand</span>
+            </label>
+            <label class="flex items-start gap-2 p-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 cursor-pointer">
+              <input type="radio" name="rec01OptionRadio" value="Principles of Management (Fayol vs Taylor Applications)" class="mt-0.5 text-indigo-600">
+              <span class="text-[11px] font-medium text-slate-800"><strong>Principles of Management</strong> (Fayol / Taylor)</span>
+            </label>
           </div>
         </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Custom Topic / Subtopic Override</label>
+          <input id="rec01AssignedTopicInput" type="text" value="Ch 3: Hidden Goodwill & Sacrificing Ratio Calculation" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-800" />
+        </div>
+
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1.5">
+          <span class="text-[11px] font-extrabold text-amber-950 uppercase tracking-wider block">Mandatory Student Recovery Gates:</span>
+          <div class="space-y-1 text-slate-700">
+            <div>✓ <strong>3-Minute Concept Recap Video</strong> (90% Watch-Gate required to unlock quiz)</div>
+            <div>✓ <strong>4-Option Instant Verification MCQs</strong> (Student must score 2/2)</div>
+            <div>✓ <strong>+10 Positive Gyan Coins</strong> credited to <code class="mono">Coin_Ledger</code> on completion</div>
+          </div>
+        </div>
+
         <div class="pt-2">
           <button id="btnExecuteBatchRec01" type="button" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black transition shadow-sm cursor-pointer">
             ⚡ Confirm &amp; Push REC-01 Drills to Google Sheets
@@ -5936,9 +5978,9 @@
             classLevel: subj.includes('11') ? '11' : '12',
             status: 'OPEN'
           }).then(() => {
-            showToast('Task saved and synced to Google Sheets (Academic_Tasks)!', 'emerald');
+            showToast('✓ Task saved and synced to Google Sheets (Academic_Tasks)!', 'emerald');
           }).catch(err => {
-            showToast('Task saved locally (Sheet sync error: ' + (err.message || err) + ')', 'amber');
+            showToast('Failed to save academic task to Sheets: ' + (err.message || err), 'rose');
           });
         });
       }
@@ -5982,8 +6024,8 @@
             showToast('Opened 30-Second Attendance Grid', 'indigo');
           } else if (cmd === '/dpp7pm') {
             window.cgCallGas('dispatchDailyDPPAndSubjectivePDF', { pdfType: 'QUESTION_DPP', channelId: '@commercewithgyan_class12' })
-              .then(res => showToast(`Dispatched ${res.dispatchedCount || 10} DPP questions for ${res.activeSubtopic}!`, 'emerald'))
-              .catch(err => showToast(`DPP Dispatch triggered (${err.message})`, 'amber'));
+              .then(res => showToast(`✓ Dispatched ${res.dispatchedCount || 10} DPP questions for ${res.activeSubtopic}!`, 'emerald'))
+              .catch(err => showToast(`DPP Dispatch failed: ${err.message || err}`, 'rose'));
           } else if (cmd === '/waive') {
             switchTab('erp_fees');
             showToast('Opened Fee Ledger — tap Revoke_Late_Fee on any overdue student', 'indigo');
@@ -6088,7 +6130,7 @@
         }).then(res => {
           showToast(`✓ ${slotType} slot for ${subject} saved and synced to Sheet (Weekly_Timetable)!`, 'emerald');
         }).catch(err => {
-          showToast(`Slot saved locally (Sheet sync error: ${err.message || err})`, 'amber');
+          showToast(`Failed to save weekly slot to Sheets: ${err.message || err}`, 'rose');
         });
       });
 
@@ -6119,9 +6161,9 @@
           unit: newLesson.unit,
           body: newLesson.body
         }).then(() => {
-          showToast('New lesson saved to Sheet (Lesson_Plans)!', 'emerald');
+          showToast('✓ New lesson saved to Sheet (Lesson_Plans)!', 'emerald');
         }).catch(err => {
-          showToast('Lesson saved locally (Sheet sync error: ' + (err.message || err) + ')', 'amber');
+          showToast('Failed to save lesson to Sheets: ' + (err.message || err), 'rose');
         });
       });
 
@@ -6316,13 +6358,12 @@
           records
         }).then(res => {
           const sum = (res && res.summary) || { P: records.filter(r => r.status === 'P').length, L: 0, A: 0 };
-          showToast(`Attendance Committed: P:${sum.P || 0} | L:${sum.L || 0} | A:${sum.A || 0} (Synced!)`, 'emerald');
+          showToast(`✓ Attendance Committed: P:${sum.P || 0} | L:${sum.L || 0} | A:${sum.A || 0} (Synced!)`, 'emerald');
           renderTelegramMiniApp();
           saveState();
         }).catch(err => {
-          showToast(`Attendance saved locally (Sync note: ${err.message})`, 'amber');
+          showToast(`Failed to commit attendance to Google Sheets: ${err.message || err}`, 'rose');
           renderTelegramMiniApp();
-          saveState();
         });
       };
 
@@ -6441,6 +6482,14 @@
         closeRec01BatchBtn.addEventListener('click', () => rec01BatchModal.classList.add('hidden'));
       }
 
+      // A9: Sync radio selection with topic input
+      document.querySelectorAll('input[name="rec01OptionRadio"]').forEach(r => {
+        r.addEventListener('change', () => {
+          const inp = document.getElementById('rec01AssignedTopicInput');
+          if (inp) inp.value = r.value;
+        });
+      });
+
       if (btnExecBatchRec && rec01BatchModal) {
         btnExecBatchRec.addEventListener('click', () => {
           const recStudents = appState.students.filter(s => s.att[6] === 'L' || s.att[6] === 'A');
@@ -6540,21 +6589,53 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
         copyAppsBtn.addEventListener('click', () => {
           const codeEl = document.getElementById('appsScriptCodeBlock');
           const code = codeEl ? codeEl.textContent : '';
+          const originalText = copyAppsBtn.textContent;
+          const onSuccess = () => {
+            copyAppsBtn.textContent = '✓ Copied!';
+            showToast('✓ Copied Google Apps Script (Code.gs) to clipboard!', 'emerald');
+            setTimeout(() => { copyAppsBtn.textContent = originalText; }, 2500);
+          };
           if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(code).then(() => {
-              showToast('Copied Google Apps Script (Code.gs) to clipboard!', 'emerald');
-            }).catch(err => {
-              showToast('Clipboard copy failed: ' + (err.message || 'Permission denied'), 'rose');
+            navigator.clipboard.writeText(code).then(onSuccess).catch(() => {
+              try {
+                const ta = document.createElement('textarea');
+                ta.value = code;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                const ok = document.execCommand('copy');
+                document.body.removeChild(ta);
+                if (ok) onSuccess();
+                else showToast('Clipboard copy failed: please copy manually.', 'rose');
+              } catch (e) {
+                showToast('Clipboard copy failed: ' + e.message, 'rose');
+              }
             });
           } else {
-            showToast('Clipboard API not supported', 'amber');
+            try {
+              const ta = document.createElement('textarea');
+              ta.value = code;
+              ta.style.position = 'fixed';
+              ta.style.opacity = '0';
+              document.body.appendChild(ta);
+              ta.focus();
+              ta.select();
+              const ok = document.execCommand('copy');
+              document.body.removeChild(ta);
+              if (ok) onSuccess();
+              else showToast('Clipboard API not supported: please copy manually.', 'amber');
+            } catch (e) {
+              showToast('Clipboard copy failed: ' + e.message, 'rose');
+            }
           }
         });
       }
       document.getElementById('saveGasUrlBtn').addEventListener('click', () => {
         window.cgCallGas('getSystemHealth', {})
-          .then(res => showToast(`Verified Live GAS Connection (${res.environment || 'PRODUCTION'})!`, 'emerald'))
-          .catch(err => showToast(`Endpoint saved (${err.message})`, 'amber'));
+          .then(res => showToast(`✓ Verified Live GAS Connection (${res.environment || 'PRODUCTION'})!`, 'emerald'))
+          .catch(err => showToast(`Failed to verify GAS Connection: ${err.message || err}`, 'rose'));
       });
       document.getElementById('exportJsonBackupBtn').addEventListener('click', () => {
         const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
@@ -7917,8 +7998,8 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
           const deliveryMode = document.getElementById('lockDeliveryMode').value;
           appState.activeSubtopicLock = subtopicId;
           window.cgCallGas('setActiveSubtopic', { subtopicId, deliveryMode, status: 'Completed' })
-            .then(res => showToast(`Locked ${res.activeSubtopic || subtopicId} (${deliveryMode}) in Settings!B2 & 01_Master_Syllabus!`, 'emerald'))
-            .catch(err => showToast(`Locked ${subtopicId} (${err.message})`, 'amber'));
+            .then(res => showToast(`✓ Locked ${res.activeSubtopic || subtopicId} (${deliveryMode}) in Settings!B2 & 01_Master_Syllabus!`, 'emerald'))
+            .catch(err => showToast(`Failed to lock subtopic in Sheets: ${err.message || err}`, 'rose'));
         });
       }
 
@@ -9662,8 +9743,8 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
             if (!confirmed) return;
             paModal.classList.add('hidden');
             window.cgCallGas('dispatchParentAnnouncement', { batch, category: cat, message: msg, channel: chan })
-              .then(() => showToast(`Dispatched announcement to ${recipientCount} parents via ${chan}!`, 'emerald'))
-              .catch(err => showToast(`Announcement logged and queued (${err.message || 'offline'})`, 'indigo'));
+              .then(() => showToast(`✓ Dispatched announcement to ${recipientCount} parents via ${chan}!`, 'emerald'))
+              .catch(err => showToast(`Failed to dispatch parent announcement: ${err.message || err}`, 'rose'));
           });
         });
       }
