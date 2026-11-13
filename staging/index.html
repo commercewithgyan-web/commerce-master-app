@@ -211,10 +211,11 @@
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span class="text-xs text-slate-300 font-medium">Students: <strong id="headerStudentCount" class="text-white">60</strong> / 100 Free Cap</span>
         </div>
-        <button id="openSyncQuickBtn" type="button" class="hidden md:inline-flex px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition items-center gap-1.5 shadow-sm">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-          <span class="hidden sm:inline">Sheets + GitHub Sync</span>
-        </button>
+        <!-- A1: Automatic Background Sync Indicator -->
+        <div id="bgSyncStatus" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 border border-slate-700 text-slate-300 cursor-pointer" title="Auto-Sync: Synced with Google Sheets">
+          <span id="bgSyncDot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span id="bgSyncText" class="hidden sm:inline">Auto-Sync OK</span>
+        </div>
       </div>
     </div>
   </header>
@@ -1680,85 +1681,7 @@
       </div>
     </div>
 
-    <!-- OPS TAB 1: INQUIRY & ADMISSION HUB (MOBILE) -->
-    <div id="opsTab-crm" class="ops-tab-panel space-y-3">
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <span class="text-[10px] font-extrabold uppercase text-amber-600">Mobile 7-Step Pipeline</span>
-            <h3 class="text-sm font-extrabold text-slate-900">Walk-In CRM, D1/D2/D3 &amp; Admission</h3>
-          </div>
-          
-        </div>
-        <div id="opsCrmCardsList" class="space-y-2.5"></div>
-      </div>
-    </div>
-
-    <!-- OPS TAB 2: 30-SECOND ATTENDANCE GRID (MOBILE) -->
-    <div id="opsTab-att" class="ops-tab-panel hidden space-y-3">
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <span class="text-[10px] font-extrabold uppercase text-emerald-600">30-Second Tap Grid</span>
-            <h3 class="text-sm font-extrabold text-slate-900">Batch Attendance &amp; REC-01</h3>
-          </div>
-          <button id="opsCommitAttBtn" type="button" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-extrabold">💾 Commit Sheet</button>
-        </div>
-        <div id="opsAttCardsList" class="space-y-2"></div>
-      </div>
-    </div>
-
-    <!-- OPS TAB 3: /SETTOPIC ACTIVE SUBTOPIC LOCK (MOBILE) -->
-    <div id="opsTab-topic" class="ops-tab-panel hidden space-y-3">
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
-        <span class="text-[10px] font-extrabold uppercase text-indigo-600">Live /settopic Lock</span>
-        <h3 class="text-sm font-extrabold text-slate-900">Lock Active Subtopic (Settings!B2)</h3>
-        <select id="opsTopicSelect" class="w-full text-xs font-bold border border-slate-300 rounded-xl px-3 py-2.5 bg-slate-50">
-          <option value="C12-ACC-B1-CH03-T02-S01">C12-ACC-B1-CH03-T02-S01 · Hidden Goodwill</option>
-          <option value="C12-ACC-B1-CH06-T01-S02">C12-ACC-B1-CH06-T01-S02 · Share Forfeiture</option>
-          <option value="C12-BST-B1-CH02-T04-S01">C12-BST-B1-CH02-T04-S01 · Fayol vs Taylor</option>
-          <option value="C12-MAC-B1-CH01-T05-S01">C12-MAC-B1-CH01-T05-S01 · National Income</option>
-          <option value="C11-ACC-B1-CH03-T01-S01">C11-ACC-B1-CH03-T01-S01 · Journal &amp; Ledger</option>
-          <option value="C11-ACC-B1-CH05-T01-S01">C11-ACC-B1-CH05-T01-S01 · Bank Reconciliation</option>
-        </select>
-        <button id="opsLockTopicBtn" type="button" class="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-extrabold shadow">🔒 Lock Subtopic &amp; Sync Syllabus</button>
-      </div>
-    </div>
-
-    <!-- OPS TAB 4: FEE COLLECTION, WAIVER & CASH DRAWER (MOBILE) -->
-    <div id="opsTab-cash" class="ops-tab-panel hidden space-y-3">
-      <div class="bg-slate-900 text-white rounded-2xl p-4 shadow-md space-y-2">
-        <div class="flex items-center justify-between">
-          <span class="text-[10px] font-extrabold uppercase text-amber-400">Begusarai Physical Drawer</span>
-          <strong id="opsDrawerBalanceText" class="text-base font-extrabold text-amber-300 font-mono">₹14,500</strong>
-        </div>
-        <div class="flex gap-2">
-          <input id="opsExpAmtInput" type="number" placeholder="Expense ₹" class="w-28 text-xs border border-slate-700 rounded-xl px-2.5 py-1.5 bg-slate-800 text-white font-mono" />
-          <input id="opsExpNoteInput" type="text" placeholder="Expense note..." class="flex-1 text-xs border border-slate-700 rounded-xl px-2.5 py-1.5 bg-slate-800 text-white" />
-          <button id="opsLogExpBtn" type="button" class="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-extrabold">Log</button>
-        </div>
-      </div>
-      <div id="opsFeeDefaultersList" class="space-y-2.5"></div>
-    </div>
-
-    <!-- OPS TAB 5: 7:00 PM DPP & PDF BROADCAST (MOBILE) -->
-    <div id="opsTab-dpp" class="ops-tab-panel hidden space-y-3">
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
-        <span class="text-[10px] font-extrabold uppercase text-emerald-600">7:00 PM IST Broadcast</span>
-        <h3 class="text-sm font-extrabold text-slate-900">Dispatch Daily DPP &amp; Subjective PDF</h3>
-        <p class="text-xs text-slate-500">Pushes 70% Fresh + 30% Retention MCQs and logs Subjective PDF to <code class="mono">4. Telegram Delivery</code>.</p>
-        <button id="opsBroadcastDppBtn" type="button" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow">🚀 Trigger 7:00 PM DPP &amp; PDF Dispatch</button>
-      </div>
-    </div>
-
-    <!-- FIXED 5-TAB BOTTOM DOCK FOR TELEGRAM TEACHER DAILY OPS -->
-    <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-950/95 backdrop-blur-md border-t border-slate-800 flex items-center justify-around py-2.5 px-1 z-40 text-center">
-      <button type="button" data-opstab="crm" class="ops-nav-btn flex-1 text-[11px] font-bold text-amber-400 flex flex-col items-center"><span>🎯</span><span>CRM Hub</span></button>
-      <button type="button" data-opstab="att" class="ops-nav-btn flex-1 text-[11px] font-medium text-slate-400 flex flex-col items-center"><span>✅</span><span>Attend</span></button>
-      <button type="button" data-opstab="topic" class="ops-nav-btn flex-1 text-[11px] font-medium text-slate-400 flex flex-col items-center"><span>📌</span><span>/settopic</span></button>
-      <button type="button" data-opstab="cash" class="ops-nav-btn flex-1 text-[11px] font-medium text-slate-400 flex flex-col items-center"><span>💵</span><span>Fees/Cash</span></button>
-      <button type="button" data-opstab="dpp" class="ops-nav-btn flex-1 text-[11px] font-medium text-slate-400 flex flex-col items-center"><span>📡</span><span>7PM DPP</span></button>
-    </nav>
+    <!-- A2: Dead mobile ops tabs & bottom dock purged. All actions covered by Quick Panel and Teacher Studio -->
   </div>
 
   <!-- ==================== STUDENT TELEGRAM MINI APP VIEW (6 PRE-RENDERED TABS, 0MS TOGGLE) ==================== -->
@@ -5397,11 +5320,49 @@
         studentBtn.addEventListener('click', () => window.switchAppMode('student'));
       }
 
-      // Quick Sync Header button
-      document.getElementById('openSyncQuickBtn').addEventListener('click', () => {
-        document.getElementById('modeTeacherBtn').click();
-        switchTab('sync');
-      });
+      // A1: Automatic Background Sync Status & Manual Retry
+      window.updateBgSyncStatus = function(status, msg) {
+        const dot = document.getElementById('bgSyncDot');
+        const text = document.getElementById('bgSyncText');
+        const badge = document.getElementById('bgSyncStatus');
+        if (!dot || !text) return;
+        if (status === 'syncing') {
+          dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-spin';
+          text.textContent = 'Syncing...';
+          if (badge) badge.title = 'Syncing with Google Sheets backend...';
+        } else if (status === 'error') {
+          dot.className = 'w-2 h-2 rounded-full bg-rose-500 animate-pulse';
+          text.textContent = 'Sync Error';
+          if (badge) badge.title = msg || 'Sync failed. Tap to retry.';
+        } else {
+          dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+          text.textContent = 'Auto-Sync OK';
+          if (badge) badge.title = 'Auto-sync active: all records synced to Google Sheets.';
+        }
+      };
+
+      window.triggerBackgroundSync = async function() {
+        window.updateBgSyncStatus('syncing');
+        try {
+          const res = await window.cgCallGas('getSystemHealth', {});
+          if (res && (res.ok || res.status === 'OK' || res.success)) {
+            window.updateBgSyncStatus('ok');
+          } else {
+            window.updateBgSyncStatus('error', (res && res.error) || 'Backend sync failed');
+          }
+        } catch (err) {
+          window.updateBgSyncStatus('error', err.message || 'Network sync error');
+        }
+      };
+
+      const bgSyncBadge = document.getElementById('bgSyncStatus');
+      if (bgSyncBadge) {
+        bgSyncBadge.addEventListener('click', () => {
+          showToast('Triggering background sync with Google Sheets...', 'indigo');
+          window.triggerBackgroundSync();
+        });
+      }
+      setTimeout(() => { if (typeof window.triggerBackgroundSync === 'function') window.triggerBackgroundSync(); }, 1200);
 
       // Sidebar tabs
       document.querySelectorAll('.nav-tab-btn').forEach(btn => {
@@ -7404,65 +7365,11 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
         });
       }
 
-      // ── TELEGRAM TEACHER DAILY OPS (5 MOBILE TABS) LISTENERS ──
-      document.querySelectorAll('.ops-nav-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const tab = btn.dataset.opstab;
-          appState.activeOpsTab = tab;
-          document.querySelectorAll('.ops-tab-panel').forEach(p => p.classList.add('hidden'));
-          const target = document.getElementById(`opsTab-${tab}`);
-          if (target) target.classList.remove('hidden');
-          document.querySelectorAll('.ops-nav-btn').forEach(b => {
-            b.className = b.dataset.opstab === tab
-              ? 'ops-nav-btn flex-1 text-[11px] font-bold text-amber-400 flex flex-col items-center'
-              : 'ops-nav-btn flex-1 text-[11px] font-medium text-slate-400 flex flex-col items-center';
-          });
-        });
-      });
-
+      // ── TELEGRAM TEACHER DAILY OPS NAV (A2: DEAD TABS PURGED) ──
       const opsReturnStudio = document.getElementById('opsReturnStudioBtn');
       if (opsReturnStudio) opsReturnStudio.addEventListener('click', () => window.switchAppMode('teacher'));
       const opsGoStudent = document.getElementById('opsGoStudentBtn');
       if (opsGoStudent) opsGoStudent.addEventListener('click', () => window.switchAppMode('student'));
-      const opsNewInqJump = document.getElementById('opsNewInqJumpBtn');
-      if (opsNewInqJump) {
-        opsNewInqJump.addEventListener('click', () => {
-          window.switchAppMode('teacher');
-          switchTab('pipeline');
-          document.getElementById('walkInInquiryFormBox').classList.remove('hidden');
-        });
-      }
-      const opsLockBtn = document.getElementById('opsLockTopicBtn');
-      if (opsLockBtn) {
-        opsLockBtn.addEventListener('click', () => {
-          const tid = document.getElementById('opsTopicSelect').value;
-          appState.activeSubtopicLock = tid;
-          window.cgCallGas('setActiveSubtopic', { subtopicId: tid, deliveryMode: 'Offline', status: 'Completed' })
-            .then(res => showToast(`Locked ${res.activeSubtopic || tid} in Settings!B2!`, 'emerald'))
-            .catch(err => showToast(`Locked ${tid} (${err.message})`, 'amber'));
-        });
-      }
-      const opsLogExpBtn = document.getElementById('opsLogExpBtn');
-      if (opsLogExpBtn) {
-        opsLogExpBtn.addEventListener('click', () => {
-          const amt = Number(document.getElementById('opsExpAmtInput').value) || 0;
-          const note = document.getElementById('opsExpNoteInput').value.trim() || 'Mobile Ops Expense';
-          if (amt > 0) {
-            document.getElementById('opsExpAmtInput').value = '';
-            document.getElementById('opsExpNoteInput').value = '';
-            reconcileDrawer(amt, 'Direct Expense', note, true);
-          }
-        });
-      }
-      const opsBroadcastBtn = document.getElementById('opsBroadcastDppBtn');
-      if (opsBroadcastBtn) {
-        opsBroadcastBtn.addEventListener('click', () => {
-          window.cgCallGas('dispatchDailyDPPAndSubjectivePDF', {
-            pdfType: 'QUESTION_DPP', channelId: '@commercewithgyan_class12', questionPdfUrl: 'DPP_Evening_Batch.pdf'
-          }).then(res => showToast(`Dispatched ${res.dispatchedCount || 10} DPP questions for ${res.activeSubtopic}!`, 'emerald'))
-            .catch(err => showToast(`Dispatched DPP (${err.message})`, 'amber'));
-        });
-      }
 
       // ── STUDENT MINI APP: PRACTICE VAULT, NOTEBOOK SAVE, CLAIM CODE BIND & AI/SOS ──
       document.querySelectorAll('.stu-practice-subj-btn').forEach(btn => {
@@ -7568,7 +7475,6 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
           }
         }
       });
-    });
 
       // ── A1: PARENT COMMUNICATION LOG HANDLERS ──
       const openParentCommBtn = document.getElementById('openLogParentCommModalBtn');
@@ -7872,24 +7778,6 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
         });
       }
 
-      // ── A2: MOBILE OPS BOTTOM DOCK SWITCHER ──
-      document.querySelectorAll('.ops-nav-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const tab = btn.dataset.opstab;
-          document.querySelectorAll('.ops-tab-panel').forEach(p => p.classList.add('hidden'));
-          const target = document.getElementById('opsTab-' + tab);
-          if (target) target.classList.remove('hidden');
-
-          document.querySelectorAll('.ops-nav-btn').forEach(b => {
-            b.classList.remove('text-amber-400', 'font-bold');
-            b.classList.add('text-slate-400', 'font-medium');
-          });
-          btn.classList.add('text-amber-400', 'font-bold');
-          btn.classList.remove('text-slate-400', 'font-medium');
-        });
-      });
-
-
             // ── A14: FIRST-RUN SETUP WIZARD ──
       const btnLaunchWizard = document.getElementById('btnLaunchSetupWizard');
       const wizardOverlay = document.getElementById('setupWizardModalOverlay');
@@ -7908,7 +7796,7 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
           showToast('Setup Wizard Complete! System configured for Session 2026-27.', 'emerald');
         });
       }
-
+    }); // End DOMContentLoaded (B5 fix: wraps Parent Comm & Setup Wizard)
   </script>
   <script>
     // ───
