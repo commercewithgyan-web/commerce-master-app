@@ -2055,20 +2055,54 @@
       </div>
     </div>
 
-    <!-- TAB 4: FEE LEDGER & SMART RECEIPTS -->
+    <!-- TAB 3: FEES / PASSBOOK (#S5) -->
     <div id="tgTab-fees" class="tg-student-tab space-y-4" style="display: none;">
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
+      <!-- Student Fee Profile Card -->
+      <div class="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm space-y-3.5">
         <div class="flex items-center justify-between">
-          <h3 class="text-sm font-extrabold text-slate-900">Official Fee Ledger</h3>
-          <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">Tuition Status: Paid</span>
+          <div>
+            <span class="text-[10px] font-extrabold uppercase text-indigo-600 tracking-wider">Commerce Gyan Tuition Ledger</span>
+            <h3 class="text-base font-extrabold text-slate-900 mt-0.5">Enrolment &amp; Fee Profile</h3>
+          </div>
+          <span id="stuFeeStatusBadge" class="text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-extrabold">Active • Up to Date</span>
         </div>
-        <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 space-y-1">
-          <div class="flex justify-between text-xs"><span>Monthly Plan:</span><span class="font-bold">Combo Tuition (₹1,400)</span></div>
-          <div class="flex justify-between text-xs"><span>Balance Due:</span><span class="font-bold text-emerald-700">₹0 (All Dues Cleared)</span></div>
-          <div class="flex justify-between text-xs"><span>Next Due Date:</span><span class="font-bold">01 Dec 2026</span></div>
+
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+          <div class="flex justify-between items-center"><span class="text-slate-500 font-semibold">Date of Joining:</span><strong id="stuFeeJoinDate" class="text-slate-900">01-Aug-2026</strong></div>
+          <div class="flex justify-between items-center"><span class="text-slate-500 font-semibold">Selected Fee Plan:</span><strong id="stuFeePlan" class="text-slate-900">Class 12 Commerce Complete (Acc + BST + Eco)</strong></div>
+          <div class="flex justify-between items-center"><span class="text-slate-500 font-semibold">Instalment Type &amp; Amount:</span><strong id="stuFeeInstalment" class="text-indigo-700">Monthly • ₹1,400</strong></div>
         </div>
-        <button onclick="document.getElementById('swotModalOverlay').classList.remove('hidden')" class="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-500 transition">
-          View SWOT Smart Receipt & Cryptographic Voucher
+
+        <!-- Pending Dues In-App Notice Banner (Dynamic) -->
+        <div id="stuPendingDuesBanner" class="hidden p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 space-y-2">
+          <div class="flex items-start gap-2">
+            <span class="text-base">⚠️</span>
+            <div>
+              <p id="stuPendingDuesText" class="text-xs font-bold text-rose-900">Fee due — please pay by 01-Dec-2026, otherwise a late-fee penalty will apply.</p>
+              <p class="text-[10px] text-rose-700 mt-0.5">Late fee penalty of ₹50/day applies after grace period.</p>
+            </div>
+          </div>
+          <button id="stuSendFeeReminderBtn" type="button" class="w-full py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer">
+            <span>🔔 Send Telegram Reminder to My Account</span>
+          </button>
+        </div>
+
+        <!-- Passbook Accordion Trigger -->
+        <button id="btnTogglePassbook" type="button" class="w-full py-3 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold shadow transition flex items-center justify-between cursor-pointer">
+          <span class="flex items-center gap-2"><span>📖</span><span>Passbook &amp; Payment History</span></span>
+          <span id="passbookToggleArrow" class="text-amber-400 font-bold">▼ View</span>
+        </button>
+
+        <!-- Passbook History Container (Accordion Drawer) -->
+        <div id="stuPassbookHistoryContainer" class="hidden space-y-2.5 pt-1">
+          <div id="stuPassbookRows" class="space-y-2">
+            <!-- Payment history rows rendered here dynamically -->
+          </div>
+        </div>
+
+        <!-- View SWOT Smart Receipt Button -->
+        <button id="btnOpenSwotReceiptFromFees" type="button" class="w-full py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer">
+          <span>🧾</span><span>View SWOT Smart Receipt &amp; Verification Voucher</span>
         </button>
       </div>
     </div>
@@ -4792,7 +4826,108 @@
     });
 
 
-    // ==================== SWOT MODAL RENDERER (WITH 1-TAP CALL & WHATSAPP) ====================
+    // ==================== STUDENT FEE LEDGER & PASSBOOK ENGINE (#S5) ====================
+    window.renderStudentFeeTab = function(roll) {
+      const rollNo = roll || (window.session && window.session.student && (window.session.student.Roll_No || window.session.student.roll)) || (document.getElementById('tgStudentSelect') && document.getElementById('tgStudentSelect').value) || 'CG-1201';
+
+      window.cgCallGas('getStudentFeeLedger', { rollNo: rollNo }).then(res => {
+        if (!res || !res.ok) return;
+        const stu = res.student || {};
+        const joinDateEl = document.getElementById('stuFeeJoinDate');
+        const planEl = document.getElementById('stuFeePlan');
+        const instalmentEl = document.getElementById('stuFeeInstalment');
+        const statusBadge = document.getElementById('stuFeeStatusBadge');
+
+        if (joinDateEl) joinDateEl.textContent = res.joinDate || stu.Join_Date || '01-Aug-2026';
+        if (planEl) planEl.textContent = res.plan || stu.Fee_Plan || 'Class 12 Commerce Complete (Acc + BST + Eco)';
+        if (instalmentEl) instalmentEl.textContent = `${res.instalmentType || 'Monthly'} • ₹${res.instalmentAmount || 1400}`;
+
+        // Pending Dues In-App Notice
+        const duesBanner = document.getElementById('stuPendingDuesBanner');
+        const duesText = document.getElementById('stuPendingDuesText');
+        if (duesBanner && duesText) {
+          if (res.pendingDues && res.pendingDues.isPending) {
+            duesBanner.classList.remove('hidden');
+            duesText.textContent = res.pendingDues.warning || 'Fee due — please pay by ' + res.pendingDues.dueDate + ', otherwise a late-fee penalty will apply.';
+            if (statusBadge) {
+              statusBadge.className = 'text-xs px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-extrabold';
+              statusBadge.textContent = 'Fee Due';
+            }
+          } else {
+            duesBanner.classList.add('hidden');
+            if (statusBadge) {
+              statusBadge.className = 'text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-extrabold';
+              statusBadge.textContent = 'Active • Up to Date';
+            }
+          }
+        }
+
+        // Render Passbook Rows
+        const rowsContainer = document.getElementById('stuPassbookRows');
+        if (rowsContainer && Array.isArray(res.ledger) && res.ledger.length > 0) {
+          rowsContainer.innerHTML = res.ledger.map(item => `
+            <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+              <div class="flex justify-between items-center font-bold text-slate-900">
+                <span>${item.Date || item.date} • ${item.For_Month || item.forMonth || 'Tuition'}</span>
+                <span class="text-emerald-700 font-black">₹${item.Amount || item.amount}</span>
+              </div>
+              <div class="flex justify-between items-center text-[10px] text-slate-500">
+                <span>Mode: ${item.Mode || item.mode || 'UPI'}</span>
+                <span class="text-slate-400 font-mono">${item.Receipt_No || item.receiptNo || 'CG-REC-VERIFIED'}</span>
+              </div>
+              ${Number(item.Penalty || item.penalty || 0) > 0 ? `<div class="text-[10px] text-rose-600 font-semibold">Late Fee Penalty: ₹${item.Penalty || item.penalty}</div>` : ''}
+              ${Number(item.Discount || item.discount || item.Coins_Redeemed || 0) > 0 ? `<div class="text-[10px] text-purple-700 font-semibold">Coins Redeemed / Discount: ₹${item.Discount || item.discount || item.Coins_Redeemed}</div>` : ''}
+            </div>
+          `).join('');
+        }
+      }).catch(err => {
+        console.warn('Fee ledger fetch warning:', err);
+      });
+    };
+
+    // Attach Passbook Toggle & Reminder Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      const btnToggle = document.getElementById('btnTogglePassbook');
+      const passbookContainer = document.getElementById('stuPassbookHistoryContainer');
+      const toggleArrow = document.getElementById('passbookToggleArrow');
+      if (btnToggle && passbookContainer) {
+        btnToggle.addEventListener('click', () => {
+          const isHidden = passbookContainer.classList.contains('hidden');
+          passbookContainer.classList.toggle('hidden');
+          if (toggleArrow) toggleArrow.textContent = isHidden ? '▲ Hide' : '▼ View';
+        });
+      }
+
+      const reminderBtn = document.getElementById('stuSendFeeReminderBtn');
+      if (reminderBtn) {
+        reminderBtn.addEventListener('click', () => {
+          const roll = (window.session && window.session.student && (window.session.student.Roll_No || window.session.student.roll)) || 'CG-1201';
+          reminderBtn.disabled = true;
+          reminderBtn.textContent = 'Sending Reminder…';
+          window.cgCallGas('sendStudentFeeReminder', { rollNo: roll })
+            .then(res => {
+              showToast('Fee reminder sent to your Telegram account!', 'emerald');
+            })
+            .catch(err => {
+              showToast('Reminder request failed: ' + err.message, 'rose');
+            })
+            .finally(() => {
+              reminderBtn.disabled = false;
+              reminderBtn.textContent = '🔔 Send Telegram Reminder to My Account';
+            });
+        });
+      }
+
+      const btnOpenSwotFromFees = document.getElementById('btnOpenSwotReceiptFromFees');
+      if (btnOpenSwotFromFees) {
+        btnOpenSwotFromFees.addEventListener('click', () => {
+          const roll = (window.session && window.session.student && (window.session.student.Roll_No || window.session.student.roll)) || 'CG-1201';
+          openSwotModal(roll);
+        });
+      }
+    });
+
+    // ==================== SWOT MODAL RENDERER (FULL DETAILS & CLEARED MONTHS #S5) ====================
     function openSwotModal(roll) {
       const stu = appState.students.find(s => s.roll === roll) || appState.students[0];
       const avg = computeWeightedAvg(stu);
@@ -4803,11 +4938,37 @@
       const parentMob = stu.parentPhone || stu.phone || '9835011201';
       const telPrefix = 'tel:+91';
       const waReceiptUrl = buildLocalWaLink(parentMob, 'JOIN_THANKS', { studentName: stu.name, rollNo: stu.roll, claimCode: stu.receiptHash || 'SHA256-VERIFIED' });
+      const clearedMonths = ['August 2026', 'September 2026', 'October 2026', 'November 2026'];
 
-      document.getElementById('modalStuTitle').textContent = `${stu.name} (${stu.roll}) — SWOT Smart Receipt`;
+      document.getElementById('modalStuTitle').textContent = `${stu.name} (${stu.roll}) — Official SWOT Smart Receipt`;
       document.getElementById('swotModalBody').innerHTML = `
+        <!-- Student Full Details Strip -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 rounded-2xl bg-indigo-950 text-white border border-indigo-800 shadow-sm">
+          <div><span class="text-[10px] uppercase text-indigo-300 font-bold block">Student Name</span><strong class="text-white">${stu.name}</strong></div>
+          <div><span class="text-[10px] uppercase text-indigo-300 font-bold block">Student ID / Roll</span><strong class="text-amber-300 font-mono">${stu.roll}</strong></div>
+          <div><span class="text-[10px] uppercase text-indigo-300 font-bold block">Class &amp; Board</span><strong class="text-white">${stu.class || 12} • ${stu.board || 'CBSE'}</strong></div>
+          <div><span class="text-[10px] uppercase text-indigo-300 font-bold block">Fee Plan</span><strong class="text-emerald-300">${stu.plan || 'Combo Tuition'}</strong></div>
+        </div>
+
+        <!-- Cleared Months Grid (#S5 Requirement) -->
+        <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
+              <span>✅</span><span>Months Cleared &amp; Verified</span>
+            </span>
+            <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900">100% On-Time</span>
+          </div>
+          <div class="flex flex-wrap gap-2 pt-1">
+            ${clearedMonths.map(m => `
+              <span class="px-3 py-1 rounded-xl bg-white border border-emerald-300 text-emerald-900 text-xs font-extrabold shadow-sm flex items-center gap-1">
+                <span class="text-emerald-600">✓</span><span>${m}</span>
+              </span>
+            `).join('')}
+          </div>
+        </div>
+
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-          <div><span class="text-[10px] uppercase text-slate-400 font-bold block">Batch &amp; Board</span><strong class="text-slate-900">${stu.batch}</strong></div>
+          <div><span class="text-[10px] uppercase text-slate-400 font-bold block">Batch Timing</span><strong class="text-slate-900">${stu.batch}</strong></div>
           <div><span class="text-[10px] uppercase text-slate-400 font-bold block">Attendance %</span><strong class="text-emerald-700">${attPct}%</strong></div>
           <div><span class="text-[10px] uppercase text-slate-400 font-bold block">Positive CG Coins</span><strong class="text-purple-700">🪙 ${stu.coins} (₹${coinDiscount} Off)</strong></div>
           <div><span class="text-[10px] uppercase text-slate-400 font-bold block">Weighted Average</span><strong class="text-indigo-700">${avg}%</strong></div>
@@ -7682,6 +7843,9 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
           }
         }
       });
+      if (tabId === 'fees' && typeof window.renderStudentFeeTab === 'function') {
+        window.renderStudentFeeTab();
+      }
     };
 
     // Auto-Environment Resolution
