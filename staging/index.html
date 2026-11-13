@@ -2144,7 +2144,7 @@
                 <p class="text-[11px] text-slate-600">Upload a verified backup file to restore student rosters, schedules, and attendance records.</p>
                 <input type="file" id="restoreBackupFileInput" accept=".json" class="hidden" />
                 <button id="btnTriggerRestoreArchive" type="button" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-extrabold transition shadow-sm">
-                  🔄 Select Backup File to Restore
+                  🔄 Select Backup File to Restore (Local Browser Cache Only)
                 </button>
               </div>
 
@@ -2868,8 +2868,310 @@
     </div>
   </div>
 
+  
+  <!-- ==================== IN-APP CONFIRMATION MODAL (ZERO WINDOW.CONFIRM) ==================== -->
+  <div id="cgConfirmModalOverlay" class="fixed inset-0 z-[100] hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center gap-3">
+        <div id="cgConfirmIconBox" class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center text-xl shrink-0">
+          ⚠️
+        </div>
+        <div>
+          <h3 id="cgConfirmTitle" class="text-sm font-extrabold text-slate-900">Please Confirm</h3>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Telegram In-App Verification</span>
+        </div>
+      </div>
+      <p id="cgConfirmMessage" class="text-xs text-slate-600 leading-relaxed"></p>
+      <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+        <button id="cgConfirmCancelBtn" type="button" class="flex-1 py-2.5 px-3 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition">Cancel</button>
+        <button id="cgConfirmOkBtn" type="button" class="flex-1 py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-md transition">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+<!-- ==================== RED-PEN COPY CHECK MODAL (STAGE 8: #63-#68) ==================== -->
+  <div id="redPenModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto custom-scroll">
+      <div class="flex items-start justify-between border-b border-slate-200 pb-3">
+        <div>
+          <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 text-[10px] font-extrabold uppercase">Stage 8 • CBSE Diagnostic Evaluator</span>
+          <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mt-1">📸 Red-Pen Snapshot Copy Check</h3>
+          <p class="text-xs text-slate-500">Take a photo of your handwritten register solution for line-by-line CBSE evaluation.</p>
+        </div>
+        <button id="closeRedPenModalBtn" type="button" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3">
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 text-center">
+          <p class="text-xs text-slate-700 font-medium">Capture or upload your solution register page. Client-side canvas compresses image to &lt;150 KB for instant upload.</p>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btnRedPenCamera" type="button" class="py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm">
+              <span>📷</span><span>Take Camera Photo</span>
+            </button>
+            <button id="btnRedPenGallery" type="button" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm">
+              <span>🖼️</span><span>Pick from Gallery</span>
+            </button>
+          </div>
+          <input type="file" id="redPenCameraInput" accept="image/*" capture="environment" class="hidden" />
+          <input type="file" id="redPenGalleryInput" accept="image/*" class="hidden" />
+          <canvas id="redPenCompressionCanvas" class="hidden"></canvas>
+          <div id="redPenPreviewBox" class="hidden space-y-2 text-left">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" id="redPenSizeBadge">Compressed: 142 KB</span>
+              <button id="btnRetakeRedPen" type="button" class="text-xs text-indigo-600 font-bold hover:underline">Retake</button>
+            </div>
+            <img id="redPenImagePreview" class="w-full max-h-56 object-contain rounded-xl border border-slate-200 bg-slate-900" alt="Student register preview" />
+            <button id="btnAnalyzeRedPen" type="button" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow transition">
+              🔍 Run Gyan Sir's 5-Step Copy Analysis (Gemini 2.5 Flash)
+            </button>
+          </div>
+        </div>
+
+        <div id="redPenLoadingBox" class="hidden p-6 text-center space-y-2 bg-indigo-50/60 rounded-2xl border border-indigo-200">
+          <div class="text-3xl animate-bounce">✍️</div>
+          <p class="text-xs font-extrabold text-indigo-950">Gyan Sir is evaluating your register copy line-by-line...</p>
+          <p class="text-[11px] text-indigo-700">Checking NCERT keywords, debit/credit matching, and CBSE step-marking value points.</p>
+        </div>
+
+        <div id="redPenResultBox" class="hidden space-y-3"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== CASE STUDY LAB & STEP-MARKING DRAWER (#45, #46) ==================== -->
+  <div id="caseStudyModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto custom-scroll">
+      <div class="flex items-start justify-between border-b border-slate-200 pb-3">
+        <div>
+          <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-[10px] font-extrabold uppercase">Stage 5 • CBSE Competency Case Study Lab</span>
+          <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mt-1">🕵️ Case Study: Barauni Petrochemicals &amp; Partnership Reconstitution</h3>
+          <p class="text-xs text-slate-500">Real-world commercial scenario with Balance Sheet analysis &amp; multi-tier questions.</p>
+        </div>
+        <button id="closeCaseStudyModalBtn" type="button" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-800">
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 leading-relaxed">
+          <p><strong>Scenario:</strong> Aman and Bharat operate a partnership supplying industrial lubricants in Begusarai sharing profits 3:2. On 1st April 2026, their Balance Sheet showed General Reserve ₹40,000, Creditors ₹30,000, and Capital Accounts (Aman ₹1,20,000, Bharat ₹80,000). They admit Chetan for 1/5th share. Chetan brings ₹70,000 capital and ₹20,000 premium for goodwill in cash.</p>
+          <div class="p-2.5 rounded-xl bg-white border border-slate-200 font-mono text-[11px] space-y-0.5">
+            <div>Assets: Plant &amp; Machinery ₹1,50,000 | Stock ₹50,000 | Debtors ₹40,000 | Cash ₹30,000</div>
+            <div>Revaluation: Plant is overvalued by 10%. Stock is undervalued by ₹5,000. Provision for Doubtful Debts needed @ 5%.</div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <p class="font-bold text-slate-900">Q1. What is the sacrificing ratio between Aman and Bharat?</p>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="case-opt-btn p-2 rounded-xl border border-slate-200 hover:bg-indigo-50 font-medium text-left" data-correct="true">A) 3:2 (Sacrificing Ratio)</button>
+            <button class="case-opt-btn p-2 rounded-xl border border-slate-200 hover:bg-indigo-50 font-medium text-left" data-correct="false">B) 1:1</button>
+          </div>
+        </div>
+
+        <!-- Step-Marking Scheme Drawer (#46) -->
+        <div class="pt-2 border-t border-slate-200">
+          <button id="toggleStepMarkingBtn" type="button" class="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-between">
+            <span>📐 View Official CBSE Step-Marking Scheme</span>
+            <span id="stepMarkingIcon">▼</span>
+          </button>
+          <div id="stepMarkingSchemeBox" class="hidden mt-2 p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-[11px] text-amber-950 space-y-1">
+            <div class="flex justify-between font-bold border-b border-amber-200 pb-1"><span>Step Component</span><span>Marks</span></div>
+            <div class="flex justify-between"><span>1. Sacrificing Ratio Calculation</span><span>1 Mark</span></div>
+            <div class="flex justify-between"><span>2. Revaluation Account (Plant, Stock, PDD)</span><span>1.5 Marks</span></div>
+            <div class="flex justify-between"><span>3. Partners' Capital A/c (Goodwill &amp; Reserve)</span><span>1.5 Marks</span></div>
+            <div class="flex justify-between"><span>4. New Balance Sheet Total (₹3,00,000)</span><span>2 Marks</span></div>
+            <div class="text-[10px] text-amber-800 pt-1 font-semibold">Total: 6 Marks • Deduct 0.5 for missing narrations or working note numbers.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== PARENT COMMUNICATION MODAL (A1) ==================== -->
+  <div id="parentCommModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-start justify-between border-b border-slate-200 pb-3">
+        <div>
+          <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">A1 • Durable Log</span>
+          <h3 class="text-base font-extrabold text-slate-900 mt-1">📞 Log Parent Communication</h3>
+        </div>
+        <button id="closeParentCommModalBtn" type="button" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">✕</button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Student Roll Number</label>
+          <input id="pcRollInput" type="text" placeholder="e.g. CG-1201" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono font-bold uppercase" />
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Parent Mobile</label>
+          <input id="pcPhoneInput" type="tel" placeholder="e.g. 9835011201" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono" />
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Channel</label>
+          <select id="pcChannelSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 font-bold">
+            <option value="Phone Call">📞 Phone Call</option>
+            <option value="WhatsApp">💬 WhatsApp Message</option>
+            <option value="Center Visit">🏫 In-Person Center Visit</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Summary of Discussion</label>
+          <textarea id="pcSummaryInput" rows="3" placeholder="Discussed test scores, attendance streak, fee proration, etc." class="w-full border border-slate-300 rounded-xl px-3 py-2"></textarea>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Follow-Up Date (Optional)</label>
+          <input id="pcFollowUpInput" type="date" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono" />
+        </div>
+        <button id="btnSaveParentCommRecord" type="button" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold transition shadow-sm">
+          💾 Save to Parent_Comm_Log (Google Sheets)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== NOTEBOOK SAVE REASON MODAL (#44) ==================== -->
+  <div id="notebookReasonModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="text-center space-y-1">
+        <span class="text-2xl">📓</span>
+        <h3 class="text-base font-extrabold text-slate-900">Why are you saving this to Notebook?</h3>
+        <p class="text-xs text-slate-500">Tagging your note helps the Smart Review Vault prioritize your board exam revisions.</p>
+      </div>
+      <div class="grid grid-cols-3 gap-2 pt-2">
+        <button type="button" onclick="confirmSaveNotebookReason('Important')" class="p-3 rounded-2xl bg-amber-50 hover:bg-amber-100 border-2 border-amber-300 text-center transition">
+          <div class="text-lg">📌</div>
+          <div class="text-xs font-extrabold text-amber-950 mt-1">Important</div>
+          <div class="text-[9px] text-amber-800">Board Exam Favorite</div>
+        </button>
+        <button type="button" onclick="confirmSaveNotebookReason('Confusing')" class="p-3 rounded-2xl bg-rose-50 hover:bg-rose-100 border-2 border-rose-300 text-center transition">
+          <div class="text-lg">❓</div>
+          <div class="text-xs font-extrabold text-rose-950 mt-1">Confusing</div>
+          <div class="text-[9px] text-rose-800">Tricky Adjustment</div>
+        </button>
+        <button type="button" onclick="confirmSaveNotebookReason('Formula')" class="p-3 rounded-2xl bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-300 text-center transition">
+          <div class="text-lg">📐</div>
+          <div class="text-xs font-extrabold text-indigo-950 mt-1">Formula</div>
+          <div class="text-[9px] text-indigo-800">Ratio or Equation</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== FIRST-RUN SETUP WIZARD (A14) ==================== -->
+  <div id="setupWizardModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 text-xs">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div>
+          <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[10px] font-extrabold uppercase">A14 • Guided Setup</span>
+          <h3 class="text-base font-extrabold text-slate-900 mt-0.5">🧙 Commerce Gyan First-Run Setup Wizard</h3>
+        </div>
+        <button id="closeSetupWizardModalBtn" type="button" class="p-1 rounded-lg bg-slate-100 text-slate-500 font-bold">✕</button>
+      </div>
+      <div class="space-y-3">
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="font-bold text-slate-900">Step 1: Institute Identity</p>
+          <p class="text-[11px] text-slate-600 mt-0.5">Commerce Gyan (Begusarai, Bihar) · Founder: Gyan Deep Kumar</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="font-bold text-slate-900">Step 2: Core Academic Batches</p>
+          <p class="text-[11px] text-slate-600 mt-0.5">Class 11 Accounts &amp; BST · Class 12 Accounts &amp; Economics (CBSE &amp; BSEB)</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="font-bold text-slate-900">Step 3: Fee Policy &amp; Proration Law</p>
+          <p class="text-[11px] text-slate-600 mt-0.5">₹1,400 Combo / ₹900 Single · Flat ₹300 Mid-Month Proration · 5-Day Grace Period</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="font-bold text-slate-900">Step 4: Telegram Bot &amp; WebApp Bridge</p>
+          <p class="text-[11px] text-slate-600 mt-0.5">@CommerceGyanDostbot · Signed HMAC-SHA256 Serverless WebApp Authentication</p>
+        </div>
+        <button id="btnCompleteSetupWizard" type="button" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold transition shadow-sm">
+          🚀 Complete Setup &amp; Launch Studio
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ==================== APPLICATION STATE (8 SUBJECTS, 60-100 STUDENT ENGINE, ALL MODULES) ====================
+
+    // Early helper to prevent ReferenceError on rapid button taps
+    window.executeLoadSubjectPracticeQuestions = function(subject) {
+    window.loadSubjectPracticeQuestions = window.executeLoadSubjectPracticeQuestions;
+      if (typeof window.executeLoadSubjectPracticeQuestions === "function") {
+        return window.executeLoadSubjectPracticeQuestions(subject);
+      }
+    };
+
+    // In-App Confirmation Modal implementation (zero window.confirm)
+    window.showAppConfirm = function(options) {
+      return new Promise(function(resolve) {
+        let title = "Please Confirm";
+        let message = "";
+        let confirmText = "Confirm";
+        let cancelText = "Cancel";
+        let isDanger = false;
+        if (typeof options === "string") {
+          message = options;
+        } else if (options && typeof options === "object") {
+          title = options.title || title;
+          message = options.message || "";
+          confirmText = options.confirmText || confirmText;
+          cancelText = options.cancelText || cancelText;
+          isDanger = Boolean(options.isDanger);
+        }
+        const overlay = document.getElementById("cgConfirmModalOverlay");
+        const titleEl = document.getElementById("cgConfirmTitle");
+        const msgEl = document.getElementById("cgConfirmMessage");
+        const okBtn = document.getElementById("cgConfirmOkBtn");
+        const cancelBtn = document.getElementById("cgConfirmCancelBtn");
+        const iconBox = document.getElementById("cgConfirmIconBox");
+
+        if (!overlay || !okBtn || !cancelBtn) {
+          resolve(window.confirm(message ? message.replace(/<[^>]*>?/gm, "") : title));
+          return;
+        }
+
+        if (titleEl) titleEl.textContent = title;
+        if (msgEl) msgEl.innerHTML = message;
+        okBtn.textContent = confirmText;
+        cancelBtn.textContent = cancelText;
+
+        if (isDanger) {
+          okBtn.className = "flex-1 py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs shadow-md transition";
+          if (iconBox) {
+            iconBox.className = "w-10 h-10 rounded-2xl bg-rose-100 text-rose-800 flex items-center justify-center text-xl shrink-0";
+            iconBox.textContent = "🚨";
+          }
+        } else {
+          okBtn.className = "flex-1 py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-md transition";
+          if (iconBox) {
+            iconBox.className = "w-10 h-10 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center text-xl shrink-0";
+            iconBox.textContent = "⚠️";
+          }
+        }
+
+        function cleanup() {
+          overlay.classList.add("hidden");
+          okBtn.removeEventListener("click", onOk);
+          cancelBtn.removeEventListener("click", onCancel);
+        }
+        function onOk() {
+          cleanup();
+          resolve(true);
+        }
+        function onCancel() {
+          cleanup();
+          resolve(false);
+        }
+
+        okBtn.addEventListener("click", onOk);
+        cancelBtn.addEventListener("click", onCancel);
+        overlay.classList.remove("hidden");
+      });
+    };
+    window.cgConfirm = window.showAppConfirm;
+
+
     const EIGHT_SUBJECTS = [
       { code: 'ACC-11', name: '11th Accountancy', grade: 'Class 11', board: 'CBSE & BSEB', chaptersTotal: 11, chaptersDone: 8, subtopics: 112, schedule: 'Mon–Sat · 07:00 AM', color: 'indigo' },
       { code: 'BST-11', name: '11th Business Studies', grade: 'Class 11', board: 'CBSE & BSEB', chaptersTotal: 11, chaptersDone: 8, subtopics: 94, schedule: 'Mon, Wed, Fri · 08:15 AM', color: 'emerald' },
@@ -4413,7 +4715,7 @@
           if (typeof startStudent === 'function') startStudent(trialSession);
           renderTelegramMiniApp();
         }).catch(function(err) {
-          showToast('Activated 7-Day Pass locally (' + err.message + ')', 'emerald');
+          showToast('Failed to activate 7-Day Pass: ' + err.message, 'rose');
           modal.remove();
           const gate = document.getElementById('cgGate');
           if (gate) gate.remove();
@@ -5062,8 +5364,8 @@
         }).then(res => {
           const rNo = (res && (res.rollNo || res.enquiryId)) || newRoll;
           showToast(`Synced ${name} (${rNo}) to Google Sheets!`, 'emerald');
-        }).catch(() => {
-          showToast(`Enrolled ${name} (${newRoll}) · Active Count: ${appState.activeStudentCount}/100`, 'emerald');
+        }).catch(err => {
+          showToast(`Enrollment failed: ${err.message || err}`, 'rose');
         });
       });
 
@@ -5318,7 +5620,7 @@
           renderAll();
           window.cgCallGas('awardSmartboardCoins', { rollNo: stu.roll, coins: 5, reason: 'Smartboard Rapid-Fire Correct Answer' })
             .then(() => showToast(`Awarded +5 CG Coins to ${stu.name} in Coin_Ledger! (Total: ${stu.coins})`, 'emerald'))
-            .catch(() => showToast(`Awarded +5 CG Coins to ${stu.name}! (Total: ${stu.coins})`, 'emerald'));
+            .catch(err => showToast(`Failed to award coins: ${err.message || err}`, 'rose'));
         }
       });
 
@@ -5408,13 +5710,22 @@
       }
 
       // Sync tab buttons (wired to live getSystemHealth + getCrmData)
-      document.getElementById('copyAppsScriptBtn').addEventListener('click', () => {
-        const code = document.getElementById('appsScriptCodeBlock').textContent;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(code).catch(() => {});
-        }
-        showToast('Copied Google Apps Script (Code.gs) to clipboard!', 'emerald');
-      });
+      const copyAppsBtn = document.getElementById('copyAppsScriptBtn');
+      if (copyAppsBtn) {
+        copyAppsBtn.addEventListener('click', () => {
+          const codeEl = document.getElementById('appsScriptCodeBlock');
+          const code = codeEl ? codeEl.textContent : '';
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(code).then(() => {
+              showToast('Copied Google Apps Script (Code.gs) to clipboard!', 'emerald');
+            }).catch(err => {
+              showToast('Clipboard copy failed: ' + (err.message || 'Permission denied'), 'rose');
+            });
+          } else {
+            showToast('Clipboard API not supported', 'amber');
+          }
+        });
+      }
       document.getElementById('saveGasUrlBtn').addEventListener('click', () => {
         window.cgCallGas('getSystemHealth', {})
           .then(res => showToast(`Verified Live GAS Connection (${res.environment || 'PRODUCTION'})!`, 'emerald'))
@@ -5483,7 +5794,7 @@
               coinEl.textContent = '🪙 ' + (curCoins + 10);
             }
           }).catch(err => {
-            showToast('Recovery Drill submitted locally: +10 CG Coins.', 'emerald');
+            showToast('Recovery drill sync failed: ' + (err.message || err), 'rose');
           }).finally(() => {
             completeRecBtn.disabled = false;
           });
@@ -5633,7 +5944,7 @@
               }
             })
             .catch(err => {
-              showToast('Balance Sheet audited: Equation verified (Assets = Liabilities + Equity)', 'emerald');
+              showToast('Balance sheet audit failed: ' + (err.message || err), 'rose');
             });
         });
       }
@@ -5661,7 +5972,7 @@
               showToast(`Audit log refreshed (${logs.length || 2} entries loaded)!`, 'emerald');
             })
             .catch(err => {
-              showToast('Audit log refreshed with cached telemetry.', 'emerald');
+              showToast('Audit log refresh failed: ' + (err.message || err), 'rose');
             });
         });
       }
@@ -5857,7 +6168,7 @@
           const subj = startClsBtn.dataset.startclass;
           window.cgCallGas('setActiveSubtopic', { subtopicId: appState.activeSubtopicLock, deliveryMode: 'Offline', status: 'In Progress' })
             .then(() => showToast(`Dispatched /startclass for ${subj} & locked active topic!`, 'emerald'))
-            .catch(() => showToast(`Dispatched /startclass for ${subj} on Telegram!`, 'emerald'));
+            .catch(err => showToast(`Failed to dispatch /startclass: ${err.message || err}`, 'rose'));
           return;
         }
         const selectLesCard = e.target.closest('.select-lesson-card');
@@ -5875,7 +6186,7 @@
             renderCurriculum();
             window.cgCallGas('setActiveSubtopic', { subtopicId: item.id, deliveryMode: 'Offline', status: item.status })
               .then(() => showToast(`${item.id} synced as ${item.status} in 01_Master_Syllabus!`, 'emerald'))
-              .catch(() => showToast(`${item.id} marked as ${item.status}`));
+              .catch(err => showToast(`Failed to update ${item.id}: ${err.message || err}`, 'rose'));
           }
           return;
         }
@@ -5887,7 +6198,7 @@
             renderAll();
             window.cgCallGas('awardSmartboardCoins', { rollNo: stu.roll, coins: 10, reason: 'Teacher Classroom Participation Bonus' })
               .then(() => showToast(`Added +10 Positive CG Coins to ${stu.name} in Coin_Ledger!`, 'emerald'))
-              .catch(() => showToast(`Added +10 Positive CG Coins to ${stu.name}`, 'emerald'));
+              .catch(err => showToast(`Failed to award coins: ${err.message || err}`, 'rose'));
           }
           return;
         }
@@ -5918,7 +6229,7 @@
             renderFees();
             window.cgCallGas('revokeLateFee', { rollNo: stu.roll, reason: '1-Click Teacher Late Fee Waiver by Gyan Sir' })
               .then(res => showToast(`Executed Revoke_Late_Fee in Sheet for ${stu.name} (Waived ₹${res.waivedAmountINR || 60})!`, 'emerald'))
-              .catch(() => showToast(`Executed Revoke_Late_Fee for ${stu.name}`, 'emerald'));
+              .catch(err => showToast(`Failed to waive late fee: ${err.message || err}`, 'rose'));
           }
           return;
         }
@@ -5957,9 +6268,8 @@
               saveState();
               showToast(`Recorded ₹${res.paidAmountINR || stu.baseFee} via ${cleanMode} (${res.receiptId}) in Fee_Ledger!`, 'emerald');
               openSwotModal(stu.roll);
-            }).catch(() => {
-              showToast(`Payment recorded via ${cleanMode} for ${stu.name} · SWOT Receipt unlocked`, 'emerald');
-              openSwotModal(stu.roll);
+            }).catch(err => {
+              showToast(`Payment recording failed: ${err.message || err}`, 'rose');
             });
           }
           return;
@@ -6574,7 +6884,7 @@
           });
           window.cgCallGas('saveStudentNotebookItem', { rollNo, itemType: 'NOTE', noteText })
             .then(() => showToast('Saved Note to Notebook_Notes in Google Sheets!', 'emerald'))
-            .catch(() => showToast('Saved Note to Digital Notebook!', 'emerald'));
+            .catch(err => showToast(`Failed to save note: ${err.message || err}`, 'rose'));
         });
       }
 
@@ -6747,17 +7057,24 @@
           const cancelDate = document.getElementById('cancelBatchDate').value;
           const reason = (document.getElementById('cancelBatchReason').value || '').trim() || 'Teacher Leave';
 
-          if (!confirm(`Cancel ${batch} lectures on ${cancelDate} and notify batch?`)) return;
-
-          window.cgCallGas('cancelBatchLecture', {
-            batch,
-            cancelDate,
-            reason,
-            rescheduleDpp: true
-          }).then(res => {
-            showToast(`Batch ${batch} cancelled. Telegram notice broadcast & 7 PM DPP rescheduled!`, 'emerald');
-          }).catch(err => {
-            showToast(`Batch marked cancelled: ${err.message}`, 'amber');
+          window.showAppConfirm({
+            title: '🚨 Confirm Batch Cancellation',
+            message: `Are you sure you want to cancel <strong>${batch}</strong> lectures on <strong>${cancelDate}</strong>?<br><br>This will broadcast a Telegram notice to enrolled students, shift syllabus topics forward, and automatically reschedule that day\x27s 7:00 PM DPP.`,
+            confirmText: 'Cancel Lecture & Reschedule DPP',
+            cancelText: 'Keep Scheduled',
+            isDanger: true
+          }).then(confirmed => {
+            if (!confirmed) return;
+            window.cgCallGas('cancelBatchLecture', {
+              batch,
+              cancelDate,
+              reason,
+              rescheduleDpp: true
+            }).then(res => {
+              showToast(`Batch ${batch} cancelled. Telegram notice broadcast & 7 PM DPP rescheduled!`, 'emerald');
+            }).catch(err => {
+              showToast(`Batch cancellation failed: ${err.message || err}`, 'rose');
+            });
           });
         });
       }
@@ -6788,7 +7105,16 @@
       const btnTriggerRestore = document.getElementById('btnTriggerRestoreArchive');
       const restoreInput = document.getElementById('restoreBackupFileInput');
       if (btnTriggerRestore && restoreInput) {
-        btnTriggerRestore.addEventListener('click', () => restoreInput.click());
+        btnTriggerRestore.addEventListener('click', () => {
+          window.showAppConfirm({
+            title: '⚠️ Restore Local State From Backup?',
+            message: 'This will replace active browser memory (students, expenses, notes) with data from your backup file.<br><br><strong>Notice:</strong> This is a local browser restore only and does not overwrite live Google Sheets.',
+            confirmText: 'Select & Restore',
+            cancelText: 'Cancel'
+          }).then(confirmed => {
+            if (confirmed) restoreInput.click();
+          });
+        });
         restoreInput.addEventListener('change', (e) => {
           const file = e.target.files[0];
           if (!file) return;
@@ -6826,11 +7152,19 @@
       const btnArchiveCohort = document.getElementById('btnArchiveGradCohort');
       if (btnArchiveCohort) {
         btnArchiveCohort.addEventListener('click', () => {
-          if (!confirm('Archive all graduated Class 12 students to Archived_Students sheet?')) return;
-          window.cgCallGas('archiveGraduatedStudents', {}).then(res => {
-            showToast('Graduated Class 12 cohort archived to Google Sheets!', 'emerald');
-          }).catch(err => {
-            showToast('Archived cohort: ' + err.message, 'amber');
+          window.showAppConfirm({
+            title: 'Archive Graduated Cohort?',
+            message: 'Are you sure you want to archive all graduated Class 12 students to the <strong>Archived_Students</strong> Google Sheet?',
+            confirmText: 'Archive to Sheets',
+            cancelText: 'Cancel',
+            isDanger: true
+          }).then(confirmed => {
+            if (!confirmed) return;
+            window.cgCallGas('archiveGraduatedStudents', {}).then(res => {
+              showToast('Graduated Class 12 cohort archived to Google Sheets!', 'emerald');
+            }).catch(err => {
+              showToast('Archived cohort failed: ' + (err.message || err), 'rose');
+            });
           });
         });
       }
@@ -6961,10 +7295,7 @@
    */
   function api(action, payload) {
     if (typeof window.cgCallGas === 'function') {
-      return window.cgCallGas(action, payload).then(function (res) {
-        if (!res || res.ok === false) throw new Error((res && res.error) || 'Request failed');
-        return res.data !== undefined ? res.data : res;
-      });
+      return window.cgCallGas(action, payload);
     }
     return fetch(backendUrl(), {
       method: 'POST',
@@ -6975,13 +7306,16 @@
       if (!res.ok) throw new Error('Server replied ' + res.status);
       return res.json();
     }).then(function (json) {
-      if (!json || json.ok !== true) throw new Error((json && json.error) || 'Request failed');
+      if (!json || json.ok === false) throw new Error((json && json.error) || 'Request failed');
       return json.data !== undefined ? json.data : json;
     });
   }
   window.api = api;
 
-  function confirmBox(text) {
+  function confirmBox(text, title) {
+    if (typeof window.showAppConfirm === 'function') {
+      return window.showAppConfirm({ title: title || 'Please Confirm', message: text });
+    }
     return new Promise(function (resolve) {
       if (tg && typeof tg.showConfirm === 'function' && initData) {
         try { tg.showConfirm(text, function (ok) { resolve(!!ok); }); return; } catch (e) { /* fall through */ }
@@ -7890,207 +8224,6 @@
   </script>
 
 
-  <!-- ==================== RED-PEN COPY CHECK MODAL (STAGE 8: #63-#68) ==================== -->
-  <div id="redPenModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto custom-scroll">
-      <div class="flex items-start justify-between border-b border-slate-200 pb-3">
-        <div>
-          <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 text-[10px] font-extrabold uppercase">Stage 8 • CBSE Diagnostic Evaluator</span>
-          <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mt-1">📸 Red-Pen Snapshot Copy Check</h3>
-          <p class="text-xs text-slate-500">Take a photo of your handwritten register solution for line-by-line CBSE evaluation.</p>
-        </div>
-        <button id="closeRedPenModalBtn" type="button" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">✕</button>
-      </div>
-
-      <div class="space-y-3">
-        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 text-center">
-          <p class="text-xs text-slate-700 font-medium">Capture or upload your solution register page. Client-side canvas compresses image to &lt;150 KB for instant upload.</p>
-          <div class="grid grid-cols-2 gap-2">
-            <button id="btnRedPenCamera" type="button" class="py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm">
-              <span>📷</span><span>Take Camera Photo</span>
-            </button>
-            <button id="btnRedPenGallery" type="button" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm">
-              <span>🖼️</span><span>Pick from Gallery</span>
-            </button>
-          </div>
-          <input type="file" id="redPenCameraInput" accept="image/*" capture="environment" class="hidden" />
-          <input type="file" id="redPenGalleryInput" accept="image/*" class="hidden" />
-          <canvas id="redPenCompressionCanvas" class="hidden"></canvas>
-          <div id="redPenPreviewBox" class="hidden space-y-2 text-left">
-            <div class="flex items-center justify-between">
-              <span class="text-[10px] font-mono text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" id="redPenSizeBadge">Compressed: 142 KB</span>
-              <button id="btnRetakeRedPen" type="button" class="text-xs text-indigo-600 font-bold hover:underline">Retake</button>
-            </div>
-            <img id="redPenImagePreview" class="w-full max-h-56 object-contain rounded-xl border border-slate-200 bg-slate-900" alt="Student register preview" />
-            <button id="btnAnalyzeRedPen" type="button" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow transition">
-              🔍 Run Gyan Sir's 5-Step Copy Analysis (Gemini 2.5 Flash)
-            </button>
-          </div>
-        </div>
-
-        <div id="redPenLoadingBox" class="hidden p-6 text-center space-y-2 bg-indigo-50/60 rounded-2xl border border-indigo-200">
-          <div class="text-3xl animate-bounce">✍️</div>
-          <p class="text-xs font-extrabold text-indigo-950">Gyan Sir is evaluating your register copy line-by-line...</p>
-          <p class="text-[11px] text-indigo-700">Checking NCERT keywords, debit/credit matching, and CBSE step-marking value points.</p>
-        </div>
-
-        <div id="redPenResultBox" class="hidden space-y-3"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================== CASE STUDY LAB & STEP-MARKING DRAWER (#45, #46) ==================== -->
-  <div id="caseStudyModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto custom-scroll">
-      <div class="flex items-start justify-between border-b border-slate-200 pb-3">
-        <div>
-          <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-[10px] font-extrabold uppercase">Stage 5 • CBSE Competency Case Study Lab</span>
-          <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mt-1">🕵️ Case Study: Barauni Petrochemicals &amp; Partnership Reconstitution</h3>
-          <p class="text-xs text-slate-500">Real-world commercial scenario with Balance Sheet analysis &amp; multi-tier questions.</p>
-        </div>
-        <button id="closeCaseStudyModalBtn" type="button" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">✕</button>
-      </div>
-
-      <div class="space-y-3 text-xs text-slate-800">
-        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 leading-relaxed">
-          <p><strong>Scenario:</strong> Aman and Bharat operate a partnership supplying industrial lubricants in Begusarai sharing profits 3:2. On 1st April 2026, their Balance Sheet showed General Reserve ₹40,000, Creditors ₹30,000, and Capital Accounts (Aman ₹1,20,000, Bharat ₹80,000). They admit Chetan for 1/5th share. Chetan brings ₹70,000 capital and ₹20,000 premium for goodwill in cash.</p>
-          <div class="p-2.5 rounded-xl bg-white border border-slate-200 font-mono text-[11px] space-y-0.5">
-            <div>Assets: Plant &amp; Machinery ₹1,50,000 | Stock ₹50,000 | Debtors ₹40,000 | Cash ₹30,000</div>
-            <div>Revaluation: Plant is overvalued by 10%. Stock is undervalued by ₹5,000. Provision for Doubtful Debts needed @ 5%.</div>
-          </div>
-        </div>
-
-        <div class="space-y-2">
-          <p class="font-bold text-slate-900">Q1. What is the sacrificing ratio between Aman and Bharat?</p>
-          <div class="grid grid-cols-2 gap-2">
-            <button class="case-opt-btn p-2 rounded-xl border border-slate-200 hover:bg-indigo-50 font-medium text-left" data-correct="true">A) 3:2 (Sacrificing Ratio)</button>
-            <button class="case-opt-btn p-2 rounded-xl border border-slate-200 hover:bg-indigo-50 font-medium text-left" data-correct="false">B) 1:1</button>
-          </div>
-        </div>
-
-        <!-- Step-Marking Scheme Drawer (#46) -->
-        <div class="pt-2 border-t border-slate-200">
-          <button id="toggleStepMarkingBtn" type="button" class="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-between">
-            <span>📐 View Official CBSE Step-Marking Scheme</span>
-            <span id="stepMarkingIcon">▼</span>
-          </button>
-          <div id="stepMarkingSchemeBox" class="hidden mt-2 p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-[11px] text-amber-950 space-y-1">
-            <div class="flex justify-between font-bold border-b border-amber-200 pb-1"><span>Step Component</span><span>Marks</span></div>
-            <div class="flex justify-between"><span>1. Sacrificing Ratio Calculation</span><span>1 Mark</span></div>
-            <div class="flex justify-between"><span>2. Revaluation Account (Plant, Stock, PDD)</span><span>1.5 Marks</span></div>
-            <div class="flex justify-between"><span>3. Partners' Capital A/c (Goodwill &amp; Reserve)</span><span>1.5 Marks</span></div>
-            <div class="flex justify-between"><span>4. New Balance Sheet Total (₹3,00,000)</span><span>2 Marks</span></div>
-            <div class="text-[10px] text-amber-800 pt-1 font-semibold">Total: 6 Marks • Deduct 0.5 for missing narrations or working note numbers.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- ==================== PARENT COMMUNICATION MODAL (A1) ==================== -->
-  <div id="parentCommModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
-      <div class="flex items-start justify-between border-b border-slate-200 pb-3">
-        <div>
-          <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">A1 • Durable Log</span>
-          <h3 class="text-base font-extrabold text-slate-900 mt-1">📞 Log Parent Communication</h3>
-        </div>
-        <button id="closeParentCommModalBtn" type="button" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">✕</button>
-      </div>
-      <div class="space-y-3 text-xs">
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">Student Roll Number</label>
-          <input id="pcRollInput" type="text" placeholder="e.g. CG-1201" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono font-bold uppercase" />
-        </div>
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">Parent Mobile</label>
-          <input id="pcPhoneInput" type="tel" placeholder="e.g. 9835011201" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono" />
-        </div>
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">Channel</label>
-          <select id="pcChannelSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 font-bold">
-            <option value="Phone Call">📞 Phone Call</option>
-            <option value="WhatsApp">💬 WhatsApp Message</option>
-            <option value="Center Visit">🏫 In-Person Center Visit</option>
-          </select>
-        </div>
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">Summary of Discussion</label>
-          <textarea id="pcSummaryInput" rows="3" placeholder="Discussed test scores, attendance streak, fee proration, etc." class="w-full border border-slate-300 rounded-xl px-3 py-2"></textarea>
-        </div>
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">Follow-Up Date (Optional)</label>
-          <input id="pcFollowUpInput" type="date" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono" />
-        </div>
-        <button id="btnSaveParentCommRecord" type="button" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold transition shadow-sm">
-          💾 Save to Parent_Comm_Log (Google Sheets)
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================== NOTEBOOK SAVE REASON MODAL (#44) ==================== -->
-  <div id="notebookReasonModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
-      <div class="text-center space-y-1">
-        <span class="text-2xl">📓</span>
-        <h3 class="text-base font-extrabold text-slate-900">Why are you saving this to Notebook?</h3>
-        <p class="text-xs text-slate-500">Tagging your note helps the Smart Review Vault prioritize your board exam revisions.</p>
-      </div>
-      <div class="grid grid-cols-3 gap-2 pt-2">
-        <button type="button" onclick="confirmSaveNotebookReason('Important')" class="p-3 rounded-2xl bg-amber-50 hover:bg-amber-100 border-2 border-amber-300 text-center transition">
-          <div class="text-lg">📌</div>
-          <div class="text-xs font-extrabold text-amber-950 mt-1">Important</div>
-          <div class="text-[9px] text-amber-800">Board Exam Favorite</div>
-        </button>
-        <button type="button" onclick="confirmSaveNotebookReason('Confusing')" class="p-3 rounded-2xl bg-rose-50 hover:bg-rose-100 border-2 border-rose-300 text-center transition">
-          <div class="text-lg">❓</div>
-          <div class="text-xs font-extrabold text-rose-950 mt-1">Confusing</div>
-          <div class="text-[9px] text-rose-800">Tricky Adjustment</div>
-        </button>
-        <button type="button" onclick="confirmSaveNotebookReason('Formula')" class="p-3 rounded-2xl bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-300 text-center transition">
-          <div class="text-lg">📐</div>
-          <div class="text-xs font-extrabold text-indigo-950 mt-1">Formula</div>
-          <div class="text-[9px] text-indigo-800">Ratio or Equation</div>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================== FIRST-RUN SETUP WIZARD (A14) ==================== -->
-  <div id="setupWizardModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 text-xs">
-      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-        <div>
-          <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[10px] font-extrabold uppercase">A14 • Guided Setup</span>
-          <h3 class="text-base font-extrabold text-slate-900 mt-0.5">🧙 Commerce Gyan First-Run Setup Wizard</h3>
-        </div>
-        <button id="closeSetupWizardModalBtn" type="button" class="p-1 rounded-lg bg-slate-100 text-slate-500 font-bold">✕</button>
-      </div>
-      <div class="space-y-3">
-        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
-          <p class="font-bold text-slate-900">Step 1: Institute Identity</p>
-          <p class="text-[11px] text-slate-600 mt-0.5">Commerce Gyan (Begusarai, Bihar) · Founder: Gyan Deep Kumar</p>
-        </div>
-        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
-          <p class="font-bold text-slate-900">Step 2: Core Academic Batches</p>
-          <p class="text-[11px] text-slate-600 mt-0.5">Class 11 Accounts &amp; BST · Class 12 Accounts &amp; Economics (CBSE &amp; BSEB)</p>
-        </div>
-        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
-          <p class="font-bold text-slate-900">Step 3: Fee Policy &amp; Proration Law</p>
-          <p class="text-[11px] text-slate-600 mt-0.5">₹1,400 Combo / ₹900 Single · Flat ₹300 Mid-Month Proration · 5-Day Grace Period</p>
-        </div>
-        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
-          <p class="font-bold text-slate-900">Step 4: Telegram Bot &amp; WebApp Bridge</p>
-          <p class="text-[11px] text-slate-600 mt-0.5">@CommerceGyanDostbot · Signed HMAC-SHA256 Serverless WebApp Authentication</p>
-        </div>
-        <button id="btnCompleteSetupWizard" type="button" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold transition shadow-sm">
-          🚀 Complete Setup &amp; Launch Studio
-        </button>
-      </div>
-    </div>
-  </div>
-
+  
 </body>
 </html>
