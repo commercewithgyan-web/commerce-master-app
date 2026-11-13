@@ -2201,32 +2201,35 @@
       </div>
     </div>
 
-    <!-- TAB 5: DOUBT & AI SOS -->
+    <!-- TAB 5: DOUBT & AI MENTOR (#B1) -->
     <div id="tgTab-doubt" class="tg-student-tab space-y-4" style="display: none;">
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
-        <span class="text-[10px] font-extrabold uppercase text-purple-600">Serverless Gemini 2.5 Flash</span>
-        <h3 class="text-sm font-extrabold text-slate-900">🤖 Ask Commerce Doubt &amp; 2 AM Exam Panic SOS</h3>
+      <div class="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm space-y-3.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-extrabold uppercase text-purple-600 tracking-wider">AI Concept Mentor</span>
+            <h3 class="text-base font-extrabold text-slate-900 mt-0.5">Ask Gyan Sir AI Doubt</h3>
+          </div>
+          <span class="text-xs px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 font-extrabold">Instant Clarification</span>
+        </div>
+        <p class="text-xs text-slate-500">Stuck on an adjustment, formula, or case study? Type your question below for instant step-by-step guidance.</p>
         
-        <!-- Multi-Subject Doubt Pills (#54) -->
+        <!-- Multi-Subject Doubt Pills -->
         <div class="flex items-center gap-1.5 overflow-x-auto custom-scroll pb-1">
-          <button type="button" class="doubt-subj-pill px-2.5 py-1 rounded-lg text-[10px] font-bold bg-indigo-600 text-white" data-subj="Accountancy">Accountancy</button>
-          <button type="button" class="doubt-subj-pill px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200" data-subj="Business Studies">Business Studies</button>
-          <button type="button" class="doubt-subj-pill px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200" data-subj="Economics">Economics</button>
-          <button type="button" class="doubt-subj-pill px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200" data-subj="Statistics">Statistics</button>
+          <button type="button" class="doubt-subj-pill px-3 py-1.5 rounded-xl text-xs font-black bg-indigo-600 text-white shadow-sm" data-subj="Accountancy">Accountancy</button>
+          <button type="button" class="doubt-subj-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200" data-subj="Business Studies">Business Studies</button>
+          <button type="button" class="doubt-subj-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200" data-subj="Economics">Economics</button>
+          <button type="button" class="doubt-subj-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200" data-subj="Statistics">Statistics</button>
         </div>
 
-        <input id="stuDoubtInput" type="text" placeholder="Ask Accountancy, BST or Economics doubt..." class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2" />
-        
-        <div class="grid grid-cols-3 gap-2">
-          <button id="stuAskDoubtBtn" type="button" class="py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-extrabold">✨ Ask AI</button>
-          <button id="stuVoiceRecordBtn" type="button" class="py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-extrabold flex items-center justify-center gap-1">🎤 <span>Voice Note</span></button>
-          <button id="stuTriggerSosBtn" type="button" class="py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-extrabold">🌙 Panic SOS</button>
+        <div class="space-y-2">
+          <textarea id="stuDoubtInput" rows="3" placeholder="Type your doubt here (e.g. How to calculate hidden goodwill when incoming partner brings capital?)" class="w-full text-xs border border-slate-300 rounded-2xl p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50"></textarea>
+          <button id="stuAskDoubtBtn" type="button" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow-sm transition flex items-center justify-center gap-1.5">
+            <span>✨</span><span>Ask AI Mentor</span>
+          </button>
         </div>
-        <div id="stuVoiceWaveform" class="hidden p-2 rounded-xl bg-purple-50 border border-purple-200 text-center text-xs font-bold text-purple-900 animate-pulse">
-          🔴 Recording Voice Note... Tap again to stop and submit.
-        </div>
-        <div id="stuAiSosReplyBox" class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800">
-          Ask any concept doubt or tap 2 AM Panic SOS for your personalized mastery formula card.
+
+        <div id="stuAiSosReplyBox" class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-700 leading-relaxed min-h-[80px]">
+          💡 Gyan Sir AI is ready. Type your question above and tap Ask AI Mentor.
         </div>
       </div>
     </div>
@@ -7414,37 +7417,7 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
         });
       }
 
-      const stuAskDoubtBtn = document.getElementById('stuAskDoubtBtn');
-      if (stuAskDoubtBtn) {
-        stuAskDoubtBtn.addEventListener('click', () => {
-          const q = document.getElementById('stuDoubtInput').value.trim() || 'Explain Hidden Goodwill calculation';
-          const box = document.getElementById('stuAiSosReplyBox');
-          box.textContent = 'Asking Gemini 2.5 Flash on Google Apps Script...';
-          window.cgCallGas('askDoubt', { question: q })
-            .then(res => {
-              box.textContent = (res && res.answer) || `Step 1: Combined Capital = New Partner's Capital × Reciprocal of Share. Step 2: Deduct Actual Total Capital of all partners to get Hidden Goodwill.`;
-              showToast('Gemini AI Doubt Answered!', 'emerald');
-            }).catch(() => {
-              box.textContent = `Concept Guide: For "${q}", always verify whether Old Balance Sheet reserves or existing goodwill must be written off in Old Ratio first.`;
-            });
-        });
-      }
 
-      const stuTriggerSosBtn = document.getElementById('stuTriggerSosBtn');
-      if (stuTriggerSosBtn) {
-        stuTriggerSosBtn.addEventListener('click', () => {
-          const rollNo = document.getElementById('tgStudentSelect').value || 'CG-1201';
-          const box = document.getElementById('stuAiSosReplyBox');
-          box.textContent = 'Activating 2:00 AM Exam Panic SOS Shield...';
-          window.cgCallGas('triggerExamPanicSOS', { rollNo })
-            .then(res => {
-              box.innerHTML = `<strong class="text-indigo-900 block">🌙 2:00 AM Stress Shield Active (${rollNo})</strong><span>Accuracy: 88% · Golden Rule: Old Goodwill written off in Old Ratio; Sacrificing Ratio = Old − New; Interest on Partner Loan = 6% p.a. when deed is silent.</span>`;
-              showToast('2 AM Panic SOS Formula Card Loaded!', 'emerald');
-            }).catch(() => {
-              box.innerHTML = `<strong class="text-indigo-900 block">🌙 2:00 AM Stress Shield Active</strong><span>Take a deep breath! Focus on Step-by-Step Working Notes — CBSE & BSEB award full step marks even if final balance differs.</span>`;
-            });
-        });
-      }
 
       // Auto-sync live CRM & Financial Drawer from Google Sheets on boot
       setTimeout(() => {
@@ -8667,136 +8640,92 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
         });
       });
 
-      // Multi-Subject Doubt Pills (#54)
+      // Multi-Subject Doubt Pills & Real AI Mentor (#B1)
+      let activeDoubtSubject = 'Accountancy';
       document.querySelectorAll('.doubt-subj-pill').forEach(pill => {
         pill.addEventListener('click', () => {
-          const subj = pill.dataset.subj;
-          appState.selectedDoubtSubject = subj;
+          const subj = pill.dataset.subj || 'Accountancy';
+          activeDoubtSubject = subj;
           document.querySelectorAll('.doubt-subj-pill').forEach(p => {
-            p.className = p.dataset.subj === subj
-              ? 'doubt-subj-pill px-2.5 py-1 rounded-lg text-[10px] font-bold bg-indigo-600 text-white'
-              : 'doubt-subj-pill px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200';
+            if ((p.dataset.subj || 'Accountancy') === subj) {
+              p.className = 'doubt-subj-pill px-3 py-1.5 rounded-xl text-xs font-black bg-indigo-600 text-white shadow-sm transition';
+            } else {
+              p.className = 'doubt-subj-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition';
+            }
           });
           const inp = document.getElementById('stuDoubtInput');
-          if (inp) inp.placeholder = `Ask ${subj} concept doubt...`;
+          if (inp) inp.placeholder = `Ask ${subj} concept doubt (e.g. key formula, adjustment, or board question)...`;
           showToast(`Subject set to ${subj}`, 'indigo');
         });
       });
 
-      // Voice Note Recording (#55)
-      let mediaRecorder = null;
-      let audioChunks = [];
-      const voiceBtn = document.getElementById('stuVoiceRecordBtn');
-      const waveform = document.getElementById('stuVoiceWaveform');
-
-      if (voiceBtn) {
-        voiceBtn.addEventListener('click', async () => {
-          if (!mediaRecorder || mediaRecorder.state === 'inactive') {
-            try {
-              const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-              mediaRecorder = new MediaRecorder(stream);
-              audioChunks = [];
-              mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-              mediaRecorder.onstop = () => {
-                if (waveform) waveform.classList.add('hidden');
-                voiceBtn.innerHTML = '🎤 <span>Voice Note</span>';
-                showToast('Voice note captured! Transcribing with Gemini...', 'indigo');
-                const inp = document.getElementById('stuDoubtInput');
-                if (inp) inp.value = "Explain Sacrificing Ratio vs Gaining Ratio with journal entries.";
-                const askBtn = document.getElementById('stuAskDoubtBtn');
-                if (askBtn) askBtn.click();
-              };
-              mediaRecorder.start();
-              if (waveform) waveform.classList.remove('hidden');
-              voiceBtn.innerHTML = '⏹️ <span>Stop &amp; Ask</span>';
-            } catch (err) {
-              showToast('Microphone access unavailable. Please type your doubt.', 'amber');
-            }
-          } else if (mediaRecorder.state === 'recording') {
-            mediaRecorder.stop();
-          }
-        });
-      }
-
-      // 3-Lens Doubt Solver & 2 AM Panic SOS (#56, #57, #58, #62)
       const askDoubtBtn = document.getElementById('stuAskDoubtBtn');
       if (askDoubtBtn) {
         askDoubtBtn.addEventListener('click', () => {
           const inp = document.getElementById('stuDoubtInput');
-          const qText = (inp && inp.value.trim()) || "How to calculate Sacrificing Ratio?";
-          const subj = appState.selectedDoubtSubject || 'Accountancy';
-          const replyBox = document.getElementById('stuAiSosReplyBox');
-          if (replyBox) {
-            replyBox.innerHTML = `
-              <div class="space-y-2.5">
-                <div class="flex items-center justify-between border-b pb-1.5">
-                  <span class="text-[10px] font-extrabold uppercase text-purple-600">${subj} • 3-Lens Solution</span>
-                  <button id="saveDoubtToNotesBtn" type="button" class="text-[10px] text-emerald-700 font-bold hover:underline">💾 Save to Notebook</button>
-                </div>
-                <div class="flex gap-1">
-                  <button class="doubt-lens-btn flex-1 py-1 rounded bg-indigo-600 text-white text-[10px] font-bold" data-lens="exam">Exam Notes</button>
-                  <button class="doubt-lens-btn flex-1 py-1 rounded bg-slate-100 text-slate-700 text-[10px] font-bold" data-lens="analogy">Begusarai Analogy</button>
-                  <button class="doubt-lens-btn flex-1 py-1 rounded bg-slate-100 text-slate-700 text-[10px] font-bold" data-lens="trap">Board Trap</button>
-                </div>
-                <div id="doubtLensContent" class="text-xs leading-relaxed p-2.5 rounded-xl bg-white border border-slate-200">
-                  <strong>CBSE Register Notes:</strong><br>
-                  Sacrificing Ratio = Old Ratio − New Ratio.<br>
-                  Used exclusively to share Premium for Goodwill brought in by the incoming partner among existing partners.
-                </div>
-              </div>
-            `;
+          const qText = (inp && inp.value.trim()) || '';
+          if (!qText) {
+            showToast('Pehle apna doubt likhein', 'amber');
+            if (inp) inp.focus();
+            return;
+          }
 
-            document.querySelectorAll('.doubt-lens-btn').forEach(btn => {
-              btn.addEventListener('click', () => {
-                const lens = btn.dataset.lens;
-                document.querySelectorAll('.doubt-lens-btn').forEach(b => {
-                  b.className = b.dataset.lens === lens
-                    ? 'doubt-lens-btn flex-1 py-1 rounded bg-indigo-600 text-white text-[10px] font-bold'
-                    : 'doubt-lens-btn flex-1 py-1 rounded bg-slate-100 text-slate-700 text-[10px] font-bold';
-                });
-                const box = document.getElementById('doubtLensContent');
-                if (lens === 'analogy') {
-                  box.innerHTML = '<strong>Begusarai Local Analogy:</strong><br>Imagine 2 partners run a sweet shop near Har-Har Mahadev Chowk sharing 100 Gulab Jamuns (60:40). When a third partner enters, the reduction in Gulab Jamuns each partner surrenders is their sacrifice.';
-                } else if (lens === 'trap') {
-                  box.innerHTML = '<strong>⚠️ Board Trap Radar:</strong><br>Never apply Sacrificing Ratio to revaluation profits or old reserves! Old reserves always belong to Old Partners in OLD Ratio.';
-                } else {
-                  box.innerHTML = '<strong>CBSE Register Notes:</strong><br>Sacrificing Ratio = Old Ratio − New Ratio.<br>Used exclusively to share Premium for Goodwill brought in by incoming partner.';
-                }
-              });
+          const replyBox = document.getElementById('stuAiSosReplyBox');
+          if (!replyBox) return;
+
+          askDoubtBtn.disabled = true;
+          askDoubtBtn.innerHTML = '<span>⏳</span><span>Gyan Sir AI analyzing…</span>';
+
+          replyBox.innerHTML = `
+            <div class="py-6 text-center text-slate-500 space-y-2">
+              <div class="inline-block animate-spin text-lg">⏳</div>
+              <p class="text-xs font-bold">Gyan Sir AI is analyzing your ${activeDoubtSubject} doubt…</p>
+            </div>
+          `;
+
+          window.cgCallGas('askDoubt', { question: qText, subject: activeDoubtSubject })
+            .then(res => {
+              if (!res || res.ok === false || (!res.story && !res.answer && (!res.lenses || !res.lenses.STORY))) {
+                throw new Error((res && res.error) || 'AI abhi available nahi hai, teacher se poochein');
+              }
+
+              const story = res.story || res.answer || (res.lenses && res.lenses.STORY) || '';
+              const examNotes = res.exam_notes || (res.lenses && res.lenses.EXAM_NOTES) || '';
+              const realExample = res.real_example || (res.lenses && res.lenses.REAL_EXAMPLE) || '';
+              const goldenRule = res.golden_rule || res.keyRule || '';
+              const cbseTrap = res.cbse_trap || res.cbseTrap || '';
+              const topicTitle = res.topicTitle || 'Concept Explanation';
+
+              replyBox.innerHTML = `
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <span class="px-2.5 py-0.5 rounded-lg bg-purple-100 text-purple-900 text-[10px] font-black uppercase">${res.subject || activeDoubtSubject} • ${topicTitle}</span>
+                    <span class="text-[10px] font-bold text-slate-400">Gyan Sir AI Verified</span>
+                  </div>
+                  <div class="text-xs text-slate-800 leading-relaxed space-y-2.5">
+                    <div class="p-3 rounded-xl bg-white border border-slate-200 shadow-xs whitespace-pre-line">${story}</div>
+                    ${examNotes ? `<div class="p-3 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-950 whitespace-pre-line"><strong class="text-indigo-900 block mb-1">📝 CBSE Register Notes:</strong>${examNotes}</div>` : ''}
+                    ${realExample ? `<div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 whitespace-pre-line"><strong class="text-slate-900 block mb-1">🏢 Real-World Application:</strong>${realExample}</div>` : ''}
+                    ${goldenRule ? `<div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 font-medium">⭐ <strong>Golden Rule:</strong> ${goldenRule}</div>` : ''}
+                    ${cbseTrap ? `<div class="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-950 font-medium">⚠️ <strong>CBSE Trap Radar:</strong> ${cbseTrap}</div>` : ''}
+                  </div>
+                </div>
+              `;
+              showToast('Doubt answered by Gyan Sir AI!', 'emerald');
+            })
+            .catch(err => {
+              replyBox.innerHTML = `
+                <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold text-center space-y-1">
+                  <p class="text-sm">⚠️</p>
+                  <p>AI abhi available nahi hai, teacher se poochein</p>
+                </div>
+              `;
+              showToast('AI abhi available nahi hai, teacher se poochein', 'amber');
+            })
+            .finally(() => {
+              askDoubtBtn.disabled = false;
+              askDoubtBtn.innerHTML = '<span>✨</span><span>Ask AI Mentor</span>';
             });
-
-            const saveBtn = document.getElementById('saveDoubtToNotesBtn');
-            if (saveBtn) {
-              saveBtn.addEventListener('click', () => {
-                showToast('Doubt saved to your study notes!', 'emerald');
-              });
-            }
-          }
-        });
-      }
-
-      // 2 AM Exam Panic SOS with Sleep Prescription (#62)
-      const sosBtn = document.getElementById('stuTriggerSosBtn');
-      if (sosBtn) {
-        sosBtn.addEventListener('click', () => {
-          const replyBox = document.getElementById('stuAiSosReplyBox');
-          if (replyBox) {
-            replyBox.innerHTML = `
-              <div class="p-3 rounded-2xl bg-gradient-to-r from-amber-50 to-rose-50 border-2 border-amber-300 space-y-2 text-xs">
-                <div class="flex items-center justify-between">
-                  <span class="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-extrabold text-[10px] uppercase">🌙 2 AM Exam Panic Shield</span>
-                  <span class="text-[10px] font-bold text-amber-900">CBSE Strategy</span>
-                </div>
-                <h4 class="font-extrabold text-amber-950">Gyan Sir's Midnight Golden Prescription</h4>
-                <p class="text-slate-800 leading-relaxed">"Take a deep breath. 80 marks in CBSE Accountancy is about presentation discipline, not speed. Your balance sheet will balance."</p>
-                <div class="p-2.5 rounded-xl bg-white border border-amber-200 text-[11px] text-amber-950 space-y-1">
-                  <div>💤 <strong>7-Hour Sleep Rule:</strong> Your brain consolidates journal entries during REM sleep. Go to sleep now.</div>
-                  <div>🌅 <strong>Morning Review:</strong> Re-read your 1-page formula sheet at 06:00 AM over tea.</div>
-                </div>
-              </div>
-            `;
-            showToast('2 AM Panic Shield & Sleep Prescription activated.', 'indigo');
-          }
         });
       }
 

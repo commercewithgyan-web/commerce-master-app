@@ -179,7 +179,16 @@ function apiAskDoubt_(verifiedUser, payload) {
   var subject = payload.subject || detectCommerceSubject_(questionText, '', '');
   var lens = payload.lens || 'ALL';
 
-  var result = askDoubtGemini(studentName, subject, questionText, lens);
+  var result;
+  try {
+    result = askDoubtGemini(studentName, subject, questionText, lens);
+  } catch (geminiErr) {
+    Logger.log('askDoubtGemini error: ' + geminiErr.message);
+    return {
+      ok: false,
+      error: 'AI abhi available nahi hai, teacher se poochein'
+    };
+  }
 
   // Duplicate check: prevent duplicate doubt insertion within 60 seconds
   var cache = CacheService.getScriptCache();

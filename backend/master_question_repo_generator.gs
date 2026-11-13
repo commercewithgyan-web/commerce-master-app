@@ -129,7 +129,7 @@ function generateAndInsertQuestions_() {
     ).setTitle('Commerce Gyan AI Engine')
   );
 
-  var candidateModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+  var candidateModels = ['gemini-1.5-flash', 'gemini-2.0-flash'];
   var systemInstruction =
     'You are Senior CBSE Commerce Head Examiner Gyan Sir (Commerce Gyan, Begusarai). ' +
     'Generate exactly ' + numQuestions + ' authentic CBSE examination questions strictly matching the 20-column schema: ' +
