@@ -670,10 +670,21 @@ function getStudentFeeLedger(rollNo) {
 
   const cleanRoll = rollNo ? String(rollNo).trim().toUpperCase() : '';
 
+  function getRollValue_(row) {
+    if (!row || typeof row !== 'object') return '';
+    for (const key of Object.keys(row)) {
+      const norm = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (norm === 'roll' || norm === 'rollno' || norm === 'studentid' || norm === 'studentroll' || norm === 'rollnumber') {
+        return String(row[key] || '').trim().toUpperCase();
+      }
+    }
+    return '';
+  }
+
   return {
     ok: true,
-    student: cleanRoll ? (students.find(s => String(s.Roll_No || s.rollNo || s.Roll || '').trim().toUpperCase() === cleanRoll) || null) : students,
-    ledger: cleanRoll ? ledger.filter(l => String(l.Roll_No || l.rollNo || l.Roll || '').trim().toUpperCase() === cleanRoll) : ledger,
+    student: cleanRoll ? (students.find(s => getRollValue_(s) === cleanRoll) || null) : students,
+    ledger: cleanRoll ? ledger.filter(l => getRollValue_(l) === cleanRoll) : ledger,
     settings: settings
   };
 }
@@ -756,9 +767,26 @@ function getBatchRoster(batchFilter) {
 }
 
 function getFinancialSummary() {
-  return typeof apiGetFinancialSummary_ === 'function'
-    ? apiGetFinancialSummary_()
-    : recordCenterExpenseAndReconcileDrawer({ amount: 0 });
+  // Read-only financial summary: NEVER appends expense rows or modifies sheets
+  const IDS = getActiveSheetIds();
+  let feeLedger = [];
+  try {
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    const feeSheet = erp.getSheetByName('Fee_Ledger');
+    feeLedger = feeSheet ? sheetToObjects(feeSheet) : [];
+  } catch (_) {}
+  let totalRev = 0;
+  feeLedger.forEach(row => {
+    totalRev += Number(row.Paid_Amount_INR || row.Paid_Amount || row.Amount || 0);
+  });
+  return {
+    ok: true,
+    totalRevenueINR: totalRev,
+    physicalCashDrawerBalanceINR: 0,
+    totalExpensesINR: 0,
+    netOperatingProfitINR: totalRev,
+    note: 'Cash Drawer retired; read-only summary'
+  };
 }
 
 
@@ -1835,87 +1863,12 @@ function revokeLateFee(payload) {
 }
 
 function recordCenterExpenseAndReconcileDrawer(payload) {
-  return withWriteLock_(() => {
-    const IDS = getActiveSheetIds();
-    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
-    const booksSS = SpreadsheetApp.openById(IDS.BOOKS_EXPENSES);
-
-
-    const now = new Date();
-    const dateStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');
-    const nowStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
-    const expAmount = Number(payload.amount || 0);
-
-
-    if (expAmount > 0 && booksSS) {
-      const expSheet = booksSS.getSheetByName('Expenses');
-      if (expSheet) {
-        const existingExpenses = sheetToObjects(expSheet);
-        const expId = 'EXP-' + String(existingExpenses.length + 1).padStart(4, '0');
-        expSheet.appendRow([
-          expId,
-          dateStr,
-          expAmount,
-          payload.category || 'Direct Expense',
-          payload.subCategory || 'Center Ops',
-          payload.mode || 'Cash',
-          payload.mode || 'Cash',
-          payload.note || '',
-          '',
-          'Gyan Sir',
-          nowStr
-        ]);
-      }
-    }
-
-
-    // Calculate live Begusarai physical cash drawer balance & metrics
-    const feeLedgerRows = sheetToObjects(erp.getSheetByName('Fee_Ledger'));
-    let cashFeeInflows = 0;
-    let upiFeeInflows = 0;
-    feeLedgerRows.forEach(l => {
-      const paid = Number(l.Paid_Amount_INR || l.Paid_Amount || 0);
-      const mode = String(l.Payment_Mode || 'UPI').toUpperCase();
-      if (mode === 'CASH') cashFeeInflows += paid;
-      else upiFeeInflows += paid;
-    });
-
-
-    let cashExpensesOut = 0;
-    let totalExpenses = 0;
-    if (booksSS) {
-      const expSheet = booksSS.getSheetByName('Expenses');
-      if (expSheet) {
-        const expRows = sheetToObjects(expSheet);
-        expRows.forEach(e => {
-          const amt = Number(e.Amount || e.Amount_INR || 0);
-          const mode = String(e.Mode || e.Payment_Mode || 'Cash').toUpperCase();
-          totalExpenses += amt;
-          if (mode === 'CASH') cashExpensesOut += amt;
-        });
-      }
-    }
-
-
-    const physicalCashDrawerBalance = cashFeeInflows - cashExpensesOut;
-    const totalRevenue = cashFeeInflows + upiFeeInflows;
-    const netOperatingProfit = totalRevenue - totalExpenses;
-    const profitMarginPct = totalRevenue > 0 ? Math.round((netOperatingProfit / totalRevenue) * 100) : 0;
-
-
-    return {
-      ok: true,
-      environment: getActiveEnvMode(),
-      physicalCashDrawerBalanceINR: physicalCashDrawerBalance,
-      cashFeeInflowsINR: cashFeeInflows,
-      cashExpensesOutINR: cashExpensesOut,
-      bankUpiInflowsINR: upiFeeInflows,
-      totalRevenueINR: totalRevenue,
-      totalExpensesINR: totalExpenses,
-      netOperatingProfitINR: netOperatingProfit,
-      profitMarginPct: profitMarginPct
-    };
-  }, 10000);
+  // Cash Drawer system is retired; returns safe no-op response without appending any rows
+  return {
+    ok: true,
+    retired: true,
+    message: "Cash Drawer & Balance Sheet Audit system retired. Direct expenses belong in Center Management."
+  };
 }
 
 function dispatchDailyDPPAndSubjectivePDF(payload) {
