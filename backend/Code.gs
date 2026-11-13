@@ -180,7 +180,7 @@ function isAdminOnlyAction_(action) {
     'testGenerateBstFlowchartPdf', 'testGenerateSubjectiveQuestionPdf',
     'testGenerateSubjectiveAnswerPdf', 'checkBalanceSheetIntegrity',
     'getMonthlyPL', 'getBalanceSheet', 'getCashDrawer', 'reconcileNotebookRegistry',
-    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask'
+    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask', 'getWeeklyTimetable', 'saveWeeklyTimetable'
   ];
   return adminActions.indexOf(action) !== -1;
 }
@@ -482,6 +482,15 @@ function doPost(e) {
         break;
       case "getAcademicCalendar":
         result = getAcademicCalendar();
+        break;
+      case "saveCalendarEvent":
+        result = saveCalendarEvent(payload);
+        break;
+      case "getWeeklyTimetable":
+        result = getWeeklyTimetable();
+        break;
+      case "saveWeeklyTimetable":
+        result = saveWeeklyTimetable(payload);
         break;
       case "runTelegramAuthTests":
         result = { ok: true, data: runTelegramAuthAndVisitorTests() };
@@ -3249,5 +3258,65 @@ function toggleAcademicTask(payload) {
       }
     }
     return { ok: false, error: "Task ID not found" };
+  });
+}
+
+
+function getWeeklyTimetable() {
+  const IDS = getActiveSheetIds();
+  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  let ttSheet = erp.getSheetByName('Weekly_Timetable');
+  if (!ttSheet) {
+    ttSheet = erp.insertSheet('Weekly_Timetable');
+    ttSheet.appendRow(['Day', 'Slot_Index', 'Time_Window', 'Class_Level', 'Subject', 'Topic', 'Slot_Type', 'Notes', 'Updated_At']);
+    const defaultSlots = [
+      ['Mon', 1, '07:00 AM - 08:30 AM', '11', 'ACC-11', 'BRS & Journal Posting', 'Regular', 'Class 11 Morning', '2026-11-13'],
+      ['Mon', 2, '04:00 PM - 05:30 PM', '12', 'ACC-12', 'Partnership Revaluation & Hidden Goodwill', 'Regular', 'Class 12 Evening', '2026-11-13'],
+      ['Mon', 3, '06:00 PM - 07:00 PM', '12', 'BST-12', 'Fayol 14 Principles of Management', 'Revision', 'Case study discussion', '2026-11-13'],
+      ['Tue', 1, '07:00 AM - 08:30 AM', '11', 'BST-11', 'Forms of Business Organisations', 'Regular', '', '2026-11-13'],
+      ['Tue', 2, '04:00 PM - 05:30 PM', '12', 'ACC-12', 'Share Capital Pro-Rata Table', 'Class Test', 'Weekly 25M Quiz', '2026-11-13'],
+      ['Tue', 3, '06:00 PM - 07:00 PM', '12', 'MAC-12', 'National Income Value Added Method', 'Regular', '', '2026-11-13'],
+      ['Wed', 1, '07:00 AM - 08:30 AM', '11', 'ACC-11', 'Depreciation SLM vs WDV', 'Regular', '', '2026-11-13'],
+      ['Wed', 2, '04:00 PM - 05:30 PM', '12', 'ACC-12', 'Forfeiture & Re-issue Entries', 'Regular', '', '2026-11-13'],
+      ['Wed', 3, '06:00 PM - 07:00 PM', '12', 'BST-12', 'Taylor Scientific Management', 'Regular', '', '2026-11-13'],
+      ['Thu', 1, '07:00 AM - 08:30 AM', '11', 'STA-11', 'Standard Deviation Calculation', 'Regular', '', '2026-11-13'],
+      ['Thu', 2, '04:00 PM - 05:30 PM', '12', 'IED-12', 'Rural Development & Microfinance', 'Regular', '', '2026-11-13'],
+      ['Thu', 3, '06:00 PM - 07:00 PM', '12', 'ACC-12', 'Cash Flow Statement Operating Activities', 'Revision', '', '2026-11-13'],
+      ['Fri', 1, '07:00 AM - 08:30 AM', '11', 'MIC-11', 'Indifference Curve & Consumer Equilibrium', 'Regular', '', '2026-11-13'],
+      ['Fri', 2, '04:00 PM - 05:30 PM', '12', 'ACC-12', 'Issue of Debentures with Terms of Redemption', 'Regular', '', '2026-11-13'],
+      ['Fri', 3, '06:00 PM - 07:00 PM', '12', 'MAC-12', 'Money Multiplier & Central Bank', 'Regular', '', '2026-11-13'],
+      ['Sat', 1, '07:00 AM - 08:30 AM', '11', 'ACC-11', 'Trial Balance & Rectification of Errors', 'Class Test', '', '2026-11-13'],
+      ['Sat', 2, '04:00 PM - 05:30 PM', '12', 'ACC-12', 'Board Exam Comprehensive Mock (80M)', 'Class Test', 'CBSE Pattern', '2026-11-13'],
+      ['Sat', 3, '06:00 PM - 07:00 PM', '12', 'BST-12', 'Business Environment Dimensions', 'Other', 'Smartboard Workshop', '2026-11-13']
+    ];
+    defaultSlots.forEach(r => ttSheet.appendRow(r));
+  }
+  const rows = sheetToObjects(ttSheet);
+  return { ok: true, timetable: rows };
+}
+
+function saveWeeklyTimetable(payload) {
+  return withWriteLock_(() => {
+    payload = payload || {};
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    let ttSheet = erp.getSheetByName('Weekly_Timetable');
+    if (!ttSheet) {
+      getWeeklyTimetable();
+      ttSheet = erp.getSheetByName('Weekly_Timetable');
+    }
+    const now = new Date();
+    const nowStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm');
+    const day = String(payload.day || 'Mon');
+    const slotIdx = Number(payload.slotIndex || 1);
+    const time = String(payload.time || payload.timeWindow || '04:00 PM - 05:30 PM');
+    const classLevel = String(payload.classLevel || (String(payload.subject || '').includes('11') ? '11' : '12'));
+    const subject = String(payload.subject || 'ACC-12');
+    const topic = String(payload.topic || '');
+    const slotType = String(payload.slotType || payload.type || 'Regular');
+    const notes = String(payload.notes || '');
+
+    ttSheet.appendRow([day, slotIdx, time, classLevel, subject, topic, slotType, notes, nowStr]);
+    return { ok: true, message: 'Class slot saved and synced to Sheet (Weekly_Timetable).' };
   });
 }

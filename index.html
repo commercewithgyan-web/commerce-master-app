@@ -424,12 +424,12 @@
           </div>
         </div>
 
-        <!-- Add Slot Inline Form (Hidden by default) -->
-        <div id="addSlotFormCard" class="hidden bg-indigo-50/70 border border-indigo-200 rounded-2xl p-4">
-          <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
+        <!-- Add Slot Inline Form (Hidden by default - A4 with Slot Type & Persistence) -->
+        <div id="addSlotFormCard" class="hidden bg-indigo-50/70 border border-indigo-200 rounded-2xl p-4 space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-6 gap-3 items-end">
             <div>
               <label class="block text-[11px] font-bold text-slate-700 mb-1">Day</label>
-              <select id="slotDayInput" class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white">
+              <select id="slotDayInput" class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white font-bold">
                 <option value="Mon">Monday</option>
                 <option value="Tue">Tuesday</option>
                 <option value="Wed">Wednesday</option>
@@ -439,29 +439,44 @@
               </select>
             </div>
             <div>
-              <label class="block text-[11px] font-bold text-slate-700 mb-1">Time Window</label>
-              <input id="slotTimeInput" type="text" value="04:30 PM - 05:30 PM" class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white" />
-            </div>
-            <div>
-              <label class="block text-[11px] font-bold text-slate-700 mb-1">Subject (All 8)</label>
-              <select id="slotSubjectInput" class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white">
-                <option value="ACC-12">12th Accountancy (ACC-12)</option>
-                <option value="BST-12">12th Business Studies (BST-12)</option>
-                <option value="MAC-12">12th Macroeconomics (MAC-12)</option>
-                <option value="IED-12">12th Indian Econ & EPS (IED-12)</option>
-                <option value="ACC-11">11th Accountancy (ACC-11)</option>
-                <option value="BST-11">11th Business Studies (BST-11)</option>
-                <option value="MIC-11">11th Microeconomics (MIC-11)</option>
-                <option value="STA-11">11th Statistics & EPS (STA-11)</option>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Slot No.</label>
+              <select id="slotIndexInput" class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white font-bold">
+                <option value="1">Slot 1 (Morning)</option>
+                <option value="2">Slot 2 (Evening 1)</option>
+                <option value="3">Slot 3 (Evening 2)</option>
+                <option value="4">Slot 4 (Night Doubt)</option>
               </select>
             </div>
             <div>
-              <label class="block text-[11px] font-bold text-slate-700 mb-1">Planned Topic / Chapter</label>
-              <input id="slotTopicInput" type="text" placeholder="e.g. Goodwill Valuation Methods" class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white" />
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Time Window</label>
+              <input id="slotTimeInput" type="text" value="04:00 PM - 05:30 PM" class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white font-mono" />
             </div>
-            <div class="flex gap-2">
-              <button id="saveSlotBtn" type="button" class="flex-1 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold">Save Slot</button>
-              <button id="cancelSlotBtn" type="button" class="px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-semibold">Cancel</button>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Subject (Free Text / Select)</label>
+              <input id="slotSubjectInput" type="text" value="ACC-12" placeholder="e.g. ACC-12 / BST-12" class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white font-bold" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Slot Type / Reason</label>
+              <select id="slotTypeInput" class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white font-bold text-indigo-900">
+                <option value="Regular">📘 Regular Class</option>
+                <option value="Revision">⚡ Revision Marathon</option>
+                <option value="Class Test">📝 Class Test (80M)</option>
+                <option value="Other">🎯 Other Activity</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Planned Topic</label>
+              <input id="slotTopicInput" type="text" placeholder="e.g. Hidden Goodwill & Revaluation" class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white" />
+            </div>
+          </div>
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 border-t border-indigo-100">
+            <label class="flex items-center gap-2 text-xs font-semibold text-indigo-950 cursor-pointer">
+              <input id="slotNotifyStudentsCheck" type="checkbox" checked class="w-4 h-4 rounded text-indigo-600" />
+              <span>Schedule activity in advance and notify students via Telegram Mini App</span>
+            </label>
+            <div class="flex gap-2 w-full sm:w-auto">
+              <button id="saveSlotBtn" type="button" class="flex-1 sm:flex-none px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow">Save Slot to Sheet (Weekly_Timetable)</button>
+              <button id="cancelSlotBtn" type="button" class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700">Cancel</button>
             </div>
           </div>
         </div>
@@ -2982,6 +2997,125 @@
     </div>
   </div>
 
+
+  <!-- ==================== CALENDAR EVENT MODAL (A5) ==================== -->
+  <div id="calendarEventModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div>
+          <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[10px] font-extrabold uppercase">A5 • Academic Calendar</span>
+          <h3 class="text-base font-extrabold text-slate-900 mt-1">🗓️ Add Academic Event or Exam</h3>
+          <p class="text-xs text-slate-500">Scheduled events notify students in advance and record into Academic_Calendar sheet.</p>
+        </div>
+        <button id="closeCalEventModalBtn" type="button" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Event Date</label>
+            <input id="calEventDateInput" type="date" value="2026-11-20" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono font-bold" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Target Batch</label>
+            <select id="calEventBatchSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 font-bold">
+              <option value="ALL_BATCHES">All Batches (Center-wide)</option>
+              <option value="Class 12 Accounts">Class 12 Accounts (C12_EVE)</option>
+              <option value="Class 11 Accounts">Class 11 Accounts (C11_MORN)</option>
+              <option value="Class 12 BST">Class 12 Business Studies</option>
+              <option value="Class 12 Macro">Class 12 Macroeconomics</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Event Type</label>
+            <select id="calEventTypeSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 font-bold">
+              <option value="CLASS_TEST">📝 Class Test (80M Board Pattern)</option>
+              <option value="REVISION">⚡ Mega Revision Marathon</option>
+              <option value="PTM">👨‍👩‍👦 Parent-Teacher Meeting (PTM)</option>
+              <option value="HOLIDAY">🏖️ Festival / National Holiday</option>
+              <option value="SPECIAL_EVENT">🎯 Board Strategy &amp; Guest Lecture</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Pause 7 PM DPP?</label>
+            <select id="calEventNoDppSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 font-bold">
+              <option value="FALSE">No — Dispatch DPP normally</option>
+              <option value="TRUE">Yes — Suspend DPP for this date</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Event Title</label>
+          <input id="calEventTitleInput" type="text" placeholder="e.g. Term 1 Comprehensive Partnership Mock (80M)" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-bold" />
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Description &amp; Student Instructions</label>
+          <textarea id="calEventDescInput" rows="2" placeholder="Students must bring register, admit card, and working note sheets..." class="w-full border border-slate-300 rounded-xl px-3 py-2"></textarea>
+        </div>
+
+        <button id="btnSubmitCalendarEvent" type="button" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold transition shadow">
+          💾 Save Event &amp; Notify Students
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOGGLE HOLIDAY MODAL (A4) ==================== -->
+  <div id="toggleHolidayModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div>
+          <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-extrabold uppercase">A4 • Persisted Holiday Management</span>
+          <h3 class="text-base font-extrabold text-slate-900 mt-1">🏖️ Mark Holiday &amp; Shift Syllabus Topics</h3>
+          <p class="text-xs text-slate-500">Date-wise persisted holiday toggle. Automatically shifts planned syllabus topics forward to the next working day.</p>
+        </div>
+        <button id="closeToggleHolidayModalBtn" type="button" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Holiday Date</label>
+            <input id="holDateInput" type="date" value="2026-11-15" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono font-bold" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Affected Batches</label>
+            <select id="holBatchSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 font-bold">
+              <option value="ALL">All Batches (Institute Closed)</option>
+              <option value="Class 12 Accounts">Class 12 Accounts only</option>
+              <option value="Class 11 Accounts">Class 11 Accounts only</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Holiday Reason for Students</label>
+          <input id="holReasonInput" type="text" value="Chhath Puja Mahaparv (Bihar State Holiday)" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-bold" />
+        </div>
+
+        <div class="p-3 rounded-2xl bg-amber-50 border border-amber-200 space-y-2 text-amber-950">
+          <label class="flex items-center gap-2 cursor-pointer font-bold">
+            <input id="chkShiftSyllabus" type="checkbox" checked class="w-4 h-4 rounded text-amber-600" />
+            <span>Shift planned syllabus topics forward to the next working day</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer font-bold">
+            <input id="chkNotifyHolidayStudents" type="checkbox" checked class="w-4 h-4 rounded text-amber-600" />
+            <span>Notify enrolled students via Telegram Mini App broadcast</span>
+          </label>
+        </div>
+
+        <button id="btnSubmitHolidayToggle" type="button" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold transition shadow">
+          🏖️ Confirm Holiday &amp; Shift Schedule
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== 7:00 PM DPP DISPATCH MODAL (A3) ==================== -->
   <div id="dppDispatchModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
     <div class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto custom-scroll">
@@ -3845,38 +3979,51 @@
       `).join('');
     }
 
-    // ==================== RENDER: TIMETABLE (DESKTOP 6-COL + MOBILE PILLS AGENDA) ====================
+    // ==================== RENDER: TIMETABLE (A4 6-DAY WEEKLY VIEW + 3 SLOTS/DAY) ====================
     function renderTimetable() {
       const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const container = document.getElementById('timetableGridContainer');
+      const typeBadges = {
+        'Regular': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+        'Revision': 'bg-emerald-50 text-emerald-800 border-emerald-200',
+        'Class Test': 'bg-rose-50 text-rose-800 border-rose-200',
+        'Other': 'bg-slate-100 text-slate-700 border-slate-200'
+      };
+
       if (container) {
         container.innerHTML = days.map(day => {
           const isHoliday = (day === 'Thu' && appState.holidayThursday);
-          const slots = appState.timetableSlots.filter(s => {
+          const slots = (appState.timetableSlots || []).filter(s => {
             const subjMatch = appState.globalSubject === 'ALL' || s.subject === appState.globalSubject;
             return s.day === day && subjMatch;
           });
           return `
-            <div class="p-3 space-y-2.5 ${isHoliday ? 'bg-amber-50/60' : 'bg-white'}">
-              <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                <span class="text-xs font-extrabold uppercase tracking-wider text-slate-700">${day}</span>
+            <div class="p-3 space-y-2.5 ${isHoliday ? 'bg-amber-50/60' : 'bg-white'} flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
+                  <span class="text-xs font-black uppercase tracking-wider text-slate-800">${day}</span>
+                  ${isHoliday
+                    ? '<span class="px-2 py-0.5 rounded text-[9px] font-black bg-amber-200 text-amber-900">HOLIDAY</span>'
+                    : `<span class="text-[10px] font-bold text-slate-400">${slots.length} Slots</span>`
+                  }
+                </div>
                 ${isHoliday
-                  ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-900">Holiday Blocked</span>'
-                  : `<span class="text-[11px] text-slate-400">${slots.length} classes</span>`
+                  ? `<div class="p-3 rounded-xl border border-dashed border-amber-300 text-[11px] text-amber-900 font-medium">Holiday Active — Topics shifted forward.</div>`
+                  : `<div class="space-y-2">
+                    ${slots.map(s => `
+                      <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50/80 hover:border-indigo-300 transition space-y-1">
+                        <div class="flex items-center justify-between">
+                          <span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-indigo-100 text-indigo-800">${s.subject}</span>
+                          <span class="px-1.5 py-0.2 rounded text-[9px] font-extrabold border ${typeBadges[s.slotType] || typeBadges.Regular}">${s.slotType || 'Regular'}</span>
+                        </div>
+                        <div class="text-[10px] font-mono font-bold text-slate-500">${s.time}</div>
+                        <p class="text-xs font-bold text-slate-800 leading-snug">${s.topic}</p>
+                        ${s.notes ? `<p class="text-[10px] text-slate-500 italic">${s.notes}</p>` : ''}
+                      </div>
+                    `).join('')}
+                  </div>`
                 }
               </div>
-              ${isHoliday
-                ? `<div class="p-3 rounded-xl border border-dashed border-amber-300 text-[11px] text-amber-900 font-medium">Holiday Active — All Thursday lessons auto-shifted to Friday/Saturday slots.</div>`
-                : slots.map(s => `
-                  <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:border-indigo-300 transition space-y-1">
-                    <div class="flex items-center justify-between">
-                      <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800">${s.subject}</span>
-                      <span class="text-[10px] font-semibold text-slate-500">${s.time}</span>
-                    </div>
-                    <p class="text-xs font-bold text-slate-800 leading-snug">${s.topic}</p>
-                  </div>
-                `).join('')
-              }
             </div>
           `;
         }).join('');
