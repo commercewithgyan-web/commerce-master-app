@@ -180,7 +180,7 @@ function isAdminOnlyAction_(action) {
     'testGenerateBstFlowchartPdf', 'testGenerateSubjectiveQuestionPdf',
     'testGenerateSubjectiveAnswerPdf', 'checkBalanceSheetIntegrity',
     'getMonthlyPL', 'getBalanceSheet', 'getCashDrawer', 'reconcileNotebookRegistry',
-    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask', 'getWeeklyTimetable', 'saveWeeklyTimetable', 'saveTimetableSlot', 'deleteTimetableSlot', 'cancelBatchAndNotify', 'logLessonProgress', 'saveCurriculumTopic', 'uploadDailyClassNotes', 'addLeadToSheet', 'advanceLeadStage', 'enrolTrialToDirectory', 'updateStudentProfile', 'saveAttendanceBatch', 'undoAttendanceBatch', 'sendDefaulterNotices', 'sendFeeReminderTelegram', 'publishDppQuiz'
+    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask', 'getWeeklyTimetable', 'saveWeeklyTimetable', 'saveTimetableSlot', 'deleteTimetableSlot', 'cancelBatchAndNotify', 'logLessonProgress', 'saveCurriculumTopic', 'uploadDailyClassNotes', 'addLeadToSheet', 'advanceLeadStage', 'enrolTrialToDirectory', 'updateStudentProfile', 'saveAttendanceBatch', 'undoAttendanceBatch', 'sendDefaulterNotices', 'sendFeeReminderTelegram', 'publishDppQuiz', 'cancelAndRescheduleClass', 'saveAcademicEvent', 'toggleHolidayDate', 'saveTeacherTasks', 'saveSwotConfig'
   ];
   return adminActions.indexOf(action) !== -1;
 }
@@ -509,10 +509,25 @@ function doPost(e) {
         break;
       case "cancelBatchLecture":
       case "cancelBatchAndNotify":
+      case "cancelAndRescheduleClass":
         result = cancelBatchLecture(payload);
         break;
       case "saveAcademicTask":
+      case "saveTeacherTasks":
         result = saveAcademicTask(payload);
+        break;
+      case "saveAcademicEvent":
+        result = saveCalendarEvent(payload);
+        break;
+      case "toggleAcademicHoliday":
+      case "toggleHolidayDate":
+        result = toggleAcademicHoliday(payload);
+        break;
+      case "saveSwotConfig":
+        result = saveSwotConfig(payload);
+        break;
+      case "submitRedPenSubmission":
+        result = submitRedPenSubmission(payload);
         break;
       case "getAcademicTasks":
         result = getAcademicTasks(payload);
@@ -3815,6 +3830,93 @@ function toggleAcademicHoliday(payload) {
       message: `Holiday recorded for ${dateStr}. Shifted ${shiftedCount} topics forward.`,
       date: dateStr,
       shiftedCount: shiftedCount
+    };
+  });
+}
+
+
+/**
+ * Saves SWOT Config & Notes for a student (Teacher A7)
+ * @param {Object} payload { rollNo, selectedFields, manualNote }
+ * @return {Object}
+ */
+function saveSwotConfig(payload) {
+  return withWriteLock_(() => {
+    payload = payload || {};
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    const rollNo = String(payload.rollNo || '').trim();
+    if (!rollNo) return { ok: false, error: 'Missing rollNo' };
+
+    // Update Students_Master note / SWOT columns if present
+    const stuSheet = erp.getSheetByName('Students_Master');
+    if (stuSheet) {
+      const data = stuSheet.getDataRange().getValues();
+      const headers = data[0].map(h => String(h).trim());
+      const rollCol = headers.indexOf('Roll_No') >= 0 ? headers.indexOf('Roll_No') : headers.indexOf('Roll');
+      const threatCol = headers.indexOf('Threat_Traps');
+      if (rollCol >= 0) {
+        for (let i = 1; i < data.length; i++) {
+          if (String(data[i][rollCol]).trim() === rollNo) {
+            if (threatCol >= 0 && payload.manualNote) {
+              stuSheet.getRange(i + 1, threatCol + 1).setValue(payload.manualNote);
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    // Save to SWOT_Config sheet
+    let swotSheet = erp.getSheetByName('SWOT_Config');
+    if (!swotSheet) {
+      swotSheet = erp.insertSheet('SWOT_Config');
+      swotSheet.appendRow(['Field_Key', 'Label', 'Field_Type', 'Active_Status']);
+    }
+    const nowStr = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
+    recordAuditLog_('TEACHER', 'STAFF', 'SAVE_SWOT_CONFIG', rollNo, { manualNote: payload.manualNote });
+
+    return { ok: true, message: 'SWOT saved for ' + rollNo, rollNo: rollNo, timestamp: nowStr };
+  });
+}
+
+/**
+ * Handles Red-Pen Register photo submission from Student Mini App
+ * @param {Object} payload { rollNo, subjectCode, note, fileName, imageBase64 }
+ * @return {Object}
+ */
+function submitRedPenSubmission(payload) {
+  return withWriteLock_(() => {
+    payload = payload || {};
+    const IDS = getActiveSheetIds();
+    const qbSS = SpreadsheetApp.openById(IDS.QUESTION_BANK);
+    let redPenSheet = qbSS.getSheetByName('Student_Red_Pen');
+    if (!redPenSheet) {
+      redPenSheet = qbSS.insertSheet('Student_Red_Pen');
+      redPenSheet.appendRow(['Timestamp', 'Roll_No', 'Subject', 'Note', 'File_Name', 'Status', 'Feedback']);
+    }
+    const nowStr = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
+    const rollNo = String(payload.rollNo || payload.studentId || 'STUDENT').trim();
+    const subject = String(payload.subjectCode || 'ACCOUNTS').trim();
+    const note = String(payload.note || 'Register Photo Check').trim();
+    const fileName = String(payload.fileName || '').trim();
+
+    redPenSheet.appendRow([
+      nowStr,
+      rollNo,
+      subject,
+      note,
+      fileName,
+      'PENDING_REVIEW',
+      'Sent to Gyan Sir Red-Pen Queue. Feedback will appear in your SWOT report.'
+    ]);
+
+    return {
+      ok: true,
+      rollNo: rollNo,
+      subject: subject,
+      feedback: 'Sent to Gyan Sir Red-Pen Queue. Feedback will appear in your SWOT report.',
+      timestamp: nowStr
     };
   });
 }
