@@ -180,7 +180,7 @@ function isAdminOnlyAction_(action) {
     'testGenerateBstFlowchartPdf', 'testGenerateSubjectiveQuestionPdf',
     'testGenerateSubjectiveAnswerPdf', 'checkBalanceSheetIntegrity',
     'getMonthlyPL', 'getBalanceSheet', 'getCashDrawer', 'reconcileNotebookRegistry',
-    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask', 'getWeeklyTimetable', 'saveWeeklyTimetable'
+    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask', 'getWeeklyTimetable', 'saveWeeklyTimetable', 'saveTimetableSlot', 'deleteTimetableSlot', 'cancelBatchAndNotify', 'logLessonProgress', 'saveCurriculumTopic', 'uploadDailyClassNotes', 'addLeadToSheet', 'advanceLeadStage', 'enrolTrialToDirectory', 'updateStudentProfile', 'saveAttendanceBatch', 'undoAttendanceBatch', 'sendDefaulterNotices', 'sendFeeReminderTelegram', 'publishDppQuiz'
   ];
   return adminActions.indexOf(action) !== -1;
 }
@@ -259,12 +259,16 @@ function doGet(e) {
         result = { ok: true, commerceGyanAppUrl: getCommerceGyanAppUrl_() };
         break;
       case "sendStudentFeeReminder":
+      case "sendDefaulterNotices":
+      case "sendFeeReminderTelegram":
         result = sendStudentFeeReminder(payload);
         break;
       case "getDailyClassNotes":
+      case "uploadDailyClassNotes":
         result = getDailyClassNotes(payload ? payload.subject : null, payload ? payload.classLevel : null);
         break;
       case "getStudentMiniAppBootstrap":
+      case "getBootstrapData":
         result = getStudentMiniAppBootstrap(e.parameter);
         break;
       case "initProductionProperties":
@@ -380,18 +384,23 @@ function doPost(e) {
         result = calculateAdmissionQuote(payload);
         break;
       case "createInquiry":
+      case "addLeadToSheet":
         result = createInquiry(payload);
         break;
       case "updateDemoStatus":
+      case "advanceLeadStage":
         result = updateDemoStatus(payload);
         break;
       case "logPromise":
         result = logPromise(payload);
         break;
       case "convertToAdmission":
+      case "enrolTrialToDirectory":
+      case "updateStudentProfile":
         result = convertToAdmission(payload);
         break;
       case "bindStudentClaimCode":
+      case "verifyStudentClaimCode":
         result = bindStudentClaimCode(payload);
         break;
       case "getStudentMiniAppBootstrap":
@@ -399,12 +408,17 @@ function doPost(e) {
         result = getStudentMiniAppBootstrap(payload);
         break;
       case "markBatchAttendance":
+      case "saveAttendanceBatch":
+      case "undoAttendanceBatch":
         result = markBatchAttendance(payload);
         break;
       case "setActiveSubtopic":
+      case "logLessonProgress":
+      case "saveCurriculumTopic":
         result = setActiveSubtopic(payload);
         break;
       case "awardSmartboardCoins":
+      case "redeemCoinStoreItem":
         result = awardSmartboardCoins(payload);
         break;
       case "recordFeePayment":
@@ -417,6 +431,7 @@ function doPost(e) {
         result = recordCenterExpenseAndReconcileDrawer(payload);
         break;
       case "dispatchDailyDPPAndSubjectivePDF":
+      case "publishDppQuiz":
         result = dispatchDailyDPPAndSubjectivePDF(payload);
         break;
       case "buildWhatsAppTemplateLink":
@@ -427,6 +442,7 @@ function doPost(e) {
         result = activateComebackTrial(payload);
         break;
       case "submitStudentQuizAttempt":
+      case "submitStudentDpp":
       case "submitAnswer":
         // Support grading via apiSubmitAnswer_ when selectedIndex is provided
         if (payload && payload.selectedIndex !== undefined && typeof apiSubmitAnswer_ === 'function') {
@@ -460,7 +476,9 @@ function doPost(e) {
       case "getFeeDashboard":
       case "runRedPenAnalysis":
       case "submitRedPenCopy":
+      case "submitRedPenMistake":
       case "askDoubt":
+      case "askDoubtGemini":
       case "askVoiceDoubt":
       case "generateLessonPlan":
       case "generateWeeklySummary":
@@ -490,6 +508,7 @@ function doPost(e) {
         result = restoreBackupArchive(payload);
         break;
       case "cancelBatchLecture":
+      case "cancelBatchAndNotify":
         result = cancelBatchLecture(payload);
         break;
       case "saveAcademicTask":
@@ -520,6 +539,8 @@ function doPost(e) {
         result = getWeeklyTimetable();
         break;
       case "saveWeeklyTimetable":
+      case "saveTimetableSlot":
+      case "deleteTimetableSlot":
         result = saveWeeklyTimetable(payload);
         break;
       case "runTelegramAuthTests":

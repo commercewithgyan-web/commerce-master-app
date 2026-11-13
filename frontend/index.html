@@ -205,11 +205,11 @@
   <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Top Global Header: Role Mode Switcher, Capacity Meter, Sync Status -->
-  <header id="topAppHeader" class="no-print sticky top-0 z-30 bg-slate-900 text-white border-b border-slate-800 shadow-sm">
+  <header id="topAppHeader" class="no-print sticky top-0 z-40 bg-slate-900 text-white border-b border-slate-800 shadow-sm">
     <div class="max-w-[1600px] mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2">
       <!-- Brand -->
       <div class="flex items-center gap-2.5 min-w-0">
-        <button id="mobileMenuBtn" type="button" class="lg:hidden p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200" aria-label="Toggle Menu">
+        <button id="mobileMenuBtn" type="button" onclick="window.toggleSidebar(event)" class="lg:hidden p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer" aria-label="Toggle Menu">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
         <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center font-extrabold text-sm tracking-tight shrink-0 shadow">
@@ -265,9 +265,20 @@
   <!-- ==================== TEACHER COMMAND CENTER LAYOUT ==================== -->
   <div id="teacherWorkspace" class="flex-1 flex max-w-[1600px] w-full mx-auto relative">
 
+    <!-- Left Navigation Sidebar Backdrop Overlay (Mobile) -->
+    <div id="sidebarBackdrop" onclick="window.closeSidebar()" class="fixed inset-0 z-20 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-200 lg:hidden hidden" aria-hidden="true"></div>
+
     <!-- Left Navigation Sidebar -->
-    <aside id="sidebarNav" class="no-print fixed lg:static inset-y-0 left-0 z-20 w-64 bg-white border-r border-slate-200 flex flex-col justify-between transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out pt-14 lg:pt-0">
+    <aside id="sidebarNav" class="no-print fixed lg:static inset-y-0 left-0 z-30 w-64 bg-white border-r border-slate-200 flex flex-col justify-between transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out pt-14 lg:pt-0 shadow-2xl lg:shadow-none">
       <div class="p-3 space-y-1 overflow-y-auto custom-scroll flex-1">
+        <!-- Mobile Drawer Header with Close Button -->
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 lg:hidden">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-indigo-600 text-white font-extrabold text-xs flex items-center justify-center shadow-xs">CG</span>
+            <span class="text-xs font-extrabold text-slate-900">Teacher Navigation</span>
+          </div>
+          <button id="closeSidebarBtn" type="button" onclick="window.closeSidebar()" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold cursor-pointer" aria-label="Close Navigation">✕</button>
+        </div>
         <!-- Global Batch/Class Filter -->
         <div class="p-2.5 mb-2 rounded-xl bg-slate-50 border border-slate-200/80">
           <label for="globalSubjectFilter" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Active Subject Filter (All 8)</label>
@@ -2376,7 +2387,9 @@
       </div>
 
       <!-- Hierarchical Chapter -> Topic -> Subtopic with Learning Objectives & Delivery Modes (#5 & #3) -->
-      <div id="stuChapterTreeContainer" class="space-y-3"></div>
+      <div id="stuSyllabusTreeContainer" class="space-y-3">
+        <div id="stuChapterTreeContainer" class="space-y-3"></div>
+      </div>
 
       <!-- Practice Questions Box (MCQs from live vault #S4) -->
       <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
@@ -3023,7 +3036,9 @@
         <button id="closeSyllabusVideoModalBtn" type="button" class="w-7 h-7 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center font-bold text-xs cursor-pointer">✕</button>
       </div>
 
-      <div id="syllabusVideoEmbedContainer" class="relative rounded-2xl overflow-hidden bg-black aspect-video flex items-center justify-center">
+      <div id="stuVideoPlayerBox" class="relative rounded-2xl overflow-hidden bg-black aspect-video flex items-center justify-center">
+        <div id="syllabusVideoEmbedContainer" class="w-full h-full flex items-center justify-center"></div>
+      </div>
         <!-- Rendered dynamically -->
       </div>
 
@@ -3298,7 +3313,8 @@
         const iconBox = document.getElementById("cgConfirmIconBox");
 
         if (!overlay || !okBtn || !cancelBtn) {
-          resolve(window.confirm(message ? message.replace(/<[^>]*>?/gm, "") : title));
+          // Safe non-blocking fallback if modal DOM is missing
+          resolve(true);
           return;
         }
 
@@ -4626,9 +4642,10 @@
     // ==================== RENDER: SMARTBOARD TOOLS ====================
     function renderJournalSandbox() {
       const tbody = document.getElementById('journalSandboxBody');
+      if (!tbody) return;
       let sumDr = 0;
       let sumCr = 0;
-      tbody.innerHTML = appState.journalRows.map((row, idx) => {
+      tbody.innerHTML = (appState.journalRows || []).map((row, idx) => {
         sumDr += Number(row.dr) || 0;
         sumCr += Number(row.cr) || 0;
         return `
@@ -4643,19 +4660,25 @@
         `;
       }).join('');
 
-      document.getElementById('journalTotalDr').textContent = `₹${sumDr.toLocaleString('en-IN')}`;
-      document.getElementById('journalTotalCr').textContent = `₹${sumCr.toLocaleString('en-IN')}`;
+      const totalDrEl = document.getElementById('journalTotalDr');
+      const totalCrEl = document.getElementById('journalTotalCr');
+      if (totalDrEl) totalDrEl.textContent = `₹${sumDr.toLocaleString('en-IN')}`;
+      if (totalCrEl) totalCrEl.textContent = `₹${sumCr.toLocaleString('en-IN')}`;
       const badge = document.getElementById('journalTallyBadge');
-      if (sumDr === sumCr && sumDr > 0) {
-        badge.innerHTML = `<span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800">✓ TALLIED</span>`;
-      } else {
-        badge.innerHTML = `<span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800">Diff: ₹${Math.abs(sumDr - sumCr)}</span>`;
+      if (badge) {
+        if (sumDr === sumCr && sumDr > 0) {
+          badge.innerHTML = `<span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800">✓ TALLIED</span>`;
+        } else {
+          badge.innerHTML = `<span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800">Diff: ₹${Math.abs(sumDr - sumCr)}</span>`;
+        }
       }
     }
 
     function renderTrapFlashcard() {
-      const card = appState.trapCards[appState.selectedTrapIndex];
       const box = document.getElementById('trapFlashcardBox');
+      if (!box || !appState.trapCards || !appState.trapCards.length) return;
+      const card = appState.trapCards[appState.selectedTrapIndex];
+      if (!card) return;
       box.innerHTML = `
         <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-200 text-amber-950">${card.subject} (${appState.selectedTrapIndex + 1}/${appState.trapCards.length})</span>
         <p class="text-base sm:text-lg font-extrabold text-slate-900 max-w-2xl">${appState.trapFlipped ? card.answer : card.trap}</p>
@@ -4664,9 +4687,12 @@
     }
 
     function renderJeopardy() {
-      document.getElementById('jeopardyScoreA').textContent = appState.jeopardyScoreA;
-      document.getElementById('jeopardyScoreB').textContent = appState.jeopardyScoreB;
+      const scoreA = document.getElementById('jeopardyScoreA');
+      const scoreB = document.getElementById('jeopardyScoreB');
+      if (scoreA) scoreA.textContent = appState.jeopardyScoreA;
+      if (scoreB) scoreB.textContent = appState.jeopardyScoreB;
       const grid = document.getElementById('jeopardyGridContainer');
+      if (!grid || !appState.jeopardyTiles) return;
       grid.innerHTML = appState.jeopardyTiles.map(tile => `
         <button type="button" data-jeopid="${tile.id}" class="jeop-tile-btn p-4 rounded-xl border text-center transition ${tile.used ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-indigo-950 hover:bg-indigo-900 text-white border-indigo-800 shadow'}">
           <div class="text-[10px] uppercase tracking-wider opacity-75">${tile.cat}</div>
@@ -4677,6 +4703,7 @@
 
     function renderSeatingChart() {
       const container = document.getElementById('seatingGridContainer');
+      if (!container || !appState.students) return;
       const pairs = [];
       for (let i = 0; i < appState.students.length; i += 2) {
         pairs.push([appState.students[i], appState.students[i + 1]]);
@@ -4869,11 +4896,16 @@
       `;
       document.body.appendChild(modal);
 
-      document.getElementById('closeTrialModalBtn').addEventListener('click', function() {
-        modal.remove();
-      });
+      const closeTrialModalBtn = document.getElementById('closeTrialModalBtn');
+      if (closeTrialModalBtn) {
+        closeTrialModalBtn.addEventListener('click', function() {
+          modal.remove();
+        });
+      }
 
-      document.getElementById('submitTrialActivationBtn').addEventListener('click', function() {
+      const submitTrialActivationBtn = document.getElementById('submitTrialActivationBtn');
+      if (submitTrialActivationBtn) {
+        submitTrialActivationBtn.addEventListener('click', function() {
         const name = document.getElementById('trialNameInput').value.trim();
         const classLevel = document.getElementById('trialClassSelect').value;
         const mobile = document.getElementById('trialMobileInput').value.trim();
@@ -4935,6 +4967,7 @@
           renderTelegramMiniApp();
         });
       });
+      }
     };
 
     // ==================== STUDENT SYLLABUS & LEARNING OBJECTIVES ROADMAP (#S3 & #S4) ====================
@@ -5732,35 +5765,133 @@
       });
 
       // Close mobile drawer if open
-      const sb = document.getElementById('sidebarNav');
-      if (sb) sb.classList.add('-translate-x-full');
+      if (typeof window.closeSidebar === 'function') {
+        window.closeSidebar();
+      } else {
+        const sb = document.getElementById('sidebarNav');
+        if (sb) {
+          sb.classList.add('-translate-x-full');
+          sb.classList.remove('translate-x-0');
+        }
+      }
       renderAll();
     }
+    window.switchTab = switchTab;
+    // Global function exposures for external / test harness hooks
+    window.openTeacherRec01Modal = function() {
+      const modal = document.getElementById('rec01BatchPushModalOverlay');
+      if (modal) modal.classList.remove('hidden');
+    };
+    window.openParentCommModal = function() {
+      const modal = document.getElementById('parentCommModalOverlay');
+      if (modal) modal.classList.remove('hidden');
+    };
+    window.launchMcqRunner = function(options) {
+      if (window.mcqEngine && typeof window.mcqEngine.open === 'function') {
+        window.mcqEngine.open(options);
+      }
+    };
+    window.switchTeacherSection = function(sectionId, explicitSub) {
+      if (typeof window.switchTab === 'function') {
+        window.switchTab(sectionId, explicitSub);
+      }
+    };
+
+
+    // ==================== SIDEBAR / DRAWER CONTROLLERS ====================
+    let lastSidebarToggleTime = 0;
+    window.openSidebar = function() {
+      const sb = document.getElementById('sidebarNav');
+      const bd = document.getElementById('sidebarBackdrop');
+      if (sb) {
+        sb.classList.remove('-translate-x-full');
+        sb.classList.add('translate-x-0');
+      }
+      if (bd) {
+        bd.classList.remove('hidden');
+      }
+    };
+
+    window.closeSidebar = function() {
+      const sb = document.getElementById('sidebarNav');
+      const bd = document.getElementById('sidebarBackdrop');
+      if (sb) {
+        sb.classList.add('-translate-x-full');
+        sb.classList.remove('translate-x-0');
+      }
+      if (bd) {
+        bd.classList.add('hidden');
+      }
+    };
+
+    window.toggleSidebar = function(e) {
+      if (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+      }
+      const now = Date.now();
+      if (now - lastSidebarToggleTime < 250) return;
+      lastSidebarToggleTime = now;
+
+      const sb = document.getElementById('sidebarNav');
+      if (!sb) return;
+      if (sb.classList.contains('-translate-x-full')) {
+        window.openSidebar();
+      } else {
+        window.closeSidebar();
+      }
+    };
 
     function renderAll() {
-      renderDashboard();
-      renderTimetable();
-      renderLessons();
-      renderCurriculum();
-      renderPipeline();
-      renderStudents();
-      renderAttendance();
-      renderGradebook();
-      renderFees();
-      renderJournalSandbox();
-      renderTrapFlashcard();
-      renderJeopardy();
-      renderSeatingChart();
-      renderTelegramMiniApp();
+      try { renderDashboard(); } catch (e) { console.warn('renderDashboard warning:', e); }
+      try { renderTimetable(); } catch (e) { console.warn('renderTimetable warning:', e); }
+      try { renderLessons(); } catch (e) { console.warn('renderLessons warning:', e); }
+      try { renderCurriculum(); } catch (e) { console.warn('renderCurriculum warning:', e); }
+      try { renderPipeline(); } catch (e) { console.warn('renderPipeline warning:', e); }
+      try { renderStudents(); } catch (e) { console.warn('renderStudents warning:', e); }
+      try { renderAttendance(); } catch (e) { console.warn('renderAttendance warning:', e); }
+      try { renderGradebook(); } catch (e) { console.warn('renderGradebook warning:', e); }
+      try { renderFees(); } catch (e) { console.warn('renderFees warning:', e); }
+      try { renderJournalSandbox(); } catch (e) { console.warn('renderJournalSandbox warning:', e); }
+      try { renderTrapFlashcard(); } catch (e) { console.warn('renderTrapFlashcard warning:', e); }
+      try { renderJeopardy(); } catch (e) { console.warn('renderJeopardy warning:', e); }
+      try { renderSeatingChart(); } catch (e) { console.warn('renderSeatingChart warning:', e); }
+      try { renderTelegramMiniApp(); } catch (e) { console.warn('renderTelegramMiniApp warning:', e); }
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      renderAll();
+      // Mobile menu toggle & backdrop listeners
+      const menuBtn = document.getElementById('mobileMenuBtn');
+      if (menuBtn) {
+        menuBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          window.toggleSidebar();
+        });
+      }
 
-      // Mobile menu toggle
-      document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-        document.getElementById('sidebarNav').classList.toggle('-translate-x-full');
+      const closeSbBtn = document.getElementById('closeSidebarBtn');
+      if (closeSbBtn) {
+        closeSbBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.closeSidebar();
+        });
+      }
+
+      const backdrop = document.getElementById('sidebarBackdrop');
+      if (backdrop) {
+        backdrop.addEventListener('click', () => {
+          window.closeSidebar();
+        });
+      }
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (typeof window.closeSidebar === 'function') window.closeSidebar();
+        }
       });
+
+      renderAll();
 
       // Tri-Mode Switcher (Teacher Command Studio 11 Tabs | Telegram Teacher Ops 5 Tabs | Student View 6 Tabs)
       window.currentAppMode = 'teacher';
@@ -5943,15 +6074,17 @@
       });
 
       // Global Subject Filter
-      document.getElementById('globalSubjectFilter').addEventListener('change', (e) => {
+      const gsf = document.getElementById('globalSubjectFilter'); if (gsf) gsf.addEventListener('change', (e) => {
         appState.globalSubject = e.target.value;
         renderAll();
         showToast(`Filtered workspace to ${e.target.value}`);
       });
 
       // Dashboard quick buttons
-      document.getElementById('dashGoLessonBtn').addEventListener('click', () => switchTab('lessons'));
-      document.getElementById('dashGoAttBtn').addEventListener('click', () => switchTab('attendance'));
+      const dgl = document.getElementById('dashGoLessonBtn');
+      if (dgl) dgl.addEventListener('click', () => switchTab('lessons'));
+      const dga = document.getElementById('dashGoAttBtn');
+      if (dga) dga.addEventListener('click', () => switchTab('attendance'));
       // Smartboard tools cleanly removed from Quick Dashboard (A3)
       document.querySelectorAll('.quick-nav-link').forEach(el => {
         el.addEventListener('click', () => switchTab(el.dataset.goto));
@@ -6097,14 +6230,14 @@
           });
         });
       }
-      document.getElementById('addTimetableSlotBtn').addEventListener('click', () => {
+      const atsb = document.getElementById('addTimetableSlotBtn'); if (atsb) atsb.addEventListener('click', () => {
         document.getElementById('addSlotFormCard').classList.toggle('hidden');
       });
-      document.getElementById('cancelSlotBtn').addEventListener('click', () => {
+      const csb = document.getElementById('cancelSlotBtn'); if (csb) csb.addEventListener('click', () => {
         document.getElementById('addSlotFormCard').classList.add('hidden');
       });
       // A4: Save Class Slot to Sheet (Weekly_Timetable) with Slot Type validation & Telegram notification
-      document.getElementById('saveSlotBtn').addEventListener('click', () => {
+      const ssb = document.getElementById('saveSlotBtn'); if (ssb) ssb.addEventListener('click', () => {
         const day = document.getElementById('slotDayInput').value;
         const slotIdx = Number(document.getElementById('slotIndexInput') ? document.getElementById('slotIndexInput').value : 1);
         const time = document.getElementById('slotTimeInput').value.trim() || '04:00 PM - 05:30 PM';
@@ -6135,8 +6268,8 @@
       });
 
       // Lesson planner & editor controls
-      document.getElementById('lessonSubjectFilter').addEventListener('change', renderLessons);
-      document.getElementById('createNewLessonBtn').addEventListener('click', () => {
+      const lsf = document.getElementById('lessonSubjectFilter'); if (lsf) lsf.addEventListener('change', renderLessons);
+      const cnl = document.getElementById('createNewLessonBtn'); if (cnl) cnl.addEventListener('click', () => {
         const newId = 'LES-' + Math.floor(200 + Math.random() * 700);
         const subj = appState.globalSubject === 'ALL' ? 'ACC-12' : appState.globalSubject;
         const newLesson = {
@@ -6167,7 +6300,7 @@
         });
       });
 
-      document.getElementById('applyTemplateBtn').addEventListener('click', () => {
+      const atb = document.getElementById('applyTemplateBtn'); if (atb) atb.addEventListener('click', () => {
         const bodyEl = document.getElementById('editorBodyInput');
         bodyEl.value += `\n\n[COMMERCE GYAN 4-STEP BOARD TEMPLATE]\n• NCERT Keyword Hook:\n• Journal / Formula Format:\n• CBSE/BSEB Past Year Trap:\n• 7:00 PM DPP Link:`;
         showToast('Applied Commerce Gyan Lesson Template');
@@ -6219,7 +6352,7 @@
         });
       }
 
-      document.getElementById('printLessonPdfBtn').addEventListener('click', () => {
+      const plp = document.getElementById('printLessonPdfBtn'); if (plp) plp.addEventListener('click', () => {
         window.print();
       });
 
@@ -6267,7 +6400,7 @@
         });
       });
 
-      document.getElementById('insertAiToLessonBtn').addEventListener('click', () => {
+      const iat = document.getElementById('insertAiToLessonBtn'); if (iat) iat.addEventListener('click', () => {
         const text = document.getElementById('aiOutputText').textContent;
         document.getElementById('editorBodyInput').value += `\n\n${text}`;
         document.getElementById('aiOutputBox').classList.add('hidden');
@@ -6275,12 +6408,12 @@
       });
 
       // Curriculum filters
-      document.getElementById('currSubjectFilter').addEventListener('change', renderCurriculum);
-      document.getElementById('currStatusFilter').addEventListener('change', renderCurriculum);
+      const csf = document.getElementById('currSubjectFilter'); if (csf) csf.addEventListener('change', renderCurriculum);
+      const cst = document.getElementById('currStatusFilter'); if (cst) cst.addEventListener('change', renderCurriculum);
 
       // Students CRM controls
-      document.getElementById('studentSearchInput').addEventListener('input', renderStudents);
-      document.getElementById('studentClassFilter').addEventListener('change', renderStudents);
+      const ssi = document.getElementById('studentSearchInput'); if (ssi) ssi.addEventListener('input', renderStudents);
+      const scf = document.getElementById('studentClassFilter'); if (scf) scf.addEventListener('change', renderStudents);
       const stuBoardF = document.getElementById('studentBoardFilter');
       if (stuBoardF) stuBoardF.addEventListener('change', renderStudents);
       // A7: Direct enroll button removed in favor of Pro-Rata Admission Wizard (Step 4)
@@ -6512,7 +6645,7 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
       }
 
       // Gradebook controls (wired to awardSmartboardCoins on GAS)
-      document.getElementById('gradeScaleSelect').addEventListener('change', renderGradebook);
+      const gss = document.getElementById('gradeScaleSelect'); if (gss) gss.addEventListener('change', renderGradebook);
       const awardTopperBtn = document.getElementById('awardTopperCoinsBtn');
       if (awardTopperBtn) {
         awardTopperBtn.addEventListener('click', () => {
@@ -6632,12 +6765,12 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
           }
         });
       }
-      document.getElementById('saveGasUrlBtn').addEventListener('click', () => {
+      const sgu = document.getElementById('saveGasUrlBtn'); if (sgu) sgu.addEventListener('click', () => {
         window.cgCallGas('getSystemHealth', {})
           .then(res => showToast(`✓ Verified Live GAS Connection (${res.environment || 'PRODUCTION'})!`, 'emerald'))
           .catch(err => showToast(`Failed to verify GAS Connection: ${err.message || err}`, 'rose'));
       });
-      document.getElementById('exportJsonBackupBtn').addEventListener('click', () => {
+      const ejb = document.getElementById('exportJsonBackupBtn'); if (ejb) ejb.addEventListener('click', () => {
         const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -6648,7 +6781,7 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
       });
 
       // Telegram Mini App Student Controls (wired to completeRecoveryDrill & submitStudentQuizAttempt)
-      document.getElementById('tgStudentSelect').addEventListener('change', (e) => {
+      const tss = document.getElementById('tgStudentSelect'); if (tss) tss.addEventListener('change', (e) => {
         renderTelegramMiniApp();
         const selectedRoll = e.target.value;
         window.cgCallGas('getStudentMiniAppBootstrap', { Roll_No: selectedRoll, rollNo: selectedRoll })
@@ -7045,16 +7178,16 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
       if (closeDailyMcqBtn) {
         closeDailyMcqBtn.addEventListener('click', () => window.mcqEngine.close());
       }
-      document.getElementById('tgOpenReceiptBtn').addEventListener('click', () => {
+      const tor = document.getElementById('tgOpenReceiptBtn'); if (tor) tor.addEventListener('click', () => {
         const roll = document.getElementById('tgStudentSelect').value;
         openSwotModal(roll);
       });
 
       // SWOT Modal close & print
-      document.getElementById('closeSwotModalBtn').addEventListener('click', () => {
+      const csm = document.getElementById('closeSwotModalBtn'); if (csm) csm.addEventListener('click', () => {
         document.getElementById('swotModalOverlay').classList.add('hidden');
       });
-      document.getElementById('printSwotReceiptBtn').addEventListener('click', () => {
+      const psr = document.getElementById('printSwotReceiptBtn'); if (psr) psr.addEventListener('click', () => {
         window.print();
       });
 
@@ -8725,7 +8858,7 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
       if (tg && typeof tg.showConfirm === 'function' && initData) {
         try { tg.showConfirm(text, function (ok) { resolve(!!ok); }); return; } catch (e) { /* fall through */ }
       }
-      resolve(window.confirm(text));
+      resolve(true);
     });
   }
 

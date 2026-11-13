@@ -1,0 +1,95 @@
+/* ═══════════════════════════════════════════════════════════════════════
+ * COMMERCE GYAN — AUTH FAILED OVERLAY (auth-failed.css)
+ * Premium Dark Obsidian & Gold Glassmorphic Lock Screen
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+.auth-failed-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(11, 12, 16, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #F8FAFC;
+}
+
+.auth-failed-card {
+  max-width: 380px;
+  width: 100%;
+  background: #14171F;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 24px;
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.7), 0 0 24px rgba(79, 70, 229, 0.18);
+  animation: authFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes authFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.auth-failed-logo {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #2D124D, #4F46E5);
+  border: 2px solid #D4AF37;
+  color: #D4AF37;
+  font-weight: 800;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+.auth-failed-title {
+  font-size: 19px;
+  font-weight: 800;
+  margin: 0 0 10px;
+  color: #FFFFFF;
+  letter-spacing: -0.02em;
+}
+
+.auth-failed-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #94A3B8;
+  margin: 0 0 24px;
+}
+
+.auth-failed-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2563EB, #4F46E5);
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.auth-failed-btn:active {
+  transform: scale(0.98);
+}
