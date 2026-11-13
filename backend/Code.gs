@@ -513,6 +513,9 @@ function doPost(e) {
       case "saveCalendarEvent":
         result = saveCalendarEvent(payload);
         break;
+      case "toggleAcademicHoliday":
+        result = toggleAcademicHoliday(payload);
+        break;
       case "getWeeklyTimetable":
         result = getWeeklyTimetable();
         break;
@@ -3676,5 +3679,82 @@ function saveClassRecordingLink(payload) {
     ];
     recSheet.appendRow(row);
     return { ok: true, message: "Class recording link saved to Daily_Class_Recordings", date: dateStr, youtubeUrl: payload.youtubeUrl };
+  });
+}
+
+/**
+ * A4: Date-wise persisted holiday toggle.
+ * Writes to Academic_Holidays sheet, shifts planned topics forward, and notifies students.
+ */
+function toggleAcademicHoliday(payload) {
+  return withWriteLock_(() => {
+    payload = payload || {};
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    let holSheet = erp.getSheetByName('Academic_Holidays');
+    if (!holSheet) {
+      holSheet = erp.insertSheet('Academic_Holidays');
+      holSheet.appendRow(['Date', 'Reason', 'Is_Holiday', 'Shift_Topics', 'Notified', 'Updated_At']);
+    }
+    const now = new Date();
+    const nowStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
+    const dateStr = payload.date || Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');
+    const reason = payload.reason || 'Institute Holiday';
+    const isHoliday = payload.isHoliday !== false;
+    const shiftTopics = payload.shiftTopics !== false;
+    const notified = payload.notifyStudents !== false;
+
+    holSheet.appendRow([dateStr, reason, isHoliday ? 'TRUE' : 'FALSE', shiftTopics ? 'TRUE' : 'FALSE', notified ? 'TRUE' : 'FALSE', nowStr]);
+
+    let shiftedCount = 0;
+    if (shiftTopics) {
+      try {
+        const sylSS = SpreadsheetApp.openById(IDS.SYLLABUS);
+        const sylSheet = sylSS.getSheetByName('01_Master_Syllabus');
+        if (sylSheet) {
+          const sylData = sylSheet.getDataRange().getValues();
+          const headers = sylData[0].map(h => String(h).trim());
+          const dateCol = headers.indexOf('Date_Completed') >= 0 ? headers.indexOf('Date_Completed') : headers.indexOf('Date');
+          if (dateCol >= 0) {
+            for (let i = 1; i < sylData.length; i++) {
+              if (String(sylData[i][dateCol]).trim() === dateStr) {
+                const d = new Date(dateStr);
+                d.setDate(d.getDate() + 1);
+                if (d.getDay() === 0) d.setDate(d.getDate() + 1);
+                const nextWorkingDate = Utilities.formatDate(d, 'Asia/Kolkata', 'yyyy-MM-dd');
+                sylSheet.getRange(i + 1, dateCol + 1).setValue(nextWorkingDate);
+                shiftedCount++;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        Logger.log('Shift syllabus warning: ' + err.message);
+      }
+    }
+
+    if (notified) {
+      try {
+        let notifSheet = erp.getSheetByName('Student_Notifications');
+        if (notifSheet) {
+          notifSheet.appendRow([
+            'NOTIF-HOL-' + Date.now(),
+            'ALL',
+            dateStr,
+            'HOLIDAY_NOTICE',
+            `Notice: ${dateStr} is observed as a holiday (${reason}). Classes & 7 PM DPP are shifted forward.`,
+            '',
+            'BROADCAST'
+          ]);
+        }
+      } catch (_) {}
+    }
+
+    return {
+      ok: true,
+      message: `Holiday recorded for ${dateStr}. Shifted ${shiftedCount} topics forward.`,
+      date: dateStr,
+      shiftedCount: shiftedCount
+    };
   });
 }

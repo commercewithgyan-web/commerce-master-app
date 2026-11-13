@@ -5536,26 +5536,96 @@
           showToast(`Switched Timetable to ${e.target.options[e.target.selectedIndex].text}`, 'indigo');
         });
       }
-      document.getElementById('toggleHolidayDayBtn').addEventListener('click', () => {
-        appState.holidayThursday = !appState.holidayThursday;
-        renderTimetable();
-        showToast(appState.holidayThursday ? 'Thursday marked as Holiday — lessons shifted!' : 'Thursday schedule restored', 'amber');
-      });
+      // A4: Persisted Date-Wise Holiday Management
+      const toggleHolBtn = document.getElementById('toggleHolidayDayBtn');
+      const holModal = document.getElementById('toggleHolidayModalOverlay');
+      const closeHolModalBtn = document.getElementById('closeToggleHolidayModalBtn');
+      const btnSubmitHol = document.getElementById('btnSubmitHolidayToggle');
+
+      if (toggleHolBtn && holModal) {
+        toggleHolBtn.addEventListener('click', () => {
+          holModal.classList.remove('hidden');
+        });
+      }
+      if (closeHolModalBtn && holModal) {
+        closeHolModalBtn.addEventListener('click', () => {
+          holModal.classList.add('hidden');
+        });
+      }
+      if (btnSubmitHol && holModal) {
+        btnSubmitHol.addEventListener('click', () => {
+          const holDate = document.getElementById('holDateInput').value;
+          const reason = (document.getElementById('holReasonInput').value || '').trim() || 'Institute Holiday';
+          const shiftTopics = document.getElementById('chkShiftSyllabus') ? document.getElementById('chkShiftSyllabus').checked : true;
+          const notifyStudents = document.getElementById('chkNotifyHolidayStudents') ? document.getElementById('chkNotifyHolidayStudents').checked : true;
+
+          if (!holDate) {
+            showToast('Please select a holiday date', 'amber');
+            return;
+          }
+
+          window.showAppConfirm({
+            title: '🏖️ Confirm Institute Holiday',
+            message: `Mark <strong>${holDate}</strong> as Holiday (${reason})?<br><br>• Shift syllabus topics forward: <strong>${shiftTopics ? 'YES' : 'NO'}</strong><br>• Notify students via Mini App: <strong>${notifyStudents ? 'YES' : 'NO'}</strong>`,
+            confirmText: 'Confirm Holiday & Shift',
+            cancelText: 'Cancel',
+            isDanger: false
+          }).then(confirmed => {
+            if (!confirmed) return;
+            holModal.classList.add('hidden');
+            showToast('Saving holiday & shifting planned topics in Sheets...', 'indigo');
+
+            window.cgCallGas('toggleAcademicHoliday', {
+              date: holDate,
+              reason: reason,
+              isHoliday: true,
+              shiftTopics: shiftTopics,
+              notifyStudents: notifyStudents
+            }).then(res => {
+              showToast(`✓ Holiday recorded for ${holDate}! Shifted ${res.shiftedCount || 0} topics forward.`, 'emerald');
+              renderTimetable();
+              renderCurriculum();
+            }).catch(err => {
+              showToast(`Failed to record holiday: ${err.message || err}`, 'rose');
+            });
+          });
+        });
+      }
       document.getElementById('addTimetableSlotBtn').addEventListener('click', () => {
         document.getElementById('addSlotFormCard').classList.toggle('hidden');
       });
       document.getElementById('cancelSlotBtn').addEventListener('click', () => {
         document.getElementById('addSlotFormCard').classList.add('hidden');
       });
+      // A4: Save Class Slot to Sheet (Weekly_Timetable) with Slot Type validation & Telegram notification
       document.getElementById('saveSlotBtn').addEventListener('click', () => {
         const day = document.getElementById('slotDayInput').value;
-        const time = document.getElementById('slotTimeInput').value.trim() || '04:00 PM';
-        const subject = document.getElementById('slotSubjectInput').value;
-        const topic = document.getElementById('slotTopicInput').value.trim() || 'Board Revision Session';
-        appState.timetableSlots.push({ day, time, subject, topic });
+        const slotIdx = Number(document.getElementById('slotIndexInput') ? document.getElementById('slotIndexInput').value : 1);
+        const time = document.getElementById('slotTimeInput').value.trim() || '04:00 PM - 05:30 PM';
+        const subject = document.getElementById('slotSubjectInput').value.trim() || 'ACC-12';
+        const slotType = document.getElementById('slotTypeInput') ? document.getElementById('slotTypeInput').value : 'Regular';
+        const topic = document.getElementById('slotTopicInput').value.trim() || 'Board Preparation & Working Notes';
+        const notifyStudents = document.getElementById('slotNotifyStudentsCheck') ? document.getElementById('slotNotifyStudentsCheck').checked : true;
+
+        const slotObj = { day, slotIndex: slotIdx, time, subject, topic, type: slotType, notes: '' };
+        appState.timetableSlots.push(slotObj);
         document.getElementById('addSlotFormCard').classList.add('hidden');
         renderTimetable();
-        showToast(`Added ${subject} slot on ${day}`, 'emerald');
+        showToast(`Saving ${subject} slot on ${day} to Sheet...`, 'indigo');
+
+        window.cgCallGas('saveWeeklyTimetable', {
+          day: day,
+          slotIndex: slotIdx,
+          time: time,
+          subject: subject,
+          topic: topic,
+          slotType: slotType,
+          notifyStudents: notifyStudents
+        }).then(res => {
+          showToast(`✓ ${slotType} slot for ${subject} saved and synced to Sheet (Weekly_Timetable)!`, 'emerald');
+        }).catch(err => {
+          showToast(`Slot saved locally (Sheet sync error: ${err.message || err})`, 'amber');
+        });
       });
 
       // Lesson planner & editor controls
@@ -6497,42 +6567,72 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
         window.print();
       });
 
-      // Academic Calendar Event Handler (#A8)
+      // A5: Academic Calendar In-App Modal Handler (Zero window.prompt or confirm)
       const addCalBtn = document.getElementById('addCalendarEventBtn');
-      if (addCalBtn) {
-        addCalBtn.addEventListener('click', () => {
-          const tomorrow = new Date();
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          const defDate = tomorrow.toISOString().split('T')[0];
-          const date = prompt('Enter Academic Event / Holiday Date (YYYY-MM-DD):', defDate);
-          if (!date) return;
-          const title = prompt('Enter Event / Holiday Title:', 'Pre-Board Accountancy Mock Test') || 'Pre-Board Mock';
-          const eventType = (prompt('Enter Event Type (HOLIDAY, EXAM, PTM, SPECIAL_EVENT):', 'EXAM') || 'EXAM').toUpperCase();
-          const isNoDpp = confirm('Should the 7:00 PM DPP dispatch be automatically suspended on this day?');
+      const calModal = document.getElementById('calendarEventModalOverlay');
+      const closeCalModalBtn = document.getElementById('closeCalEventModalBtn');
+      const btnSubmitCal = document.getElementById('btnSubmitCalendarEvent');
 
-          window.cgCallGas('saveCalendarEvent', {
-            date: date,
-            title: title,
-            eventType: eventType,
-            isNoDppDay: isNoDpp,
-            reason: 'Added via Commerce Gyan ERP'
-          }).then(res => {
-            showToast('Academic Calendar event saved to Sheet!', 'emerald');
-            const tbody = document.getElementById('academicCalendarTableBody');
-            if (tbody) {
-              const row = document.createElement('tr');
-              row.className = 'hover:bg-slate-50';
-              row.innerHTML = `
-                <td class="py-2.5 px-3 font-mono font-semibold text-slate-700">${date}</td>
-                <td class="py-2.5 px-3 font-bold text-slate-900">${title}</td>
-                <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${eventType === 'HOLIDAY' ? 'bg-rose-100 text-rose-800' : 'bg-indigo-100 text-indigo-800'}">${eventType}</span></td>
-                <td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${isNoDpp ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${isNoDpp ? 'NO DPP (Suspended)' : 'ACTIVE'}</span></td>
-                <td class="py-2.5 px-3 text-slate-500">Live added</td>
-              `;
-              tbody.insertBefore(row, tbody.firstChild);
-            }
-          }).catch(err => {
-            showToast('Saved Calendar event locally (' + err.message + ')', 'amber');
+      if (addCalBtn && calModal) {
+        addCalBtn.addEventListener('click', () => {
+          calModal.classList.remove('hidden');
+        });
+      }
+      if (closeCalModalBtn && calModal) {
+        closeCalModalBtn.addEventListener('click', () => {
+          calModal.classList.add('hidden');
+        });
+      }
+      if (btnSubmitCal && calModal) {
+        btnSubmitCal.addEventListener('click', () => {
+          const date = document.getElementById('calEventDateInput').value;
+          const batchId = document.getElementById('calEventBatchSelect').value;
+          const eventType = document.getElementById('calEventTypeSelect').value;
+          const isNoDpp = document.getElementById('calEventNoDppSelect').value === 'TRUE';
+          const title = (document.getElementById('calEventTitleInput').value || '').trim();
+          const desc = (document.getElementById('calEventDescInput').value || '').trim();
+
+          if (!date || !title) {
+            showToast('Please enter both event date and title', 'amber');
+            return;
+          }
+
+          window.showAppConfirm({
+            title: '🗓️ Save Academic Calendar Event',
+            message: `Publish <strong>${title}</strong> on <strong>${date}</strong> (${eventType}) for <strong>${batchId}</strong>?<br><br>7 PM DPP: <strong>${isNoDpp ? 'Suspended' : 'Active'}</strong>.<br>This will notify students and record into Academic_Calendar.`,
+            confirmText: 'Save & Broadcast Event',
+            cancelText: 'Cancel'
+          }).then(confirmed => {
+            if (!confirmed) return;
+            calModal.classList.add('hidden');
+            showToast('Saving calendar event to Google Sheets...', 'indigo');
+
+            window.cgCallGas('saveCalendarEvent', {
+              date: date,
+              batchId: batchId,
+              eventType: eventType,
+              isNoDppDay: isNoDpp,
+              title: title,
+              reason: desc || title,
+              createdBy: (appState && appState.userRole === 'SUB_ADMIN') ? 'Sub-Admin' : 'Gyan Sir'
+            }).then(res => {
+              showToast('✓ Academic event saved to Academic_Calendar sheet!', 'emerald');
+              const tbody = document.getElementById('academicCalendarTableBody');
+              if (tbody) {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-slate-50';
+                row.innerHTML = `
+                  <td class="py-2.5 px-3 font-mono font-semibold text-slate-700">${date}</td>
+                  <td class="py-2.5 px-3 font-bold text-slate-900">${title}</td>
+                  <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${eventType === 'HOLIDAY' ? 'bg-rose-100 text-rose-800' : 'bg-indigo-100 text-indigo-800'}">${eventType}</span></td>
+                  <td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${isNoDpp ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${isNoDpp ? 'NO DPP (Suspended)' : 'ACTIVE'}</span></td>
+                  <td class="py-2.5 px-3 text-slate-500">Live added</td>
+                `;
+                tbody.insertBefore(row, tbody.firstChild);
+              }
+            }).catch(err => {
+              showToast('Failed to save calendar event: ' + (err.message || err), 'rose');
+            });
           });
         });
       }
