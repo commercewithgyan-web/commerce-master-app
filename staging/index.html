@@ -163,7 +163,7 @@
   <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Top Global Header: Role Mode Switcher, Capacity Meter, Sync Status -->
-  <header class="no-print sticky top-0 z-30 bg-slate-900 text-white border-b border-slate-800 shadow-sm">
+  <header id="topAppHeader" class="no-print sticky top-0 z-30 bg-slate-900 text-white border-b border-slate-800 shadow-sm">
     <div class="max-w-[1600px] mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2">
       <!-- Brand -->
       <div class="flex items-center gap-2.5 min-w-0">
@@ -4172,10 +4172,20 @@
     // ==================== RENDER: TELEGRAM MINI APP STUDENT VIEW ====================
     function renderTelegramMiniApp() {
       const sel = document.getElementById('tgStudentSelect');
-      if (sel.options.length !== appState.students.length) {
+      const bar = document.getElementById('studentWorkspaceToggleBar');
+      const hdr = document.getElementById('topAppHeader');
+
+      if (!window.isServerVerifiedAdmin) {
+        if (sel) sel.classList.add('hidden');
+        if (bar) bar.classList.add('hidden');
+        if (hdr) hdr.classList.add('hidden');
+      }
+
+      if (sel && sel.options.length !== appState.students.length) {
         sel.innerHTML = appState.students.map(s => `<option value="${s.roll}">${s.name} (${s.roll})</option>`).join('');
       }
-      const activeRoll = sel.value || appState.students[0].roll;
+      const sessionRoll = window.session && window.session.student && (window.session.student.Roll_No || window.session.student.roll);
+      const activeRoll = (!window.isServerVerifiedAdmin && sessionRoll) ? sessionRoll : ((sel && sel.value) || (appState.students[0] && appState.students[0].roll) || 'CG-1201');
       const stu = appState.students.find(s => s.roll === activeRoll) || appState.students[0];
 
       const presentDays = stu.att.filter(a => a === 'P').length;
@@ -4731,6 +4741,31 @@
 
       window.isServerVerifiedAdmin = false;
 
+      // Platform check for unlisted videos: Telegram Desktop / Web are blocked from screen-recording unlisted classes
+      window.isDesktopOrWebPlatform = function() {
+        const p = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.platform ? window.Telegram.WebApp.platform : '').toLowerCase();
+        const blockedPlatforms = ['tdesktop', 'macos', 'web', 'weba', 'unknown'];
+        if (blockedPlatforms.indexOf(p) !== -1) return true;
+        if (p === 'android' || p === 'ios') return false;
+        // Fallback user agent check
+        return !/android|iphone|ipad|ipod/i.test(navigator.userAgent);
+      };
+
+      window.checkVideoDesktopRestriction = function(containerEl) {
+        if (!containerEl) return false;
+        if (window.isDesktopOrWebPlatform()) {
+          containerEl.innerHTML = `
+            <div class="p-6 bg-slate-900 border border-amber-500/40 rounded-2xl text-center space-y-2 select-none">
+              <div class="text-3xl">📱</div>
+              <p class="text-sm font-extrabold text-amber-300">Videos sirf mobile par chalenge</p>
+              <p class="text-xs text-slate-400">Class lectures and unlisted videos are strictly protected and can only be played inside the Telegram Mobile App (Android / iOS).</p>
+            </div>
+          `;
+          return true;
+        }
+        return false;
+      };
+
       window.switchAppMode = function(targetMode) {
         const mode = (targetMode === 'student' || targetMode === 'ops') ? targetMode : 'teacher';
         if (mode === 'teacher' || mode === 'ops') {
@@ -4749,10 +4784,26 @@
         const teacherBtn = document.getElementById('modeTeacherBtn');
         const opsBtn = document.getElementById('modeOpsBtn');
         const studentBtn = document.getElementById('modeStudentBtn');
+        const topAppHeader = document.getElementById('topAppHeader');
+        const studentToggleBar = document.getElementById('studentWorkspaceToggleBar');
+        const tgStudentSelect = document.getElementById('tgStudentSelect');
 
         if (teacherWs) teacherWs.classList.toggle('hidden', mode !== 'teacher');
         if (opsWs) opsWs.classList.toggle('hidden', mode !== 'ops');
         if (studentWs) studentWs.classList.toggle('hidden', mode !== 'student');
+
+        // S1: Students must NOT see the Teacher header, role toggle, or student switcher
+        if (mode === 'student' && !window.isServerVerifiedAdmin) {
+          if (topAppHeader) topAppHeader.classList.add('hidden');
+          if (studentToggleBar) studentToggleBar.classList.add('hidden');
+          if (tgStudentSelect) tgStudentSelect.classList.add('hidden');
+        } else {
+          if (topAppHeader) topAppHeader.classList.remove('hidden');
+          if (studentToggleBar) {
+            studentToggleBar.classList.toggle('hidden', mode !== 'student');
+          }
+          if (tgStudentSelect) tgStudentSelect.classList.remove('hidden');
+        }
 
         if (roleToggleText) {
           roleToggleText.textContent = mode === 'teacher' ? '🔄 Mobile Ops' : (mode === 'ops' ? '🔄 Student View' : '🔄 Teacher Studio');
@@ -4766,6 +4817,13 @@
 
         window.currentAppMode = mode;
         window.isAdminPreview = Boolean(window.isServerVerifiedAdmin && mode === 'student');
+
+        // Check desktop restriction on rec01 video container
+        const rec01Container = document.getElementById('rec01VideoPlayerContainer');
+        if (rec01Container && mode === 'student') {
+          window.checkVideoDesktopRestriction(rec01Container);
+        }
+
         renderAll();
       };
 
@@ -7521,6 +7579,13 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
   function startStudent(s) {
     hideGate();
     unlock();
+    var topAppHeader = document.getElementById('topAppHeader');
+    if (topAppHeader && !window.isServerVerifiedAdmin) topAppHeader.classList.add('hidden');
+    var studentToggleBar = document.getElementById('studentWorkspaceToggleBar');
+    if (studentToggleBar && !window.isServerVerifiedAdmin) studentToggleBar.classList.add('hidden');
+    var tgStudentSelect = document.getElementById('tgStudentSelect');
+    if (tgStudentSelect && !window.isServerVerifiedAdmin) tgStudentSelect.classList.add('hidden');
+
     if (typeof window.switchAppMode === 'function') {
       window.switchAppMode('student');
     } else {
