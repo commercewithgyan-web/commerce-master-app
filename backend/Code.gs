@@ -180,7 +180,7 @@ function isAdminOnlyAction_(action) {
     'testGenerateBstFlowchartPdf', 'testGenerateSubjectiveQuestionPdf',
     'testGenerateSubjectiveAnswerPdf', 'checkBalanceSheetIntegrity',
     'getMonthlyPL', 'getBalanceSheet', 'getCashDrawer', 'reconcileNotebookRegistry',
-    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan'
+    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask'
   ];
   return adminActions.indexOf(action) !== -1;
 }
@@ -470,6 +470,15 @@ function doPost(e) {
         break;
       case "cancelBatchLecture":
         result = cancelBatchLecture(payload);
+        break;
+      case "saveAcademicTask":
+        result = saveAcademicTask(payload);
+        break;
+      case "getAcademicTasks":
+        result = getAcademicTasks(payload);
+        break;
+      case "toggleAcademicTask":
+        result = toggleAcademicTask(payload);
         break;
       case "getAcademicCalendar":
         result = getAcademicCalendar();
@@ -3181,4 +3190,64 @@ function computeSHA256Hex_(str) {
     hex += h;
   }
   return hex;
+}
+
+
+function saveAcademicTask(payload) {
+  return withWriteLock_(() => {
+    payload = payload || {};
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    let taskSheet = erp.getSheetByName("Academic_Tasks");
+    if (!taskSheet) {
+      taskSheet = erp.insertSheet("Academic_Tasks");
+      taskSheet.appendRow(["Task_ID", "Date", "Class", "Subject", "Task_Text", "Status", "Action_Route", "Created_At"]);
+    }
+    const now = new Date();
+    const dateStr = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd");
+    const nowStr = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
+    const taskId = payload.taskId || ("TSK-" + Date.now());
+    const row = [
+      taskId,
+      payload.date || dateStr,
+      String(payload.classLevel || "12"),
+      String(payload.subject || "ACC-12"),
+      String(payload.taskText || payload.text || "Daily Checklist Task"),
+      String(payload.status || "OPEN"),
+      String(payload.actionRoute || ""),
+      nowStr
+    ];
+    taskSheet.appendRow(row);
+    return { ok: true, taskId: taskId, message: "Academic task saved to Sheet" };
+  });
+}
+
+function getAcademicTasks(payload) {
+  const IDS = getActiveSheetIds();
+  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  let taskSheet = erp.getSheetByName("Academic_Tasks");
+  if (!taskSheet) return { ok: true, tasks: [] };
+  const rows = sheetToObjects(taskSheet);
+  return { ok: true, tasks: rows };
+}
+
+function toggleAcademicTask(payload) {
+  return withWriteLock_(() => {
+    payload = payload || {};
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    let taskSheet = erp.getSheetByName("Academic_Tasks");
+    if (!taskSheet) return { ok: false, error: "Academic_Tasks sheet not found" };
+    const data = taskSheet.getDataRange().getValues();
+    const targetId = String(payload.taskId || "").trim();
+    for (let r = 1; r < data.length; r++) {
+      if (String(data[r][0]).trim() === targetId) {
+        const curStatus = String(data[r][5]).trim();
+        const newStatus = curStatus === "COMPLETED" ? "OPEN" : "COMPLETED";
+        taskSheet.getRange(r + 1, 6).setValue(newStatus);
+        return { ok: true, taskId: targetId, status: newStatus };
+      }
+    }
+    return { ok: false, error: "Task ID not found" };
+  });
 }

@@ -14,7 +14,7 @@ var TIMEZONE_KOLKATA = 'Asia/Kolkata';
  */
 function getGeminiModel_() {
   var props = PropertiesService.getScriptProperties();
-  return props.getProperty('GEMINI_MODEL') || 'gemini-3.0-flash';
+  return props.getProperty('GEMINI_MODEL') || 'gemini-1.5-flash';
 }
 
 /**
@@ -31,10 +31,10 @@ function callGeminiGenerateContent_(payload) {
 
   // Priority order: latest active model, recommended models, legacy fallbacks
   var candidateModels = [
-    "gemini-3.0-flash",
-    "gemini-flash-latest",
-    "gemini-2.0-flash",
     "gemini-1.5-flash",
+    "gemini-2.0-flash",
+    "gemini-2.5-flash",
+    "gemini-1.5-pro",
     "gemini-2.5-pro"
   ];
 

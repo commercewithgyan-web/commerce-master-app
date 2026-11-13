@@ -105,7 +105,7 @@
 
       <!-- Center: Tri-Mode Switcher (Teacher Studio 11 Tabs | Mobile Teacher Ops 5 Tabs | Student Mini App 6 Tabs) + 1-Tap Inquiry Hub -->
       <div class="flex items-center gap-1.5 sm:gap-2">
-        <button id="topQuickPipelineBtn" type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md cursor-pointer">
+        <button id="topQuickPipelineBtn" type="button" class="hidden md:inline-flex px-2.5 py-1.5 rounded-xl text-xs font-extrabold transition items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md cursor-pointer">
           <span>🎯</span><span class="hidden md:inline">Inquiry &amp; Admission Hub</span><span class="md:hidden">CRM</span>
         </button>
         <button id="roleToggleBtn" type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 text-white shadow-md border border-indigo-400/30 cursor-pointer">
@@ -130,7 +130,7 @@
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span class="text-xs text-slate-300 font-medium">Students: <strong id="headerStudentCount" class="text-white">60</strong> / 100 Free Cap</span>
         </div>
-        <button id="openSyncQuickBtn" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow-sm">
+        <button id="openSyncQuickBtn" type="button" class="hidden md:inline-flex px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition items-center gap-1.5 shadow-sm">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
           <span class="hidden sm:inline">Sheets + GitHub Sync</span>
         </button>
@@ -257,17 +257,20 @@
             <p class="text-xs sm:text-sm text-slate-300 mt-1">You have <strong class="text-white">4 batch lectures</strong> scheduled today across Class 11 & 12, <strong class="text-amber-300" id="dashRecoveryCount">5 students</strong> queued for <code class="mono">REC-01</code> recovery drills, and the <strong class="text-emerald-300">7:00 PM DPP</strong> ready for dispatch.</p>
           </div>
           <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <button type="button" id="dashGoPipelineBtn" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition shadow">
-              🎯 Open Inquiry &amp; Admission Hub
+            <button type="button" id="dashEndClassBtn" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold transition shadow flex items-center gap-1.5 animate-pulse cursor-pointer">
+              <span>🛑</span><span>End Class</span>
             </button>
-            <button type="button" id="dashGoLessonBtn" class="px-3.5 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold transition shadow">
-              + Plan Lesson with AI
+            <button type="button" id="dashGoInquiryBtn" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition shadow cursor-pointer">
+              🎯 Walk-in Inquiry
             </button>
-            <button type="button" id="dashGoAttBtn" class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/15 transition">
-              Mark Today's Attendance
+            <button type="button" id="dashGoAdmissionBtn" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold transition shadow cursor-pointer">
+              🎓 Confirm Admission
             </button>
-            <button type="button" id="dashGoToolsBtn" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow">
-              Open Smartboard Tools
+            <button type="button" id="dashGoAttBtn" class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/15 transition cursor-pointer">
+              ✅ Mark Attendance
+            </button>
+            <button type="button" id="dashGoLessonBtn" class="px-3.5 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold transition shadow cursor-pointer">
+              + Plan Lesson
             </button>
           </div>
         </div>
@@ -346,7 +349,7 @@
             <div class="pt-3 border-t border-slate-100">
               <div class="flex items-center justify-between mb-2.5">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">All 8 Commerce Subjects (Class 11 & 12 — CBSE & BSEB)</h3>
-                <button type="button" data-goto="curriculum" class="quick-nav-link text-xs font-semibold text-indigo-600 hover:underline">Manage 797 Subtopics →</button>
+                <button type="button" data-goto="curriculum" class="quick-nav-link text-xs font-semibold text-indigo-600 hover:underline">Syllabus Planner →</button>
               </div>
               <div id="eightSubjectsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
             </div>
@@ -533,15 +536,61 @@
               </div>
             </div>
 
-            <!-- Title & Metadata Inputs -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div class="sm:col-span-2">
-                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Lesson Title</label>
-                <input id="editorTitleInput" type="text" class="w-full text-base font-bold text-slate-900 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <!-- Title & Metadata Inputs (A3 Cascading Selector & Notion/Questions) -->
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5 p-3 rounded-2xl bg-indigo-50/50 border border-indigo-100">
+              <div>
+                <label class="block text-[10px] font-bold uppercase text-indigo-900 mb-1">Class Level</label>
+                <select id="editorClassSelect" class="w-full text-xs font-bold border border-slate-300 rounded-xl px-2.5 py-2 bg-white">
+                  <option value="12">Class 12</option>
+                  <option value="11">Class 11</option>
+                </select>
               </div>
               <div>
-                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Unit / Chapter</label>
-                <input id="editorUnitInput" type="text" class="w-full text-xs font-semibold text-slate-800 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <label class="block text-[10px] font-bold uppercase text-indigo-900 mb-1">Subject</label>
+                <select id="editorSubjectSelect" class="w-full text-xs font-bold border border-slate-300 rounded-xl px-2.5 py-2 bg-white">
+                  <option value="ACC-12">12th Accountancy</option>
+                  <option value="BST-12">12th Business Studies</option>
+                  <option value="MAC-12">12th Macroeconomics</option>
+                  <option value="IED-12">12th Indian Econ &amp; EPS</option>
+                  <option value="ACC-11">11th Accountancy</option>
+                  <option value="BST-11">11th Business Studies</option>
+                  <option value="MIC-11">11th Microeconomics</option>
+                  <option value="STA-11">11th Statistics</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold uppercase text-indigo-900 mb-1">Topic / Chapter</label>
+                <input id="editorUnitInput" type="text" placeholder="Ch 3: Admission of a Partner" class="w-full text-xs font-semibold border border-slate-300 rounded-xl px-2.5 py-2 bg-white" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold uppercase text-indigo-900 mb-1">Board Importance</label>
+                <select id="editorBoardImportanceSelect" class="w-full text-xs font-bold border border-slate-300 rounded-xl px-2.5 py-2 bg-white text-indigo-900">
+                  <option value="5/5 (High Frequency)">⭐⭐⭐⭐⭐ 5/5 High Freq</option>
+                  <option value="4/5 (Standard 6M)">⭐⭐⭐⭐ 4/5 Standard 6M</option>
+                  <option value="3/5 (3-4 Marks)">⭐⭐⭐ 3/5 3-4 Marks</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="sm:col-span-2">
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Sub-topic / Lesson Title</label>
+                <input id="editorTitleInput" type="text" placeholder="e.g. Hidden Goodwill Calculation &amp; Capital Adjustment" class="w-full text-sm font-bold text-slate-900 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Question Numbers Taught</label>
+                <input id="editorQuestionsTaughtInput" type="text" placeholder="e.g. Q4, Q7, Q9, Illus 12" class="w-full text-xs font-semibold text-slate-800 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Notion Planner Link (Examples &amp; Case Studies)</label>
+                <input id="editorNotionLinkInput" type="url" placeholder="https://notion.so/commercegyan/..." class="w-full text-xs font-mono text-indigo-600 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Learning Objective (Student Facing)</label>
+                <input id="editorLearningObjectiveInput" type="text" placeholder="e.g. Master hidden goodwill calculation &amp; sacrifice ratio" class="w-full text-xs text-slate-800 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
             </div>
 
@@ -1993,10 +2042,15 @@
 
         <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 class="text-lg font-extrabold text-slate-900">Curriculum & Standards Tracker (71 Chapters · 797 Subtopics)</h2>
-            <p class="text-xs text-slate-500">Replaces generic standards with your canonical <code class="mono">02_Syllabus_Planner</code> across all 8 Class 11 & 12 subjects (CBSE & BSEB). Click any status badge to cycle progress.</p>
+            <h2 class="text-lg font-extrabold text-slate-900">Syllabus Planner (Date Window: −3 Days to +7 Days)</h2>
+            <p class="text-xs text-slate-500">Active and upcoming subtopics from <code class="mono">02_Syllabus_Planner</code>. Filter by Class and Subject. Tap status ↻ to cycle status with confirmation.</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
+            <select id="currClassFilter" onchange="if(typeof renderCurriculum==='function')renderCurriculum();" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
+              <option value="ALL">All Classes (11 &amp; 12)</option>
+              <option value="12">Class 12</option>
+              <option value="11">Class 11</option>
+            </select>
             <select id="currSubjectFilter" onchange="if(typeof renderCurriculum==='function')renderCurriculum();" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
               <option value="ALL">All 8 Subjects (11th & 12th)</option>
               <option value="ACC-12">12th Accountancy (ACC-12)</option>
@@ -2291,7 +2345,7 @@
             <span class="text-[10px] font-extrabold uppercase text-amber-600">Mobile 7-Step Pipeline</span>
             <h3 class="text-sm font-extrabold text-slate-900">Walk-In CRM, D1/D2/D3 &amp; Admission</h3>
           </div>
-          <button id="opsNewInqJumpBtn" type="button" class="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-extrabold">+ Walk-In</button>
+          
         </div>
         <div id="opsCrmCardsList" class="space-y-2.5"></div>
       </div>
@@ -2870,6 +2924,123 @@
 
   
   <!-- ==================== IN-APP CONFIRMATION MODAL (ZERO WINDOW.CONFIRM) ==================== -->
+
+  <!-- ==================== END CLASS WORKFLOW MODAL (A3) ==================== -->
+  <div id="endClassModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div>
+          <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 text-[10px] font-extrabold uppercase">A3 • End-of-Class Flow</span>
+          <h3 class="text-base font-extrabold text-slate-900 mt-1">🛑 End Class &amp; Automated Pipeline Dispatch</h3>
+          <p class="text-xs text-slate-500">Wrap up lecture, attach Goodnotes + YouTube links, notify absentees, and trigger 7 PM DPP.</p>
+        </div>
+        <button id="closeEndClassModalBtn" type="button" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Target Class &amp; Subject</label>
+          <select id="endClassBatchSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 font-bold">
+            <option value="Class 12 · Accountancy">Class 12 · Accountancy (C12_EVE)</option>
+            <option value="Class 11 · Accountancy">Class 11 · Accountancy (C11_MORN)</option>
+            <option value="Class 12 · Business Studies">Class 12 · Business Studies (BST12)</option>
+            <option value="Class 12 · Macroeconomics">Class 12 · Macroeconomics (MAC12)</option>
+            <option value="Class 11 · Statistics">Class 11 · Statistics &amp; EPS (STA11)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Goodnotes Chalkboard PDF Export Link</label>
+          <input id="endClassGoodnotesInput" type="url" placeholder="https://drive.google.com/... or Goodnotes share URL" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono" />
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Unlisted YouTube Lecture Video URL</label>
+          <input id="endClassYoutubeInput" type="url" placeholder="https://youtu.be/... (Unlisted lecture for absent students)" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono" />
+        </div>
+
+        <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+          <span class="font-extrabold text-slate-800 block text-[11px] uppercase tracking-wider">End-of-Class Mandatory Checklist</span>
+          <label class="flex items-center gap-2 text-slate-700 cursor-pointer">
+            <input id="chkEndClassAtt" type="checkbox" checked class="w-4 h-4 rounded text-indigo-600" />
+            <span>Attendance marked &amp; absent students notified with YouTube video link</span>
+          </label>
+          <label class="flex items-center gap-2 text-slate-700 cursor-pointer">
+            <input id="chkEndClassGoodnotes" type="checkbox" checked class="w-4 h-4 rounded text-indigo-600" />
+            <span>Goodnotes chalkboard notes attached &amp; synced with today's topic</span>
+          </label>
+          <label class="flex items-center gap-2 text-slate-700 cursor-pointer">
+            <input id="chkEndClassDpp" type="checkbox" checked class="w-4 h-4 rounded text-indigo-600" />
+            <span>Automatically trigger 7:00 PM DPP dispatch flow for this class</span>
+          </label>
+        </div>
+
+        <button id="btnSubmitEndClassFlow" type="button" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold transition shadow">
+          🚀 Complete End of Class &amp; Launch 7 PM DPP Dispatch
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 7:00 PM DPP DISPATCH MODAL (A3) ==================== -->
+  <div id="dppDispatchModalOverlay" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div>
+          <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">A3 • Telegram Mini App Dispatch</span>
+          <h3 class="text-base font-extrabold text-slate-900 mt-1">📡 Dispatch 7:00 PM Daily Practice Paper</h3>
+          <p class="text-xs text-slate-500">Pushes 70% Fresh + 30% Retention MCQs and logs Subjective PDF to 4. Telegram Delivery.</p>
+        </div>
+        <button id="closeDppDispatchModalBtn" type="button" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Class</label>
+            <select id="dppDispatchClassSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 font-bold">
+              <option value="12">Class 12</option>
+              <option value="11">Class 11</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Subject</label>
+            <select id="dppDispatchSubjectSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 font-bold">
+              <option value="Accountancy">Accountancy</option>
+              <option value="Business Studies">Business Studies</option>
+              <option value="Economics">Economics</option>
+              <option value="Statistics">Statistics</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Topic from Question Bank</label>
+          <select id="dppDispatchTopicSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 font-bold">
+            <option value="Hidden Goodwill & Revaluation">Admission: Hidden Goodwill &amp; Revaluation</option>
+            <option value="Share Forfeiture & Re-issue">Share Capital: Pro-Rata &amp; Forfeiture</option>
+            <option value="Fayol 14 Principles">BST: Fayol 14 Management Principles</option>
+            <option value="National Income Aggregates">Macroeconomics: National Income Aggregates</option>
+            <option value="Bank Reconciliation Statement">Class 11 Accounts: BRS Overdraft</option>
+            <option value="Standard Deviation & Measures of Dispersion">Statistics: Standard Deviation</option>
+          </select>
+        </div>
+
+        <div class="p-3 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-1 text-indigo-950">
+          <div class="flex justify-between font-bold">
+            <span>Target Telegram Channel:</span>
+            <span id="dppTargetChannelText" class="font-mono text-indigo-600">@commercewithgyan_class12</span>
+          </div>
+          <p class="text-[11px] text-indigo-800">Only authorized Gyan Sir session can dispatch. Includes 7:30 PM Subjective Question sheet rendered on official Daily Practice Sheet template.</p>
+        </div>
+
+        <button id="btnExecuteDppDispatch" type="button" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold transition shadow">
+          🚀 Confirm &amp; Dispatch 7:00 PM DPP Now
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="cgConfirmModalOverlay" class="fixed inset-0 z-[100] hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
       <div class="flex items-center gap-3">
@@ -3806,28 +3977,34 @@
 
     // ==================== RENDER: CURRICULUM & 797 SUBTOPICS (DESKTOP TABLE + MOBILE ACCORDION) ====================
     function renderCurriculum() {
+      const classEl = document.getElementById('currClassFilter');
       const subjEl = document.getElementById('currSubjectFilter');
       const statusEl = document.getElementById('currStatusFilter');
+      const classFilter = classEl ? classEl.value : 'ALL';
       const subjFilter = subjEl ? subjEl.value : 'ALL';
       const statusFilter = statusEl ? statusEl.value : 'ALL';
 
       const rows = (appState.curriculumTopics || []).filter(item => {
         const itemSubj = String(item.subject || '').toUpperCase().trim();
         const sf = String(subjFilter).toUpperCase().trim();
-        let sMatch = (sf === 'ALL');
-        if (!sMatch) {
-          sMatch = (itemSubj === sf) ||
-                   (sf.includes('ACC') && itemSubj.includes('ACC')) ||
-                   (sf.includes('BST') && itemSubj.includes('BST')) ||
-                   (sf.includes('MAC') && itemSubj.includes('MAC')) ||
-                   (sf.includes('MIC') && itemSubj.includes('MIC')) ||
-                   (sf.includes('STA') && itemSubj.includes('STA')) ||
-                   (sf.includes('IED') && itemSubj.includes('IED'));
+        const cf = String(classFilter).toUpperCase().trim();
+
+        // Class filter match
+        let cMatch = (cf === 'ALL');
+        if (!cMatch) {
+          if (cf === '12') cMatch = itemSubj.includes('12') || (item.id && item.id.includes('12'));
+          else if (cf === '11') cMatch = itemSubj.includes('11') || (item.id && item.id.includes('11'));
         }
+
+        // Subject filter match (exact code match)
+        let sMatch = (sf === 'ALL') || (itemSubj === sf);
+
+        // Status match
         const itemStat = String(item.status || '').toLowerCase().trim();
         const stf = String(statusFilter).toLowerCase().trim();
         const stMatch = (stf === 'all') || (itemStat === stf);
-        return sMatch && stMatch;
+
+        return cMatch && sMatch && stMatch;
       });
 
       const badgeStyle = {
@@ -5164,16 +5341,33 @@
         el.addEventListener('click', () => switchTab(el.dataset.goto));
       });
 
-      // Add Task
-      document.getElementById('addTaskBtn').addEventListener('click', () => {
-        const input = document.getElementById('newTaskInput');
-        const subj = document.getElementById('newTaskSubject').value;
-        if (!input.value.trim()) return;
-        appState.tasks.unshift({ id: Date.now(), text: input.value.trim(), subject: subj, done: false });
-        input.value = '';
-        renderTasks();
-        showToast('Task added to teacher queue', 'emerald');
-      });
+      // Add Task (Persisted to Sheet Academic_Tasks)
+      const addTaskBtn = document.getElementById('addTaskBtn');
+      if (addTaskBtn) {
+        addTaskBtn.addEventListener('click', () => {
+          const input = document.getElementById('newTaskInput');
+          const subj = document.getElementById('newTaskSubject').value;
+          const text = input ? input.value.trim() : '';
+          if (!text) return;
+          const taskId = 'TSK-' + Date.now();
+          const taskObj = { id: taskId, text: text, subject: subj, done: false };
+          appState.tasks.unshift(taskObj);
+          if (input) input.value = '';
+          renderTasks();
+
+          window.cgCallGas('saveAcademicTask', {
+            taskId: taskId,
+            taskText: text,
+            subject: subj,
+            classLevel: subj.includes('11') ? '11' : '12',
+            status: 'OPEN'
+          }).then(() => {
+            showToast('Task saved and synced to Google Sheets (Academic_Tasks)!', 'emerald');
+          }).catch(err => {
+            showToast('Task saved locally (Sheet sync error: ' + (err.message || err) + ')', 'amber');
+          });
+        });
+      }
 
       // Dispatch 7:00 PM DPP
       document.getElementById('dispatchDppNowBtn').addEventListener('click', () => {
@@ -5258,17 +5452,51 @@
         showToast('Applied Commerce Gyan Lesson Template');
       });
 
-      document.getElementById('saveLessonBtn').addEventListener('click', () => {
-        const current = appState.lessons.find(l => l.id === appState.selectedLessonId);
-        if (current) {
-          current.title = document.getElementById('editorTitleInput').value;
-          current.unit = document.getElementById('editorUnitInput').value;
-          current.body = document.getElementById('editorBodyInput').value;
+      const saveLessonBtn = document.getElementById('saveLessonBtn');
+      if (saveLessonBtn) {
+        saveLessonBtn.addEventListener('click', () => {
+          const current = appState.lessons.find(l => l.id === appState.selectedLessonId) || appState.lessons[0];
+          if (!current) return;
+          const title = (document.getElementById('editorTitleInput') && document.getElementById('editorTitleInput').value) || current.title;
+          const unit = (document.getElementById('editorUnitInput') && document.getElementById('editorUnitInput').value) || current.unit;
+          const body = (document.getElementById('editorBodyInput') && document.getElementById('editorBodyInput').value) || current.body;
+          const classLevel = (document.getElementById('editorClassSelect') && document.getElementById('editorClassSelect').value) || '12';
+          const subject = (document.getElementById('editorSubjectSelect') && document.getElementById('editorSubjectSelect').value) || current.subject || 'ACC-12';
+          const notionLink = (document.getElementById('editorNotionLinkInput') && document.getElementById('editorNotionLinkInput').value) || '';
+          const questionsTaught = (document.getElementById('editorQuestionsTaughtInput') && document.getElementById('editorQuestionsTaughtInput').value) || '';
+          const learningObjective = (document.getElementById('editorLearningObjectiveInput') && document.getElementById('editorLearningObjectiveInput').value) || '';
+          const boardImportance = (document.getElementById('editorBoardImportanceSelect') && document.getElementById('editorBoardImportanceSelect').value) || '5/5 (High Frequency)';
+
+          current.title = title;
+          current.unit = unit;
+          current.body = body;
+          current.subject = subject;
+          current.notionLink = notionLink;
+          current.questionsTaught = questionsTaught;
+          current.learningObjective = learningObjective;
+          current.boardImportance = boardImportance;
+
           renderLessons();
           renderDashboard();
-          showToast('Lesson plan saved & synced with Syllabus Planner', 'emerald');
-        }
-      });
+
+          window.cgCallGas('saveLessonPlan', {
+            lessonId: current.id,
+            subject: subject,
+            topicId: current.topicCode || current.id,
+            title: title,
+            unit: unit,
+            body: body,
+            notionLink: notionLink,
+            questionsTaught: questionsTaught,
+            learningObjective: learningObjective,
+            boardImportance: boardImportance
+          }).then(res => {
+            showToast('Lesson plan permanently saved to Google Sheets (Lesson_Plans)!', 'emerald');
+          }).catch(err => {
+            showToast('Failed to save lesson to Sheets: ' + (err.message || err), 'rose');
+          });
+        });
+      }
 
       document.getElementById('printLessonPdfBtn').addEventListener('click', () => {
         window.print();
@@ -6165,10 +6393,27 @@
         }
         const startClsBtn = e.target.closest('.start-class-btn');
         if (startClsBtn) {
-          const subj = startClsBtn.dataset.startclass;
-          window.cgCallGas('setActiveSubtopic', { subtopicId: appState.activeSubtopicLock, deliveryMode: 'Offline', status: 'In Progress' })
-            .then(() => showToast(`Dispatched /startclass for ${subj} & locked active topic!`, 'emerald'))
-            .catch(err => showToast(`Failed to dispatch /startclass: ${err.message || err}`, 'rose'));
+          const subj = startClsBtn.dataset.startclass || 'ACC-12';
+          // Auto-pick next incomplete subtopic for this subject
+          const candidates = (appState.curriculumTopics || []).filter(c => String(c.subject || '').toUpperCase().includes(subj.replace(/D/g, '')) || String(c.subject || '').toUpperCase() === subj.toUpperCase());
+          let picked = candidates.find(c => c.status === 'In Progress') || candidates.find(c => c.status === 'Planned') || candidates[0];
+          const topicId = picked ? picked.id : appState.activeSubtopicLock;
+          const topicName = picked ? (picked.chapter || picked.topic || topicId) : 'Current Subtopic';
+
+          window.showAppConfirm({
+            title: `🚀 Launch Live Class (/startclass)`,
+            message: `Launch lecture for <strong>${subj}</strong>?<br><br>Auto-picked Syllabus Sub-topic: <strong>${topicId}</strong> — <em>${topicName}</em>.<br><br>This locks Settings!B2, synchronizes with 01_Master_Syllabus, and activates tonight's 7 PM DPP.`,
+            confirmText: 'Start Class Now',
+            cancelText: 'Cancel'
+          }).then(confirmed => {
+            if (!confirmed) return;
+            appState.activeSubtopicLock = topicId;
+            if (picked) picked.status = 'In Progress';
+            renderCurriculum();
+            window.cgCallGas('setActiveSubtopic', { subtopicId: topicId, deliveryMode: 'Offline', status: 'In Progress', subject: subj })
+              .then(() => showToast(`Dispatched /startclass for ${subj}! Locked active topic: ${topicId}`, 'emerald'))
+              .catch(err => showToast(`Failed to dispatch /startclass: ${err.message || err}`, 'rose'));
+          });
           return;
         }
         const selectLesCard = e.target.closest('.select-lesson-card');
@@ -6182,11 +6427,20 @@
           const item = appState.curriculumTopics.find(c => c.id === cycleCurrBtn.dataset.currid);
           if (item) {
             const order = ['Planned', 'In Progress', 'Completed'];
-            item.status = order[(order.indexOf(item.status) + 1) % order.length];
-            renderCurriculum();
-            window.cgCallGas('setActiveSubtopic', { subtopicId: item.id, deliveryMode: 'Offline', status: item.status })
-              .then(() => showToast(`${item.id} synced as ${item.status} in 01_Master_Syllabus!`, 'emerald'))
-              .catch(err => showToast(`Failed to update ${item.id}: ${err.message || err}`, 'rose'));
+            const nextStatus = order[(order.indexOf(item.status) + 1) % order.length];
+            window.showAppConfirm({
+              title: 'Update Syllabus Status?',
+              message: `Change status of <strong>${item.id}</strong> (${item.chapter || item.topic || ''}) from <em>${item.status}</em> to <strong>${nextStatus}</strong>?<br><br>This will synchronize with 01_Master_Syllabus.`,
+              confirmText: `Set to ${nextStatus}`,
+              cancelText: 'Cancel'
+            }).then(confirmed => {
+              if (!confirmed) return;
+              item.status = nextStatus;
+              renderCurriculum();
+              window.cgCallGas('setActiveSubtopic', { subtopicId: item.id, deliveryMode: 'Offline', status: item.status })
+                .then(() => showToast(`${item.id} synced as ${item.status} in 01_Master_Syllabus!`, 'emerald'))
+                .catch(err => showToast(`Failed to update ${item.id}: ${err.message || err}`, 'rose'));
+            });
           }
           return;
         }
@@ -7169,7 +7423,145 @@
         });
       }
 
-      // ── A14: FIRST-RUN SETUP WIZARD ──
+
+      // ── A3: END CLASS WORKFLOW & DPP DISPATCH HANDLERS ──
+      const dashEndClassBtn = document.getElementById('dashEndClassBtn');
+      const endClassModal = document.getElementById('endClassModalOverlay');
+      const closeEndClassBtn = document.getElementById('closeEndClassModalBtn');
+      const btnSubmitEndClass = document.getElementById('btnSubmitEndClassFlow');
+
+      if (dashEndClassBtn && endClassModal) {
+        dashEndClassBtn.addEventListener('click', () => {
+          endClassModal.classList.remove('hidden');
+        });
+      }
+      if (closeEndClassBtn && endClassModal) {
+        closeEndClassBtn.addEventListener('click', () => {
+          endClassModal.classList.add('hidden');
+        });
+      }
+      if (btnSubmitEndClass && endClassModal) {
+        btnSubmitEndClass.addEventListener('click', () => {
+          const batch = document.getElementById('endClassBatchSelect').value;
+          const goodnotesUrl = (document.getElementById('endClassGoodnotesInput').value || '').trim();
+          const youtubeUrl = (document.getElementById('endClassYoutubeInput').value || '').trim();
+
+          window.showAppConfirm({
+            title: '🏁 Confirm End of Class?',
+            message: `Wrap up lecture for <strong>${batch}</strong>?<br><br>• Goodnotes Notes: ${goodnotesUrl ? 'Attached ✓' : 'None'}<br>• YouTube Recording: ${youtubeUrl ? 'Attached ✓' : 'None'}<br><br>Absent students will be notified, and 7 PM DPP dispatch will launch.`,
+            confirmText: 'Complete & Launch 7 PM DPP',
+            cancelText: 'Keep Editing'
+          }).then(confirmed => {
+            if (!confirmed) return;
+            endClassModal.classList.add('hidden');
+
+            // Save tasks to Sheet
+            if (goodnotesUrl) {
+              window.cgCallGas('saveAcademicTask', { taskText: `Exported Goodnotes: ${goodnotesUrl}`, subject: batch, status: 'COMPLETED' }).catch(() => {});
+            }
+            if (youtubeUrl) {
+              window.cgCallGas('saveAcademicTask', { taskText: `Uploaded YouTube Lecture: ${youtubeUrl}`, subject: batch, status: 'COMPLETED' }).catch(() => {});
+            }
+
+            // Open 7 PM DPP Dispatch modal automatically
+            const dppModal = document.getElementById('dppDispatchModalOverlay');
+            if (dppModal) dppModal.classList.remove('hidden');
+            showToast(`Lecture completed for ${batch}! Launching 7:00 PM DPP Dispatch.`, 'emerald');
+          });
+        });
+      }
+
+      // ── A3: 7:00 PM DPP DISPATCH MODAL HANDLERS ──
+      const dispatchDppBtn = document.getElementById('dispatchDppNowBtn');
+      const opsBroadcastBtn = document.getElementById('opsBroadcastDppBtn');
+      const dppModal = document.getElementById('dppDispatchModalOverlay');
+      const closeDppModalBtn = document.getElementById('closeDppDispatchModalBtn');
+      const btnExecDppDispatch = document.getElementById('btnExecuteDppDispatch');
+
+      const openDppModal = () => {
+        if (dppModal) dppModal.classList.remove('hidden');
+      };
+
+      if (dispatchDppBtn) dispatchDppBtn.addEventListener('click', openDppModal);
+      if (opsBroadcastBtn) opsBroadcastBtn.addEventListener('click', openDppModal);
+      if (closeDppModalBtn && dppModal) {
+        closeDppModalBtn.addEventListener('click', () => dppModal.classList.add('hidden'));
+      }
+
+      if (btnExecDppDispatch && dppModal) {
+        btnExecDppDispatch.addEventListener('click', () => {
+          const cls = document.getElementById('dppDispatchClassSelect').value;
+          const subj = document.getElementById('dppDispatchSubjectSelect').value;
+          const topic = document.getElementById('dppDispatchTopicSelect').value;
+          const channel = cls === '11' ? '@commercewithgyan_class11' : '@commercewithgyan_class12';
+
+          window.showAppConfirm({
+            title: '📡 Confirm 7:00 PM DPP Broadcast',
+            message: `Dispatch 7:00 PM Daily Practice Paper to <strong>${channel}</strong>?<br><br>• Subject: <strong>${subj}</strong> (Class ${cls})<br>• Topic: <strong>${topic}</strong><br><br>Generates A4 Practice Sheet PDF and 3-track Telegram Mini App quiz.`,
+            confirmText: 'Dispatch to Telegram',
+            cancelText: 'Cancel'
+          }).then(confirmed => {
+            if (!confirmed) return;
+            btnExecDppDispatch.disabled = true;
+            btnExecDppDispatch.textContent = 'Dispatching to Telegram…';
+
+            window.cgCallGas('dispatchDailyDPPAndSubjectivePDF', {
+              classLevel: cls,
+              subject: subj,
+              topic: topic,
+              channelId: channel,
+              dryRun: false
+            }).then(res => {
+              btnExecDppDispatch.disabled = false;
+              btnExecDppDispatch.textContent = '🚀 Confirm & Dispatch 7:00 PM DPP Now';
+              dppModal.classList.add('hidden');
+              showToast(`7:00 PM DPP & Practice Sheet PDF dispatched to ${channel}!`, 'emerald');
+            }).catch(err => {
+              btnExecDppDispatch.disabled = false;
+              btnExecDppDispatch.textContent = '🚀 Confirm & Dispatch 7:00 PM DPP Now';
+              showToast('DPP Dispatch failed: ' + (err.message || err), 'rose');
+            });
+          });
+        });
+      }
+
+      // ── A3: QUICK DASHBOARD BUTTONS ──
+      const dashGoInquiry = document.getElementById('dashGoInquiryBtn');
+      const dashGoAdmission = document.getElementById('dashGoAdmissionBtn');
+      if (dashGoInquiry) {
+        dashGoInquiry.addEventListener('click', () => {
+          switchTab('pipeline');
+          switchAdminSubtab('students', 'pipeline');
+        });
+      }
+      if (dashGoAdmission) {
+        dashGoAdmission.addEventListener('click', () => {
+          switchTab('pipeline');
+          switchAdminSubtab('students', 'pipeline');
+          const prmTab = document.getElementById('subsubtab-prm');
+          if (prmTab) prmTab.click();
+        });
+      }
+
+      // ── A2: MOBILE OPS BOTTOM DOCK SWITCHER ──
+      document.querySelectorAll('.ops-nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tab = btn.dataset.opstab;
+          document.querySelectorAll('.ops-tab-panel').forEach(p => p.classList.add('hidden'));
+          const target = document.getElementById('opsTab-' + tab);
+          if (target) target.classList.remove('hidden');
+
+          document.querySelectorAll('.ops-nav-btn').forEach(b => {
+            b.classList.remove('text-amber-400', 'font-bold');
+            b.classList.add('text-slate-400', 'font-medium');
+          });
+          btn.classList.add('text-amber-400', 'font-bold');
+          btn.classList.remove('text-slate-400', 'font-medium');
+        });
+      });
+
+
+            // ── A14: FIRST-RUN SETUP WIZARD ──
       const btnLaunchWizard = document.getElementById('btnLaunchSetupWizard');
       const wizardOverlay = document.getElementById('setupWizardModalOverlay');
       const closeWizardBtn = document.getElementById('closeSetupWizardModalBtn');
