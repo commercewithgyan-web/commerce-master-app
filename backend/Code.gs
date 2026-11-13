@@ -143,6 +143,48 @@ function getConfigFeeSettings_(erpSpreadsheet) {
  * ============================================================================
  */
 
+function extractInitData_(e, requestData, payload) {
+  if (e && e.parameter) {
+    if (e.parameter.initData) return String(e.parameter.initData);
+    if (e.parameter.tgWebAppData) return String(e.parameter.tgWebAppData);
+  }
+  if (requestData) {
+    if (requestData.initData) return String(requestData.initData);
+    if (requestData.tgWebAppData) return String(requestData.tgWebAppData);
+  }
+  if (payload) {
+    if (payload.initData) return String(payload.initData);
+    if (payload.tgWebAppData) return String(payload.tgWebAppData);
+  }
+  return "";
+}
+
+function isPublicAction_(action) {
+  return action === 'ping' || action === 'health';
+}
+
+function isAdminOnlyAction_(action) {
+  const adminActions = [
+    'getInquiryPipeline', 'getCrmData', 'getSystemHealth', 'getDashboardSummary',
+    'getFinancialSummary', 'getBatchAnalytics', 'getFeeDefaulters', 'getBatchRoster',
+    'setupTriggers', 'listInstalledTriggers', 'initProductionProperties',
+    'createBackupArchive', 'restoreBackupArchive', 'markBatchAttendance',
+    'calculateAdmissionQuote', 'createInquiry', 'updateDemoStatus', 'logPromise',
+    'convertToAdmission', 'bindStudentClaimCode', 'revokeLateFee',
+    'recordCenterExpenseAndReconcileDrawer', 'dispatchDailyDPPAndSubjectivePDF',
+    'buildWhatsAppTemplateLink', 'getAcademicCalendar', 'saveCalendarEvent',
+    'generatePrintableFeeReceipt', 'getAuditLog', 'archiveGraduatedStudents',
+    'cancelBatchLecture', 'setEnvMode', 'runAllTests', 'runTelegramAuthTests',
+    'runFounderSubjectiveDryRunTests', 'testGenerateAccountancyMultiPagePdf',
+    'testGenerateEconomicsGraphPdf', 'testGenerateStatisticsFormulaPdf',
+    'testGenerateBstFlowchartPdf', 'testGenerateSubjectiveQuestionPdf',
+    'testGenerateSubjectiveAnswerPdf', 'checkBalanceSheetIntegrity',
+    'getMonthlyPL', 'getBalanceSheet', 'getCashDrawer', 'reconcileNotebookRegistry',
+    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan'
+  ];
+  return adminActions.indexOf(action) !== -1;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN ROUTERS (doGet & doPost)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -150,6 +192,36 @@ function getConfigFeeSettings_(erpSpreadsheet) {
 function doGet(e) {
   const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "getSystemHealth";
   try {
+    if (isPublicAction_(action)) {
+      return jsonResponse({
+        ok: true,
+        data: {
+          status: "online",
+          service: "Commerce Gyan Microservices v3.0",
+          environment: PropertiesService.getScriptProperties().getProperty("ENV_MODE") || ENV_MODE,
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+
+    const initData = extractInitData_(e, null, null);
+    if (!initData) {
+      return jsonResponse({ ok: false, error: 'HTTP 401: AUTH_FAILED (MISSING_INIT_DATA)' });
+    }
+
+    let verifiedUser;
+    try {
+      verifiedUser = verifyTelegramInitData_(initData);
+    } catch (authErr) {
+      return jsonResponse({ ok: false, error: authErr.message || 'HTTP 401: AUTH_FAILED' });
+    }
+
+    if (isAdminOnlyAction_(action)) {
+      if (!verifiedUser || !verifiedUser.is_admin) {
+        return jsonResponse({ ok: false, error: 'HTTP 403: FORBIDDEN (ADMIN_ONLY)' });
+      }
+    }
+
     let result;
     switch (action) {
       case "getSystemHealth":
@@ -177,36 +249,14 @@ function doGet(e) {
       case "getFinancialSummary":
         result = getFinancialSummary();
         break;
+      case "getPracticeQuestions":
+        result = handleGetPracticeQuestions_(e.parameter);
+        break;
       case "getStudentMiniAppBootstrap":
         result = getStudentMiniAppBootstrap(e.parameter);
         break;
       case "initProductionProperties":
         result = initProductionScriptProperties();
-        break;
-      case "getSystemHealth":
-        result = getSystemHealth();
-        break;
-      case "getDashboardSummary":
-        result = getDashboardSummary();
-        break;
-      case "getSyllabusTree":
-        result = getSyllabusTree(payload.board, payload.classLevel, payload.subject);
-        break;
-      case "getQuestionBankSummary":
-        result = getQuestionBankSummary();
-        break;
-      case "getStudentFeeLedger":
-        result = getStudentFeeLedger(payload.rollNo);
-        break;
-      case "getInquiryPipeline":
-      case "getCrmData":
-        result = getCrmData(payload.statusFilter);
-        break;
-      case "getBatchRoster":
-        result = getBatchRoster(payload.batchId);
-        break;
-      case "getFinancialSummary":
-        result = getFinancialSummary();
         break;
       case "setupTriggers":
         setupTriggers();
@@ -214,18 +264,6 @@ function doGet(e) {
         break;
       case "listInstalledTriggers":
         result = listInstalledTriggers();
-        break;
-      case "ping":
-      case "health":
-        result = {
-          ok: true,
-          data: {
-            status: "online",
-            service: "Commerce Gyan Microservices v3.0",
-            environment: PropertiesService.getScriptProperties().getProperty("ENV_MODE") || ENV_MODE,
-            timestamp: new Date().toISOString()
-          }
-        };
         break;
       case "runFounderSubjectiveDryRunTests":
         result = { ok: true, data: runFounderSubjectiveDryRunTests() };
@@ -284,11 +322,45 @@ function doPost(e) {
     const payload = requestData.payload || requestData;
     const action = requestData.action || payload.action || (e.parameter && e.parameter.action) || "";
 
+    if (isPublicAction_(action)) {
+      return jsonResponse({
+        ok: true,
+        data: {
+          status: "online",
+          service: "Commerce Gyan Microservices v3.0",
+          environment: PropertiesService.getScriptProperties().getProperty("ENV_MODE") || ENV_MODE,
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+
+    const initData = extractInitData_(e, requestData, payload);
+
+    if (action === "verifyAuth") {
+      return jsonResponse(verifyAndRouteUser_(initData, payload.previewRollNo));
+    }
+
+    if (!initData) {
+      return jsonResponse({ ok: false, error: 'HTTP 401: AUTH_FAILED (MISSING_INIT_DATA)' });
+    }
+
+    let verifiedUser;
+    try {
+      verifiedUser = verifyTelegramInitData_(initData);
+    } catch (authErr) {
+      return jsonResponse({ ok: false, error: authErr.message || 'HTTP 401: AUTH_FAILED' });
+    }
+
+    if (isAdminOnlyAction_(action)) {
+      if (!verifiedUser || !verifiedUser.is_admin) {
+        return jsonResponse({ ok: false, error: 'HTTP 403: FORBIDDEN (ADMIN_ONLY)' });
+      }
+    }
+
+    requestData._verifiedUser = verifiedUser;
+
     let result;
     switch (action) {
-      case "verifyAuth":
-        result = verifyAndRouteUser_(payload.initData, payload.previewRollNo);
-        break;
       case "setEnvMode":
         result = setEnvMode(payload.mode);
         break;
@@ -346,7 +418,7 @@ function doPost(e) {
       case "submitAnswer":
         // Support grading via apiSubmitAnswer_ when selectedIndex is provided
         if (payload && payload.selectedIndex !== undefined && typeof apiSubmitAnswer_ === 'function') {
-          result = handleApiRequest(requestData);
+          result = handleApiRequest(requestData, verifiedUser);
         } else {
           result = submitStudentQuizAttempt(payload);
         }
@@ -357,6 +429,9 @@ function doPost(e) {
       case "saveStudentNotebookItem":
       case "addNote":
         result = saveStudentNotebookItem(payload);
+        break;
+      case "getPracticeQuestions":
+        result = handleGetPracticeQuestions_(payload);
         break;
       case "getHomeDashboard":
       case "getNotebook":
@@ -373,7 +448,7 @@ function doPost(e) {
       case "getCashDrawer":
       case "checkBalanceSheetIntegrity":
       case "reconcileNotebookRegistry":
-        result = handleApiRequest(requestData);
+        result = handleApiRequest(requestData, verifiedUser);
         break;
       case "logParentCommunication":
         result = logParentCommunication(payload);
@@ -468,7 +543,7 @@ function doPost(e) {
         break;
       default:
         // Studio / Legacy API action dispatcher
-        result = handleApiRequest(requestData);
+        result = handleApiRequest(requestData, verifiedUser);
         break;
     }
 
@@ -557,14 +632,30 @@ function getQuestionBankSummary() {
 
 function getStudentFeeLedger(rollNo) {
   const IDS = getActiveSheetIds();
-  const feeSS = SpreadsheetApp.openById(IDS.FEE_MGMT);
-  const students = sheetToObjects(feeSS.getSheetByName('Students_Master'));
-  const ledger = sheetToObjects(feeSS.getSheetByName('Fee_Ledger'));
-  const settings = sheetToObjects(feeSS.getSheetByName('CONFIG_FEE_SETTINGS'));
+  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  let feeSS = null;
+  try {
+    if (IDS.FEE_MGMT) feeSS = SpreadsheetApp.openById(IDS.FEE_MGMT);
+  } catch (_) {}
+
+  let studentSheet = erp.getSheetByName('Students_Master');
+  if (!studentSheet && feeSS) studentSheet = feeSS.getSheetByName('Students_Master');
+  const students = studentSheet ? sheetToObjects(studentSheet) : [];
+
+  let ledgerSheet = erp.getSheetByName('Fee_Ledger');
+  if (!ledgerSheet && feeSS) ledgerSheet = feeSS.getSheetByName('Fee_Ledger');
+  const ledger = ledgerSheet ? sheetToObjects(ledgerSheet) : [];
+
+  let settingsSheet = erp.getSheetByName('CONFIG_FEE_SETTINGS');
+  if (!settingsSheet && feeSS) settingsSheet = feeSS.getSheetByName('CONFIG_FEE_SETTINGS');
+  const settings = settingsSheet ? sheetToObjects(settingsSheet) : [];
+
+  const cleanRoll = rollNo ? String(rollNo).trim().toUpperCase() : '';
+
   return {
     ok: true,
-    student: rollNo ? students.find(s => s.Roll_No === rollNo) : students,
-    ledger: rollNo ? ledger.filter(l => l.Roll_No === rollNo) : ledger,
+    student: cleanRoll ? (students.find(s => String(s.Roll_No || s.rollNo || s.Roll || '').trim().toUpperCase() === cleanRoll) || null) : students,
+    ledger: cleanRoll ? ledger.filter(l => String(l.Roll_No || l.rollNo || l.Roll || '').trim().toUpperCase() === cleanRoll) : ledger,
     settings: settings
   };
 }
@@ -647,7 +738,9 @@ function getBatchRoster(batchFilter) {
 }
 
 function getFinancialSummary() {
-  return recordCenterExpenseAndReconcileDrawer({ amount: 0 });
+  return typeof apiGetFinancialSummary_ === 'function'
+    ? apiGetFinancialSummary_()
+    : recordCenterExpenseAndReconcileDrawer({ amount: 0 });
 }
 
 
@@ -1277,6 +1370,21 @@ function getStudentMiniAppBootstrap(params) {
 }
 
 function submitStudentQuizAttempt(payload) {
+  if (payload && payload.dryRun === true) {
+    const isCorrect = Boolean(payload.isCorrect);
+    const timeTakenSec = Number(payload.timeTakenSec || payload.timeTakenSeconds || 0);
+    const ghostTargetSec = Number(payload.ghostTargetSec || 30);
+    const beatGhost = isCorrect && timeTakenSec > 0 && timeTakenSec <= ghostTargetSec;
+    return {
+      ok: true,
+      isCorrect: isCorrect,
+      beatGhost: beatGhost,
+      earnedCoins: isCorrect ? (beatGhost ? 30 : 10) : 0,
+      dryRun: true,
+      message: 'Admin Preview Sandbox: Verified without recording live rows.'
+    };
+  }
+
   return withWriteLock_(() => {
     const IDS = getActiveSheetIds();
     const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
@@ -2496,35 +2604,22 @@ function listInstalledTriggers() {
  * @param {Object} req
  * @return {Object}
  */
-function handleApiRequest(req) {
+function handleApiRequest(req, userFromCaller) {
   var action = req.action;
   if (!action) {
     return { ok: false, error: 'Missing action parameter in request' };
   }
   var initData = req.initData || (req.payload && req.payload.initData) || "";
-  var verifiedUser = null;
-  if (initData) {
+  var verifiedUser = userFromCaller || null;
+  if (!verifiedUser && initData) {
     try {
       verifiedUser = verifyTelegramInitData_(initData);
     } catch (e) {
       Logger.log("HMAC note in handleApiRequest: " + e.message);
     }
   }
-  if (!verifiedUser) {
-    // Fail-closed auth hardening: Unauthenticated web clients NEVER default to Admin
-    if (typeof getActiveEnvMode === 'function' && getActiveEnvMode() === 'STAGING') {
-      verifiedUser = {
-        id: getMasterAdminId_() || '552858970',
-        first_name: "Gyan Sir (Staging Admin)",
-        is_admin: true
-      };
-    } else {
-      verifiedUser = {
-        id: 0,
-        first_name: "Guest",
-        is_admin: false
-      };
-    }
+  if (!verifiedUser || !verifiedUser.id) {
+    throw new Error('HTTP 401: AUTH_FAILED (MISSING_INIT_DATA)');
   }
 
   var payload = req.payload || {};

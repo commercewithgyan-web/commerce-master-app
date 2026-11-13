@@ -296,9 +296,6 @@ function verifyAndRouteUser_(initDataRaw, previewRollNo) {
     } catch (err) {
       return { ok: false, error: err.message || 'HTTP 401: AUTH_FAILED' };
     }
-  } else if ((typeof getActiveEnvMode === 'function' && getActiveEnvMode() === 'STAGING') || previewRollNo) {
-    // Admin / Staging sandbox test preview bypass
-    user = { id: getMasterAdminId_() || '552858970', first_name: 'Gyan Sir (Admin Preview)' };
   } else {
     return { ok: false, error: 'HTTP 401: AUTH_FAILED (MISSING_INIT_DATA)' };
   }

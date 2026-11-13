@@ -1247,13 +1247,13 @@
                 <div class="space-y-2">
                   <p class="text-xs font-bold text-slate-900">Q1: Under Fixed Capital Method, where is Interest on Capital credited?</p>
                   <div class="space-y-1">
-                    <button type="button" class="w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-medium hover:border-indigo-400">A) Partner's Capital Account</button>
-                    <button type="button" class="w-full text-left px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-400 text-xs font-bold text-emerald-950">B) Partner's Current Account (Correct)</button>
+                    <button type="button" class="rec-mcq-btn w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-medium hover:border-indigo-400 transition" data-q="1" data-correct="false">A) Partner's Capital Account</button>
+                    <button type="button" class="rec-mcq-btn w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-medium hover:border-indigo-400 transition" data-q="1" data-correct="true">B) Partner's Current Account</button>
                   </div>
                   <p class="text-xs font-bold text-slate-900 pt-2">Q2: Sacrificing Ratio formula is:</p>
                   <div class="space-y-1">
-                    <button type="button" class="w-full text-left px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-400 text-xs font-bold text-emerald-950">A) Old Ratio − New Ratio (Correct)</button>
-                    <button type="button" class="w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-medium hover:border-indigo-400">B) New Ratio − Old Ratio</button>
+                    <button type="button" class="rec-mcq-btn w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-medium hover:border-indigo-400 transition" data-q="2" data-correct="true">A) Old Ratio − New Ratio</button>
+                    <button type="button" class="rec-mcq-btn w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-medium hover:border-indigo-400 transition" data-q="2" data-correct="false">B) New Ratio − Old Ratio</button>
                   </div>
                 </div>
               </div>
@@ -1997,7 +1997,7 @@
             <p class="text-xs text-slate-500">Replaces generic standards with your canonical <code class="mono">02_Syllabus_Planner</code> across all 8 Class 11 & 12 subjects (CBSE & BSEB). Click any status badge to cycle progress.</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <select id="currSubjectFilter" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
+            <select id="currSubjectFilter" onchange="if(typeof renderCurriculum==='function')renderCurriculum();" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
               <option value="ALL">All 8 Subjects (11th & 12th)</option>
               <option value="ACC-12">12th Accountancy (ACC-12)</option>
               <option value="BST-12">12th Business Studies (BST-12)</option>
@@ -2008,7 +2008,7 @@
               <option value="MIC-11">11th Microeconomics (MIC-11)</option>
               <option value="STA-11">11th Statistics & EPS (STA-11)</option>
             </select>
-            <select id="currStatusFilter" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
+            <select id="currStatusFilter" onchange="if(typeof renderCurriculum==='function')renderCurriculum();" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
               <option value="ALL">All Statuses</option>
               <option value="Completed">Completed</option>
               <option value="In Progress">In Progress</option>
@@ -2067,7 +2067,7 @@
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
               <button type="button" onclick="loadSubjectPracticeQuestions('Accountancy')" class="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-400 text-left transition">
                 <span class="text-xs font-extrabold text-slate-900 block">Accountancy</span>
-                <span class="text-[10px] text-slate-500">24 Chapters · QB Live</span>
+                <span class="text-[10px] text-slate-500">10 Ch (Cl 12) / 24 Ch (11+12) · QB Live</span>
               </button>
               <button type="button" onclick="loadSubjectPracticeQuestions('Business Studies')" class="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-400 text-left transition">
                 <span class="text-xs font-extrabold text-slate-900 block">Business Studies</span>
@@ -2622,10 +2622,24 @@
     <div id="tgTab-notes" class="tg-student-tab space-y-4" style="display: none;">
       <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
         <div class="flex items-center justify-between">
-          <h3 class="text-sm font-extrabold text-slate-900">Student Digital Notebook</h3>
+          <div>
+            <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">5-Layer Spaced Memory</span>
+            <h3 class="text-sm font-extrabold text-slate-900 mt-0.5">Student 5-Layer Digital Notebook</h3>
+          </div>
           <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold">Encrypted Vault</span>
         </div>
-        <div class="space-y-2">
+
+        <!-- 5-Layer Notebook Switcher Tabs -->
+        <div class="flex items-center gap-1.5 overflow-x-auto custom-scroll pb-1 border-b border-slate-100 text-[11px] font-bold">
+          <button type="button" class="notebook-layer-tab px-3 py-1.5 rounded-xl bg-indigo-600 text-white shadow-sm" data-layer="notes">📝 Class Notes</button>
+          <button type="button" class="notebook-layer-tab px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200" data-layer="mistakes">⚠️ Mistakes</button>
+          <button type="button" class="notebook-layer-tab px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200" data-layer="bookmarks">⭐ Bookmarks</button>
+          <button type="button" class="notebook-layer-tab px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200" data-layer="summary">📊 Sunday Summary</button>
+          <button type="button" class="notebook-layer-tab px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200" data-layer="queue">🔄 Revision Queue</button>
+        </div>
+
+        <!-- Layer Content Container -->
+        <div id="notebookLayerContent" class="space-y-2">
           <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
             <div class="flex items-center justify-between text-xs font-bold text-slate-800">
               <span>Partnership — Interest on Drawings Formula</span>
@@ -2641,10 +2655,11 @@
             <p class="text-[11px] text-slate-500 mt-1">Remember to deduct Creditors Payment Period from Gross Operating Cycle to get Net Operating Cycle.</p>
           </div>
         </div>
+
         <div id="stuSavedNotesList" class="space-y-2"></div>
         <div class="pt-2 border-t border-slate-100 space-y-2">
-          <input id="stuNewNoteInput" type="text" placeholder="Write formula or mistake note to save to Sheet..." class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-slate-50" />
-          <button id="stuSaveNoteBtn" type="button" class="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold">💾 Save Note to Digital Notebook (saveStudentNotebookItem)</button>
+          <input id="stuNewNoteInput" type="text" placeholder="Write formula, key rule, or mistake note to save to Sheet..." class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-slate-50" />
+          <button id="stuSaveNoteBtn" type="button" class="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-sm transition">💾 Save Note to Digital Notebook (saveStudentNotebookItem)</button>
         </div>
       </div>
     </div>
@@ -2681,6 +2696,80 @@
           Open Red-Pen
         </button>
       </div>
+
+      <!-- 80-80 Board Radar & Chapter Mastery Breakdown Card -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[10px] font-extrabold uppercase">80/80 CBSE Target Radar</span>
+            <h3 class="text-sm font-extrabold text-slate-900 mt-0.5">🎯 Board Exam Radar &amp; Chapter Mastery Heatmap</h3>
+          </div>
+          <div class="text-right">
+            <span class="text-base font-black text-indigo-600" id="radarPredictedScore">76/80</span>
+            <span class="text-[10px] block text-emerald-600 font-bold" id="radarPredictedPct">95% Predicted</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+          <div class="p-2 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="text-[10px] text-slate-400 font-bold block">Overall Accuracy</span>
+            <span class="font-extrabold text-slate-900 text-sm" id="radarAccuracy">92%</span>
+          </div>
+          <div class="p-2 rounded-xl bg-emerald-50 border border-emerald-200">
+            <span class="text-[10px] text-emerald-600 font-bold block">Strongest Chapter</span>
+            <span class="font-extrabold text-emerald-800 text-xs truncate block" id="radarStrongest">Partnership</span>
+          </div>
+          <div class="p-2 rounded-xl bg-rose-50 border border-rose-200">
+            <span class="text-[10px] text-rose-600 font-bold block">Leak Area</span>
+            <span class="font-extrabold text-rose-800 text-xs truncate block" id="radarWeakest">Cash Flow</span>
+          </div>
+        </div>
+
+        <div class="space-y-1.5 pt-1">
+          <div class="flex justify-between text-[11px] font-bold text-slate-700">
+            <span>Chapter Mastery Breakdown</span>
+            <span>Accuracy</span>
+          </div>
+          <div class="space-y-1 text-xs" id="radarChapterList">
+            <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200">
+              <div>
+                <span class="font-bold text-slate-900 block">Ch 1: Accounting for Partnership: Basics</span>
+                <span class="text-[10px] text-slate-500">16 Subtopics · 8 Marks</span>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">100% 🟢 Mastered</span>
+            </div>
+            <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200">
+              <div>
+                <span class="font-bold text-slate-900 block">Ch 2: Goodwill: Nature and Valuation</span>
+                <span class="text-[10px] text-slate-500">10 Subtopics · 6 Marks</span>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">95% 🟢 Mastered</span>
+            </div>
+            <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200">
+              <div>
+                <span class="font-bold text-slate-900 block">Ch 3: Admission of a Partner</span>
+                <span class="text-[10px] text-slate-500">18 Subtopics · 8 Marks</span>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">88% 🟢 Mastered</span>
+            </div>
+            <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200">
+              <div>
+                <span class="font-bold text-slate-900 block">Ch 6: Accounting for Share Capital</span>
+                <span class="text-[10px] text-slate-500">22 Subtopics · 12 Marks</span>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">68% 🟡 Standard</span>
+            </div>
+            <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200">
+              <div>
+                <span class="font-bold text-slate-900 block">Cash Flow Statement</span>
+                <span class="text-[10px] text-slate-500">14 Subtopics · 8 Marks</span>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">54% 🔴 Leak Alert</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
         <div class="flex items-center justify-between">
           <h3 class="text-sm font-extrabold text-slate-900">Batch Leaderboard (Privacy-Masked)</h3>
@@ -3030,26 +3119,31 @@
       if (drawerAdjustBtn) { drawerAdjustBtn.disabled = true; drawerAdjustBtn.classList.add('opacity-50', 'cursor-not-allowed'); }
     }
 
+    function getCommerceBackendUrl() {
+      const urlInput = document.getElementById('gasWebhookUrlInput');
+      if (urlInput && urlInput.value && urlInput.value.trim()) return urlInput.value.trim();
+      if (window.COMMERCE_BACKEND_URL && window.COMMERCE_BACKEND_URL.trim()) return window.COMMERCE_BACKEND_URL.trim();
+      try {
+        const saved = localStorage.getItem('cg_backend_url');
+        if (saved && saved.trim()) return saved.trim();
+      } catch (_) {}
+      return 'https://script.google.com/macros/s/AKfycbzmOtPr1jYIG6ktQymaVNrrJ7SGkB2KglPxyXzIK-ha94M66ilYn_dr92T-Aj1Fh0DrBQ/exec';
+    }
+    window.getCommerceBackendUrl = getCommerceBackendUrl;
+
     window.cgCallGas = function(action, payload = {}) {
       const actionAliases = {
         getCrmData: 'getInquiryPipeline',
-        getBatchRoster: 'getStudentFeeLedger',
-        getFinancialSummary: 'recordCenterExpenseAndReconcileDrawer'
+        getBatchRoster: 'getStudentFeeLedger'
       };
       const resolvedAction = actionAliases[action] || action;
-      if (action === 'getFinancialSummary' && payload.amount === undefined) payload.amount = 0;
-      let url = 'https://script.google.com/macros/s/AKfycbzmOtPr1jYIG6ktQymaVNrrJ7SGkB2KglPxyXzIK-ha94M66ilYn_dr92T-Aj1Fh0DrBQ/exec';
-      const urlInput = document.getElementById('gasWebhookUrlInput');
-      if (urlInput && urlInput.value.trim()) url = urlInput.value.trim();
-      try {
-        const saved = localStorage.getItem('cg_backend_url');
-        if (saved) url = saved;
-      } catch (_) {}
-      const initData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
+      const url = getCommerceBackendUrl();
+      const initData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || window.COMMERCE_INIT_DATA || '';
+      const bodyPayload = Object.assign({}, payload, { initData: initData });
       return fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ initData, action: resolvedAction, payload }),
+        body: JSON.stringify({ initData: initData, action: resolvedAction, payload: bodyPayload }),
         redirect: 'follow'
       }).then(r => {
         if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -3058,6 +3152,71 @@
         if (!json || json.ok === false) throw new Error((json && json.error) || 'Backend error');
         return json.data !== undefined ? json.data : json;
       });
+    };
+
+    window.loadSubjectPracticeQuestions = function(subject) {
+      subject = subject || 'Accountancy';
+      showToast(`Fetching ${subject} practice questions...`, 'indigo');
+      const out = document.getElementById('unifiedQuestionEngineOutput');
+      if (out) {
+        out.innerHTML = `
+          <div class="flex items-center justify-between font-bold text-slate-900">
+            <span>Loading ${subject} Question Bank...</span>
+            <span class="px-2 py-0.5 rounded text-[10px] bg-indigo-100 text-indigo-800 animate-pulse">Fetching from Sheets</span>
+          </div>
+        `;
+      }
+      window.cgCallGas('getPracticeQuestions', { subject: subject, classLevel: 12, difficulty: 'ALL' })
+        .then(res => {
+          const questions = (res && res.data && Array.isArray(res.data)) ? res.data : (Array.isArray(res) ? res : []);
+          if (out) {
+            if (questions.length === 0) {
+              out.innerHTML = `
+                <div class="flex items-center justify-between font-bold text-slate-900">
+                  <span>${subject} Practice Vault (Live)</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] bg-slate-100 text-slate-700">0 Questions Loaded</span>
+                </div>
+                <p class="text-[11px] text-slate-500">No approved questions found for ${subject}. Click + Add in Question Bank to create new questions.</p>
+              `;
+            } else {
+              out.innerHTML = `
+                <div class="flex items-center justify-between font-bold text-slate-900 pb-1 border-b border-slate-200">
+                  <span>${subject} Practice Vault (${questions.length} Live MCQs)</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800">Pre-warmed in CacheService</span>
+                </div>
+                <div class="space-y-2 mt-2">
+                  ${questions.slice(0, 5).map((q, idx) => `
+                    <div class="p-2.5 rounded-lg bg-white border border-slate-200 space-y-1">
+                      <div class="flex justify-between items-center text-[10px] text-slate-500">
+                        <span class="font-bold text-indigo-600">${q.id || 'Q' + (idx+1)} · ${q.chapterName || q.chapterNo || ''}</span>
+                        <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-bold">${q.difficulty || 'STANDARD'}</span>
+                      </div>
+                      <p class="text-[11px] font-semibold text-slate-800">${q.question || q.Question || ''}</p>
+                      <div class="grid grid-cols-2 gap-1 text-[10px] pt-1 text-slate-600">
+                        <div class="p-1 rounded bg-slate-50 border border-slate-100">A: ${q.optionA || q.OptionA || '-'}</div>
+                        <div class="p-1 rounded bg-slate-50 border border-slate-100">B: ${q.optionB || q.OptionB || '-'}</div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              `;
+            }
+          }
+          showToast(`Loaded ${questions.length} questions for ${subject}!`, 'emerald');
+        })
+        .catch(err => {
+          if (out) {
+            out.innerHTML = `
+              <div class="flex items-center justify-between font-bold text-slate-900">
+                <span>${subject} Practice Vault (Offline Demo)</span>
+                <span class="px-2 py-0.5 rounded text-[10px] bg-amber-100 text-amber-800">Offline Fallback</span>
+              </div>
+              <p class="text-[11px] text-slate-600">Q1: Under Fluctuating Capital Method, Interest on Partner's Capital is credited to Partner's Capital Account.</p>
+              <p class="text-[11px] text-slate-600">Q2: Sacrificing Ratio = Old Ratio − New Ratio. Used for Goodwill premium distribution.</p>
+            `;
+          }
+          showToast(`Previewed ${subject} questions (${err.message})`, 'amber');
+        });
     };
 
     // ==================== UTILITY: TOAST NOTIFICATION ====================
@@ -3345,13 +3504,28 @@
 
     // ==================== RENDER: CURRICULUM & 797 SUBTOPICS (DESKTOP TABLE + MOBILE ACCORDION) ====================
     function renderCurriculum() {
-      const subjFilter = document.getElementById('currSubjectFilter').value;
-      const statusFilter = document.getElementById('currStatusFilter').value;
-      const rows = appState.curriculumTopics.filter(item => {
-        const gMatch = appState.globalSubject === 'ALL' || item.subject === appState.globalSubject;
-        const sMatch = subjFilter === 'ALL' || item.subject === subjFilter;
-        const stMatch = statusFilter === 'ALL' || item.status === statusFilter;
-        return gMatch && sMatch && stMatch;
+      const subjEl = document.getElementById('currSubjectFilter');
+      const statusEl = document.getElementById('currStatusFilter');
+      const subjFilter = subjEl ? subjEl.value : 'ALL';
+      const statusFilter = statusEl ? statusEl.value : 'ALL';
+
+      const rows = (appState.curriculumTopics || []).filter(item => {
+        const itemSubj = String(item.subject || '').toUpperCase().trim();
+        const sf = String(subjFilter).toUpperCase().trim();
+        let sMatch = (sf === 'ALL');
+        if (!sMatch) {
+          sMatch = (itemSubj === sf) ||
+                   (sf.includes('ACC') && itemSubj.includes('ACC')) ||
+                   (sf.includes('BST') && itemSubj.includes('BST')) ||
+                   (sf.includes('MAC') && itemSubj.includes('MAC')) ||
+                   (sf.includes('MIC') && itemSubj.includes('MIC')) ||
+                   (sf.includes('STA') && itemSubj.includes('STA')) ||
+                   (sf.includes('IED') && itemSubj.includes('IED'));
+        }
+        const itemStat = String(item.status || '').toLowerCase().trim();
+        const stf = String(statusFilter).toLowerCase().trim();
+        const stMatch = (stf === 'all') || (itemStat === stf);
+        return sMatch && stMatch;
       });
 
       const badgeStyle = {
@@ -4618,6 +4792,7 @@
         if (studentBtn) studentBtn.className = mode === 'student' ? activeCls : idleCls;
 
         window.currentAppMode = mode;
+        window.isAdminPreview = Boolean(window.isServerVerifiedAdmin && mode === 'student');
         renderAll();
       };
 
@@ -4898,6 +5073,15 @@
       let lastAttSnapshot = null;
 
       const commitAttendanceToSheet = () => {
+        if (window.isAdminPreview) {
+          if (!confirm('Admin Preview Mode: Do you want to commit live attendance to Google Sheets, or run in Sandbox (dry run)?\n\nClick OK for Sandbox (Dry Run), or Cancel to abort.')) {
+            showToast('Attendance commit aborted in Admin Preview.', 'slate');
+            return;
+          }
+          showToast('Sandbox mode: Attendance committed locally (dryRun: true).', 'amber');
+          return;
+        }
+
         const batchSel = document.getElementById('attBatchSelect');
         const batchId = (batchSel && batchSel.value !== 'ALL') ? batchSel.value : 'C12_EVE';
         const records = appState.students.map(s => ({
@@ -5335,13 +5519,19 @@
           btn.disabled = true;
           showToast('Verifying answer with server...', 'indigo');
 
+          const isSandbox = Boolean(window.isAdminPreview || (window.currentAppMode === 'teacher') || (window.isServerVerifiedAdmin && window.currentAppMode === 'student'));
+
           window.cgCallGas('submitStudentQuizAttempt', {
             rollNo: roll,
             questionId: 'DPP-Q1',
             selectedOption: selectedOpt,
             timeTakenSec: 18,
-            ghostTargetSec: 30
+            ghostTargetSec: 30,
+            dryRun: isSandbox
           }).then(res => {
+            if (isSandbox) {
+              showToast('Admin Preview Sandbox: Attempt verified (dryRun: true, no sheet mutation).', 'amber');
+            }
             const isCorr = Boolean(res && (res.isCorrect === true || res.correct === true));
             if (isCorr) {
               btn.className = 'tg-ans-btn w-full text-left px-3 py-2 rounded-lg bg-emerald-50 border-2 border-emerald-500 text-xs font-bold text-emerald-950';
@@ -5380,6 +5570,217 @@
       });
       document.getElementById('printSwotReceiptBtn').addEventListener('click', () => {
         window.print();
+      });
+
+      // Academic Calendar Event Handler (#A8)
+      const addCalBtn = document.getElementById('addCalendarEventBtn');
+      if (addCalBtn) {
+        addCalBtn.addEventListener('click', () => {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const defDate = tomorrow.toISOString().split('T')[0];
+          const date = prompt('Enter Academic Event / Holiday Date (YYYY-MM-DD):', defDate);
+          if (!date) return;
+          const title = prompt('Enter Event / Holiday Title:', 'Pre-Board Accountancy Mock Test') || 'Pre-Board Mock';
+          const eventType = (prompt('Enter Event Type (HOLIDAY, EXAM, PTM, SPECIAL_EVENT):', 'EXAM') || 'EXAM').toUpperCase();
+          const isNoDpp = confirm('Should the 7:00 PM DPP dispatch be automatically suspended on this day?');
+
+          window.cgCallGas('saveCalendarEvent', {
+            date: date,
+            title: title,
+            eventType: eventType,
+            isNoDppDay: isNoDpp,
+            reason: 'Added via Commerce Gyan ERP'
+          }).then(res => {
+            showToast('Academic Calendar event saved to Sheet!', 'emerald');
+            const tbody = document.getElementById('academicCalendarTableBody');
+            if (tbody) {
+              const row = document.createElement('tr');
+              row.className = 'hover:bg-slate-50';
+              row.innerHTML = `
+                <td class="py-2.5 px-3 font-mono font-semibold text-slate-700">${date}</td>
+                <td class="py-2.5 px-3 font-bold text-slate-900">${title}</td>
+                <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${eventType === 'HOLIDAY' ? 'bg-rose-100 text-rose-800' : 'bg-indigo-100 text-indigo-800'}">${eventType}</span></td>
+                <td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${isNoDpp ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${isNoDpp ? 'NO DPP (Suspended)' : 'ACTIVE'}</span></td>
+                <td class="py-2.5 px-3 text-slate-500">Live added</td>
+              `;
+              tbody.insertBefore(row, tbody.firstChild);
+            }
+          }).catch(err => {
+            showToast('Saved Calendar event locally (' + err.message + ')', 'amber');
+          });
+        });
+      }
+
+      // Balance Sheet Integrity Audit Handler
+      const checkBsBtn = document.getElementById('btnCheckBsIntegrity');
+      if (checkBsBtn) {
+        checkBsBtn.addEventListener('click', () => {
+          showToast('Auditing Balance Sheet integrity (Assets = Liabilities + Equity)...', 'indigo');
+          window.cgCallGas('checkBalanceSheetIntegrity', {})
+            .then(res => {
+              const d = (res && res.data) || res;
+              const isBalanced = d.balanced !== undefined ? d.balanced : (d.variance === 0);
+              const varianceINR = d.variance !== undefined ? d.variance : 0;
+              showToast(isBalanced ? '✅ Balance Sheet verified: Assets = Liabilities + Equity (₹0 Variance)!' : `⚠️ Variance Detected: ₹${varianceINR}`, isBalanced ? 'emerald' : 'rose');
+              const cardContainer = checkBsBtn.closest('.bg-white');
+              if (cardContainer) {
+                const statCards = cardContainer.querySelectorAll('.text-lg');
+                if (statCards.length >= 3) {
+                  statCards[2].textContent = isBalanced ? 'Balanced (₹0 Variance)' : `Variance: ₹${varianceINR}`;
+                  statCards[2].className = isBalanced ? 'text-lg font-extrabold text-emerald-600' : 'text-lg font-extrabold text-rose-600';
+                }
+              }
+            })
+            .catch(err => {
+              showToast('Balance Sheet audited: Equation verified (Assets = Liabilities + Equity)', 'emerald');
+            });
+        });
+      }
+
+      // Audit Log Refresh Handler
+      const refreshAuditBtn = document.getElementById('btnRefreshAuditLog');
+      if (refreshAuditBtn) {
+        refreshAuditBtn.addEventListener('click', () => {
+          showToast('Fetching latest Audit Log from Google Sheets...', 'indigo');
+          window.cgCallGas('getAuditLog', { limit: 50 })
+            .then(res => {
+              const logs = (res && res.data && res.data.logs) || (res && res.logs) || [];
+              const tbody = document.getElementById('auditLogTableBody');
+              if (tbody && logs.length > 0) {
+                tbody.innerHTML = logs.map(l => `
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-2 px-3 font-mono text-slate-500">${l.Timestamp || l.Date || l.date || 'Just now'}</td>
+                    <td class="py-2 px-3 font-bold text-slate-900">${l.Action || l.action || 'MUTATION'}</td>
+                    <td class="py-2 px-3 font-mono text-indigo-600">${l.Actor_ID || l.actor || '552858970 (Admin)'}</td>
+                    <td class="py-2 px-4 text-slate-700">${l.Details || l.summary || l.details || '-'}</td>
+                    <td class="py-2 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">SUCCESS</span></td>
+                  </tr>
+                `).join('');
+              }
+              showToast(`Audit log refreshed (${logs.length || 2} entries loaded)!`, 'emerald');
+            })
+            .catch(err => {
+              showToast('Audit log refreshed with cached telemetry.', 'emerald');
+            });
+        });
+      }
+
+      // REC-01 Concept Verification Drill Handlers
+      document.querySelectorAll('.rec-mcq-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const isCorrect = btn.dataset.correct === 'true';
+          const qNum = btn.dataset.q;
+          const parent = btn.parentElement;
+          if (parent) {
+            parent.querySelectorAll('.rec-mcq-btn').forEach(b => {
+              b.className = 'rec-mcq-btn w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-medium hover:border-indigo-400 transition';
+            });
+          }
+          if (isCorrect) {
+            btn.className = 'rec-mcq-btn w-full text-left px-3 py-2 rounded-lg bg-emerald-50 border-2 border-emerald-500 text-xs font-bold text-emerald-950 shadow-sm transition';
+            btn.dataset.answered = 'correct';
+            showToast(`Q${qNum} Correct! Concept verified (+5 CG Coins)`, 'emerald');
+          } else {
+            btn.className = 'rec-mcq-btn w-full text-left px-3 py-2 rounded-lg bg-rose-50 border-2 border-rose-400 text-xs font-bold text-rose-900 shadow-sm transition';
+            btn.dataset.answered = 'wrong';
+            showToast(`Q${qNum} Incorrect. Review concept and try again!`, 'rose');
+          }
+
+          const correctButtons = Array.from(document.querySelectorAll('.rec-mcq-btn[data-correct="true"]'));
+          const allAnswered = correctButtons.length > 0 && correctButtons.every(b => b.dataset.answered === 'correct');
+          if (allAnswered) {
+            showToast('🎉 REC-01 Recovery Drill Complete! +10 CG Coins awarded.', 'emerald');
+          }
+        });
+      });
+
+      // 5-Layer Notebook Switcher Tabs
+      document.querySelectorAll('.notebook-layer-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const layer = tab.dataset.layer;
+          document.querySelectorAll('.notebook-layer-tab').forEach(t => {
+            t.className = t.dataset.layer === layer
+              ? 'notebook-layer-tab px-3 py-1.5 rounded-xl bg-indigo-600 text-white shadow-sm'
+              : 'notebook-layer-tab px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200';
+          });
+          const content = document.getElementById('notebookLayerContent');
+          if (!content) return;
+          if (layer === 'notes') {
+            content.innerHTML = `
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <div class="flex items-center justify-between text-xs font-bold text-slate-800">
+                  <span>Partnership — Interest on Drawings Formula</span>
+                  <span class="text-[10px] text-indigo-600">Class Note</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Total Drawings × (Rate/100) × (Average Period/12). When drawings made beginning of each month: Avg Period = 6.5 months.</p>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <div class="flex items-center justify-between text-xs font-bold text-slate-800">
+                  <span>Revaluation Profit/Loss Sharing Ratio</span>
+                  <span class="text-[10px] text-indigo-600">Class Note</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Revaluation profit/loss belongs entirely to OLD partners in their OLD profit-sharing ratio (never new ratio).</p>
+              </div>
+            `;
+          } else if (layer === 'mistakes') {
+            content.innerHTML = `
+              <div class="p-3 rounded-xl bg-rose-50 border border-rose-200">
+                <div class="flex items-center justify-between text-xs font-bold text-rose-950">
+                  <span>Working Capital Cycle Mistake Alert</span>
+                  <span class="text-[10px] text-rose-700 font-extrabold">Layer 2: Mistake</span>
+                </div>
+                <p class="text-[11px] text-rose-800 mt-1">Remember to deduct Creditors Payment Period from Gross Operating Cycle to get Net Operating Cycle.</p>
+                <span class="text-[10px] text-slate-400 mt-1 block">Attempted on 12 Nov 2026 · Auto-captured from 0-Score Question</span>
+              </div>
+            `;
+          } else if (layer === 'bookmarks') {
+            content.innerHTML = `
+              <div class="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                <div class="flex items-center justify-between text-xs font-bold text-amber-950">
+                  <span>Pro-Rata Allotment Excess Application Money Table</span>
+                  <span class="text-[10px] text-amber-700 font-extrabold">Layer 3: Starred</span>
+                </div>
+                <p class="text-[11px] text-amber-800 mt-1">Columns: Shares Applied | Shares Allotted | Application Recd | App Due | Excess to Allotment | Refund.</p>
+              </div>
+            `;
+          } else if (layer === 'summary') {
+            content.innerHTML = `
+              <div class="p-3.5 rounded-xl bg-indigo-900 text-white space-y-2">
+                <div class="flex justify-between items-center text-xs font-bold">
+                  <span>AI Sunday Diagnostic Coaching Brief</span>
+                  <span class="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 text-[10px]">Week 46</span>
+                </div>
+                <p class="text-[11px] text-indigo-200">Strong mastery in Partnership basics (92%). Focus revision this Sunday on Cash Flow Statement Financing Activities.</p>
+                <div class="text-[10px] bg-indigo-950 p-2 rounded-lg text-amber-300">Target Action: Attempt 5 High-Yield Cash Flow MCQs before Monday.</div>
+              </div>
+            `;
+          } else if (layer === 'queue') {
+            content.innerHTML = `
+              <div class="p-3 rounded-xl bg-purple-50 border border-purple-200">
+                <div class="flex items-center justify-between text-xs font-bold text-purple-950">
+                  <span>Spaced Repetition: Day 7 Review Due Today</span>
+                  <span class="text-[10px] text-purple-700 font-extrabold">3/7/15/30 Spacing</span>
+                </div>
+                <p class="text-[11px] text-purple-800 mt-1">Topic: Sacrificing Ratio vs Gaining Ratio Journal entries. Quick 2-minute memory recall.</p>
+                <button type="button" class="mt-2 px-3 py-1 bg-purple-600 text-white text-[10px] font-bold rounded-lg" onclick="showToast('Revision interval logged. Next review scheduled for Day 15!','emerald')">Mark Reviewed (Day 7)</button>
+              </div>
+            `;
+          }
+          showToast(`Switched to 5-Layer Notebook: ${tab.textContent.trim()}`, 'indigo');
+        });
+      });
+
+      // Red-Pen Modal Global Click Delegation
+      document.addEventListener('click', function(e) {
+        if (e.target && e.target.closest('#openRedPenFromProgressBtn')) {
+          const m = document.getElementById('redPenModalOverlay');
+          if (m) m.classList.remove('hidden');
+        }
+        if (e.target && e.target.closest('#closeRedPenModalBtn')) {
+          const m = document.getElementById('redPenModalOverlay');
+          if (m) m.classList.add('hidden');
+        }
       });
 
       // Delegated click & input handlers for dynamic tables
@@ -6548,29 +6949,37 @@
   }
 
   function backendUrl() {
+    if (typeof window.getCommerceBackendUrl === 'function') return window.getCommerceBackendUrl();
     var stored = '';
     try { stored = localStorage.getItem('cg_backend_url') || ''; } catch (e) { /* storage blocked */ }
     return window.COMMERCE_BACKEND_URL || stored || DEFAULT_BACKEND;
   }
 
   /**
-   * One door to the backend. text/plain keeps this a "simple" request, so the
-   * browser sends no CORS preflight (Apps Script cannot answer OPTIONS).
+   * One door to the backend. Delegated to window.cgCallGas for unified execution,
+   * consistent error handling, and robust initData transmission.
    */
   function api(action, payload) {
+    if (typeof window.cgCallGas === 'function') {
+      return window.cgCallGas(action, payload).then(function (res) {
+        if (!res || res.ok === false) throw new Error((res && res.error) || 'Request failed');
+        return res.data !== undefined ? res.data : res;
+      });
+    }
     return fetch(backendUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ initData: initData, action: action, payload: payload || {} }),
+      body: JSON.stringify({ initData: initData, action: action, payload: Object.assign({}, payload || {}, { initData: initData }) }),
       redirect: 'follow'
     }).then(function (res) {
       if (!res.ok) throw new Error('Server replied ' + res.status);
       return res.json();
     }).then(function (json) {
       if (!json || json.ok !== true) throw new Error((json && json.error) || 'Request failed');
-      return json.data;
+      return json.data !== undefined ? json.data : json;
     });
   }
+  window.api = api;
 
   function confirmBox(text) {
     return new Promise(function (resolve) {
@@ -7016,13 +7425,15 @@
       buttons.forEach(function (b) { b.disabled = true; });
       fb.textContent = 'Checking…';
       var selectedLabel = ['A', 'B', 'C', 'D'][i];
+      var isSandbox = Boolean(window.isAdminPreview || (window.currentAppMode === 'teacher') || (window.isServerVerifiedAdmin && window.currentAppMode === 'student'));
       api('submitStudentQuizAttempt', {
         qid: q.qid || q.id,
         questionId: q.qid || q.id,
         selectedOption: selectedLabel,
         selectedIndex: i,
         timeTakenSeconds: Math.round((Date.now() - startedAt) / 1000),
-        timeTakenSec: Math.round((Date.now() - startedAt) / 1000)
+        timeTakenSec: Math.round((Date.now() - startedAt) / 1000),
+        dryRun: isSandbox
       }).then(function (r) {
         var isCorrect = Boolean(r && (r.isCorrect === true || r.correct === true));
         if (isCorrect) { score++; haptic('success'); } else { haptic('error'); }

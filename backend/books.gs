@@ -548,3 +548,62 @@ function apiGetCashDrawerBalance_(verifiedUser) {
   requireAdmin_(verifiedUser && verifiedUser.id);
   return getCashDrawerBalance_();
 }
+
+/**
+ * Computes live Begusarai physical cash drawer balance & metrics strictly read-only.
+ * Zero write locks, zero row appends.
+ * @return {Object}
+ */
+function apiGetFinancialSummary_() {
+  var IDS = getActiveSheetIds();
+  var erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  var booksSS = null;
+  try {
+    if (IDS.BOOKS_EXPENSES) booksSS = SpreadsheetApp.openById(IDS.BOOKS_EXPENSES);
+  } catch (_) {}
+
+  // Calculate live Begusarai physical cash drawer balance & metrics
+  var feeSheet = erp.getSheetByName('Fee_Ledger');
+  var feeLedgerRows = feeSheet ? sheetToObjects(feeSheet) : [];
+  var cashFeeInflows = 0;
+  var upiFeeInflows = 0;
+  feeLedgerRows.forEach(function(l) {
+    var paid = Number(l.Paid_Amount_INR || l.Paid_Amount || 0);
+    var mode = String(l.Payment_Mode || 'UPI').toUpperCase();
+    if (mode === 'CASH') cashFeeInflows += paid;
+    else upiFeeInflows += paid;
+  });
+
+  var cashExpensesOut = 0;
+  var totalExpenses = 0;
+  if (booksSS) {
+    var expSheet = booksSS.getSheetByName('Expenses');
+    if (expSheet) {
+      var expRows = sheetToObjects(expSheet);
+      expRows.forEach(function(e) {
+        var amt = Number(e.Amount || e.Amount_INR || 0);
+        var mode = String(e.Mode || e.Payment_Mode || 'Cash').toUpperCase();
+        totalExpenses += amt;
+        if (mode === 'CASH') cashExpensesOut += amt;
+      });
+    }
+  }
+
+  var physicalCashDrawerBalance = cashFeeInflows - cashExpensesOut;
+  var totalRevenue = cashFeeInflows + upiFeeInflows;
+  var netOperatingProfit = totalRevenue - totalExpenses;
+  var profitMarginPct = totalRevenue > 0 ? Math.round((netOperatingProfit / totalRevenue) * 100) : 0;
+
+  return {
+    ok: true,
+    physicalCashDrawerBalanceINR: physicalCashDrawerBalance,
+    cashFeeInflowsINR: cashFeeInflows,
+    cashExpensesOutINR: cashExpensesOut,
+    bankUpiInflowsINR: upiFeeInflows,
+    totalRevenueINR: totalRevenue,
+    totalExpensesINR: totalExpenses,
+    netOperatingProfitINR: netOperatingProfit,
+    profitMarginPct: profitMarginPct
+  };
+}
+

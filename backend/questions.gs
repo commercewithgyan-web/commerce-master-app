@@ -650,7 +650,6 @@ function shuffleArrayWithSeed_(arr, seedStr) {
 }
 
 function apiSubmitAnswer_(verifiedUser, payload) {
-  var student = requirePaidStudent_(verifiedUser.id);
   var qid = payload.qid;
   var selectedIndex = payload.selectedIndex;
   var optionMap = payload.optionMap;
@@ -668,6 +667,17 @@ function apiSubmitAnswer_(verifiedUser, payload) {
   var coinsEarned = isCorrect ? 10 : 0;
   if (ghostBeaten) coinsEarned += 20;
 
+  if (payload && payload.dryRun === true) {
+    return {
+      isCorrect: isCorrect,
+      ghostBeaten: ghostBeaten,
+      coinsEarned: coinsEarned,
+      dryRun: true,
+      message: 'Admin Preview Sandbox: Answer verified without mutating live sheet records.'
+    };
+  }
+
+  var student = requirePaidStudent_(verifiedUser.id);
   var todayStr = getKolkataDate();
   var timestamp = new Date().toISOString();
 
