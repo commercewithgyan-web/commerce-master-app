@@ -2720,13 +2720,64 @@
   <script>
     // ==================== APPLICATION STATE (8 SUBJECTS, 60-100 STUDENT ENGINE, ALL MODULES) ====================
 
-    // Early helper to prevent ReferenceError on rapid button taps
-    window.executeLoadSubjectPracticeQuestions = function(subject) {
-    window.loadSubjectPracticeQuestions = window.executeLoadSubjectPracticeQuestions;
-      if (typeof window.executeLoadSubjectPracticeQuestions === "function") {
-        return window.executeLoadSubjectPracticeQuestions(subject);
+    // B9: Unified Question Bank Loader (Guarantees zero ReferenceError & zero recursion)
+    window.loadSubjectPracticeQuestions = function(subject) {
+      subject = subject || 'Accountancy';
+      showToast(`Loading ${subject} questions from Question Bank...`, 'indigo');
+      const out = document.getElementById('unifiedQuestionEngineOutput');
+      if (out) {
+        out.innerHTML = `
+          <div class="flex items-center justify-between font-bold text-slate-900">
+            <span>Loading ${subject} Question Bank...</span>
+            <span class="px-2 py-0.5 rounded text-[10px] bg-indigo-100 text-indigo-800 animate-pulse">Fetching from Sheets</span>
+          </div>
+        `;
       }
+      return window.cgCallGas('getPracticeQuestions', { subject: subject, classLevel: 12, difficulty: 'ALL' })
+        .then(res => {
+          const questions = (res && res.data && Array.isArray(res.data)) ? res.data : (Array.isArray(res) ? res : (res && res.questions ? res.questions : []));
+          if (out) {
+            if (questions.length === 0) {
+              out.innerHTML = `
+                <div class="flex items-center justify-between font-bold text-slate-900">
+                  <span>${subject} Practice Vault (Live)</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] bg-slate-100 text-slate-700">0 Questions Loaded</span>
+                </div>
+                <p class="text-[11px] text-slate-500">No approved questions found for ${subject}. Questions will populate automatically as they are added in Google Sheets.</p>
+              `;
+            } else {
+              out.innerHTML = `
+                <div class="flex items-center justify-between font-bold text-slate-900 border-b border-slate-200 pb-2">
+                  <span class="text-sm font-extrabold">${subject} Practice Vault (${questions.length} Live Questions)</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">✓ Ready for 7 PM DPP</span>
+                </div>
+                <div class="space-y-2 mt-2 max-h-72 overflow-y-auto custom-scroll pr-1">
+                  ${questions.slice(0, 15).map((q, idx) => `
+                    <div class="p-2.5 rounded-xl bg-white border border-slate-200 text-xs space-y-1">
+                      <div class="flex items-center justify-between">
+                        <span class="font-mono text-[10px] font-bold text-indigo-600">${q.id || ('Q-' + (idx+1))} · ${q.chapter || subject}</span>
+                        <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-100 text-slate-700">${q.type || 'MCQ'}</span>
+                      </div>
+                      <p class="font-medium text-slate-900">${q.question || q.text || ''}</p>
+                    </div>
+                  `).join('')}
+                </div>
+              `;
+            }
+          }
+          return questions;
+        }).catch(err => {
+          if (out) {
+            out.innerHTML = `
+              <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+                <strong>Failed to load ${subject} questions:</strong> ${err.message || err}
+              </div>
+            `;
+          }
+          showToast(`Error loading ${subject} questions: ${err.message || err}`, 'rose');
+        });
     };
+    window.executeLoadSubjectPracticeQuestions = window.loadSubjectPracticeQuestions;
 
     // In-App Confirmation Modal implementation (zero window.confirm)
     window.showAppConfirm = function(options) {
@@ -3418,7 +3469,7 @@
       return prefix + clean10 + '?text=' + encodeURIComponent(msg);
     }
 
-    // ==================== RENDER: CURRICULUM & 797 SUBTOPICS (DESKTOP TABLE + MOBILE ACCORDION) ====================
+    // ==================== RENDER: SYLLABUS PLANNER (-3 TO +7 DAYS WINDOW) ====================
     function renderCurriculum() {
       const classEl = document.getElementById('currClassFilter');
       const subjEl = document.getElementById('currSubjectFilter');
@@ -3427,84 +3478,100 @@
       const subjFilter = subjEl ? subjEl.value : 'ALL';
       const statusFilter = statusEl ? statusEl.value : 'ALL';
 
+      // Date window: -3 days to +7 days around today
+      const now = new Date();
+      const minDate = new Date(now.getTime() - (3 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
+      const maxDate = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
+
       const rows = (appState.curriculumTopics || []).filter(item => {
         const itemSubj = String(item.subject || '').toUpperCase().trim();
         const sf = String(subjFilter).toUpperCase().trim();
         const cf = String(classFilter).toUpperCase().trim();
 
-        // Class filter match
+        // 1. Class filter
         let cMatch = (cf === 'ALL');
         if (!cMatch) {
           if (cf === '12') cMatch = itemSubj.includes('12') || (item.id && item.id.includes('12'));
           else if (cf === '11') cMatch = itemSubj.includes('11') || (item.id && item.id.includes('11'));
         }
 
-        // Subject filter match (exact code match)
-        let sMatch = (sf === 'ALL') || (itemSubj === sf);
+        // 2. Subject filter (Normalized code matching)
+        let sMatch = (sf === 'ALL');
+        if (!sMatch) {
+          const sPrefix = sf.split('-')[0];
+          sMatch = itemSubj === sf || itemSubj.includes(sPrefix) || (item.id && item.id.includes(sPrefix));
+        }
 
-        // Status match
-        const itemStat = String(item.status || '').toLowerCase().trim();
+        // 3. Status filter
+        const itemStat = String(item.status || 'Planned').toLowerCase().trim();
         const stf = String(statusFilter).toLowerCase().trim();
-        const stMatch = (stf === 'all') || (itemStat === stf);
+        const stMatch = (stf === 'all') || (itemStat === stf) || (stf === 'planned' && itemStat === 'upcoming');
 
-        return cMatch && sMatch && stMatch;
+        // 4. Date window filter: Include if date is in [-3, +7] days, or if status is 'In Progress', or if topic is locked active
+        let dMatch = true;
+        if (item.date) {
+          dMatch = (item.date >= minDate && item.date <= maxDate) || item.status === 'In Progress' || item.id === appState.activeSubtopicLock;
+        }
+
+        return cMatch && sMatch && stMatch && dMatch;
       });
 
       const badgeStyle = {
         'Completed': 'bg-emerald-100 text-emerald-800 border-emerald-200',
         'In Progress': 'bg-amber-100 text-amber-800 border-amber-200',
-        'Planned': 'bg-slate-100 text-slate-700 border-slate-200'
+        'Planned': 'bg-slate-100 text-slate-700 border-slate-200',
+        'Upcoming': 'bg-slate-100 text-slate-700 border-slate-200'
       };
-
-      function suggestDeliveryMode(item) {
-        if (item.deliveryMode) return item.deliveryMode;
-        const name = (item.chapter || item.topic || '').toLowerCase();
-        if (name.includes('partnership') || name.includes('forfeiture') || name.includes('cash flow') || name.includes('national income') || name.includes('adjustment')) {
-          return 'Offline Direct';
-        } else if (name.includes('nature') || name.includes('introduction') || name.includes('1991') || name.includes('overview') || name.includes('concept')) {
-          return 'YouTube Public';
-        } else if (name.includes('revision') || name.includes('drill') || name.includes('recovery')) {
-          return 'YouTube Unlisted';
-        } else {
-          return 'CG Native App (Unshareable)';
-        }
-      }
 
       const container = document.getElementById('curriculumTableContainer');
       if (container) {
         container.innerHTML = `
+          <div class="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 text-xs flex items-center justify-between mb-3">
+            <span class="text-indigo-900 font-bold">📅 Syllabus Planner Window: <strong>${minDate}</strong> (-3d) to <strong>${maxDate}</strong> (+7d)</span>
+            <span class="text-[11px] font-semibold text-indigo-700">${rows.length} sub-topics scheduled</span>
+          </div>
           <table class="w-full text-left border-collapse text-xs">
             <thead>
               <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 <th class="py-3 px-4">Canonical ID</th>
                 <th class="py-3 px-4">Subject</th>
-                <th class="py-3 px-4">Chapter Hierarchy (71 Total)</th>
-                <th class="py-3 px-4 text-center">Subtopics &amp; Focus</th>
-                <th class="py-3 px-4">Delivery Mode (Auto-Suggested #5)</th>
-                <th class="py-3 px-4 text-right">Status &amp; Lock</th>
+                <th class="py-3 px-4">Subtopic / Hierarchy</th>
+                <th class="py-3 px-4">Notion Link &amp; Questions Taught</th>
+                <th class="py-3 px-4 text-center">Status</th>
+                <th class="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              ${rows.slice(0, 120).map(r => {
-                const mode = suggestDeliveryMode(r);
+              ${rows.map(r => {
+                const isLocked = r.id === appState.activeSubtopicLock;
+                const badge = badgeStyle[r.status] || badgeStyle['Planned'];
+                const notionUrl = r.notionLink || '';
+                const qTaught = r.questionsTaught || '—';
                 return `
-                <tr class="hover:bg-slate-50/80">
+                <tr class="hover:bg-slate-50/80 ${isLocked ? 'bg-amber-50/40' : ''}">
                   <td class="py-3 px-4 font-mono font-semibold text-slate-700">${r.id}</td>
                   <td class="py-3 px-4"><span class="px-2 py-0.5 rounded font-bold bg-indigo-50 text-indigo-700">${r.subject}</span></td>
-                  <td class="py-3 px-4 font-bold text-slate-900">${r.chapter}</td>
-                  <td class="py-3 px-4 text-center font-semibold text-slate-600">${r.topic || (r.subtopicsCount + ' subtopics')}</td>
-                  <td class="py-3 px-4">
-                    <select class="delivery-mode-select px-2.5 py-1 rounded-xl border border-slate-200 text-[11px] font-bold bg-white text-slate-800 shadow-sm" onchange="window.updateTopicDeliveryMode('${r.id}', this.value)">
-                      <option value="Offline Direct" ${mode === 'Offline Direct' ? 'selected' : ''}>🟢 Offline Direct</option>
-                      <option value="CG Native App (Unshareable)" ${mode === 'CG Native App (Unshareable)' ? 'selected' : ''}>🔒 CG Native App (DRM)</option>
-                      <option value="YouTube Unlisted" ${mode === 'YouTube Unlisted' ? 'selected' : ''}>📺 YouTube Unlisted</option>
-                      <option value="YouTube Public" ${mode === 'YouTube Public' ? 'selected' : ''}>▶️ YouTube Public (+5 Coins)</option>
-                    </select>
+                  <td class="py-3 px-4 font-bold text-slate-900">
+                    <div>${r.chapter || r.topic}</div>
+                    ${r.learningObjective ? `<div class="text-[10px] text-slate-500 font-normal mt-0.5">🎯 ${r.learningObjective}</div>` : ''}
+                  </td>
+                  <td class="py-3 px-4 text-xs">
+                    <div class="flex items-center gap-1.5">
+                      ${notionUrl
+                        ? `<a href="${notionUrl}" target="_blank" class="px-2 py-0.5 rounded bg-purple-50 text-purple-700 text-[10px] font-bold border border-purple-200 hover:underline">📝 Notion Plan ↗</a>`
+                        : '<span class="text-[10px] text-slate-400">No Notion Link</span>'}
+                    </div>
+                    <div class="text-[11px] text-slate-600 mt-1"><strong>Q#:</strong> ${qTaught}</div>
+                  </td>
+                  <td class="py-3 px-4 text-center">
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${badge}">${r.status || 'Planned'}</span>
                   </td>
                   <td class="py-3 px-4 text-right space-x-1.5">
-                    <button type="button" data-lockid="${r.id}" class="quick-lock-topic-btn px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 text-[11px] font-bold">📌 Lock</button>
-                    <button type="button" data-currid="${r.id}" class="cycle-curr-btn px-3 py-1 rounded-full text-[11px] font-bold border ${badgeStyle[r.status] || badgeStyle.Planned}">
-                      ${r.status} ↻
+                    <button type="button" data-currid="${r.id}" class="cycle-curr-btn px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 text-[11px] font-bold transition">
+                      ↻ Cycle Status
+                    </button>
+                    <button type="button" data-lockid="${r.id}" class="quick-lock-topic-btn px-2.5 py-1 rounded-lg ${isLocked ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-900 text-white font-bold'} text-[11px] transition shadow-sm">
+                      ${isLocked ? '🔒 Locked' : 'Set Tonight'}
                     </button>
                   </td>
                 </tr>
@@ -5379,7 +5446,7 @@
       // Dashboard quick buttons
       document.getElementById('dashGoLessonBtn').addEventListener('click', () => switchTab('lessons'));
       document.getElementById('dashGoAttBtn').addEventListener('click', () => switchTab('attendance'));
-      document.getElementById('dashGoToolsBtn').addEventListener('click', () => switchTab('tools'));
+      // Smartboard tools cleanly removed from Quick Dashboard (A3)
       document.querySelectorAll('.quick-nav-link').forEach(el => {
         el.addEventListener('click', () => switchTab(el.dataset.goto));
       });
@@ -5412,19 +5479,40 @@
         });
       }
 
-      // Dispatch 7:00 PM DPP
-      document.getElementById('dispatchDppNowBtn').addEventListener('click', () => {
-        showToast('7:00 PM A4 PDF DPP + 3-Track Quiz dispatched to Telegram Mini App!', 'emerald');
-      });
+      // A3: Dispatch 7:00 PM DPP opens modal connected to Question Bank
+      const mainDppBtn = document.getElementById('dispatchDppNowBtn');
+      if (mainDppBtn) {
+        mainDppBtn.addEventListener('click', () => {
+          const dppModal = document.getElementById('dppDispatchModalOverlay');
+          if (dppModal) dppModal.classList.remove('hidden');
+        });
+      }
 
       // Bot remote command buttons (wired to live GAS & tabs)
       document.querySelectorAll('.bot-cmd-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const cmd = btn.dataset.botcmd;
           if (cmd === '/startclass') {
-            window.cgCallGas('setActiveSubtopic', { subtopicId: appState.activeSubtopicLock, deliveryMode: 'Offline', status: 'In Progress' })
-              .then(res => showToast(`Locked ${res.activeSubtopic || appState.activeSubtopicLock} via /startclass!`, 'emerald'))
-              .catch(err => showToast(`Executed /startclass (${err.message})`, 'amber'));
+            const currentSubj = appState.globalSubject === 'ALL' ? 'ACC-12' : appState.globalSubject;
+            const candidates = (appState.curriculumTopics || []).filter(c => String(c.subject || '').toUpperCase().includes(currentSubj.replace(/D/g, '')) || String(c.subject || '').toUpperCase() === currentSubj.toUpperCase());
+            const picked = candidates.find(c => c.status === 'In Progress') || candidates.find(c => c.status === 'Planned' || c.status === 'Upcoming') || candidates[0];
+            const topicId = picked ? picked.id : appState.activeSubtopicLock;
+            const topicName = picked ? (picked.chapter || picked.topic || topicId) : 'Current Subtopic';
+
+            window.showAppConfirm({
+              title: `🚀 Launch Live Class (/startclass)`,
+              message: `Launch live class for <strong>${currentSubj}</strong>?<br><br>Auto-picked Syllabus Sub-topic: <strong>${topicId}</strong> — <em>${topicName}</em>.<br><br>This locks Settings!B2, synchronizes with 01_Master_Syllabus, and activates tonight's 7 PM DPP.`,
+              confirmText: 'Start Class Now',
+              cancelText: 'Cancel'
+            }).then(confirmed => {
+              if (!confirmed) return;
+              appState.activeSubtopicLock = topicId;
+              if (picked) picked.status = 'In Progress';
+              renderCurriculum();
+              window.cgCallGas('setActiveSubtopic', { subtopicId: topicId, deliveryMode: 'Offline', status: 'In Progress', subject: currentSubj })
+                .then(() => showToast(`Dispatched /startclass! Locked: ${topicId}`, 'emerald'))
+                .catch(err => showToast(`Failed /startclass: ${err.message || err}`, 'rose'));
+            });
           } else if (cmd === '/attendance') {
             switchTab('attendance');
             showToast('Opened 30-Second Attendance Grid', 'indigo');
@@ -5475,18 +5563,32 @@
       document.getElementById('createNewLessonBtn').addEventListener('click', () => {
         const newId = 'LES-' + Math.floor(200 + Math.random() * 700);
         const subj = appState.globalSubject === 'ALL' ? 'ACC-12' : appState.globalSubject;
-        appState.lessons.unshift({
+        const newLesson = {
           id: newId,
           subject: subj,
           code: `${subj.replace('-','')}-CH01-NEW`,
           title: 'New Commerce Lesson Plan',
           unit: 'Unit 1: Core Concepts & Working Notes',
           time: '04:00 PM',
-          body: '1. LEARNING OBJECTIVES:\n- \n\n2. BOARD EXAM TRAP RADAR:\n- \n\n3. WORKING NOTES & ILLUSTRATIONS:\n- '
-        });
+          body: '1. LEARNING OBJECTIVES:\n- Master key NCERT principles.\n\n2. BOARD EXAM TRAP RADAR:\n- Common pitfalls in step calculations.\n\n3. WORKING NOTES & ILLUSTRATIONS:\n- Detailed workings.'
+        };
+        appState.lessons.unshift(newLesson);
         appState.selectedLessonId = newId;
         renderLessons();
-        showToast('Created new lesson template', 'indigo');
+        showToast('Creating new lesson and saving to Sheet...', 'indigo');
+
+        window.cgCallGas('saveLessonPlan', {
+          lessonId: newId,
+          subject: subj,
+          topicId: newLesson.code,
+          title: newLesson.title,
+          unit: newLesson.unit,
+          body: newLesson.body
+        }).then(() => {
+          showToast('New lesson saved to Sheet (Lesson_Plans)!', 'emerald');
+        }).catch(err => {
+          showToast('Lesson saved locally (Sheet sync error: ' + (err.message || err) + ')', 'amber');
+        });
       });
 
       document.getElementById('applyTemplateBtn').addEventListener('click', () => {
@@ -5559,25 +5661,33 @@
         });
       });
 
-      // Built-in AI Lesson Assistant (wired to live Gemini 2.5 Flash on GAS with instant fallback)
+      // B2: Built-in AI Lesson Assistant (wired to live Gemini generateLessonPlan on GAS with clear status)
       document.querySelectorAll('.ai-assist-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const mode = btn.dataset.aiprompt;
-          const title = document.getElementById('editorTitleInput').value;
+          const title = (document.getElementById('editorTitleInput') && document.getElementById('editorTitleInput').value) || 'Admission of a Partner';
+          const subj = (document.getElementById('editorSubjectSelect') && document.getElementById('editorSubjectSelect').value) || 'ACC-12';
           const outBox = document.getElementById('aiOutputBox');
           const outText = document.getElementById('aiOutputText');
           const responses = {
             hook: `✨ 3-Minute Begusarai Classroom Hook for "${title}":\n"Imagine two sweet shop partners in Begusarai Main Market who built a ₹10 Lakh reputation over 5 years. If a 3rd partner joins today for 1/3rd profit, will they let him enjoy past reputation for free? No! That entry compensation is what we call Premium for Goodwill."`,
-            trap: `⚠️ CBSE & BSEB Board Exam Trap Radar:\n1. If the question says "Partner brings Goodwill in cash and it is retained in business" → Credit Sacrificing Partners only.\n2. If a current partner also GAINS on admission → Debit the Gaining Partner's Capital A/c too!`,
+            trap: `⚠️ CBSE & BSEB Board Exam Trap Radar:\n1. If the question says "Partner brings Goodwill in cash and it is retained in business" → Credit Sacrificing Partners only.\n2. If a current partner also GAINS on admission → Debit the Gaining Partner\'s Capital A/c too!`,
             mcq: `📝 7:00 PM 3-Track DPP Preview:\n• [Open MCQ] A and B share profits 3:2. C is admitted for 1/5 share. Sacrificing ratio is: (A) 3:2 (B) 1:1 (C) 2:3 → Ans: (A) 3:2.\n• [Open AI Challenge] Calculate Hidden Goodwill when A (₹1,50,000) and B (₹1,00,000) admit C for 1/4 share with ₹1,20,000 capital.`,
             hinglish: `🗣️ Classroom Explanation Flow (English + Hinglish cues):\n"Jab bhi naya partner firm mein aata hai, sabse pehle Old Balance Sheet ke Left Side (Reserves/P&L Cr.) aur Right Side (Existing Goodwill/Advt Suspense) ko Old Partners mein Old Ratio mein clear karo!"`
           };
           outText.textContent = responses[mode] || responses.hook;
           outBox.classList.remove('hidden');
-          window.cgCallGas('askDoubt', { question: `Generate ${mode} for commerce lesson: ${title}` })
+          showToast(`Consulting Gemini for ${mode} co-planning...`, 'indigo');
+
+          window.cgCallGas('generateLessonPlan', { title: title, subject: subj, unit: mode })
             .then(res => {
-              if (res && res.answer) outText.textContent = res.answer;
-            }).catch(() => {});
+              if (res && res.lessonPlan && res.lessonPlan.body) {
+                outText.textContent = res.lessonPlan.body;
+                showToast('Gemini AI draft generated!', 'emerald');
+              }
+            }).catch(err => {
+              showToast('Gemini co-planner busy; standard pedagogy template active.', 'amber');
+            });
         });
       });
 
@@ -7668,6 +7778,23 @@ Students will receive mandatory 3-min video recap + 2 MCQs with +10 CG Coins rew
       if (dashEndClassBtn && endClassModal) {
         dashEndClassBtn.addEventListener('click', () => {
           endClassModal.classList.remove('hidden');
+          // Auto-fetch YouTube recording link uploaded by Mac mini for selected batch
+          const batchVal = document.getElementById('endClassBatchSelect') ? document.getElementById('endClassBatchSelect').value : '12';
+          const ytInput = document.getElementById('endClassYoutubeInput');
+          if (ytInput) {
+            ytInput.placeholder = 'Fetching Mac mini unlisted upload link...';
+            window.cgCallGas('getClassRecordingLink', { classLevel: batchVal.includes('11') ? '11' : '12', subject: batchVal })
+              .then(res => {
+                if (res && res.found && res.youtubeUrl) {
+                  ytInput.value = res.youtubeUrl;
+                  showToast('Auto-fetched class recording from Mac mini!', 'indigo');
+                } else {
+                  ytInput.placeholder = 'https://youtu.be/... (Awaiting Mac mini upload)';
+                }
+              }).catch(() => {
+                ytInput.placeholder = 'https://youtu.be/... (Unlisted recording link)';
+              });
+          }
         });
       }
       if (closeEndClassBtn && endClassModal) {

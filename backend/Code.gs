@@ -252,6 +252,9 @@ function doGet(e) {
       case "getPracticeQuestions":
         result = handleGetPracticeQuestions_(e.parameter);
         break;
+      case "getClassRecordingLink":
+        result = getClassRecordingLink(e.parameter);
+        break;
       case "getAppConfig":
         result = { ok: true, commerceGyanAppUrl: getCommerceGyanAppUrl_() };
         break;
@@ -497,6 +500,12 @@ function doPost(e) {
         break;
       case "toggleAcademicTask":
         result = toggleAcademicTask(payload);
+        break;
+      case "getClassRecordingLink":
+        result = getClassRecordingLink(payload);
+        break;
+      case "saveClassRecordingLink":
+        result = saveClassRecordingLink(payload);
         break;
       case "getAcademicCalendar":
         result = getAcademicCalendar();
@@ -1994,11 +2003,16 @@ function setActiveSubtopic(payload) {
       const modeCol = headers.indexOf('Mode_of_Class');
 
 
+      const notionCol = headers.indexOf('Notion_Link');
+      const qTaughtCol = headers.indexOf('Question_Numbers_Taught');
+
       for (let i = 1; i < sylData.length; i++) {
         if (String(sylData[i][topicCol >= 0 ? topicCol : 0]) === subtopicId) {
           if (statusCol >= 0) sylSheet.getRange(i + 1, statusCol + 1).setValue(statusVal);
           if (dateCol >= 0) sylSheet.getRange(i + 1, dateCol + 1).setValue(dateStr);
           if (modeCol >= 0) sylSheet.getRange(i + 1, modeCol + 1).setValue(deliveryMode);
+          if (notionCol >= 0 && payload.notionLink) sylSheet.getRange(i + 1, notionCol + 1).setValue(payload.notionLink);
+          if (qTaughtCol >= 0 && payload.questionsTaught) sylSheet.getRange(i + 1, qTaughtCol + 1).setValue(payload.questionsTaught);
           break;
         }
       }
@@ -3606,5 +3620,61 @@ function saveWeeklyTimetable(payload) {
 
     ttSheet.appendRow([day, slotIdx, time, classLevel, subject, topic, slotType, notes, nowStr]);
     return { ok: true, message: 'Class slot saved and synced to Sheet (Weekly_Timetable).' };
+  });
+}
+
+/**
+ * A3: Reads class recording link uploaded automatically by owner's Mac mini
+ * from Google Drive / Daily_Class_Recordings tab in MASTER_ERP.
+ */
+function getClassRecordingLink(payload) {
+  payload = payload || {};
+  const IDS = getActiveSheetIds();
+  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  let recSheet = erp.getSheetByName("Daily_Class_Recordings");
+  if (!recSheet) {
+    recSheet = erp.insertSheet("Daily_Class_Recordings");
+    recSheet.appendRow(["Date", "Class", "Subject", "Topic", "YouTube_Unlisted_URL", "Drive_File_ID", "Updated_At"]);
+  }
+  const dateStr = payload.date || Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd");
+  const classLvl = String(payload.classLevel || payload.class || "12");
+  const subj = String(payload.subject || "").toUpperCase();
+  const rows = sheetToObjects(recSheet);
+  const match = rows.find(r => {
+    const dMatch = String(r.Date || "").trim() === dateStr;
+    const cMatch = !classLvl || String(r.Class || "").includes(classLvl);
+    const sMatch = !subj || String(r.Subject || "").toUpperCase().includes(subj);
+    return dMatch && (cMatch || sMatch);
+  });
+  if (match && match.YouTube_Unlisted_URL) {
+    return { ok: true, found: true, youtubeUrl: match.YouTube_Unlisted_URL, topic: match.Topic || "", date: dateStr };
+  }
+  return { ok: true, found: false, message: "No recording uploaded yet for this date/class (Mac mini automated queue)" };
+}
+
+function saveClassRecordingLink(payload) {
+  return withWriteLock_(() => {
+    payload = payload || {};
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    let recSheet = erp.getSheetByName("Daily_Class_Recordings");
+    if (!recSheet) {
+      recSheet = erp.insertSheet("Daily_Class_Recordings");
+      recSheet.appendRow(["Date", "Class", "Subject", "Topic", "YouTube_Unlisted_URL", "Drive_File_ID", "Updated_At"]);
+    }
+    const now = new Date();
+    const dateStr = payload.date || Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd");
+    const nowStr = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
+    const row = [
+      dateStr,
+      String(payload.classLevel || "12"),
+      String(payload.subject || "Accountancy"),
+      String(payload.topic || ""),
+      String(payload.youtubeUrl || payload.YouTube_Unlisted_URL || ""),
+      String(payload.driveFileId || ""),
+      nowStr
+    ];
+    recSheet.appendRow(row);
+    return { ok: true, message: "Class recording link saved to Daily_Class_Recordings", date: dateStr, youtubeUrl: payload.youtubeUrl };
   });
 }
