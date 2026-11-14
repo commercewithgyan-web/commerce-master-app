@@ -2879,7 +2879,11 @@ function convertToAdmission(payload) {
     const seqInv = String(existingLedger.length + 1).padStart(3, "0");
     const invoiceId = "INV-" + currentYear + "-" + seqInv;
     const receiptId = "RCP-" + currentYear + "-" + seqInv;
-    const sha256ReceiptHash = "SHA256_" + computeSha256Hex(receiptId + "|" + newRollNo + "|" + paidAmountINR + "|" + dateStr).substring(0, 16);
+    const prevHash = existingLedger.length > 0 ? (existingLedger[existingLedger.length - 1].Row_Hash || existingLedger[existingLedger.length - 1].Prev_Hash || receiptId) : 'GENESIS';
+    const admReason = "Admission Fee - " + feeStatus;
+    const admUtr = String(payload.utr || payload.upiRef || 'NA').trim();
+    const admActor = (verifiedUser && verifiedUser.id) ? String(verifiedUser.id) : (payload.actor || 'TEACHER');
+    const sha256ReceiptHash = "SHA256_" + computeSha256Hex(receiptId + "|" + newRollNo + "|" + paidAmountINR + "|" + dateStr + "|" + admUtr + "|" + admReason + "|" + prevHash).substring(0, 16);
 
     const ledgerRow = [
       invoiceId,
@@ -2894,11 +2898,11 @@ function convertToAdmission(payload) {
       netFirstInvoiceINR,
       paidAmountINR,
       balanceDueINR,
-      feeStatus,
+      admReason,
       payload.paymentMode || "UPI",
-      dateStr,
-      dateStr,
-      receiptId,
+      admUtr,
+      admActor,
+      prevHash,
       sha256ReceiptHash
     ];
     feeLedgerSheet.appendRow(ledgerRow);
@@ -3018,7 +3022,11 @@ function recordFeePayment(payload) {
     const seqInv = String(existingLedger.length + 1).padStart(3, "0");
     const invoiceId = "INV-" + currentYear + "-" + seqInv;
     const receiptId = "RCP-" + currentYear + "-" + seqInv;
-    const sha256ReceiptHash = "SHA256_" + computeSha256Hex(receiptId + "|" + rollNo + "|" + paidAmountINR + "|" + dateStr).substring(0, 16);
+    const prevHash = existingLedger.length > 0 ? (existingLedger[existingLedger.length - 1].Row_Hash || existingLedger[existingLedger.length - 1].Prev_Hash || receiptId) : 'GENESIS';
+    const feeReason = waiverReason ? (feeStatus + " - " + waiverReason) : feeStatus;
+    const feeUtr = utr || 'NA';
+    const feeActor = (verifiedUser && verifiedUser.id) ? String(verifiedUser.id) : (payload.actor || 'TEACHER');
+    const sha256ReceiptHash = "SHA256_" + computeSha256Hex(receiptId + "|" + rollNo + "|" + paidAmountINR + "|" + dateStr + "|" + feeUtr + "|" + feeReason + "|" + prevHash).substring(0, 16);
 
     const ledgerRow = [
       invoiceId,
@@ -3033,11 +3041,11 @@ function recordFeePayment(payload) {
       netPayableINR,
       paidAmountINR,
       balanceDueINR,
-      feeStatus,
+      feeReason,
       payload.paymentMode || "UPI",
-      dateStr,
-      dateStr,
-      receiptId,
+      feeUtr,
+      feeActor,
+      prevHash,
       sha256ReceiptHash
     ];
     feeLedgerSheet.appendRow(ledgerRow);
