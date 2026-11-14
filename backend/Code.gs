@@ -3995,6 +3995,37 @@ function toggleAcademicHoliday(payload) {
     const batchId = payload.batchId || 'ALL_BATCHES';
     const createdBy = payload.createdBy || 'Gyan Sir';
 
+    // Point 6 (R-22): Check existing holidays for that date and batch
+    const calData = calSheet.getDataRange().getValues();
+    let existingHolidayRow = -1;
+    for (let r = 1; r < calData.length; r++) {
+      const rDate = String(calData[r][0] || '').trim();
+      const rBatch = String(calData[r][1] || '').trim();
+      const rType = String(calData[r][2] || '').trim();
+      const rStatus = String(calData[r][7] || '').trim();
+      if (rDate === dateStr && (rBatch === batchId || rBatch === 'ALL_BATCHES') && (rType === 'Holiday' || rType === 'HOLIDAY') && rStatus !== 'CANCELLED') {
+        existingHolidayRow = r + 1;
+        break;
+      }
+    }
+
+    if (!isHoliday) {
+      // Turning off holiday: soft-deactivate without deleting production rows
+      if (existingHolidayRow <= 0) {
+        return { ok: false, error: 'Cannot turn off holiday: No active holiday exists for ' + dateStr };
+      }
+      calSheet.getRange(existingHolidayRow, 3).setValue('Cancelled_Holiday');
+      calSheet.getRange(existingHolidayRow, 6).setValue('FALSE');
+      calSheet.getRange(existingHolidayRow, 8).setValue('CANCELLED');
+      recordAuditLog_(createdBy, 'STAFF', 'CANCEL_HOLIDAY', dateStr, { batchId: batchId, previousReason: reason });
+      return { ok: true, message: 'Holiday turned off and deactivated for ' + dateStr, date: dateStr, isHoliday: false };
+    }
+
+    // Turning on holiday: fail if already active
+    if (existingHolidayRow > 0) {
+      return { ok: false, error: 'Holiday already active for date: ' + dateStr };
+    }
+
     calSheet.appendRow([
       dateStr,
       batchId,
@@ -4002,7 +4033,8 @@ function toggleAcademicHoliday(payload) {
       'Holiday (' + reason + ')',
       reason,
       'TRUE',
-      createdBy
+      createdBy,
+      'ACTIVE'
     ]);
 
     let shiftedCount = 0;
