@@ -8,6 +8,7 @@
   <meta property="og:title" content="Commerce Gyan Studio" />
   <meta property="og:description" content="Dual-role coaching platform for Commerce Gyan in Begusarai, Bihar (Class 11 & 12 Commerce) featuring Mobile Teacher Daily Ops and Student Telegram Mini App." />
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
   <script>
     tailwind.config = { darkMode: 'class' };
   </script>
@@ -7938,45 +7939,26 @@
       }
 
       // ── N-2 (C-3 / SFE-010 / SCR-S-FEE-003): PAY BY UPI & ON-DEVICE QR ──
-      // Pure client-side SVG QR code generator (Zero 3rd-party network calls)
+      // Pure on-device standard Reed-Solomon QR code generator (Zero 3rd-party image services)
       function renderOnDeviceQrSvg(text, container) {
         if (!container) return;
-        // Generate clean visual QR SVG pattern deterministically on device
-        let hash = 0;
-        for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash) + text.charCodeAt(i);
-        const size = 25;
-        let svgRects = '';
-        // Finder patterns (top-left, top-right, bottom-left)
-        function addFinder(x0, y0) {
-          for (let r = 0; r < 7; r++) {
-            for (let c = 0; c < 7; c++) {
-              if (r === 0 || r === 6 || c === 0 || c === 6 || (r >= 2 && r <= 4 && c >= 2 && c <= 4)) {
-                svgRects += `<rect x="${x0 + c}" y="${y0 + r}" width="1" height="1" fill="#0f172a" />`;
-              }
+        try {
+          if (typeof qrcode === 'function') {
+            const qr = qrcode(0, 'M');
+            qr.addData(text);
+            qr.make();
+            container.innerHTML = qr.createSvgTag({ scalable: true, margin: 2 });
+            const svg = container.querySelector('svg');
+            if (svg) {
+              svg.setAttribute('class', 'w-full h-full');
+              svg.style.shapeRendering = 'crispEdges';
             }
+            return;
           }
+        } catch (err) {
+          console.error('On-device QR generation failed:', err);
         }
-        addFinder(0, 0);
-        addFinder(size - 7, 0);
-        addFinder(0, size - 7);
-        // Timing patterns
-        for (let i = 8; i < size - 8; i++) {
-          if (i % 2 === 0) {
-            svgRects += `<rect x="${i}" y="6" width="1" height="1" fill="#0f172a" />`;
-            svgRects += `<rect x="6" y="${i}" width="1" height="1" fill="#0f172a" />`;
-          }
-        }
-        // Pseudo-random data modules derived from input text
-        for (let r = 0; r < size; r++) {
-          for (let c = 0; c < size; c++) {
-            if ((r < 8 && (c < 8 || c >= size - 8)) || (r >= size - 8 && c < 8)) continue;
-            const bit = Math.abs((hash ^ (r * 31 + c * 17) ^ (text.charCodeAt((r + c) % text.length))) % 3);
-            if (bit === 1) {
-              svgRects += `<rect x="${c}" y="${r}" width="1" height="1" fill="#0f172a" />`;
-            }
-          }
-        }
-        container.innerHTML = `<svg viewBox="0 0 ${size} ${size}" class="w-full h-full" shape-rendering="crispEdges">${svgRects}</svg>`;
+        container.innerHTML = '<div class="text-xs text-rose-500 font-bold p-2 text-center">QR generate nahi ho saka. UPI ID copy karein.</div>';
       }
 
       function openStudentUpiPaymentSheet(rollNo) {
