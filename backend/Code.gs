@@ -2569,6 +2569,68 @@ function activateComebackTrial(payload) {
 }
 
 
+/**
+ * R-03, R-04: Synchronizes student identity fields from Students_Master to Fee Management Students tab.
+ * Dynamically maps into the 21-column schema by header name, preventing schema drift or misaligned appends.
+ */
+function syncStudentIdentityToFeeMgmt_(erpSS, feeSS, studentObj) {
+  if (!feeSS || !studentObj || !studentObj.rollNo) return;
+  const feeStudentSheet = feeSS.getSheetByName("Students");
+  if (!feeStudentSheet) return;
+
+  const data = feeStudentSheet.getDataRange().getValues();
+  if (data.length === 0) return;
+  const headers = data[0].map(h => String(h).trim());
+  const idCol = headers.indexOf("StudentID");
+  if (idCol === -1) return;
+
+  const rollNo = String(studentObj.rollNo).trim();
+  let foundRowIndex = -1;
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][idCol]).trim() === rollNo) {
+      foundRowIndex = i + 1;
+      break;
+    }
+  }
+
+  const fieldMapping = {
+    "StudentID": studentObj.rollNo,
+    "Name": studentObj.studentName || "",
+    "Class": studentObj.classLevel || studentObj.classVal || "",
+    "Board": studentObj.board || "",
+    "Phone": studentObj.studentMobile || studentObj.parentMobile || "",
+    "TelegramID": studentObj.telegramId || "",
+    "PlanID": studentObj.planKey || "COMBO_MONTHLY",
+    "PlanName": studentObj.planName || studentObj.planKey || "All-Subject Monthly Combo (Acc + BST + Eco)",
+    "MonthlyFee": studentObj.netMonthlyFee || studentObj.monthlyFee || 1400,
+    "JoinDate": studentObj.joinDate || studentObj.dateStr || Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd"),
+    "FirstMonthFee": studentObj.firstMonthFee || studentObj.netMonthlyFee || 1400,
+    "DiscountAmount": studentObj.discountAmount || 0,
+    "DiscountNote": studentObj.discountNote || "",
+    "CourseEndDate": studentObj.courseEndDate || "",
+    "Duration_Months": studentObj.durationMonths || 12,
+    "TotalCourseFee": studentObj.totalCourseFee || (12 * (studentObj.netMonthlyFee || 1400)),
+    "TotalPaid": studentObj.totalPaid !== undefined ? studentObj.totalPaid : 0,
+    "Balance": studentObj.balance !== undefined ? studentObj.balance : (studentObj.netMonthlyFee || 1400),
+    "Paid": studentObj.paid ? "TRUE" : "FALSE",
+    "Status": studentObj.status || "Active",
+    "Notes": studentObj.notes || ""
+  };
+
+  if (foundRowIndex > 0) {
+    const identityCols = ["Name", "Class", "Board", "Phone", "TelegramID", "Status"];
+    identityCols.forEach(colName => {
+      const colIdx = headers.indexOf(colName);
+      if (colIdx >= 0 && fieldMapping[colName] !== undefined && fieldMapping[colName] !== "") {
+        feeStudentSheet.getRange(foundRowIndex, colIdx + 1).setValue(fieldMapping[colName]);
+      }
+    });
+  } else {
+    const newRow = headers.map(h => fieldMapping[h] !== undefined ? fieldMapping[h] : "");
+    feeStudentSheet.appendRow(newRow);
+  }
+}
+
 function convertToAdmission(payload) {
   return withWriteLock_(() => {
     const IDS = getActiveSheetIds();
@@ -2710,32 +2772,33 @@ function convertToAdmission(payload) {
       ]);
     }
 
-    // Sync to FEE_MGMT sheet tabs
+    // R-03, R-04: Sync full 21-column schema to FEE_MGMT Students tab by column header
     try {
-      const feeStudentSheet = feeSS.getSheetByName("Students");
-      if (feeStudentSheet) {
-        feeStudentSheet.appendRow([
-          newRollNo,
-          payload.studentName || "",
-          classVal,
-          batchId,
-          parentMobile,
-          planKey,
-          dateStr
-        ]);
-      }
-      const feePaymentsSheet = feeSS.getSheetByName("Payments");
-      if (feePaymentsSheet && paidAmountINR > 0) {
-        feePaymentsSheet.appendRow([
-          "RCP-" + currentYear + "-" + newRollNo,
-          newRollNo,
-          paidAmountINR,
-          dateStr,
-          payload.paymentMode || "UPI",
-          "ADMISSION_FEE"
-        ]);
-      }
-    } catch (_) {}
+      syncStudentIdentityToFeeMgmt_(erp, feeSS, {
+        rollNo: newRollNo,
+        studentName: payload.studentName || "",
+        classLevel: classVal,
+        board: boardVal,
+        parentMobile: parentMobile,
+        studentMobile: studentMobile,
+        telegramId: "",
+        planKey: planKey,
+        monthlyFee: netFirstInvoiceINR,
+        netMonthlyFee: netFirstInvoiceINR,
+        joinDate: dateStr,
+        firstMonthFee: netFirstInvoiceINR,
+        discountAmount: quote.siblingExists ? Math.round(netFirstInvoiceINR * 0.1) : 0,
+        discountNote: quote.siblingExists ? "10% Sibling Discount" : "",
+        totalPaid: paidAmountINR,
+        balance: Math.max(0, netFirstInvoiceINR - paidAmountINR),
+        paid: feeStatus === "PAID",
+        status: "Active",
+        notes: "Admission via CRM"
+      });
+      // R-05, R-08: Mirror writes to FEE_MGMT Payments tab stopped; Fee_Ledger is single source.
+    } catch (syncErr) {
+      Logger.log("Warning syncing to Fee Management Students: " + syncErr.message);
+    }
 
     // Generate Admission Invoice & Receipt in Fee_Ledger
     const existingLedger = sheetToObjects(feeLedgerSheet);
