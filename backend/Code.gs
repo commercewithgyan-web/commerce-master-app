@@ -2918,6 +2918,8 @@ function recordFeePayment(payload) {
     const currentMonthStr = Utilities.formatDate(now, "Asia/Kolkata", "MMM-yyyy");
 
     const rollNo = payload.rollNo;
+    const utr = String(payload.utr || payload.upiRef || '').trim();
+    const waiverReason = String(payload.waiverReason || payload.reason || '').trim();
     const planKey = String(payload.planKey || "COMBO_MONTHLY").toUpperCase();
     const baseFeeINR = Number(payload.baseFeeINR || cfg[planKey] || 1400);
     const siblingDiscountINR = Number(payload.siblingDiscountINR || 0);
@@ -2975,18 +2977,14 @@ function recordFeePayment(payload) {
       }
     }
 
-    // Sync to FEE_MGMT sheet tabs
+    // R-05, R-08, R-10: Single source of truth is Fee_Ledger in Master_ERP.
+    // Mirror writes to legacy FEE_MGMT Payments tab stopped (R-08).
+    // ReceiptSent status tracked in Receipts tab (R-10).
     try {
-      const feePaymentsSheet = feeSS.getSheetByName("Payments");
-      if (feePaymentsSheet && paidAmountINR > 0) {
-        feePaymentsSheet.appendRow([receiptId, rollNo, paidAmountINR, dateStr, payload.paymentMode || "UPI", "MONTHLY_TUITION"]);
-      }
-      const feeReceiptsSheet = feeSS.getSheetByName("Receipts");
+      const feeReceiptsSheet = feeSS ? feeSS.getSheetByName("Receipts") : null;
       if (feeReceiptsSheet) {
-        feeReceiptsSheet.appendRow([receiptId, invoiceId, rollNo, paidAmountINR, dateStr, sha256ReceiptHash]);
+        feeReceiptsSheet.appendRow([receiptId, invoiceId, rollNo, paidAmountINR, dateStr, sha256ReceiptHash, "TRUE"]);
       }
-      const extLedgerSheet = feeSS.getSheetByName("Fee_Ledger");
-      if (extLedgerSheet) extLedgerSheet.appendRow(ledgerRow);
     } catch (_) {}
 
     // Log redeemed coins debit in Coin_Ledger
