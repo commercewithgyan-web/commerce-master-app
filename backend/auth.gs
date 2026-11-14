@@ -63,7 +63,7 @@ function verifyTelegramInitData_(initData) {
     }
   }
 
-  // Extract user payload early for Admin Safety Invariant
+  // Extract user payload
   var userObj = null;
   if (params.user) {
     try {
@@ -72,14 +72,6 @@ function verifyTelegramInitData_(initData) {
       try {
         userObj = JSON.parse(safeUrlDecode_(params.user));
       } catch (_) {}
-    }
-  }
-
-  var isFounderAdmin = false;
-  if (userObj && userObj.id) {
-    var uidStr = String(userObj.id).trim();
-    if (uidStr === '552858970' || isMasterAdminId_(uidStr) || isAdmin_(uidStr)) {
-      isFounderAdmin = true;
     }
   }
 
@@ -99,24 +91,62 @@ function verifyTelegramInitData_(initData) {
     }
   }
 
-  if (candidateTokens.length === 0 && !isFounderAdmin) {
+  // Emergency recovery key check (secret escape: disabled by default, requires non-empty ADMIN_RECOVERY_KEY in Script Properties)
+  var recoveryKey = params.recovery_key || params.recoveryKey || '';
+  var configuredRecoveryKey = String(props.getProperty('ADMIN_RECOVERY_KEY') || '').trim();
+  var isRecoveryAuth = false;
+  if (recoveryKey) {
+    var candidateId = userObj ? String(userObj.id).trim() : '';
+    var isConfiguredAdmin = candidateId && (isMasterAdminId_(candidateId) || isAdmin_(candidateId));
+
+    // Rate limiting: max 5 failed attempts per hour via CacheService
+    var cache = null;
+    try { cache = CacheService.getScriptCache(); } catch (_) {}
+    var failCount = 0;
+    if (cache) {
+      failCount = parseInt(cache.get('RECOVERY_FAIL_COUNT') || '0', 10);
+      if (failCount >= 5) {
+        throw new Error('HTTP 429: TOO_MANY_REQUESTS (RECOVERY_KEY_RATE_LIMITED)');
+      }
+    }
+
+    if (configuredRecoveryKey && isConfiguredAdmin && timingSafeEqual_(recoveryKey, configuredRecoveryKey)) {
+      isRecoveryAuth = true;
+      if (cache) {
+        try { cache.remove('RECOVERY_FAIL_COUNT'); } catch (_) {}
+      }
+      try {
+        recordAuditLog_('ADMIN_RECOVERY', 'ADMIN', 'ADMIN_RECOVERY_KEY_USED', 'ADMIN', { time: new Date().toISOString() });
+      } catch (_) {}
+    } else {
+      // Failed attempt: increment rate limit counter and record audit event
+      if (cache) {
+        try { cache.put('RECOVERY_FAIL_COUNT', String(failCount + 1), 3600); } catch (_) {}
+      }
+      try {
+        recordAuditLog_('ADMIN_RECOVERY', 'UNKNOWN', 'ADMIN_RECOVERY_KEY_FAILED', 'ADMIN', { time: new Date().toISOString() });
+      } catch (_) {}
+      throw new Error('HTTP 401: AUTH_FAILED (INVALID_RECOVERY_KEY)');
+    }
+  }
+
+  if (candidateTokens.length === 0 && !isRecoveryAuth) {
     throw new Error('CONFIG_ERROR: BOT_TOKEN not configured in Script Properties');
   }
 
-  if (!hash && !isFounderAdmin) {
+  if (!hash && !isRecoveryAuth) {
     throw new Error('HTTP 401: AUTH_FAILED (MISSING_HASH)');
   }
 
-  // Check 24-hour freshness (auth_date in Unix seconds)
-  if (params.auth_date) {
+  // Check 24-hour freshness (auth_date in Unix seconds) - required for all standard logins
+  if (!isRecoveryAuth) {
+    if (!params.auth_date) {
+      throw new Error('HTTP 401: AUTH_FAILED (MISSING_AUTH_DATE)');
+    }
     var authTimestamp = parseInt(params.auth_date, 10);
     var nowSeconds = Math.floor(Date.now() / 1000);
     if (nowSeconds - authTimestamp > 86400) {
-      if (isFounderAdmin) {
-        Logger.log('⚠️ [AUTH WARNING] Stale auth_date for Founder Admin ' + (userObj ? userObj.id : '') + ' (>24h). Admin bypass active.');
-      } else {
-        throw new Error('HTTP 401: AUTH_FAILED (EXPIRED_INIT_DATA: >24 hours old)');
-      }
+      throw new Error('HTTP 401: AUTH_FAILED (EXPIRED_INIT_DATA: >24 hours old)');
     }
   }
 
@@ -124,6 +154,7 @@ function verifyTelegramInitData_(initData) {
   var sortedKeys = Object.keys(params).sort();
   var dataCheckArr = [];
   for (var k = 0; k < sortedKeys.length; k++) {
+    if (sortedKeys[k] === 'recovery_key' || sortedKeys[k] === 'recoveryKey') continue;
     dataCheckArr.push(sortedKeys[k] + '=' + params[sortedKeys[k]]);
   }
   var dataCheckString = dataCheckArr.join('\n');
@@ -157,6 +188,7 @@ function verifyTelegramInitData_(initData) {
         // Also test with rawParams in case client didn't percent-encode
         var rawCheckArr = [];
         for (var rk = 0; rk < sortedKeys.length; rk++) {
+          if (sortedKeys[rk] === 'recovery_key' || sortedKeys[rk] === 'recoveryKey') continue;
           rawCheckArr.push(sortedKeys[rk] + '=' + (rawParams[sortedKeys[rk]] !== undefined ? rawParams[sortedKeys[rk]] : params[sortedKeys[rk]]));
         }
         var rawDataCheckString = rawCheckArr.join('\n');
@@ -176,21 +208,16 @@ function verifyTelegramInitData_(initData) {
     }
   }
 
-  // Admin Safety Invariant: Founder Admin is NEVER locked out by signature mismatch
-  if (!isValid) {
-    if (isFounderAdmin) {
-      Logger.log('⚠️ [AUTH WARNING] HMAC signature mismatch for Founder Admin ' + (userObj ? userObj.id : '') + '. Invoking Admin Safety Invariant bypass.');
-      isValid = true;
-    } else {
-      throw new Error('HTTP 401: AUTH_FAILED (INVALID_HMAC_SIGNATURE)');
-    }
+  // Mandatory signature check: No user (admin or student) can bypass HMAC without recovery key
+  if (!isValid && !isRecoveryAuth) {
+    throw new Error('HTTP 401: AUTH_FAILED (INVALID_HMAC_SIGNATURE)');
   }
 
   if (!userObj) {
     throw new Error('HTTP 401: AUTH_FAILED (USER_PAYLOAD_MISSING)');
   }
 
-  userObj.is_admin = isFounderAdmin || isAdmin_(userObj.id);
+  userObj.is_admin = isMasterAdminId_(userObj.id) || isAdmin_(userObj.id);
   return userObj;
 }
 
@@ -302,8 +329,8 @@ function verifyAndRouteUser_(initDataRaw, previewRollNo) {
 
   var telegramId = String((user && user.id) || '');
 
-  // 1. Master Admin (Gyan Sir) Dual-Role Routing
-  if (isMasterAdminId_(telegramId) || telegramId === '552858970') {
+  // 1. Master Admin Dual-Role Routing
+  if (isMasterAdminId_(telegramId)) {
     return {
       ok: true,
       role: 'ADMIN',
@@ -426,24 +453,6 @@ function verifyAndRouteUser_(initDataRaw, previewRollNo) {
  */
 function requirePaidStudent_(telegramId) {
   var cleanId = String(telegramId || '').trim();
-
-  // Master Admin Dual-Role Bypass for Founder
-  if (isAdmin_(cleanId) || cleanId === '552858970') {
-    return {
-      studentId: 'CG-11-001',
-      StudentID: 'CG-11-001',
-      name: 'Gyan Sir (Admin Preview)',
-      Name: 'Gyan Sir (Admin Preview)',
-      classLevel: '11',
-      Class: 11,
-      paid: true,
-      Paid: 'YES',
-      status: 'Active',
-      Status: 'Active',
-      TelegramID: cleanId,
-      Notes: 'Founder Admin Dual-Role'
-    };
-  }
 
   if (!cleanId || cleanId === 'GUEST_STUDENT') {
     throw new Error('HTTP 401: AUTH_FAILED: Unauthenticated user');
@@ -606,7 +615,7 @@ function getMasterAdminId_() {
 function isMasterAdminId_(telegramId) {
   var masterId = getMasterAdminId_();
   var cleanId = String(telegramId || '').trim();
-  return cleanId === '552858970' || (masterId !== '' && cleanId === masterId);
+  return masterId !== '' && cleanId === masterId;
 }
 
 /**
@@ -652,4 +661,20 @@ function requireAdmin_(telegramId) {
   if (!isAdmin_(telegramId)) {
     throw new Error('ADMIN_ONLY: This action is restricted to Gyan Sir (Administrator).');
   }
+}
+
+/**
+ * Constant-time string comparison to prevent timing side-channel attacks on secrets.
+ */
+function timingSafeEqual_(a, b) {
+  var strA = String(a || '');
+  var strB = String(b || '');
+  if (!strA || !strB) return false;
+  var lenA = strA.length;
+  var lenB = strB.length;
+  var diff = lenA ^ lenB;
+  for (var i = 0; i < lenA; i++) {
+    diff |= (strA.charCodeAt(i) ^ strB.charCodeAt(i % Math.max(1, lenB)));
+  }
+  return diff === 0;
 }

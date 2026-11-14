@@ -233,21 +233,52 @@ function runTelegramAuthAndVisitorTests() {
   var dec1 = safeUrlDecode_('Gyan+Sir%20Begusarai');
   assert('safeUrlDecode_ converts + and %20 to space', dec1 === 'Gyan Sir Begusarai', 'Got: ' + dec1);
 
-  // 2. Admin Safety Invariant: Gyan Sir (552858970) never rejected on signature mismatch
+  // 2. Strict HMAC Verification: Admin IDs MUST have a valid HMAC signature (Admin bypass removed)
   var nowSec = Math.floor(Date.now() / 1000);
-  var adminPayload = 'query_id=AAHadmin&user=' + encodeURIComponent(JSON.stringify({ id: 552858970, first_name: 'Gyan', username: 'gyandeep' })) +
-                     '&auth_date=' + nowSec + '&hash=arbitrary_signature&signature=sec_sig';
-  var adminUser = null;
-  try {
-    adminUser = verifyTelegramInitData_(adminPayload);
-  } catch (e) {
-    Logger.log('verifyTelegramInitData_ threw: ' + e);
-  }
-  assert('Admin Safety Invariant: 552858970 bypasses signature mismatch', adminUser && adminUser.id === 552858970 && adminUser.is_admin === true, 'Got: ' + JSON.stringify(adminUser));
+  var adminId = getMasterAdminId_() || '99999901';
+  var adminUserJson = JSON.stringify({ id: Number(adminId) || 99999901, first_name: 'Admin', username: 'admin' });
 
-  // 3. Routing Admin 552858970
-  var adminRoute = verifyAndRouteUser_(adminPayload);
-  assert('Admin 552858970 routes to ADMIN role', adminRoute && adminRoute.ok === true && adminRoute.role === 'ADMIN' && adminRoute.isAdmin === true, 'Got: ' + JSON.stringify(adminRoute));
+  // 2a. Admin ID with missing hash must be rejected (401 MISSING_HASH)
+  var noHashPayload = 'query_id=AAHadmin&user=' + encodeURIComponent(adminUserJson) + '&auth_date=' + nowSec;
+  var noHashPassed = false;
+  try {
+    verifyTelegramInitData_(noHashPayload);
+    noHashPassed = true;
+  } catch (e) {
+    assert('Admin ID with missing hash rejected with 401', String(e.message).indexOf('MISSING_HASH') !== -1, 'Got: ' + e.message);
+  }
+  assert('Admin ID with missing hash is NOT authenticated', !noHashPassed, 'Admin without hash should be rejected');
+
+  // 2b. Admin ID with wrong hash must be rejected (401 INVALID_HMAC_SIGNATURE)
+  var badHashPayload = noHashPayload + '&hash=arbitrary_fake_signature';
+  var badHashPassed = false;
+  try {
+    verifyTelegramInitData_(badHashPayload);
+    badHashPassed = true;
+  } catch (e) {
+    assert('Admin ID with wrong hash rejected with 401', String(e.message).indexOf('INVALID_HMAC_SIGNATURE') !== -1, 'Got: ' + e.message);
+  }
+  assert('Admin ID with wrong hash is NOT authenticated', !badHashPassed, 'Admin with wrong hash should be rejected');
+
+  // 2c. Admin ID with valid HMAC signature succeeds
+  var testBotToken = '123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11';
+  var secretKeyBytes = Utilities.computeHmacSha256Signature(Utilities.newBlob(testBotToken).getBytes(), Utilities.newBlob('WebAppData').getBytes());
+  var dataCheckString = 'auth_date=' + nowSec + '\nquery_id=AAHadmin\nuser=' + adminUserJson;
+  var calculatedHashBytes = Utilities.computeHmacSha256Signature(Utilities.newBlob(dataCheckString, 'UTF-8').getBytes(), secretKeyBytes);
+  var validHash = calculatedHashBytes.map(function(b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('').toLowerCase();
+
+  var validAdminPayload = 'query_id=AAHadmin&user=' + encodeURIComponent(adminUserJson) + '&auth_date=' + nowSec + '&hash=' + validHash;
+  var validAdminUser = null;
+  try {
+    validAdminUser = verifyTelegramInitData_(validAdminPayload);
+  } catch (e) {
+    Logger.log('Valid admin HMAC verification failed: ' + e);
+  }
+  assert('Admin ID with valid HMAC signature succeeds', validAdminUser && validAdminUser.is_admin === true, 'Got: ' + JSON.stringify(validAdminUser));
+
+  // 3. Routing Admin with Valid Signature
+  var adminRoute = verifyAndRouteUser_(validAdminPayload);
+  assert('Admin with valid signature routes to ADMIN role', adminRoute && adminRoute.ok === true && adminRoute.role === 'ADMIN' && adminRoute.isAdmin === true, 'Got: ' + JSON.stringify(adminRoute));
 
   // 4. Staging / sandbox bypass for Admin
   var stageRoute = verifyAndRouteUser_(null, 'CG-11-001');
