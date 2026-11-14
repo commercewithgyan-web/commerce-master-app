@@ -429,7 +429,7 @@ function doPost(e) {
       case "convertToAdmission":
       case "enrolTrialToDirectory":
       case "updateStudentProfile":
-        result = convertToAdmission(payload);
+        result = convertToAdmission(payload, verifiedUser);
         break;
       case "bindStudentClaimCode":
       case "verifyStudentClaimCode":
@@ -489,7 +489,7 @@ function doPost(e) {
         result = awardSmartboardCoins(payload);
         break;
       case "recordFeePayment":
-        result = recordFeePayment(payload);
+        result = recordFeePayment(payload, verifiedUser);
         break;
       case "revokeLateFee":
         result = revokeLateFee(payload);
@@ -2721,7 +2721,7 @@ function syncStudentIdentityToFeeMgmt_(erpSS, feeSS, studentObj) {
   }
 }
 
-function convertToAdmission(payload) {
+function convertToAdmission(payload, verifiedUser) {
   return withWriteLock_(() => {
     const IDS = getActiveSheetIds();
     const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
@@ -2994,7 +2994,7 @@ function convertToAdmission(payload) {
 
 
 
-function recordFeePayment(payload) {
+function recordFeePayment(payload, verifiedUser) {
   let txData;
   withWriteLock_(() => {
     const IDS = getActiveSheetIds();
