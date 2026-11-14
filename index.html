@@ -2906,15 +2906,15 @@
         { id: 'REC_ATT', label: '3 Consecutive On-Time Arrivals', coins: 10 },
         { id: 'REC_DISC', label: 'Parent Acknowledgement / Discipline Reset', coins: 5 }
       ],
+      // N-1: 5 active SWOT fields sourced dynamically from SWOT_Config in Sheets
       swotFieldOptions: [
-        { key: 'attendance', label: 'Attendance % & Streak' },
-        { key: 'testPerf', label: 'Unit Test & Mock Score' },
-        { key: 'dpp', label: '7 PM DPP Performance' },
-        { key: 'practice', label: 'Self-Paced Practice Accuracy' },
-        { key: 'attentiveness', label: 'Classroom Attentiveness' },
-        { key: 'fees', label: 'Fee Plan & Cleared Months' }
+        { key: 'Attendance', label: 'Attendance % & Streak' },
+        { key: 'Test', label: 'Unit Test & Board Mock Scores' },
+        { key: 'DPP', label: '7 PM Daily Practice Papers' },
+        { key: 'Practice Paper', label: 'Self-Paced Practice Papers' },
+        { key: 'Attentiveness', label: 'Classroom Attentiveness & Participation' }
       ],
-      selectedSwotFields: ['attendance', 'testPerf', 'dpp', 'practice', 'attentiveness', 'fees'],
+      selectedSwotFields: ['Attendance', 'Test', 'DPP', 'Practice Paper', 'Attentiveness'],
       swotManualNotes: {},
 
       lessons: [
@@ -6120,6 +6120,19 @@
         document.getElementById('swotModalOverlay')?.classList.add('hidden');
       });
       document.getElementById('printSwotReceiptBtn')?.addEventListener('click', () => window.print());
+            // N-1: Fetch dynamic SWOT_Config from Google Sheets on boot
+      window.cgCallGas('getSwotConfig', {}).then(res => {
+        if (res && res.fields && res.fields.length) {
+          appState.swotFieldOptions = res.fields.map(f => ({
+            key: f.Field_Key || f.key,
+            label: f.Label || f.label
+          }));
+          appState.selectedSwotFields = appState.swotFieldOptions.map(o => o.key);
+        }
+      }).catch(err => {
+        console.warn('SWOT config load note: ' + err.message);
+      });
+
       document.getElementById('saveSwotFieldsBtn')?.addEventListener('click', () => {
         const checked = [...document.querySelectorAll('.swot-field-cb:checked')].map(el => el.value);
         appState.selectedSwotFields = checked.length ? checked : ['attendance', 'fees'];

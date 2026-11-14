@@ -422,6 +422,9 @@ function doPost(e) {
       case "getGradeWeights":
         result = getGradeWeights();
         break;
+      case "getSwotConfig":
+        result = getSwotConfig();
+        break;
       case "setActiveSubtopic":
       case "logLessonProgress":
       case "saveCurriculumTopic":
@@ -536,6 +539,9 @@ function doPost(e) {
       case "saveSwotConfig":
         result = saveSwotConfig(payload);
         break;
+      case "getSwotConfig":
+        result = getSwotConfig();
+        break;
       case "submitRedPenSubmission":
         result = submitRedPenSubmission(payload);
         break;
@@ -556,6 +562,9 @@ function doPost(e) {
         break;
       case "getGradeWeights":
         result = getGradeWeights();
+        break;
+      case "getSwotConfig":
+        result = getSwotConfig();
         break;
       case "saveCalendarEvent":
         result = saveCalendarEvent(payload);
@@ -4193,4 +4202,36 @@ function logVideoWatch(payload, verifiedUser) {
       topicId: topicId
     };
   });
+}
+
+
+/**
+ * N-1: Reads active SWOT fields dynamically from Master_ERP › SWOT_Config.
+ * Returns only fields where Active_Status === 'Active'.
+ */
+function getSwotConfig() {
+  const IDS = getActiveSheetIds();
+  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  let swotSheet = erp.getSheetByName('SWOT_Config');
+  if (!swotSheet) {
+    swotSheet = erp.insertSheet('SWOT_Config');
+    swotSheet.appendRow(['Field_Key', 'Label', 'Field_Type', 'Active_Status']);
+    const seed = [
+      ['Attendance', 'Attendance % & Streak', 'Metric', 'Active'],
+      ['Test', 'Unit Test & Board Mock Scores', 'Metric', 'Active'],
+      ['DPP', '7 PM Daily Practice Papers', 'Metric', 'Active'],
+      ['Practice Paper', 'Self-Paced Practice Papers', 'Metric', 'Active'],
+      ['Attentiveness', 'Classroom Attentiveness & Participation', 'Subjective', 'Active']
+    ];
+    seed.forEach(r => swotSheet.appendRow(r));
+  }
+  const rows = sheetToObjects(swotSheet);
+  const activeFields = rows.filter(r => String(r.Active_Status || '').trim().toLowerCase() === 'active');
+  return { ok: true, fields: activeFields.length ? activeFields : [
+    { Field_Key: 'Attendance', Label: 'Attendance % & Streak', Field_Type: 'Metric', Active_Status: 'Active' },
+    { Field_Key: 'Test', Label: 'Unit Test & Board Mock Scores', Field_Type: 'Metric', Active_Status: 'Active' },
+    { Field_Key: 'DPP', Label: '7 PM Daily Practice Papers', Field_Type: 'Metric', Active_Status: 'Active' },
+    { Field_Key: 'Practice Paper', Label: 'Self-Paced Practice Papers', Field_Type: 'Metric', Active_Status: 'Active' },
+    { Field_Key: 'Attentiveness', Label: 'Classroom Attentiveness & Participation', Field_Type: 'Subjective', Active_Status: 'Active' }
+  ]};
 }
