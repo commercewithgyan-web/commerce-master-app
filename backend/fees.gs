@@ -98,8 +98,11 @@ function registerStudent_(data) {
       }
     }
 
-    // Next Student ID (e.g. S001)
-    var studentId = getNextId_('SHEET_FEE', 'Students', 1, 'S', 3);
+    // L-02: Student IDs come only from Roll_No. Reject missing rollNo with descriptive error.
+    var studentId = String(data.rollNo || data.studentId || '').trim();
+    if (!studentId) {
+      throw new Error("Student registration requires a valid Roll_No assigned by Admissions CRM. Generation of S-prefix or synthetic IDs is disabled.");
+    }
 
     // Fetch Plan info
     var plan = findRow_('SHEET_FEE', 'Plans', 'PlanID', data.planId);

@@ -195,8 +195,19 @@ function findRow_(sheetKey, tabName, colName, value) {
   }
 
   var targetStr = String(value).trim().toLowerCase();
+  var statusCol = headers.indexOf('Status');
+  var idCol = headers.indexOf('StudentID');
+
   for (var i = 1; i < allData.length; i++) {
     var rowValues = allData[i];
+    // L-01: Skip TEST rows and S001 in Fee Management Students tab unless explicitly queried
+    if (tabName === 'Students') {
+      var rowStatus = statusCol >= 0 ? String(rowValues[statusCol]).trim().toUpperCase() : '';
+      var rowId = idCol >= 0 ? String(rowValues[idCol]).trim().toUpperCase() : '';
+      if ((rowStatus === 'TEST' || rowId === 'S001') && targetStr !== 'test' && targetStr !== 's001') {
+        continue;
+      }
+    }
     if (String(rowValues[colIndex]).trim().toLowerCase() === targetStr) {
       var obj = { _rowNumber: i + 1 };
       for (var j = 0; j < headers.length; j++) {
@@ -228,9 +239,19 @@ function findRows_(sheetKey, tabName, colName, value) {
 
   var targetStr = String(value).trim().toLowerCase();
   var matches = [];
+  var statusCol = headers.indexOf('Status');
+  var idCol = headers.indexOf('StudentID');
 
   for (var i = 1; i < allData.length; i++) {
     var rowValues = allData[i];
+    // L-01: Skip TEST rows and S001 in Fee Management Students tab unless explicitly queried
+    if (tabName === 'Students') {
+      var rowStatus = statusCol >= 0 ? String(rowValues[statusCol]).trim().toUpperCase() : '';
+      var rowId = idCol >= 0 ? String(rowValues[idCol]).trim().toUpperCase() : '';
+      if ((rowStatus === 'TEST' || rowId === 'S001') && targetStr !== 'test' && targetStr !== 's001') {
+        continue;
+      }
+    }
     if (String(rowValues[colIndex]).trim().toLowerCase() === targetStr) {
       var obj = { _rowNumber: i + 1 };
       for (var j = 0; j < headers.length; j++) {
