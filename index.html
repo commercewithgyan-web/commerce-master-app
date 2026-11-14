@@ -2582,7 +2582,7 @@
           <div class="animate-pulse text-xs text-slate-400 font-medium">Generating QR...</div>
         </div>
         <div>
-          <p id="stuUpiIdDisplay" class="text-xs font-bold text-slate-900 dark:text-white font-mono select-all">9278569860@apl</p>
+          <p id="stuUpiIdDisplay" class="text-xs font-bold text-slate-900 dark:text-white font-mono select-all">--</p>
           <div class="flex items-center justify-center gap-3 mt-1">
             <button id="stuCopyUpiBtn" type="button" class="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline cursor-pointer">📋 Copy UPI ID</button>
           </div>
@@ -7963,10 +7963,15 @@
 
       function openStudentUpiPaymentSheet(rollNo) {
         const overlay = document.getElementById('studentUpiModalOverlay');
+        const cfg = appState.upiConfig || {};
+        const upiId = String(cfg.UPI_ID || '').trim();
+        if (!upiId) {
+          if (overlay) overlay.classList.add('hidden');
+          showToast('UPI abhi set nahi hai, teacher se baat karein', 'amber');
+          return;
+        }
         if (!overlay) return;
         const stu = appState.students.find(s => s.roll === rollNo) || appState.students[0];
-        const cfg = appState.upiConfig || {};
-        const upiId = cfg.UPI_ID || '9278569860@apl';
         const payee = cfg.UPI_PAYEE_NAME || 'Commerce Gyan';
         const dueAmount = (stu && stu.balance !== undefined) ? stu.balance : ((stu && stu.plan === 'Quarterly') ? 3300 : 1400);
 
@@ -8003,7 +8008,11 @@
       const copyUpiBtn = document.getElementById('stuCopyUpiBtn');
       if (copyUpiBtn) {
         copyUpiBtn.addEventListener('click', () => {
-          const upiId = (appState.upiConfig && appState.upiConfig.UPI_ID) || '9278569860@apl';
+          const upiId = String((appState.upiConfig && appState.upiConfig.UPI_ID) || '').trim();
+          if (!upiId) {
+            showToast('UPI abhi set nahi hai, teacher se baat karein', 'amber');
+            return;
+          }
           if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(upiId)
               .then(() => {
