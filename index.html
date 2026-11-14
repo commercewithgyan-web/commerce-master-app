@@ -1429,9 +1429,16 @@
         <div id="subtab-classroom-analytics" class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h2 class="text-lg font-extrabold text-slate-900">Weighted Gradebook & 3-Track DPP Assessment</h2>
-            <p id="gradeWeightsLabel" class="text-xs text-slate-500">Weights: <strong>Unit Tests (40%)</strong> · <strong>7 PM DPP (25%)</strong> · <strong>Board Mock (25%)</strong> · <strong>Project/Viva (10%)</strong>. Supports CBSE 9-Point (<code class="mono">A1–E</code>) and BSEB Division scales.</p>
+            <p id="gradeWeightsLabel" class="text-xs text-slate-500">Weights: <span class="text-amber-600 font-medium">weights set nahi hain</span></p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
+            <select id="gradebookTestType" class="text-xs font-semibold border border-slate-200 rounded-xl px-2.5 py-2 bg-slate-50" title="Assessment Type">
+              <option value="Unit Test">Unit Test</option>
+              <option value="7 PM DPP">7 PM DPP</option>
+              <option value="Board Mock">Board Mock</option>
+              <option value="Project/Viva">Project/Viva</option>
+            </select>
+            <input id="gradebookMaxMarks" type="number" min="1" max="500" value="100" class="w-16 text-xs font-semibold border border-slate-200 rounded-xl px-2 py-2 bg-slate-50 text-center" placeholder="Max" title="Max Marks">
             <select id="gradeScaleSelect" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
               <option value="CBSE">CBSE 9-Point Scale (A1, A2, B1, B2...)</option>
               <option value="BSEB">BSEB Bihar Board Scale (1st Div / Distinction)</option>
@@ -1452,10 +1459,10 @@
               <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 <th class="py-3 px-4">Student</th>
                 <th class="py-3 px-4">Batch</th>
-                <th class="py-3 px-3 text-center">Unit Test (40%)</th>
-                <th class="py-3 px-3 text-center">7 PM DPP (25%)</th>
-                <th class="py-3 px-3 text-center">Board Mock (25%)</th>
-                <th class="py-3 px-3 text-center">Viva/Proj (10%)</th>
+                <th id="thWeightUnitTest" class="py-3 px-3 text-center">Unit Test</th>
+                <th id="thWeightDpp" class="py-3 px-3 text-center">7 PM DPP</th>
+                <th id="thWeightMock" class="py-3 px-3 text-center">Board Mock</th>
+                <th id="thWeightViva" class="py-3 px-3 text-center">Viva/Proj</th>
                 <th class="py-3 px-4 text-center">Weighted Avg</th>
                 <th class="py-3 px-4">Scale Grade</th>
               </tr>
@@ -5697,12 +5704,16 @@
       document.getElementById('heatmapStudentFilter')?.addEventListener('change', renderTeacherWeaknessHeatmap);
       document.getElementById('dppQbClassFilter')?.addEventListener('change', populateDppQuestionBankFilters);
       document.getElementById('dppQbSubjectFilter')?.addEventListener('change', populateDppQuestionBankFilters);
-            // R-14, R-30: Save Gradebook entries to Master_ERP › Marks_Log with confirmation
+      // R-14, R-30: Save Gradebook entries to Master_ERP › Marks_Log with confirmation
       document.getElementById('saveGradebookMarksBtn')?.addEventListener('click', async () => {
+        const testType = document.getElementById('gradebookTestType')?.value || 'Unit Test';
+        const maxMarks = Number(document.getElementById('gradebookMaxMarks')?.value) || 100;
+        const count = appState.students.length;
+
         const ok = await window.cgConfirm({
           badge: 'Save Marks',
-          title: 'Commit Gradebook Marks to Sheets?',
-          body: `Save marks for ${appState.students.length} students into Master_ERP › Marks_Log? This records persistent assessment records.`
+          title: `${count} students ke marks save karein?`,
+          body: `Test: ${testType} (Max Marks: ${maxMarks}) · Yeh marks Sheets ke Marks_Log tab mein permanently record honge.`
         });
         if (!ok) return;
 
@@ -5711,13 +5722,12 @@
           return window.cgCallGas('saveMarksLog', {
             rollNo: s.roll,
             testId: 'TEST-' + (s.batch || 'C12_EVE') + '-' + (s.subject || 'ACC'),
-            testType: 'Unit Test',
+            testType: testType,
             batchId: s.batch || 'C12_EVE',
             subject: s.subject || 'Accountancy',
             chapter: 'Chapter Assessment',
-            maxMarks: 100,
-            marks: s.unitTest || 0,
-            enteredBy: 'Gyan Sir'
+            maxMarks: maxMarks,
+            marks: s.unitTest || 0
           });
         });
 
@@ -5732,15 +5742,36 @@
 
       // R-15: Fetch dynamic grade weights on boot
       window.cgCallGas('getGradeWeights', {}).then(res => {
-        if (res && res.weights) {
+        const lbl = document.getElementById('gradeWeightsLabel');
+        const thU = document.getElementById('thWeightUnitTest');
+        const thD = document.getElementById('thWeightDpp');
+        const thM = document.getElementById('thWeightMock');
+        const thV = document.getElementById('thWeightViva');
+
+        if (res && res.configured && res.weights) {
           appState.gradeWeights = res.weights;
-          const lbl = document.getElementById('gradeWeightsLabel');
           if (lbl) {
             lbl.innerHTML = `Weights: <strong>Unit Tests (${res.weights.unitTest}%)</strong> · <strong>7 PM DPP (${res.weights.dpp}%)</strong> · <strong>Board Mock (${res.weights.mock}%)</strong> · <strong>Project/Viva (${res.weights.viva}%)</strong>. Supports CBSE 9-Point (<code class="mono">A1–E</code>) and BSEB Division scales.`;
           }
-          renderGradebook();
+          if (thU) thU.textContent = `Unit Test (${res.weights.unitTest}%)`;
+          if (thD) thD.textContent = `7 PM DPP (${res.weights.dpp}%)`;
+          if (thM) thM.textContent = `Board Mock (${res.weights.mock}%)`;
+          if (thV) thV.textContent = `Viva/Proj (${res.weights.viva}%)`;
+        } else {
+          appState.gradeWeights = null;
+          if (lbl) {
+            lbl.innerHTML = `Weights: <span class="text-amber-600 font-semibold">weights set nahi hain</span> (CONFIG_APP_SETTINGS mein WEIGHT_* set karein).`;
+          }
+          if (thU) thU.textContent = 'Unit Test';
+          if (thD) thD.textContent = '7 PM DPP';
+          if (thM) thM.textContent = 'Board Mock';
+          if (thV) thV.textContent = 'Viva/Proj';
         }
-      }).catch(() => {});
+        renderGradebook();
+      }).catch(() => {
+        const lbl = document.getElementById('gradeWeightsLabel');
+        if (lbl) lbl.innerHTML = `Weights: <span class="text-amber-600 font-semibold">weights set nahi hain</span>.`;
+      });
 
       document.getElementById('awardTopperCoinsBtn')?.addEventListener('click', async () => {
         const toppers = appState.students.filter(s => computeWeightedAvg(s) >= 90);

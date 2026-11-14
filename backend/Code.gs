@@ -4201,19 +4201,19 @@ function saveMarksLog(payload, verifiedUser) {
     const testId = String(payload.testId || '').trim();
     const subject = String(payload.subject || '').trim();
     const batchId = String(payload.batchId || '').trim();
+    const testType = String(payload.testType || '').trim();
+    const maxMarks = Number(payload.maxMarks || 0);
     const marksVal = payload.marks !== undefined && payload.marks !== null && payload.marks !== '' ? Number(payload.marks) : NaN;
 
-    if (!rollNo || !testId || !subject || !batchId || isNaN(marksVal)) {
+    if (!rollNo || !testId || !subject || !batchId || !testType || isNaN(maxMarks) || maxMarks <= 0 || isNaN(marksVal)) {
       return {
         ok: false,
-        error: "Validation error: rollNo, testId, subject, batchId and numeric marks are mandatory for Marks_Log."
+        error: "Validation error: rollNo, testId, testType, subject, batchId, maxMarks (>0) and numeric marks are mandatory for Marks_Log."
       };
     }
 
-    const testType = String(payload.testType || 'Unit Test').trim();
     const chapter = String(payload.chapter || '').trim();
-    const maxMarks = Number(payload.maxMarks || 100);
-    const enteredBy = String(payload.enteredBy || (verifiedUser && verifiedUser.first_name) || 'Gyan Sir').trim();
+    const enteredBy = (verifiedUser && (verifiedUser.username || verifiedUser.first_name || String(verifiedUser.id))) ? String(verifiedUser.username || verifiedUser.first_name || verifiedUser.id) : 'ADMIN';
 
     const IDS = getActiveSheetIds();
     const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
@@ -4238,7 +4238,7 @@ function saveMarksLog(payload, verifiedUser) {
       enteredBy
     ]);
 
-    recordAuditLog_(enteredBy, 'TEACHER', 'SAVE_MARKS_LOG', rollNo, { testId: testId, subject: subject, marks: marksVal });
+    recordAuditLog_(enteredBy, 'TEACHER', 'SAVE_MARKS_LOG', rollNo, { testId: testId, subject: subject, marks: marksVal, maxMarks: maxMarks });
 
     return {
       ok: true,
@@ -4251,31 +4251,33 @@ function saveMarksLog(payload, verifiedUser) {
 }
 
 /**
- * R-15: Reads dynamic grade weights from CONFIG_APP_SETTINGS or returns standard schema weights.
+ * R-15: Reads dynamic grade weights from CONFIG_APP_SETTINGS or returns unconfigured state if missing.
  */
 function getGradeWeights() {
-  const defaultWeights = { unitTest: 40, dpp: 25, mock: 25, viva: 10 };
   try {
     const IDS = getActiveSheetIds();
     const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
     const appCfgSheet = erp.getSheetByName('CONFIG_APP_SETTINGS');
     if (appCfgSheet) {
       const data = appCfgSheet.getDataRange().getValues();
-      const weights = Object.assign({}, defaultWeights);
+      let foundCount = 0;
+      const weights = {};
       for (let i = 1; i < data.length; i++) {
         const k = String(data[i][0] || '').trim();
         const v = Number(data[i][1]);
-        if (k === 'WEIGHT_UNIT_TEST' && !isNaN(v)) weights.unitTest = v;
-        if (k === 'WEIGHT_DPP' && !isNaN(v)) weights.dpp = v;
-        if (k === 'WEIGHT_MOCK' && !isNaN(v)) weights.mock = v;
-        if (k === 'WEIGHT_VIVA' && !isNaN(v)) weights.viva = v;
+        if (k === 'WEIGHT_UNIT_TEST' && !isNaN(v)) { weights.unitTest = v; foundCount++; }
+        if (k === 'WEIGHT_DPP' && !isNaN(v)) { weights.dpp = v; foundCount++; }
+        if (k === 'WEIGHT_MOCK' && !isNaN(v)) { weights.mock = v; foundCount++; }
+        if (k === 'WEIGHT_VIVA' && !isNaN(v)) { weights.viva = v; foundCount++; }
       }
-      return { ok: true, weights: weights };
+      if (foundCount === 4) {
+        return { ok: true, configured: true, weights: weights };
+      }
     }
   } catch (err) {
     Logger.log('Warning reading grade weights: ' + err.message);
   }
-  return { ok: true, weights: defaultWeights };
+  return { ok: true, configured: false, weights: null, message: "weights set nahi hain" };
 }
 
 
