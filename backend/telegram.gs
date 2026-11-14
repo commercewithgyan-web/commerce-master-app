@@ -395,40 +395,22 @@ function handleAdminCashCommand_(chatId) {
  * @param {string|number} chatId
  * @param {string} text
  */
+/**
+ * L-03: Bot student registration is retired. Admissions occur strictly via Admissions CRM.
+ */
 function handleAdminAddStudentCommand_(chatId, text) {
-  var parts = text.split(/\s+/);
-  if (parts.length < 7) {
-    sendTelegramMessage_(chatId,
-      '❌ *Format Error*\n' +
-      'Usage: `/addstudent StudentID Name Class Phone TelegramID PlanID [JoinDate]`\n' +
-      'Example: `/addstudent S001 Rahul 12 9876543210 12345678 P-CBSE-3`'
-    );
-    return;
-  }
-
-  try {
-    var res = registerStudent_({
-      name: parts[2],
-      classLevel: parts[3],
-      phone: parts[4],
-      telegramId: parts[5],
-      planId: parts[6],
-      joinDate: parts[7] || getKolkataDate()
-    });
-
-    sendTelegramMessage_(chatId,
-      '✅ *Student Enrolled Successfully!*\n\n' +
-      '• ID: `' + res.studentId + '`\n' +
-      '• Name: ' + res.name + '\n' +
-      '• Plan: ' + res.planName + ' (' + formatCurrency_(res.monthlyFee) + '/mo)\n' +
-      '• First Month Pro-Rata: ' + formatCurrency_(res.firstMonthFee) + '\n' +
-      '• Course Duration: ' + res.durationMonths + ' months\n' +
-      '• Total Course Fee: ' + formatCurrency_(res.totalCourseFee) + '\n' +
-      '• First Due Date: ' + res.firstInvoice.dueDate
-    );
-  } catch (e) {
-    sendTelegramMessage_(chatId, '❌ *Enrollment Failed*: ' + e.message);
-  }
+  var props = PropertiesService.getScriptProperties();
+  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/index.html';
+  sendTelegramMessage_(chatId,
+    '⚠️ *Student Registration Moved to Mini App*\n\n' +
+    'Manual `/addstudent` bot commands have been retired (L-03).\n' +
+    'Students must be enrolled exclusively through the *Admissions CRM* in the Teacher Mini App to ensure proper 21-column schema sync and fee ledger initialization.',
+    {
+      inline_keyboard: [
+        [{ text: '🎓 Open Admissions CRM in Mini App', web_app: { url: miniAppUrl } }]
+      ]
+    }
+  );
 }
 
 /**
@@ -437,48 +419,22 @@ function handleAdminAddStudentCommand_(chatId, text) {
  * @param {string|number} chatId
  * @param {string} text
  */
+/**
+ * L-04: Bot fee commands are retired. Payments occur strictly via Fee_Ledger in Teacher Mini App.
+ */
 function handleAdminMarkPaidCommand_(chatId, text) {
-  var parts = text.split(/\s+/);
-  if (parts.length < 2) {
-    sendTelegramMessage_(chatId,
-      '❌ *Usage*: `/markpaid StudentID [Amount] [Mode: Cash|UPI] [ForMonth]`\n' +
-      'Example: `/markpaid S001 1500 Cash Nov`'
-    );
-    return;
-  }
-
-  var studentId = parts[1];
-  var student = findRow_('SHEET_FEE', 'Students', 'StudentID', studentId);
-  if (!student) {
-    sendTelegramMessage_(chatId, '❌ Student ID "' + studentId + '" not found.');
-    return;
-  }
-
-  var amount = parts[2] ? parseFloat(parts[2]) : (parseFloat(student.MonthlyFee) || 1500);
-  var mode = parts[3] || 'Cash';
-  var forMonth = parts[4] || '';
-
-  try {
-    var res = recordPayment_({
-      studentId: studentId,
-      amount: amount,
-      mode: mode,
-      forMonth: forMonth,
-      recordedBy: 'Gyan Sir'
-    });
-
-    sendTelegramMessage_(chatId,
-      '✅ *Payment Recorded & Reconciled!*\n\n' +
-      '• Receipt: `' + res.receiptNo + '`\n' +
-      '• Student: ' + student.Name + ' (' + studentId + ')\n' +
-      '• Amount: ' + formatCurrency_(amount) + ' (' + mode + ')\n' +
-      '• Invoice: ' + (res.matchedInvoice || 'Direct') + '\n' +
-      (mode.toLowerCase() === 'cash' ? '💵 *Cash Drawer Credited Instantly!*\n' : '') +
-      '• Telegram Receipt Sent: ' + (res.sentToTelegram ? '✅ Yes' : '⚠️ No Telegram ID')
-    );
-  } catch (e) {
-    sendTelegramMessage_(chatId, '❌ Payment recording error: ' + e.message);
-  }
+  var props = PropertiesService.getScriptProperties();
+  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/index.html';
+  sendTelegramMessage_(chatId,
+    '⚠️ *Payment Recording Moved to Mini App*\n\n' +
+    'Manual `/markpaid` bot commands have been retired (L-04).\n' +
+    'Payments must be recorded exclusively via *Record Payment* in the Teacher Mini App to maintain cryptographic SHA-256 hash chains in Fee_Ledger.',
+    {
+      inline_keyboard: [
+        [{ text: '💳 Open Teacher Fee Ops in Mini App', web_app: { url: miniAppUrl } }]
+      ]
+    }
+  );
 }
 
 /**
@@ -533,8 +489,7 @@ function handleStartCommand_(chatId, fromUser) {
 
   sendTelegramMessage_(chatId, welcomeMsg, {
     inline_keyboard: [
-      [{ text: '🚀 Launch Telegram Mini App', web_app: { url: miniAppUrl } }],
-      [{ text: '💰 My Fee Details', callback_data: 'cmd_fee' }, { text: '🚨 Panic SOS', callback_data: 'cmd_sos' }]
+      [{ text: '🚀 Launch Telegram Mini App', web_app: { url: miniAppUrl } }]
     ]
   });
 }
@@ -543,30 +498,23 @@ function handleStartCommand_(chatId, fromUser) {
  * Handles /fee command for students
  * @param {string|number} chatId
  */
+/**
+ * L-04: Student bot fee command redirects to Mini App (only outstanding balance, never total paid).
+ */
 function handleFeeCommand_(chatId) {
-  var student = findRow_('SHEET_FEE', 'Students', 'TelegramID', String(chatId));
-  if (!student) {
-    sendTelegramMessage_(chatId, '❌ Student account not linked to this Telegram ID. Please contact Gyan Sir.');
-    return;
-  }
-
-  var text = '💰 *Fee Summary — Commerce Gyan*\n\n' +
-             '• Student: *' + student.Name + '* (`' + student.StudentID + '`)\n' +
-             '• Plan: ' + student.PlanName + '\n' +
-             '• Monthly Fee: ' + formatCurrency_(student.MonthlyFee) + '\n' +
-             '• Total Paid: ' + formatCurrency_(student.TotalPaid) + '\n' +
-             '• Outstanding Balance: *' + formatCurrency_(student.Balance) + '*\n' +
-             '• Status: ' + (student.Paid === '✅' ? '✅ Paid in Full' : '⚠️ Pending Balance') + '\n\n' +
-             'To view detailed monthly invoices or pay via UPI, open the Mini App:';
-
   var props = PropertiesService.getScriptProperties();
-  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://gyandeepkumar.github.io/commerce-master-app';
+  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/index.html';
 
-  sendTelegramMessage_(chatId, text, {
-    inline_keyboard: [
-      [{ text: '💳 Open Fee Ledger in Mini App', web_app: { url: miniAppUrl + '#fee' } }]
-    ]
-  });
+  sendTelegramMessage_(chatId,
+    '💰 *Commerce Gyan — Fee Ledger & UPI Payment*\n\n' +
+    'Bot fee summaries have been transitioned to the Mini App (L-04, L-11).\n' +
+    'Please launch the Mini App below to view your current outstanding fee balance and pay instantly via UPI QR code:',
+    {
+      inline_keyboard: [
+        [{ text: '💳 Open Student Fee Desk in Mini App', web_app: { url: miniAppUrl } }]
+      ]
+    }
+  );
 }
 
 /**
