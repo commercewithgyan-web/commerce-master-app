@@ -416,6 +416,9 @@ function doPost(e) {
         requireAdmin_(verifiedUser && verifiedUser.id);
         result = saveMarksLog(payload, verifiedUser);
         break;
+      case "logVideoWatch":
+        result = logVideoWatch(payload, verifiedUser);
+        break;
       case "getGradeWeights":
         result = getGradeWeights();
         break;
@@ -4151,4 +4154,43 @@ function getGradeWeights() {
     Logger.log('Warning reading grade weights: ' + err.message);
   }
   return { ok: true, weights: defaultWeights };
+}
+
+
+/**
+ * R-29: Logs student video watch events in Syllabus Planner › Video_Watch_Log.
+ * Roll_No is extracted strictly from the verified Telegram user session (POST only, never payload-spoofed).
+ */
+function logVideoWatch(payload, verifiedUser) {
+  return withWriteLock_(() => {
+    payload = payload || {};
+    const rollNo = (verifiedUser && (verifiedUser.rollNo || verifiedUser.Roll_No || verifiedUser.studentId || verifiedUser.StudentID)) || '';
+    if (!rollNo) {
+      return { ok: false, error: 'Unauthorized: Session must be authenticated with valid student Roll_No.' };
+    }
+    const topicId = String(payload.topicId || payload.canonicalTopicId || '').trim();
+    if (!topicId) {
+      return { ok: false, error: 'Missing mandatory field: canonicalTopicId.' };
+    }
+    const deliveryMedium = String(payload.deliveryMedium || 'YouTube').trim();
+    const watched = payload.watched !== false ? 'TRUE' : 'FALSE';
+
+    const IDS = getActiveSheetIds();
+    const sylSS = SpreadsheetApp.openById(IDS.SYLLABUS);
+    let watchSheet = sylSS.getSheetByName('Video_Watch_Log');
+    if (!watchSheet) {
+      watchSheet = sylSS.insertSheet('Video_Watch_Log');
+      watchSheet.appendRow(['Timestamp', 'Roll_No', 'Canonical_Topic_ID', 'Delivery_Medium', 'Watched']);
+    }
+
+    const timestamp = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
+    watchSheet.appendRow([timestamp, rollNo, topicId, deliveryMedium, watched]);
+
+    return {
+      ok: true,
+      message: 'Video watch event logged successfully.',
+      rollNo: rollNo,
+      topicId: topicId
+    };
+  });
 }
