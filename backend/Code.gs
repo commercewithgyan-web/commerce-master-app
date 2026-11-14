@@ -3710,15 +3710,33 @@ function saveAcademicTask(payload) {
     const now = new Date();
     const dateStr = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd");
     const nowStr = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
-    const taskId = payload.taskId || ("TSK-" + Date.now());
+
+    if (Array.isArray(payload.tasks)) {
+      payload.tasks.forEach(t => {
+        const taskId = String(t.id || ("TSK-" + Date.now()));
+        taskSheet.appendRow([
+          taskId,
+          t.date || dateStr,
+          String(t.classLevel || "12"),
+          String(t.subject || "ACC-12"),
+          String(t.text || t.taskText || "Daily Task"),
+          t.done ? "COMPLETED" : "OPEN",
+          String(t.action || t.actionRoute || ""),
+          nowStr
+        ]);
+      });
+      return { ok: true, count: payload.tasks.length, message: "Tasks synced to Academic_Tasks" };
+    }
+
+    const taskId = String(payload.taskId || payload.id || ("TSK-" + Date.now()));
     const row = [
       taskId,
       payload.date || dateStr,
       String(payload.classLevel || "12"),
       String(payload.subject || "ACC-12"),
       String(payload.taskText || payload.text || "Daily Checklist Task"),
-      String(payload.status || "OPEN"),
-      String(payload.actionRoute || ""),
+      String(payload.status || (payload.done ? "COMPLETED" : "OPEN")),
+      String(payload.actionRoute || payload.action || ""),
       nowStr
     ];
     taskSheet.appendRow(row);

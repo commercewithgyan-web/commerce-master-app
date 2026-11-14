@@ -3068,18 +3068,13 @@
         { roll: 'CG-1103', name: 'Akshat Mishra', parentName: 'Sunil Mishra', batch: 'Class 11 · ISC', subjects: ['Accountancy', 'Business Studies', 'Statistics'], status: 'Enrolled', joinDate: '2026-07-01', clearedMonths: ['Jul', 'Aug', 'Sep', 'Oct', 'Nov'], phone: '9835011103', parentPhone: '9835091103', sibling: false, coins: 60, unitTest: 76, dppScore: 79, mockScore: 74, vivaScore: 82, att: ['P','A','P','P','P','L','P'], note: 'Joined for Class 11 Accountancy & EPS', plan: 'Monthly', baseFee: 1200, daysLate: 0, lateWaived: false, feePaid: true }
       ],
 
-      tasks: (() => {
-        try {
-          const saved = localStorage.getItem('cg_teacher_tasks_v1');
-          if (saved) return JSON.parse(saved);
-        } catch (_) {}
-        return [
-          { id: 1, text: 'Export GoodNotes Chalkboard PDF for 12th Accountancy Ch 3', subject: 'ACC-12', action: 'endclass', done: false },
-          { id: 2, text: 'Dispatch 7:00 PM Question Bank DPP to Batch', subject: 'ACC-12', action: 'dpp', done: false },
-          { id: 3, text: 'Mark Batch Attendance & send Absent Video Alerts', subject: 'ACC-11', action: 'attendance', done: false },
-          { id: 4, text: 'Upload Unlisted YouTube lecture link in End Class', subject: 'BST-12', action: 'endclass', done: true }
-        ];
-      })(),
+      // R-19: Persistent tasks loaded exclusively from Academic_Tasks in Sheets
+      tasks: [
+        { id: 1, text: 'Export GoodNotes Chalkboard PDF for 12th Accountancy Ch 3', subject: 'ACC-12', action: 'endclass', done: false },
+        { id: 2, text: 'Dispatch 7:00 PM Question Bank DPP to Batch', subject: 'ACC-12', action: 'dpp', done: false },
+        { id: 3, text: 'Mark Batch Attendance & send Absent Video Alerts', subject: 'ACC-11', action: 'attendance', done: false },
+        { id: 4, text: 'Upload Unlisted YouTube lecture link in End Class', subject: 'BST-12', action: 'endclass', done: true }
+      ],
 
       dailyClassNotes: [
         { date: new Date().toISOString().slice(0, 10), subject: 'Accountancy', topic: 'Ch 3: Hidden Goodwill & Revaluation Reserve', dppTitle: 'DPP #42 · Hidden Goodwill (10 MCQs)', goodnotesUrl: 'https://drive.google.com/file/d/cg_hidden_goodwill_notes/view' },
@@ -3104,7 +3099,7 @@
 
     // Persist tasks helper (A3)
     function saveTasksState() {
-      try { localStorage.setItem('cg_teacher_tasks_v1', JSON.stringify(appState.tasks)); } catch (_) {}
+      // R-19: LocalStorage copy removed. Persistent state resides strictly in Academic_Tasks.
     }
 
     // HTML Escape Helper
@@ -5182,17 +5177,40 @@
         });
       });
 
-      // Add Task
+      // Add Task (R-19: Real error handling, zero fake-success toasts)
+            // R-19: Load initial persistent tasks from Academic_Tasks
+      window.cgCallGas('getAcademicTasks', {}).then(res => {
+        if (res && res.tasks && res.tasks.length) {
+          appState.tasks = res.tasks.map(t => ({
+            id: t.Task_ID || t.id,
+            text: t.Task_Text || t.text,
+            subject: t.Subject || t.subject || 'ACC-12',
+            done: String(t.Status || t.status).toUpperCase() === 'COMPLETED',
+            action: t.Action_Route || t.action || ''
+          }));
+          renderTasks();
+        }
+      }).catch(err => {
+        console.warn('Academic tasks load note: ' + err.message);
+      });
+
       document.getElementById('addTaskBtn')?.addEventListener('click', () => {
         const input = document.getElementById('newTaskInput');
         const subj = document.getElementById('newTaskSubject')?.value || 'ACC-12';
         if (!input || !input.value.trim()) return;
-        appState.tasks.unshift({ id: Date.now(), text: input.value.trim(), subject: subj, done: false });
-        input.value = '';
-        saveTasksState();
-        renderTasks();
-        window.cgCallGas('saveTeacherTasks', { tasks: appState.tasks }).catch(() => {});
-        showToast('Task added & saved', 'emerald');
+        const taskText = input.value.trim();
+        const newTask = { id: Date.now(), text: taskText, subject: subj, done: false };
+        showToast('Saving task to Academic_Tasks in Google Sheets...', 'indigo');
+        window.cgCallGas('saveAcademicTask', newTask)
+          .then(res => {
+            appState.tasks.unshift(newTask);
+            input.value = '';
+            renderTasks();
+            showToast('✓ Task added & saved to Academic_Tasks', 'emerald');
+          })
+          .catch(err => {
+            showToast(`Task save failed: ${err.message}`, 'rose');
+          });
       });
 
       // Dashboard DPP Cascade + Dispatch
@@ -5269,10 +5287,18 @@
         if (!appState.holidays) appState.holidays = {};
         appState.holidays[dateStr] = !isAlready;
         appState.holidayThursday = Object.values(appState.holidays).some(Boolean);
-        window.cgCallGas('toggleHolidayDate', { date: dateStr, isHoliday: appState.holidays[dateStr] }).catch(() => {});
-        addAuditEvent(`${dateStr} marked ${appState.holidays[dateStr] ? 'Holiday (topics shifted)' : 'Working Day'}`);
-        renderAll();
-        showToast(appState.holidays[dateStr] ? `Holiday set for ${dateStr} — topics shifted!` : `Restored ${dateStr}`, 'amber');
+        showToast(`Saving holiday for ${dateStr} to Academic_Calendar...`, 'indigo');
+        window.cgCallGas('toggleAcademicHoliday', { date: dateStr, isHoliday: appState.holidays[dateStr], reason: 'Holiday toggle' })
+          .then(() => {
+            addAuditEvent(`${dateStr} marked ${appState.holidays[dateStr] ? 'Holiday (topics shifted)' : 'Working Day'}`);
+            renderAll();
+            showToast(appState.holidays[dateStr] ? `✓ Holiday set for ${dateStr} in Academic_Calendar — topics shifted!` : `✓ Restored ${dateStr}`, 'emerald');
+          })
+          .catch(err => {
+            appState.holidays[dateStr] = isAlready;
+            renderAll();
+            showToast(`Holiday save failed: ${err.message}`, 'rose');
+          });
       });
       document.getElementById('addTimetableSlotBtn')?.addEventListener('click', () => document.getElementById('addSlotFormCard')?.classList.toggle('hidden'));
       document.getElementById('cancelSlotBtn')?.addEventListener('click', () => document.getElementById('addSlotFormCard')?.classList.add('hidden'));
@@ -5286,9 +5312,15 @@
         appState.timetableSlots.push({ day, time, subject, topic, type });
         appState.academicEvents.unshift({ id: 'EV-' + Date.now().toString().slice(-4), date: dateStr, title: `${subject}: ${topic}`, type, batch: subject.includes('11') ? 'Class 11' : 'Class 12' });
         document.getElementById('addSlotFormCard')?.classList.add('hidden');
-        window.cgCallGas('saveWeeklyTimetable', { slots: appState.timetableSlots }).catch(() => {});
-        renderAll();
-        showToast(`Added ${subject} (${type}) on ${day} ${dateStr} & notified students`, 'emerald');
+        showToast(`Saving timetable slot for ${day}...`, 'indigo');
+        window.cgCallGas('saveWeeklyTimetable', { slots: appState.timetableSlots })
+          .then(() => {
+            renderAll();
+            showToast(`✓ Added ${subject} (${type}) on ${day} ${dateStr} & synced!`, 'emerald');
+          })
+          .catch(err => {
+            showToast(`Slot save failed: ${err.message}`, 'rose');
+          });
       });
       document.getElementById('saveWeeklyRoutineBtn')?.addEventListener('click', async () => {
         const ok = await window.cgConfirm({ badge: 'Weekly Timetable', title: 'Save Weekly Routine?', body: 'Save Mon–Sat editable slots to TIMETABLE_WEEKLY in Google Sheets and sync Student Daily Hub?' });
@@ -5305,9 +5337,15 @@
         if (!title) { showToast('Enter Event / Test Title', 'amber'); return; }
         appState.academicEvents.unshift({ id: 'EV-' + Date.now().toString().slice(-4), date, title, type, batch });
         document.getElementById('calEventTitle').value = '';
-        window.cgCallGas('saveAcademicEvent', { date, title, type, batch }).catch(() => {});
-        renderAll();
-        showToast(`Scheduled "${title}" & synced to Student Daily Hub!`, 'emerald');
+        showToast(`Saving academic event "${title}" to Academic_Calendar...`, 'indigo');
+        window.cgCallGas('saveCalendarEvent', { date, title, eventType: type, batchId: batch })
+          .then(() => {
+            renderAll();
+            showToast(`✓ Scheduled "${title}" into Academic_Calendar & synced!`, 'emerald');
+          })
+          .catch(err => {
+            showToast(`Event save failed: ${err.message}`, 'rose');
+          });
       });
       document.getElementById('cancelAndRescheduleBtn')?.addEventListener('click', async () => {
         const batch = document.getElementById('cancelBatchSelect')?.value || 'Class 12';
@@ -5321,10 +5359,16 @@
         });
         if (!ok) return;
         appState.academicEvents.unshift({ id: 'EV-' + Date.now().toString().slice(-4), date, title: `Rescheduled (${reason})`, type: 'Holiday Shift', batch });
-        window.cgCallGas('cancelAndRescheduleClass', { batch, date, reason }).catch(() => {});
-        addAuditEvent(`Cancelled & shifted ${batch} on ${date}: ${reason}`);
-        renderAll();
-        showToast(`${batch} class on ${date} shifted forward & students notified.`, 'amber');
+        showToast(`Cancelling ${batch} class on ${date}...`, 'indigo');
+        window.cgCallGas('cancelBatchLecture', { batchId: batch, date, reason })
+          .then(() => {
+            addAuditEvent(`Cancelled & shifted ${batch} on ${date}: ${reason}`);
+            renderAll();
+            showToast(`✓ ${batch} class on ${date} cancelled in Academic_Calendar & shifted forward!`, 'emerald');
+          })
+          .catch(err => {
+            showToast(`Cancellation failed: ${err.message}`, 'rose');
+          });
       });
 
       // Lesson planner & A3 cascading editor
@@ -6584,10 +6628,18 @@
         if (taskCb) {
           const t = appState.tasks.find(x => x.id === Number(taskCb.dataset.taskid));
           if (t) {
+            const prevDone = t.done;
             t.done = taskCb.checked;
-            saveTasksState();
             renderTasks();
-            window.cgCallGas('saveTeacherTasks', { tasks: appState.tasks }).catch(() => {});
+            window.cgCallGas('toggleAcademicTask', { taskId: t.id })
+              .then(res => {
+                showToast(`✓ Task marked ${t.done ? 'completed' : 'open'} in Academic_Tasks`, 'emerald');
+              })
+              .catch(err => {
+                t.done = prevDone;
+                renderTasks();
+                showToast(`Task toggle failed: ${err.message}`, 'rose');
+              });
           }
           return;
         }
