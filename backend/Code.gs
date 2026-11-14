@@ -180,7 +180,7 @@ function isAdminOnlyAction_(action) {
     'testGenerateBstFlowchartPdf', 'testGenerateSubjectiveQuestionPdf',
     'testGenerateSubjectiveAnswerPdf', 'checkBalanceSheetIntegrity',
     'getMonthlyPL', 'getBalanceSheet', 'getCashDrawer', 'reconcileNotebookRegistry',
-    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask', 'getWeeklyTimetable', 'saveWeeklyTimetable', 'saveTimetableSlot', 'deleteTimetableSlot', 'cancelBatchAndNotify', 'logLessonProgress', 'saveCurriculumTopic', 'uploadDailyClassNotes', 'addLeadToSheet', 'advanceLeadStage', 'enrolTrialToDirectory', 'updateStudentProfile', 'saveAttendanceBatch', 'undoAttendanceBatch', 'sendDefaulterNotices', 'sendFeeReminderTelegram', 'publishDppQuiz', 'cancelAndRescheduleClass', 'saveAcademicEvent', 'toggleHolidayDate', 'saveTeacherTasks', 'saveSwotConfig'
+    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask', 'getWeeklyTimetable', 'saveWeeklyTimetable', 'saveTimetableSlot', 'deleteTimetableSlot', 'cancelBatchAndNotify', 'logLessonProgress', 'saveCurriculumTopic', 'uploadDailyClassNotes', 'addLeadToSheet', 'advanceLeadStage', 'enrolTrialToDirectory', 'updateStudentProfile', 'saveAttendanceBatch', 'undoAttendanceBatch', 'sendDefaulterNotices', 'sendFeeReminderTelegram', 'publishDppQuiz', 'cancelAndRescheduleClass', 'saveAcademicEvent', 'toggleHolidayDate', 'saveTeacherTasks', 'saveSwotConfig', 'getPaymentIntimations', 'viewStudentAsTeacher', 'exitViewStudentAsTeacher'
   ];
   return adminActions.indexOf(action) !== -1;
 }
@@ -433,10 +433,10 @@ function doPost(e) {
         result = exitViewStudentAsTeacher(payload, verifiedUser);
         break;
       case "getPaymentIntimations":
-        result = getPaymentIntimations();
+        result = getPaymentIntimations(payload, verifiedUser);
         break;
       case "getAppConfig":
-        result = getAppConfig();
+        result = getAppConfig(payload, verifiedUser);
         break;
       case "getGradeWeights":
         result = getGradeWeights();
@@ -4354,8 +4354,13 @@ function recordPaymentIntimation(payload, verifiedUser) {
 
 /**
  * N-2: Reads pending payment intimations from Master_ERP › Payment_Intimations.
+ * Admin-only verification (Point 4).
  */
-function getPaymentIntimations() {
+function getPaymentIntimations(payload, verifiedUser) {
+  const callerId = (verifiedUser && verifiedUser.id) || '';
+  if (!isAdmin_(callerId)) {
+    return { ok: false, error: 'Unauthorized: Admin privileges required to view payment intimations.' };
+  }
   const IDS = getActiveSheetIds();
   const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
   let intimSheet = erp.getSheetByName('Payment_Intimations');
@@ -4365,9 +4370,10 @@ function getPaymentIntimations() {
 }
 
 /**
- * Reads central application settings from Master_ERP › CONFIG_APP_SETTINGS (COMMERCE_GYAN_APP_URL, UPI_ID, UPI_PAYEE_NAME).
+ * Reads central application settings from Master_ERP › CONFIG_APP_SETTINGS.
+ * Point 4: Sanitized for non-admin callers (returns only public student keys: COMMERCE_GYAN_APP_URL, UPI_ID, UPI_PAYEE_NAME).
  */
-function getAppConfig() {
+function getAppConfig(payload, verifiedUser) {
   const IDS = getActiveSheetIds();
   const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
   let cfgSheet = erp.getSheetByName('CONFIG_APP_SETTINGS');
@@ -4379,6 +4385,16 @@ function getAppConfig() {
       const v = String(data[i][1] || '').trim();
       if (k) cfg[k] = v;
     }
+  }
+  const callerId = (verifiedUser && verifiedUser.id) || '';
+  if (!isAdmin_(callerId)) {
+    // Non-admin student/guest caller: return ONLY student-facing keys
+    const studentKeys = ['COMMERCE_GYAN_APP_URL', 'UPI_ID', 'UPI_PAYEE_NAME'];
+    const sanitized = {};
+    studentKeys.forEach(k => {
+      if (cfg[k] !== undefined) sanitized[k] = cfg[k];
+    });
+    return { ok: true, config: sanitized };
   }
   return { ok: true, config: cfg };
 }
