@@ -2174,13 +2174,12 @@ function setActiveSubtopic(payload) {
     if (sylSheet) {
       const sylData = sylSheet.getDataRange().getValues();
       const headers = sylData[0].map(h => String(h).trim());
-      const topicCol = headers.indexOf('Canonical_Topic_ID');
+      const topicCol = headers.indexOf('Canonical_Topic_ID') >= 0 ? headers.indexOf('Canonical_Topic_ID') : headers.indexOf('Topic_ID');
       const statusCol = headers.indexOf('Status');
-      const dateCol = headers.indexOf('Date_Completed');
-      const modeCol = headers.indexOf('Mode_of_Class');
-
-
-      const notionCol = headers.indexOf('Notion_Link');
+      const dateCol = headers.indexOf('Date_Completed') >= 0 ? headers.indexOf('Date_Completed') : headers.indexOf('Completion_Date');
+      const modeCol = headers.indexOf('Mode_of_Class') >= 0 ? headers.indexOf('Mode_of_Class') : headers.indexOf('Delivery_Medium');
+      const videoTypeCol = headers.indexOf('Video_Type');
+      const notionCol = headers.indexOf('Notion_Link') >= 0 ? headers.indexOf('Notion_Link') : headers.indexOf('Notion_Page_URL');
       const qTaughtCol = headers.indexOf('Question_Numbers_Taught');
 
       for (let i = 1; i < sylData.length; i++) {
@@ -2188,6 +2187,7 @@ function setActiveSubtopic(payload) {
           if (statusCol >= 0) sylSheet.getRange(i + 1, statusCol + 1).setValue(statusVal);
           if (dateCol >= 0) sylSheet.getRange(i + 1, dateCol + 1).setValue(dateStr);
           if (modeCol >= 0) sylSheet.getRange(i + 1, modeCol + 1).setValue(deliveryMode);
+          if (videoTypeCol >= 0 && payload.videoType) sylSheet.getRange(i + 1, videoTypeCol + 1).setValue(payload.videoType);
           if (notionCol >= 0 && payload.notionLink) sylSheet.getRange(i + 1, notionCol + 1).setValue(payload.notionLink);
           if (qTaughtCol >= 0 && payload.questionsTaught) sylSheet.getRange(i + 1, qTaughtCol + 1).setValue(payload.questionsTaught);
           break;

@@ -104,6 +104,9 @@ function readTeacherMaster_() {
     if (i === -1) throw new Error('CONFIG_ERROR: column "' + name + '" missing in ' + STUDIO_PLANNER_TAB);
     col[name] = i;
   });
+  if (headers.indexOf('Video_Type') !== -1) {
+    col['Video_Type'] = headers.indexOf('Video_Type');
+  }
   return { sheet: sheet, values: values, col: col };
 }
 

@@ -43,6 +43,7 @@ function setupAllSheets() {
   // Step 2: Run individual setup functions
   Logger.log('\n📋 Setting up Sheet 1: Syllabus Planner...');
   setupSheet1_SyllabusPlanner(ss1);
+  ensureMasterSyllabusVideoType_(ss1);
 
   Logger.log('\n📋 Setting up Sheet 2: Question Bank...');
   setupSheet2_QuestionBank(ss2);
@@ -444,5 +445,16 @@ function setupMasterErp_(erp) {
   if (calSheet.getLastRow() === 0) {
     formatHeaders_(calSheet, ['Date', 'Batch_ID', 'Event_Type', 'Title', 'Reason', 'Is_No_DPP_Day', 'Created_By', 'Is_Holiday', 'Shift_Date_To'], '#047857');
     Logger.log('  ✅ Initialized Academic_Calendar with 9-column schema (Point 4)');
+  }
+}
+
+function ensureMasterSyllabusVideoType_(sylSS) {
+  if (!sylSS) return;
+  var sheet = (sylSS.getSheetByName('Master_Syllabus') || sylSS.getSheetByName('01_Master_Syllabus'));
+  if (!sheet) return;
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function(h) { return String(h).trim(); });
+  if (headers.indexOf('Video_Type') === -1) {
+    sheet.getRange(1, headers.length + 1).setValue('Video_Type');
+    Logger.log('  ✅ Added Video_Type column to Master_Syllabus');
   }
 }
