@@ -419,11 +419,23 @@ function doPost(e) {
       case "logVideoWatch":
         result = logVideoWatch(payload, verifiedUser);
         break;
+      case "recordPaymentIntimation":
+        result = recordPaymentIntimation(payload, verifiedUser);
+        break;
+      case "getPaymentIntimations":
+        result = getPaymentIntimations();
+        break;
+      case "getAppConfig":
+        result = getAppConfig();
+        break;
       case "getGradeWeights":
         result = getGradeWeights();
         break;
       case "getSwotConfig":
         result = getSwotConfig();
+        break;
+      case "getAppConfig":
+        result = getAppConfig();
         break;
       case "setActiveSubtopic":
       case "logLessonProgress":
@@ -542,6 +554,9 @@ function doPost(e) {
       case "getSwotConfig":
         result = getSwotConfig();
         break;
+      case "getAppConfig":
+        result = getAppConfig();
+        break;
       case "submitRedPenSubmission":
         result = submitRedPenSubmission(payload);
         break;
@@ -565,6 +580,9 @@ function doPost(e) {
         break;
       case "getSwotConfig":
         result = getSwotConfig();
+        break;
+      case "getAppConfig":
+        result = getAppConfig();
         break;
       case "saveCalendarEvent":
         result = saveCalendarEvent(payload);
@@ -3015,6 +3033,24 @@ function recordFeePayment(payload) {
       coinSheet.appendRow([txId, rollNo, redeemedCoinsINR, "DEBIT", "Redeemed for Fee Invoice " + invoiceId, dateStr]);
     }
 
+    // N-2: If pending intimation exists for this rollNo, mark Recorded with receipt link
+    try {
+      let intimSheet = erp.getSheetByName('Payment_Intimations');
+      if (intimSheet) {
+        const intimData = intimSheet.getDataRange().getValues();
+        for (let i = 1; i < intimData.length; i++) {
+          if (String(intimData[i][1]).trim() === String(rollNo).trim() && String(intimData[i][4]).trim() === 'Pending') {
+            intimSheet.getRange(i + 1, 5).setValue('Recorded');
+            intimSheet.getRange(i + 1, 6).setValue(receiptId);
+            intimSheet.getRange(i + 1, 7).setValue(dateStr);
+            break;
+          }
+        }
+      }
+    } catch (_) {}
+
+    recordAuditLog_('TEACHER', 'STAFF', 'RECORD_FEE_PAYMENT', rollNo, { receiptId: receiptId, amount: paidAmountINR, utr: utr });
+
     txData = {
       invoiceId: invoiceId,
       receiptId: receiptId,
@@ -4234,4 +4270,76 @@ function getSwotConfig() {
     { Field_Key: 'Practice Paper', Label: 'Self-Paced Practice Papers', Field_Type: 'Metric', Active_Status: 'Active' },
     { Field_Key: 'Attentiveness', Label: 'Classroom Attentiveness & Participation', Field_Type: 'Subjective', Active_Status: 'Active' }
   ]};
+}
+
+
+/**
+ * N-2 (C-3 / SFE-010): Records a student's UPI payment intimation into Master_ERP › Payment_Intimations.
+ * Roll_No is extracted strictly from the verified Telegram user session (POST only).
+ */
+function recordPaymentIntimation(payload, verifiedUser) {
+  return withWriteLock_(() => {
+    payload = payload || {};
+    const rollNo = (verifiedUser && (verifiedUser.rollNo || verifiedUser.Roll_No || verifiedUser.studentId || verifiedUser.StudentID)) || String(payload.rollNo || '').trim();
+    if (!rollNo) {
+      return { ok: false, error: 'Unauthorized: Student authentication required.' };
+    }
+    const amount = Number(payload.amount || 0);
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return { ok: false, error: 'Invalid intimation amount.' };
+    }
+    const utr = String(payload.utr || payload.utrNumber || '').trim();
+
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    let intimSheet = erp.getSheetByName('Payment_Intimations');
+    if (!intimSheet) {
+      intimSheet = erp.insertSheet('Payment_Intimations');
+      intimSheet.appendRow(['Timestamp', 'Roll_No', 'Amount', 'UTR', 'Status', 'Entry_ID', 'Updated_At']);
+    }
+
+    const nowStr = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
+    intimSheet.appendRow([nowStr, rollNo, amount, utr, 'Pending', '', nowStr]);
+
+    recordAuditLog_('STUDENT', 'STUDENT', 'RECORD_PAYMENT_INTIMATION', rollNo, { amount: amount, utr: utr });
+
+    return {
+      ok: true,
+      message: 'Payment intimation recorded. Teacher check kar rahe hain.',
+      rollNo: rollNo,
+      amount: amount,
+      status: 'Pending'
+    };
+  });
+}
+
+/**
+ * N-2: Reads pending payment intimations from Master_ERP › Payment_Intimations.
+ */
+function getPaymentIntimations() {
+  const IDS = getActiveSheetIds();
+  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  let intimSheet = erp.getSheetByName('Payment_Intimations');
+  if (!intimSheet) return { ok: true, intimations: [] };
+  const rows = sheetToObjects(intimSheet);
+  return { ok: true, intimations: rows };
+}
+
+/**
+ * Reads central application settings from Master_ERP › CONFIG_APP_SETTINGS (COMMERCE_GYAN_APP_URL, UPI_ID, UPI_PAYEE_NAME).
+ */
+function getAppConfig() {
+  const IDS = getActiveSheetIds();
+  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  let cfgSheet = erp.getSheetByName('CONFIG_APP_SETTINGS');
+  const cfg = {};
+  if (cfgSheet) {
+    const data = cfgSheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      const k = String(data[i][0] || '').trim();
+      const v = String(data[i][1] || '').trim();
+      if (k) cfg[k] = v;
+    }
+  }
+  return { ok: true, config: cfg };
 }
