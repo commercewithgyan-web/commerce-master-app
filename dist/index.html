@@ -4347,8 +4347,8 @@
       const latePct = Number(cfg.latePct) || 5;
 
       const feeRollSel = document.getElementById('feeFormRollSelect');
-      if (feeRollSel && feeRollSel.options.length !== appState.students.length) {
-        feeRollSel.innerHTML = appState.students.map(s => `<option value="${escHtml(s.roll)}">${escHtml(s.name)} (${escHtml(s.roll)})</option>`).join('');
+      if (feeRollSel && feeRollSel.options.length !== (appState.students.length + 1)) {
+        feeRollSel.innerHTML = '<option value="">-- Select Student --</option>' + appState.students.map(s => `<option value="${escHtml(s.roll)}">${escHtml(s.name)} (${escHtml(s.roll)})</option>`).join('');
       }
 
       const overdueCount = appState.students.filter(s => !s.feePaid && (s.daysLate || 0) > 5).length;
@@ -6898,7 +6898,12 @@
         const redeemCoins = document.getElementById('feeFormRedeemCoinsCb')?.checked;
         const coinsInp = document.getElementById('feeFormCoinsInput');
         const paidInp = document.getElementById('feeFormPaidInput');
-        const stu = appState.students.find(s => s.roll === rollNo) || appState.students[0];
+        if (!rollNo) {
+          if (coinsInp) coinsInp.value = 0;
+          if (paidInp) paidInp.value = 0;
+          return;
+        }
+        const stu = appState.students.find(s => s.roll === rollNo);
         const cfg = appState.feeSettings || { monthlyBase: 1200, singleMonthlyBase: 900, quarterlyBase: 3300, coinCap: 200, latePct: 5 };
         let base = cfg.monthlyBase || 1200;
         if (planKey === 'SINGLE_MONTHLY') base = cfg.singleMonthlyBase || 900;
@@ -6917,14 +6922,16 @@
       const submitFeeBtn = document.getElementById('submitFeePaymentFormBtn');
       if (submitFeeBtn) {
         submitFeeBtn.addEventListener('click', async () => {
-          const rollNo = document.getElementById('feeFormRollSelect')?.value || 'CG-1201';
+          const rollNo = document.getElementById('feeFormRollSelect')?.value;
+          if (!rollNo) { showToast('Please select a student first', 'amber'); return; }
           const planKey = document.getElementById('feeFormPlanKey')?.value || 'COMBO_MONTHLY';
           const paidAmountINR = Number(document.getElementById('feeFormPaidInput')?.value) || 0;
           const waiveLate = Boolean(document.getElementById('feeFormWaiveLateCb')?.checked);
           const redeemChecked = Boolean(document.getElementById('feeFormRedeemCoinsCb')?.checked);
           const redeemedCoins = redeemChecked ? (Number(document.getElementById('feeFormCoinsInput')?.value) || 0) : 0;
           const paymentMode = document.getElementById('feeFormModeSelect')?.value || 'CASH';
-          const stu = appState.students.find(s => s.roll === rollNo) || appState.students[0];
+          const stu = appState.students.find(s => s.roll === rollNo);
+          if (!stu) { showToast('Selected student record not found', 'amber'); return; }
           if (paidAmountINR <= 0) { showToast('Enter a valid payment amount in ₹', 'amber'); return; }
 
           const ok = await window.cgConfirm({

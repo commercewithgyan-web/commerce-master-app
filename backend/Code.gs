@@ -491,6 +491,9 @@ function doPost(e) {
       case "recordFeePayment":
         result = recordFeePayment(payload, verifiedUser);
         break;
+      case "verifyFeeLedgerChain":
+        result = verifyFeeLedgerChain(payload, verifiedUser);
+        break;
       case "revokeLateFee":
         result = revokeLateFee(payload);
         break;
@@ -2612,22 +2615,27 @@ function activateComebackTrial(payload) {
         studentSheet.getRange(matchedRow, 9).setValue('TRIAL_ACTIVE');
         studentSheet.getRange(matchedRow, 13).setValue(expiryStr);
       } else {
-        studentSheet.appendRow([
-          cleanRoll,
-          name,
-          classLevel,
-          'CBSE',
-          'C' + classLevel + '_TRIAL',
-          mobile,
-          mobile,
-          tgUserId,
-          'TRIAL_ACTIVE',
-          dateStr,
-          25,
-          0,
-          expiryStr,
-          'COMEBACK_TRIAL'
-        ]);
+        const studentHeaders = studentSheet.getRange(1, 1, 1, studentSheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+        const fieldMap = {
+          'Roll_No': cleanRoll,
+          'Student_Name': name,
+          'Class': classLevel,
+          'Batch_ID': 'C' + classLevel + '_TRIAL',
+          'Status': 'TRIAL_ACTIVE',
+          'Parent_Mobile': mobile,
+          'Fee_Status': 'Trial',
+          'Board': 'CBSE',
+          'Plan_Key': 'COMEBACK_TRIAL',
+          'Admission_Date': dateStr,
+          'Enquiry_ID': enquiryId,
+          'Demo_ID': 'DEMO-' + enquiryId,
+          'Admission_Year': Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy'),
+          'Student_WhatsApp': mobile,
+          'Telegram_User_ID': tgUserId,
+          'Notes': 'COMEBACK_TRIAL (Expires ' + expiryStr + ')'
+        };
+        const newStudentRow = studentHeaders.map(h => fieldMap[h] !== undefined ? fieldMap[h] : "");
+        studentSheet.appendRow(newStudentRow);
       }
     }
 
@@ -2719,6 +2727,141 @@ function syncStudentIdentityToFeeMgmt_(erpSS, feeSS, studentObj) {
     const newRow = headers.map(h => fieldMapping[h] !== undefined ? fieldMapping[h] : "");
     feeStudentSheet.appendRow(newRow);
   }
+}
+
+/**
+ * Shared Fee_Ledger entry appender strictly adhering to the 18-column double-entry schema:
+ * [Seq, Entry_ID, Timestamp, Roll_No, Cycle, Charge_Code, Type, Debit_Account, Credit_Account, Amount_Paise, Amount_Rs, Ref_Entry, Reason, Mode, UTR, Actor, Prev_Hash, Row_Hash]
+ */
+function appendFeeLedgerEntry_(erp, entryData) {
+  const feeLedgerSheet = erp.getSheetByName("Fee_Ledger");
+  if (!feeLedgerSheet) throw new Error("Fee_Ledger sheet not found in Master_ERP.");
+
+  const headers = feeLedgerSheet.getRange(1, 1, 1, feeLedgerSheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+  const lastRow = feeLedgerSheet.getLastRow();
+  const nextSeq = lastRow; // row 1 is header, so first data row is Seq 1
+
+  // Determine Prev_Hash from previous row's Row_Hash (or GENESIS)
+  let prevHash = "GENESIS";
+  if (lastRow > 1) {
+    const rowHashColIdx = headers.indexOf("Row_Hash");
+    if (rowHashColIdx >= 0) {
+      const prevVal = feeLedgerSheet.getRange(lastRow, rowHashColIdx + 1).getValue();
+      if (prevVal) prevHash = String(prevVal).trim();
+    }
+  }
+
+  const now = new Date();
+  const timestampStr = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
+  const amountRs = Number(entryData.amountRs || 0);
+  const amountPaise = Math.round(amountRs * 100);
+
+  // Sanitize Actor: never write raw numeric Telegram ID
+  let actor = String(entryData.actor || "ADMIN").trim();
+  if (/^\d{6,15}$/.test(actor)) {
+    actor = "ADMIN";
+  }
+
+  const entryObj = {
+    "Seq": nextSeq,
+    "Entry_ID": String(entryData.entryId || ("RCP-" + Utilities.formatDate(now, "Asia/Kolkata", "yyyy") + "-" + String(nextSeq).padStart(3, "0"))).trim(),
+    "Timestamp": timestampStr,
+    "Roll_No": String(entryData.rollNo || "").trim(),
+    "Cycle": String(entryData.cycle || Utilities.formatDate(now, "Asia/Kolkata", "MMM-yyyy")).trim(),
+    "Charge_Code": String(entryData.chargeCode || "COMBO_MONTHLY").trim(),
+    "Type": String(entryData.type || "FEE_PAYMENT").trim(),
+    "Debit_Account": String(entryData.debitAccount || ((entryData.mode === "CASH") ? "ASSET:CASH" : "ASSET:BANK")).trim(),
+    "Credit_Account": String(entryData.creditAccount || "REVENUE:TUITION").trim(),
+    "Amount_Paise": amountPaise,
+    "Amount_Rs": amountRs,
+    "Ref_Entry": String(entryData.refEntry || "NA").trim(),
+    "Reason": String(entryData.reason || "Tuition Fee Payment").trim(),
+    "Mode": String(entryData.mode || "UPI").trim(),
+    "UTR": String(entryData.utr || "NA").trim(),
+    "Actor": actor,
+    "Prev_Hash": prevHash,
+    "Row_Hash": ""
+  };
+
+  // Full 64-char SHA-256 over all 17 preceding columns joined with '|'
+  const hashPayload = headers.filter(h => h !== "Row_Hash").map(h => String(entryObj[h] !== undefined ? entryObj[h] : "")).join("|");
+  const fullSha256 = computeSha256Hex(hashPayload);
+  entryObj["Row_Hash"] = fullSha256;
+
+  // Build row strictly by header name
+  const rowValues = headers.map(h => entryObj[h] !== undefined ? entryObj[h] : "");
+  feeLedgerSheet.appendRow(rowValues);
+
+  return {
+    ok: true,
+    seq: nextSeq,
+    entryId: entryObj["Entry_ID"],
+    rowHash: fullSha256,
+    prevHash: prevHash
+  };
+}
+
+/**
+ * Re-walks Fee_Ledger cryptographic hash chain and verifies hash integrity.
+ */
+function verifyFeeLedgerChain(payload, verifiedUser) {
+  const IDS = getActiveSheetIds();
+  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  return verifyFeeLedgerChain_(erp);
+}
+
+function verifyFeeLedgerChain_(erp) {
+  const feeLedgerSheet = erp.getSheetByName("Fee_Ledger");
+  if (!feeLedgerSheet) return { ok: false, error: "Fee_Ledger sheet not found." };
+
+  const data = feeLedgerSheet.getDataRange().getValues();
+  if (data.length <= 1) return { ok: true, count: 0, verified: true, message: "Fee_Ledger has no transactions." };
+
+  const headers = data[0].map(h => String(h).trim());
+  const prevHashCol = headers.indexOf("Prev_Hash");
+  const rowHashCol = headers.indexOf("Row_Hash");
+  if (prevHashCol === -1 || rowHashCol === -1) {
+    return { ok: false, error: "Fee_Ledger missing Prev_Hash or Row_Hash column." };
+  }
+
+  let expectedPrevHash = "GENESIS";
+  const discrepancies = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const prevHash = String(row[prevHashCol] || "").trim();
+    const rowHash = String(row[rowHashCol] || "").trim();
+
+    const hashPayload = headers.filter(h => h !== "Row_Hash").map((h, idx) => String(row[idx] !== undefined ? row[idx] : "")).join("|");
+    const recomputedHash = computeSha256Hex(hashPayload);
+
+    if (rowHash !== recomputedHash) {
+      discrepancies.push({
+        row: i + 1,
+        issue: "HASH_MISMATCH",
+        stored: rowHash,
+        recomputed: recomputedHash
+      });
+    }
+
+    if (i > 1 && prevHash !== expectedPrevHash) {
+      discrepancies.push({
+        row: i + 1,
+        issue: "PREV_HASH_BROKEN",
+        storedPrev: prevHash,
+        expectedPrev: expectedPrevHash
+      });
+    }
+
+    expectedPrevHash = rowHash;
+  }
+
+  return {
+    ok: discrepancies.length === 0,
+    totalRows: data.length - 1,
+    verified: discrepancies.length === 0,
+    discrepancies: discrepancies
+  };
 }
 
 function convertToAdmission(payload, verifiedUser) {
@@ -2890,42 +3033,31 @@ function convertToAdmission(payload, verifiedUser) {
       Logger.log("Warning syncing to Fee Management Students: " + syncErr.message);
     }
 
-    // Generate Admission Invoice & Receipt in Fee_Ledger
+    // Generate Admission Invoice & Receipt in Fee_Ledger via unified 18-column schema appender
     const existingLedger = sheetToObjects(feeLedgerSheet);
     const seqInv = String(existingLedger.length + 1).padStart(3, "0");
     const invoiceId = "INV-" + currentYear + "-" + seqInv;
     const receiptId = "RCP-" + currentYear + "-" + seqInv;
-    const prevHash = existingLedger.length > 0 ? (existingLedger[existingLedger.length - 1].Row_Hash || existingLedger[existingLedger.length - 1].Prev_Hash || receiptId) : 'GENESIS';
     const admReason = "Admission Fee - " + feeStatus;
     const admUtr = String(payload.utr || payload.upiRef || 'NA').trim();
-    const admActor = (verifiedUser && verifiedUser.id) ? String(verifiedUser.id) : (payload.actor || 'TEACHER');
-    const sha256ReceiptHash = "SHA256_" + computeSha256Hex(receiptId + "|" + newRollNo + "|" + paidAmountINR + "|" + dateStr + "|" + admUtr + "|" + admReason + "|" + prevHash).substring(0, 16);
+    const actorLabel = (verifiedUser && verifiedUser.is_admin) ? 'ADMIN' : ((verifiedUser && (verifiedUser.role || verifiedUser.staffCode)) ? String(verifiedUser.role || verifiedUser.staffCode) : 'ADMIN');
 
-    const ledgerRow = [
-      invoiceId,
-      newRollNo,
-      currentMonthStr,
-      planKey,
-      proratedTuition + regFee + materialFee,
-      quote.siblingExists ? Math.round(proratedTuition * ((cfg.SIBLING_DISCOUNT_PCT || 10) / 100)) : 0,
-      totalDiscountINR,
-      0,
-      0,
-      netFirstInvoiceINR,
-      paidAmountINR,
-      balanceDueINR,
-      admReason,
-      payload.paymentMode || "UPI",
-      admUtr,
-      admActor,
-      prevHash,
-      sha256ReceiptHash
-    ];
-    feeLedgerSheet.appendRow(ledgerRow);
-    try {
-      const extLedgerSheet = feeSS.getSheetByName("Fee_Ledger");
-      if (extLedgerSheet) extLedgerSheet.appendRow(ledgerRow);
-    } catch (_) {}
+    const ledgerRes = appendFeeLedgerEntry_(erp, {
+      entryId: receiptId,
+      rollNo: newRollNo,
+      cycle: currentMonthStr,
+      chargeCode: planKey,
+      type: "ADMISSION_PAYMENT",
+      debitAccount: (payload.paymentMode === "CASH") ? "ASSET:CASH" : "ASSET:BANK",
+      creditAccount: "REVENUE:ADMISSION",
+      amountRs: paidAmountINR,
+      refEntry: invoiceId,
+      reason: admReason,
+      mode: payload.paymentMode || "UPI",
+      utr: admUtr,
+      actor: actorLabel
+    });
+    const sha256ReceiptHash = ledgerRes.rowHash;
 
     // Update INQUIRY_CRM, DEMO_TRACKER, and PROMISE_LOG statuses
     if (payload.enquiryId) {
@@ -3012,6 +3144,29 @@ function recordFeePayment(payload, verifiedUser) {
     const currentMonthStr = Utilities.formatDate(now, "Asia/Kolkata", "MMM-yyyy");
 
     const rollNo = payload.rollNo;
+    if (!rollNo || typeof rollNo !== 'string' || !rollNo.trim()) {
+      throw new Error("Missing or invalid rollNo for fee payment.");
+    }
+    const cleanRollNo = rollNo.trim();
+
+    // Prevent demo roll numbers from writing to real Fee_Ledger
+    if (/^(CG-120[1-5]|CG-110[1-3]|DEMO.*|CG-DEMO.*)$/i.test(cleanRollNo)) {
+      throw new Error("Demo student " + cleanRollNo + " is blocked from real fee transactions.");
+    }
+
+    // Validate that student exists in Students_Master
+    const studentData = studentSheet.getDataRange().getValues();
+    let studentRowIndex = -1;
+    for (let s = 1; s < studentData.length; s++) {
+      if (String(studentData[s][0]).trim() === cleanRollNo) {
+        studentRowIndex = s + 1;
+        break;
+      }
+    }
+    if (studentRowIndex === -1) {
+      throw new Error("Student " + cleanRollNo + " not found in Students_Master.");
+    }
+
     const utr = String(payload.utr || payload.upiRef || '').trim();
     const waiverReason = String(payload.waiverReason || payload.reason || '').trim();
     const planKey = String(payload.planKey || "COMBO_MONTHLY").toUpperCase();
@@ -3038,42 +3193,29 @@ function recordFeePayment(payload, verifiedUser) {
     const seqInv = String(existingLedger.length + 1).padStart(3, "0");
     const invoiceId = "INV-" + currentYear + "-" + seqInv;
     const receiptId = "RCP-" + currentYear + "-" + seqInv;
-    const prevHash = existingLedger.length > 0 ? (existingLedger[existingLedger.length - 1].Row_Hash || existingLedger[existingLedger.length - 1].Prev_Hash || receiptId) : 'GENESIS';
     const feeReason = waiverReason ? (feeStatus + " - " + waiverReason) : feeStatus;
     const feeUtr = utr || 'NA';
-    const feeActor = (verifiedUser && verifiedUser.id) ? String(verifiedUser.id) : (payload.actor || 'TEACHER');
-    const sha256ReceiptHash = "SHA256_" + computeSha256Hex(receiptId + "|" + rollNo + "|" + paidAmountINR + "|" + dateStr + "|" + feeUtr + "|" + feeReason + "|" + prevHash).substring(0, 16);
+    const actorLabel = (verifiedUser && verifiedUser.is_admin) ? 'ADMIN' : ((verifiedUser && (verifiedUser.role || verifiedUser.staffCode)) ? String(verifiedUser.role || verifiedUser.staffCode) : 'TEACHER');
 
-    const ledgerRow = [
-      invoiceId,
-      rollNo,
-      payload.monthStr || currentMonthStr,
-      planKey,
-      baseFeeINR,
-      siblingDiscountINR,
-      promiseDiscountINR,
-      redeemedCoinsINR,
-      lateFeeINR,
-      netPayableINR,
-      paidAmountINR,
-      balanceDueINR,
-      feeReason,
-      payload.paymentMode || "UPI",
-      feeUtr,
-      feeActor,
-      prevHash,
-      sha256ReceiptHash
-    ];
-    feeLedgerSheet.appendRow(ledgerRow);
+    const ledgerRes = appendFeeLedgerEntry_(erp, {
+      entryId: receiptId,
+      rollNo: cleanRollNo,
+      cycle: payload.monthStr || currentMonthStr,
+      chargeCode: planKey,
+      type: "FEE_PAYMENT",
+      debitAccount: (payload.paymentMode === "CASH") ? "ASSET:CASH" : "ASSET:BANK",
+      creditAccount: "REVENUE:TUITION",
+      amountRs: paidAmountINR,
+      refEntry: invoiceId,
+      reason: feeReason,
+      mode: payload.paymentMode || "UPI",
+      utr: feeUtr,
+      actor: actorLabel
+    });
+    const sha256ReceiptHash = ledgerRes.rowHash;
 
     // Update Students_Master Fee_Status (Col G / Col 7)
-    const studentData = studentSheet.getDataRange().getValues();
-    for (let s = 1; s < studentData.length; s++) {
-      if (String(studentData[s][0]) === String(rollNo)) {
-        studentSheet.getRange(s + 1, 7).setValue(feeStatus === "PAID" ? "Paid" : "Pending");
-        break;
-      }
-    }
+    studentSheet.getRange(studentRowIndex, 7).setValue(feeStatus === "PAID" ? "Paid" : "Pending");
 
     // R-05, R-08, R-10: Single source of truth is Fee_Ledger in Master_ERP.
     // Mirror writes to legacy FEE_MGMT Payments tab stopped (R-08).
@@ -3081,14 +3223,14 @@ function recordFeePayment(payload, verifiedUser) {
     try {
       const feeReceiptsSheet = feeSS ? feeSS.getSheetByName("Receipts") : null;
       if (feeReceiptsSheet) {
-        feeReceiptsSheet.appendRow([receiptId, invoiceId, rollNo, paidAmountINR, dateStr, sha256ReceiptHash, "TRUE"]);
+        feeReceiptsSheet.appendRow([receiptId, invoiceId, cleanRollNo, paidAmountINR, dateStr, sha256ReceiptHash, "TRUE"]);
       }
     } catch (_) {}
 
     // Log redeemed coins debit in Coin_Ledger
     if (redeemedCoinsINR > 0 && coinSheet) {
       const txId = "CTX-" + Utilities.formatDate(now, "Asia/Kolkata", "yyMMddHHmmss");
-      coinSheet.appendRow([txId, rollNo, redeemedCoinsINR, "DEBIT", "Redeemed for Fee Invoice " + invoiceId, dateStr]);
+      coinSheet.appendRow([txId, cleanRollNo, redeemedCoinsINR, "DEBIT", "Redeemed for Fee Invoice " + invoiceId, dateStr]);
     }
 
     // N-2: If pending intimation exists for this rollNo, mark Recorded with receipt link
@@ -3097,7 +3239,7 @@ function recordFeePayment(payload, verifiedUser) {
       if (intimSheet) {
         const intimData = intimSheet.getDataRange().getValues();
         for (let i = 1; i < intimData.length; i++) {
-          if (String(intimData[i][1]).trim() === String(rollNo).trim() && String(intimData[i][4]).trim() === 'Pending') {
+          if (String(intimData[i][1]).trim() === cleanRollNo && String(intimData[i][4]).trim() === 'Pending') {
             intimSheet.getRange(i + 1, 5).setValue('Recorded');
             intimSheet.getRange(i + 1, 6).setValue(receiptId);
             intimSheet.getRange(i + 1, 7).setValue(dateStr);
@@ -3107,12 +3249,12 @@ function recordFeePayment(payload, verifiedUser) {
       }
     } catch (_) {}
 
-    recordAuditLog_('TEACHER', 'STAFF', 'RECORD_FEE_PAYMENT', rollNo, { receiptId: receiptId, amount: paidAmountINR, utr: utr });
+    recordAuditLog_('TEACHER', 'STAFF', 'RECORD_FEE_PAYMENT', cleanRollNo, { receiptId: receiptId, amount: paidAmountINR, utr: utr });
 
     txData = {
       invoiceId: invoiceId,
       receiptId: receiptId,
-      rollNo: rollNo,
+      rollNo: cleanRollNo,
       dateStr: dateStr,
       paidAmountINR: paidAmountINR,
       balanceDueINR: balanceDueINR,
@@ -3413,9 +3555,14 @@ function recordAuditLog_(callerId, role, action, target, details) {
       auditSheet.appendRow(['Timestamp', 'Caller_ID', 'Role', 'Action', 'Target', 'Details', 'Status']);
     }
     const timestamp = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
+    // Sanitize callerId: never store raw numeric Telegram ID
+    let sanitizedCaller = String(callerId || 'SYSTEM').trim();
+    if (/^\d{6,15}$/.test(sanitizedCaller)) {
+      sanitizedCaller = String(role || 'STAFF').toUpperCase();
+    }
     auditSheet.appendRow([
       timestamp,
-      String(callerId || 'SYSTEM'),
+      sanitizedCaller,
       String(role || 'STAFF'),
       String(action || ''),
       String(target || ''),
