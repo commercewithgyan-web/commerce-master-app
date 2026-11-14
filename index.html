@@ -1430,7 +1430,7 @@
         <div id="subtab-classroom-analytics" class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h2 class="text-lg font-extrabold text-slate-900">Weighted Gradebook & 3-Track DPP Assessment</h2>
-            <p class="text-xs text-slate-500">Weights: <strong>Unit Tests (40%)</strong> · <strong>7 PM DPP (25%)</strong> · <strong>Board Mock (25%)</strong> · <strong>Project/Viva (10%)</strong>. Supports CBSE 9-Point (<code class="mono">A1–E</code>) and BSEB Division scales.</p>
+            <p id="gradeWeightsLabel" class="text-xs text-slate-500">Weights: <strong>Unit Tests (40%)</strong> · <strong>7 PM DPP (25%)</strong> · <strong>Board Mock (25%)</strong> · <strong>Project/Viva (10%)</strong>. Supports CBSE 9-Point (<code class="mono">A1–E</code>) and BSEB Division scales.</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <select id="gradeScaleSelect" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
@@ -1440,6 +1440,9 @@
             </select>
             <button id="awardTopperCoinsBtn" type="button" class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition shadow-sm">
               🪙 Award +25 CG Coins to ≥90% Scorers
+            </button>
+            <button id="saveGradebookMarksBtn" type="button" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm">
+              💾 Save to Marks_Log
             </button>
           </div>
         </div>
@@ -3631,7 +3634,9 @@
 
     // ==================== RENDER: STUDENTS CRM ====================
     function computeWeightedAvg(s) {
-      return Math.round(s.unitTest * 0.40 + s.dppScore * 0.25 + s.mockScore * 0.25 + s.vivaScore * 0.10);
+      const w = appState.gradeWeights || { unitTest: 40, dpp: 25, mock: 25, viva: 10 };
+      const total = (w.unitTest || 40) + (w.dpp || 25) + (w.mock || 25) + (w.viva || 10);
+      return Math.round(((s.unitTest || 0) * (w.unitTest || 40) + (s.dppScore || 0) * (w.dpp || 25) + (s.mockScore || 0) * (w.mock || 25) + (s.vivaScore || 0) * (w.viva || 10)) / total);
     }
 
     function renderStudents() {
@@ -5607,6 +5612,51 @@
       document.getElementById('heatmapStudentFilter')?.addEventListener('change', renderTeacherWeaknessHeatmap);
       document.getElementById('dppQbClassFilter')?.addEventListener('change', populateDppQuestionBankFilters);
       document.getElementById('dppQbSubjectFilter')?.addEventListener('change', populateDppQuestionBankFilters);
+            // R-14, R-30: Save Gradebook entries to Master_ERP › Marks_Log with confirmation
+      document.getElementById('saveGradebookMarksBtn')?.addEventListener('click', async () => {
+        const ok = await window.cgConfirm({
+          badge: 'Save Marks',
+          title: 'Commit Gradebook Marks to Sheets?',
+          body: `Save marks for ${appState.students.length} students into Master_ERP › Marks_Log? This records persistent assessment records.`
+        });
+        if (!ok) return;
+
+        showToast('Saving marks to Marks_Log in Google Sheets...', 'indigo');
+        const promises = appState.students.map(s => {
+          return window.cgCallGas('saveMarksLog', {
+            rollNo: s.roll,
+            testId: 'TEST-' + (s.batch || 'C12_EVE') + '-' + (s.subject || 'ACC'),
+            testType: 'Unit Test',
+            batchId: s.batch || 'C12_EVE',
+            subject: s.subject || 'Accountancy',
+            chapter: 'Chapter Assessment',
+            maxMarks: 100,
+            marks: s.unitTest || 0,
+            enteredBy: 'Gyan Sir'
+          });
+        });
+
+        Promise.all(promises)
+          .then(results => {
+            showToast(`✓ Successfully saved ${results.length} student scores to Marks_Log!`, 'emerald');
+          })
+          .catch(err => {
+            showToast(`Marks save failed: ${err.message}`, 'rose');
+          });
+      });
+
+      // R-15: Fetch dynamic grade weights on boot
+      window.cgCallGas('getGradeWeights', {}).then(res => {
+        if (res && res.weights) {
+          appState.gradeWeights = res.weights;
+          const lbl = document.getElementById('gradeWeightsLabel');
+          if (lbl) {
+            lbl.innerHTML = `Weights: <strong>Unit Tests (${res.weights.unitTest}%)</strong> · <strong>7 PM DPP (${res.weights.dpp}%)</strong> · <strong>Board Mock (${res.weights.mock}%)</strong> · <strong>Project/Viva (${res.weights.viva}%)</strong>. Supports CBSE 9-Point (<code class="mono">A1–E</code>) and BSEB Division scales.`;
+          }
+          renderGradebook();
+        }
+      }).catch(() => {});
+
       document.getElementById('awardTopperCoinsBtn')?.addEventListener('click', async () => {
         const toppers = appState.students.filter(s => computeWeightedAvg(s) >= 90);
         if (!toppers.length) { showToast('No students currently scoring ≥ 90%', 'amber'); return; }

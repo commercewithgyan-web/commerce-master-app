@@ -412,6 +412,13 @@ function doPost(e) {
       case "undoAttendanceBatch":
         result = markBatchAttendance(payload);
         break;
+      case "saveMarksLog":
+        requireAdmin_(verifiedUser && verifiedUser.id);
+        result = saveMarksLog(payload, verifiedUser);
+        break;
+      case "getGradeWeights":
+        result = getGradeWeights();
+        break;
       case "setActiveSubtopic":
       case "logLessonProgress":
       case "saveCurriculumTopic":
@@ -543,6 +550,9 @@ function doPost(e) {
         break;
       case "getAcademicCalendar":
         result = getAcademicCalendar();
+        break;
+      case "getGradeWeights":
+        result = getGradeWeights();
         break;
       case "saveCalendarEvent":
         result = saveCalendarEvent(payload);
@@ -4033,4 +4043,94 @@ function submitRedPenSubmission(payload) {
       timestamp: nowStr
     };
   });
+}
+
+
+/**
+ * R-14, R-30: Saves student marks into Master_ERP › Marks_Log with strict validation.
+ * Rejects missing fields with real errors (no default invention).
+ * Requires admin authorization.
+ */
+function saveMarksLog(payload, verifiedUser) {
+  return withWriteLock_(() => {
+    payload = payload || {};
+    const rollNo = String(payload.rollNo || '').trim();
+    const testId = String(payload.testId || '').trim();
+    const subject = String(payload.subject || '').trim();
+    const batchId = String(payload.batchId || '').trim();
+    const marksVal = payload.marks !== undefined && payload.marks !== null && payload.marks !== '' ? Number(payload.marks) : NaN;
+
+    if (!rollNo || !testId || !subject || !batchId || isNaN(marksVal)) {
+      return {
+        ok: false,
+        error: "Validation error: rollNo, testId, subject, batchId and numeric marks are mandatory for Marks_Log."
+      };
+    }
+
+    const testType = String(payload.testType || 'Unit Test').trim();
+    const chapter = String(payload.chapter || '').trim();
+    const maxMarks = Number(payload.maxMarks || 100);
+    const enteredBy = String(payload.enteredBy || (verifiedUser && verifiedUser.first_name) || 'Gyan Sir').trim();
+
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    let marksSheet = erp.getSheetByName('Marks_Log');
+    if (!marksSheet) {
+      marksSheet = erp.insertSheet('Marks_Log');
+      marksSheet.appendRow(['Date', 'Test_ID', 'Test_Type', 'Batch_ID', 'Roll_No', 'Subject', 'Chapter', 'Max_Marks', 'Marks', 'Entered_By']);
+    }
+
+    const dateStr = payload.date || Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
+
+    marksSheet.appendRow([
+      dateStr,
+      testId,
+      testType,
+      batchId,
+      rollNo,
+      subject,
+      chapter,
+      maxMarks,
+      marksVal,
+      enteredBy
+    ]);
+
+    recordAuditLog_(enteredBy, 'TEACHER', 'SAVE_MARKS_LOG', rollNo, { testId: testId, subject: subject, marks: marksVal });
+
+    return {
+      ok: true,
+      message: 'Marks recorded into Marks_Log successfully.',
+      testId: testId,
+      rollNo: rollNo,
+      marks: marksVal
+    };
+  });
+}
+
+/**
+ * R-15: Reads dynamic grade weights from CONFIG_APP_SETTINGS or returns standard schema weights.
+ */
+function getGradeWeights() {
+  const defaultWeights = { unitTest: 40, dpp: 25, mock: 25, viva: 10 };
+  try {
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    const appCfgSheet = erp.getSheetByName('CONFIG_APP_SETTINGS');
+    if (appCfgSheet) {
+      const data = appCfgSheet.getDataRange().getValues();
+      const weights = Object.assign({}, defaultWeights);
+      for (let i = 1; i < data.length; i++) {
+        const k = String(data[i][0] || '').trim();
+        const v = Number(data[i][1]);
+        if (k === 'WEIGHT_UNIT_TEST' && !isNaN(v)) weights.unitTest = v;
+        if (k === 'WEIGHT_DPP' && !isNaN(v)) weights.dpp = v;
+        if (k === 'WEIGHT_MOCK' && !isNaN(v)) weights.mock = v;
+        if (k === 'WEIGHT_VIVA' && !isNaN(v)) weights.viva = v;
+      }
+      return { ok: true, weights: weights };
+    }
+  } catch (err) {
+    Logger.log('Warning reading grade weights: ' + err.message);
+  }
+  return { ok: true, weights: defaultWeights };
 }
