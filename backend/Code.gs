@@ -4301,9 +4301,27 @@ function getSwotConfig() {
 function recordPaymentIntimation(payload, verifiedUser) {
   return withWriteLock_(() => {
     payload = payload || {};
-    const rollNo = (verifiedUser && (verifiedUser.rollNo || verifiedUser.Roll_No || verifiedUser.studentId || verifiedUser.StudentID)) || String(payload.rollNo || '').trim();
-    if (!rollNo) {
+    if (!verifiedUser || !verifiedUser.id) {
       return { ok: false, error: 'Unauthorized: Student authentication required.' };
+    }
+    // Take Roll_No strictly from the verified Telegram user session (cannot be spoofed from payload)
+    let rollNo = (verifiedUser.rollNo || verifiedUser.Roll_No || verifiedUser.studentId || (verifiedUser.student && verifiedUser.student.Roll_No)) || '';
+    if (!rollNo) {
+      try {
+        const IDS = getActiveSheetIds();
+        const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+        const stuSheet = erp.getSheetByName('Students_Master');
+        if (stuSheet) {
+          const students = sheetToObjects(stuSheet);
+          const found = students.find(s => String(s.Telegram_ID || s.TelegramID) === String(verifiedUser.id));
+          if (found && found.Roll_No) rollNo = String(found.Roll_No).trim();
+        }
+      } catch (e) {
+        Logger.log('Error looking up verified student: ' + e.message);
+      }
+    }
+    if (!rollNo) {
+      return { ok: false, error: 'Unauthorized: Verified student Roll_No not found.' };
     }
     const amount = Number(payload.amount || 0);
     if (!amount || isNaN(amount) || amount <= 0) {
