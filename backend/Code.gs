@@ -420,7 +420,17 @@ function doPost(e) {
         result = logVideoWatch(payload, verifiedUser);
         break;
       case "recordPaymentIntimation":
-        result = recordPaymentIntimation(payload, verifiedUser);
+        if (payload && payload.isViewAsStudent) {
+          result = { ok: false, error: 'Write operation rejected: View as Student session is strictly read-only (SYS-009).' };
+        } else {
+          result = recordPaymentIntimation(payload, verifiedUser);
+        }
+        break;
+      case "viewStudentAsTeacher":
+        result = viewStudentAsTeacher(payload, verifiedUser);
+        break;
+      case "exitViewStudentAsTeacher":
+        result = exitViewStudentAsTeacher(payload, verifiedUser);
         break;
       case "getPaymentIntimations":
         result = getPaymentIntimations();
@@ -1625,7 +1635,12 @@ function bindStudentClaimCode(payload) {
 }
 
 function getStudentMiniAppBootstrap(params) {
-  const auth = verifyAndRouteUser_(params ? params.initData : null, params ? params.rollNo : null);
+  let auth;
+  if (params && params.isViewAsStudent && params.adminVerified) {
+    auth = { ok: true, role: 'STUDENT', isAdminProxy: true, rollNo: params.rollNo };
+  } else {
+    auth = verifyAndRouteUser_(params ? params.initData : null, params ? params.rollNo : null);
+  }
   if (!auth.ok) {
     return auth;
   }
@@ -1637,7 +1652,7 @@ function getStudentMiniAppBootstrap(params) {
   const tgSS = SpreadsheetApp.openById(IDS.TELEGRAM);
 
 
-  const targetRollNo = auth.isAdmin ? (auth.impersonateRollNo || 'CG-11-001') : ((auth.student && auth.student.Roll_No) || 'CG-11-001');
+  const targetRollNo = (auth.isAdminProxy && auth.rollNo) ? auth.rollNo : (auth.isAdmin ? (auth.impersonateRollNo || 'CG-11-001') : ((auth.student && auth.student.Roll_No) || 'CG-11-001'));
   const students = sheetToObjects(erp.getSheetByName('Students_Master'));
   const student = students.find(s => String(s.Roll_No) === String(targetRollNo));
 
@@ -1819,6 +1834,9 @@ function getCommerceGyanAppUrl_() {
 }
 
 function submitStudentQuizAttempt(payload) {
+  if (payload && payload.isViewAsStudent) {
+    return { ok: false, error: 'Write operation rejected: View as Student session is strictly read-only (SYS-009).' };
+  }
   if (!payload || payload.dryRun === true || payload.isSandbox === true || payload.preview === true) {
     const isCorrect = Boolean(payload && payload.isCorrect);
     const timeTakenSec = Number((payload && (payload.timeTakenSec || payload.timeTakenSeconds)) || 0);
@@ -4076,6 +4094,9 @@ function saveSwotConfig(payload) {
  * @return {Object}
  */
 function submitRedPenSubmission(payload) {
+  if (payload && payload.isViewAsStudent) {
+    return { ok: false, error: 'Write operation rejected: View as Student session is strictly read-only (SYS-009).' };
+  }
   return withWriteLock_(() => {
     payload = payload || {};
     const IDS = getActiveSheetIds();
@@ -4342,4 +4363,47 @@ function getAppConfig() {
     }
   }
   return { ok: true, config: cfg };
+}
+
+
+/**
+ * N-3 (C-4 / SYS-009 / SCR-SYS-005): Admin proxy to view student mini app read-only.
+ * Requires admin authorization.
+ */
+function viewStudentAsTeacher(payload, verifiedUser) {
+  payload = payload || {};
+  const callerId = (verifiedUser && verifiedUser.id) || '';
+  if (!isAdmin_(callerId)) {
+    return { ok: false, error: 'Unauthorized: Admin privileges required to view as student (SYS-009).' };
+  }
+  const targetRollNo = String(payload.rollNo || '').trim();
+  if (!targetRollNo) {
+    return { ok: false, error: 'Missing mandatory target Roll_No.' };
+  }
+
+  const bootstrap = getStudentMiniAppBootstrap({ rollNo: targetRollNo, isViewAsStudent: true, adminVerified: true });
+  if (!bootstrap || !bootstrap.ok) {
+    return { ok: false, error: 'Student not found: ' + targetRollNo };
+  }
+
+  recordAuditLog_(callerId, 'ADMIN', 'VIEW_AS_STUDENT_START', targetRollNo, { time: Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss') });
+
+  return {
+    ok: true,
+    isViewAsStudent: true,
+    readOnly: true,
+    targetRollNo: targetRollNo,
+    studentData: bootstrap
+  };
+}
+
+/**
+ * N-3: Exits view-as-student session and records audit log.
+ */
+function exitViewStudentAsTeacher(payload, verifiedUser) {
+  payload = payload || {};
+  const callerId = (verifiedUser && verifiedUser.id) || 'ADMIN';
+  const targetRollNo = String(payload.rollNo || '').trim();
+  recordAuditLog_(callerId, 'ADMIN', 'VIEW_AS_STUDENT_END', targetRollNo, { time: Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss') });
+  return { ok: true, message: 'View as student ended.' };
 }

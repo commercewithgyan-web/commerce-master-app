@@ -196,26 +196,15 @@
   <!-- Toast Container -->
   <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
-  <!-- Desktop Shell Bar for Mobile Mode (shown on md+ screens when in Mobile Ops or Student View) -->
-  <div id="mobileDeviceShellBar" class="hidden md:flex no-print sticky top-0 z-30 bg-slate-950 text-slate-200 border-b border-slate-800 px-4 py-2.5 items-center justify-between text-xs font-semibold shadow-md">
-    <div class="flex items-center gap-2.5">
-      <div class="w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center font-extrabold text-xs text-white shadow-sm">CG</div>
-      <span class="font-bold text-white tracking-tight">Commerce Gyan</span>
-      <span class="text-slate-600">·</span>
-      <span class="text-slate-400">Telegram Mini App Mobile View (430px)</span>
-      <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Mobile-First</span>
+  <!-- Fixed Top Banner for View as Student Mode (SYS-009 / SCR-SYS-005) -->
+  <div id="viewAsStudentBanner" class="hidden fixed top-0 left-0 right-0 z-50 bg-amber-500 text-slate-950 px-4 py-2.5 flex items-center justify-between text-xs font-bold shadow-lg">
+    <div class="flex items-center gap-2">
+      <span class="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping"></span>
+      <span>👁️ Student view: Roll <span id="viewAsStudentRollBadge" class="font-mono underline font-extrabold">CG-00-000</span> (Read-Only)</span>
     </div>
-    <div class="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
-      <button id="shellBtnOps" type="button" onclick="window.switchAppMode('ops')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-amber-500 text-slate-950 shadow">
-        <span>📲</span><span>Teacher Daily Ops (5)</span>
-      </button>
-      <button id="shellBtnStudent" type="button" onclick="window.switchAppMode('student')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-300 hover:text-white">
-        <span>🎓</span><span>Student App (6)</span>
-      </button>
-      <button id="shellBtnStudio" type="button" onclick="window.switchAppMode('teacher')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-300 hover:text-white">
-        <span>🖥️</span><span>Expand to Full Studio (11)</span>
-      </button>
-    </div>
+    <button id="btnExitViewAsStudent" type="button" onclick="window.exitViewStudentAsTeacher()" class="px-3 py-1 rounded-lg bg-slate-950 text-white text-xs font-extrabold hover:bg-slate-800 transition shadow cursor-pointer">
+      Band karo ✕
+    </button>
   </div>
 
   <!-- Top Global Header: Full Teacher Command Studio Top Bar (shown when mode === 'teacher') -->
@@ -1728,6 +1717,23 @@
           </div>
         </div>
 
+        <!-- SUBTAB: VIEW AS STUDENT PROXY (SYS-009 / SCR-SYS-005) -->
+        <div id="subtab-system-viewasstudent" class="bg-white rounded-2xl border border-amber-200 bg-amber-50/20 p-5 shadow-sm space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-100 pb-3">
+            <div>
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">SYS-009 · SCR-SYS-005</span>
+              <h3 class="text-base font-extrabold text-slate-900 mt-1">👁️ Student ki tarah dekho (Admin View-As-Student Proxy)</h3>
+              <p class="text-xs text-slate-600">Select any active student by Roll No to inspect their Telegram Mini App exactly as they see it. The session is strictly read-only on the server, marked with a top banner, and logged in Audit_Log.</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 max-w-md">
+            <input id="viewAsStudentRollInput" type="text" placeholder="Enter Roll No (e.g. CG-11-001)" class="flex-1 text-xs font-mono uppercase border border-slate-300 rounded-xl px-3 py-2 bg-white text-slate-900" />
+            <button id="btnStartViewAsStudent" type="button" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition shadow-sm cursor-pointer">
+              Student ki tarah dekho →
+            </button>
+          </div>
+        </div>
+
         <!-- SUBTAB: SYSTEM HEALTH & AUDIT LOG (B5 + B10) -->
         <div id="subtab-system-audit" class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1791,8 +1797,8 @@
         <button id="opsReturnStudioBtn" type="button" class="h-8 px-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold flex items-center gap-1 shadow-sm">
           <span>🖥️</span><span>Studio</span>
         </button>
-        <button id="opsGoStudentBtn" type="button" class="h-8 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1 shadow-sm">
-          <span>🎓</span><span>Student</span>
+        <button id="btnOpenViewAsStudentModal" type="button" class="h-8 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-bold flex items-center gap-1 shadow-sm cursor-pointer">
+          <span>👁️</span><span>Student View</span>
         </button>
       </div>
     </div>
@@ -2009,21 +2015,8 @@
 
   <!-- ==================== STUDENT TELEGRAM MINI APP VIEW (6 PRE-RENDERED TABS, 0MS TOGGLE) ==================== -->
   <div id="studentWorkspace" class="hidden flex-1 max-w-[440px] w-full mx-auto p-3 sm:p-4 space-y-4 pb-28 min-h-screen bg-slate-50 dark:bg-slate-950 sm:shadow-2xl sm:border-x sm:border-slate-200 dark:sm:border-slate-800 relative">
-    <!-- Switcher Bar for Gyan Sir / Admin Preview -->
-    <div id="studentWorkspaceToggleBar" class="flex items-center justify-between p-2.5 rounded-2xl bg-slate-900 border border-indigo-500/30 text-white shadow-sm">
-      <div class="flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-        <span class="text-xs font-bold text-slate-200">Student Mobile Preview</span>
-      </div>
-      <div class="flex items-center gap-1.5">
-        <button id="stuBackToOpsBtn" type="button" onclick="window.switchAppMode('ops')" class="h-8 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition flex items-center gap-1 shadow-sm cursor-pointer">
-          <span>📲</span><span>Ops</span>
-        </button>
-        <button id="studentCardToggleBtn" type="button" onclick="window.switchAppMode('teacher')" class="h-8 px-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1 shadow-sm cursor-pointer">
-          <span>🖥️</span><span>Studio</span>
-        </button>
-      </div>
-    </div>
+    <!-- Student Workspace Header Bar (Replaced by #viewAsStudentBanner when viewing as student; hidden for regular students) -->
+    <div id="studentWorkspaceToggleBar" class="hidden"></div>
 
     <!-- Student Profile Header Card -->
     <div class="bg-slate-900 text-white rounded-3xl p-4 sm:p-5 shadow-lg space-y-3 border border-slate-800">
@@ -2608,6 +2601,31 @@
     </div>
   </div>
 
+  <!-- View as Student Modal (SYS-009 / SCR-SYS-005) -->
+  <div id="viewAsStudentModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">👁️</span>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Student ki tarah dekho</h3>
+            <p class="text-[10px] text-slate-500">SYS-009: Read-Only Admin Proxy</p>
+          </div>
+        </div>
+        <button id="btnCloseViewAsStudentModal" type="button" class="text-slate-400 hover:text-slate-600 text-sm font-bold cursor-pointer">✕</button>
+      </div>
+      <div class="space-y-2">
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Target Student Roll No:</label>
+        <input id="modalViewAsStudentRollInput" type="text" placeholder="e.g. CG-11-001" class="w-full text-xs font-mono uppercase border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white" />
+        <p class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">⚠️ The session will be strictly read-only on the server. Student quiz attempts, doubts, and fee intimations are rejected.</p>
+      </div>
+      <div class="flex gap-2">
+        <button id="btnCancelViewAsStudentModal" type="button" class="flex-1 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">Radd karo</button>
+        <button id="btnConfirmViewAsStudentModal" type="button" class="flex-1 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow-sm cursor-pointer">Kholo →</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Teacher Mobile Walk-In Entry Modal -->
   <div id="opsWalkInModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 max-h-[92vh] overflow-y-auto">
@@ -3182,6 +3200,15 @@
       } catch (_) {}
       const initData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
       const isSandboxPreview = !initData;
+      // SYS-009: Server & client-side read-only guard for View as Student proxy
+      if (window.isViewAsStudent) {
+        const studentWriteActions = ['submitStudentQuizAttempt', 'submitRedPenSubmission', 'recordPaymentIntimation', 'logVideoWatch', 'askDoubt', 'askDoubtGemini', 'askVoiceDoubt'];
+        if (studentWriteActions.indexOf(resolvedAction) !== -1) {
+          showToast('Write operation rejected: View as Student session is strictly read-only (SYS-009).', 'rose');
+          return Promise.reject(new Error('Write operation rejected: View as Student session is strictly read-only (SYS-009).'));
+        }
+        payload = Object.assign({}, payload, { isViewAsStudent: true, viewAsStudentRollNo: window.viewAsStudentRollNo });
+      }
       // Preview/sandbox guard for student quiz attempts (S2)
       if (isSandboxPreview && resolvedAction === 'submitStudentQuizAttempt') {
         return Promise.resolve({ sandbox: true, isCorrect: payload.isCorrect !== false, earnedCoins: 0, explanation: payload.explanation || 'Sandbox preview mode — not written to Sheet.' });
@@ -6631,13 +6658,7 @@
           return;
         }
 
-        const delJBtn = e.target.closest('.del-journal-btn');
-        if (delJBtn) {
-          const idx = Number(delJBtn.dataset.delj);
-          appState.journalRows.splice(idx, 1);
-          renderJournalSandbox();
-          return;
-        }
+
         const jeopBtn = e.target.closest('.jeop-tile-btn');
         if (jeopBtn) {
           const tile = appState.jeopardyTiles.find(t => t.id === jeopBtn.dataset.jeopid);
@@ -8103,6 +8124,78 @@
       }).catch(() => {});
       setTimeout(renderTeacherAajAlerts, 1000);
 
+      // ==================== N-3 (SYS-009 / SCR-SYS-005): VIEW AS STUDENT PROXY ====================
+      window.isViewAsStudent = false;
+      window.viewAsStudentRollNo = null;
+
+      window.startViewAsStudent = function(targetRoll) {
+        targetRoll = String(targetRoll || '').trim();
+        if (!targetRoll) {
+          showToast('Please enter or select a valid Roll No.', 'rose');
+          return;
+        }
+        showToast(`Connecting to student view: ${targetRoll}...`, 'indigo');
+        window.cgCallGas('viewStudentAsTeacher', { rollNo: targetRoll })
+          .then(res => {
+            window.isViewAsStudent = true;
+            window.viewAsStudentRollNo = targetRoll;
+            const banner = document.getElementById('viewAsStudentBanner');
+            const badge = document.getElementById('viewAsStudentRollBadge');
+            if (banner) banner.classList.remove('hidden');
+            if (badge) badge.textContent = targetRoll;
+
+            const modal = document.getElementById('viewAsStudentModal');
+            if (modal) modal.classList.add('hidden');
+
+            if (res && res.studentData && typeof window.applyStudentBootstrap === 'function') {
+              window.applyStudentBootstrap(res.studentData, targetRoll);
+            }
+            if (typeof window.loadStudentBootstrap === 'function') {
+              window.loadStudentBootstrap(targetRoll);
+            }
+            window.switchAppMode('student');
+            showToast(`👁️ Viewing as Student (${targetRoll}) — Read-Only`, 'amber');
+          })
+          .catch(err => {
+            showToast(`Failed to view as student: ${err.message || err}`, 'rose');
+          });
+      };
+
+      window.exitViewStudentAsTeacher = function() {
+        const roll = window.viewAsStudentRollNo || '';
+        window.cgCallGas('exitViewStudentAsTeacher', { rollNo: roll })
+          .finally(() => {
+            window.isViewAsStudent = false;
+            window.viewAsStudentRollNo = null;
+            const banner = document.getElementById('viewAsStudentBanner');
+            if (banner) banner.classList.add('hidden');
+            window.switchAppMode('ops');
+            showToast('✓ Exited View as Student session.', 'indigo');
+          });
+      };
+
+      document.getElementById('btnOpenViewAsStudentModal')?.addEventListener('click', () => {
+        const modal = document.getElementById('viewAsStudentModal');
+        if (modal) modal.classList.remove('hidden');
+      });
+      document.getElementById('btnCloseViewAsStudentModal')?.addEventListener('click', () => {
+        document.getElementById('viewAsStudentModal')?.classList.add('hidden');
+      });
+      document.getElementById('btnCancelViewAsStudentModal')?.addEventListener('click', () => {
+        document.getElementById('viewAsStudentModal')?.classList.add('hidden');
+      });
+      document.getElementById('btnConfirmViewAsStudentModal')?.addEventListener('click', () => {
+        const val = document.getElementById('modalViewAsStudentRollInput')?.value;
+        window.startViewAsStudent(val);
+      });
+      document.getElementById('btnStartViewAsStudent')?.addEventListener('click', () => {
+        const val = document.getElementById('viewAsStudentRollInput')?.value;
+        window.startViewAsStudent(val);
+      });
+      document.getElementById('btnExitViewAsStudent')?.addEventListener('click', () => {
+        window.exitViewStudentAsTeacher();
+      });
+
       const tgStudentSelect = document.getElementById('tgStudentSelect');
       if (tgStudentSelect) {
         tgStudentSelect.addEventListener('change', () => {
@@ -8127,15 +8220,7 @@
           }
           return;
         }
-        const jIn = e.target.closest('.journal-input');
-        if (jIn) {
-          const idx = Number(jIn.dataset.jidx);
-          const field = jIn.dataset.jfield;
-          if (appState.journalRows[idx] && field) {
-            appState.journalRows[idx][field] = (field === 'dr' || field === 'cr') ? (Number(jIn.value) || 0) : jIn.value;
-            renderJournalSandbox();
-          }
-        }
+
       });
     });
   </script>
