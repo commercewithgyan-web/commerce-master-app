@@ -861,6 +861,13 @@
                   <option value="YouTube">YouTube</option>
                 </select>
               </div>
+              <div id="editorVideoTypeContainer" class="hidden">
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">YouTube Video Type</label>
+                <select id="editorVideoTypeSelect" class="w-full text-xs font-bold text-slate-800 border border-slate-200 rounded-xl px-3 py-2 bg-white">
+                  <option value="Unlisted">YouTube Unlisted (Batch Enrolled Only)</option>
+                  <option value="Public">YouTube Public</option>
+                </select>
+              </div>
               <div class="sm:col-span-2">
                 <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Learning Objective (Shown on Student Syllabus Card)</label>
                 <input id="editorObjectiveInput" type="text" placeholder="e.g. Compute Hidden Goodwill & pass adjusting capital entry" class="w-full text-xs font-semibold text-slate-800 border border-slate-200 rounded-xl px-3 py-2" />
@@ -997,6 +1004,10 @@
               <option value="Offline">Offline Classroom</option>
               <option value="CG_App">Commerce Gyan App</option>
               <option value="YouTube">YouTube</option>
+            </select>
+            <select id="lockVideoType" class="hidden text-xs font-bold bg-slate-900 border border-indigo-400/40 rounded-xl px-2.5 py-2 text-white">
+              <option value="Unlisted">Unlisted</option>
+              <option value="Public">Public</option>
             </select>
             <button id="lockActiveSubtopicBtn" type="button" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow transition">
               🔒 Lock Active Subtopic (/settopic)
@@ -1934,6 +1945,13 @@
               <option value="Offline">Offline Classroom (Begusarai Center)</option>
               <option value="CG_App">Commerce Gyan App</option>
               <option value="YouTube">YouTube</option>
+            </select>
+          </div>
+          <div id="opsTopicVideoTypeContainer" class="hidden">
+            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300">YouTube Video Type:</label>
+            <select id="opsTopicVideoType" class="w-full text-xs font-semibold border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white">
+              <option value="Unlisted">Unlisted</option>
+              <option value="Public">Public</option>
             </select>
           </div>
         </div>
@@ -3549,6 +3567,8 @@
         setVal('editorNotionUrlInput', current.notionUrl);
         setVal('editorQuestionsTaughtInput', current.questionsTaught);
         setVal('editorMediumSelect', current.medium || 'Offline');
+        setVal('editorVideoTypeSelect', current.videoType || 'Unlisted');
+        document.getElementById('editorVideoTypeContainer')?.classList.toggle('hidden', (current.medium || 'Offline') !== 'YouTube');
         setVal('editorObjectiveInput', current.objective);
         setVal('editorImportanceSelect', current.importance || 'High');
         setVal('editorGoodnotesUrlInput', current.goodnotesUrl);
@@ -5470,6 +5490,7 @@
         current.notionUrl = document.getElementById('editorNotionUrlInput')?.value.trim() || '';
         current.questionsTaught = document.getElementById('editorQuestionsTaughtInput')?.value.trim() || '';
         current.medium = document.getElementById('editorMediumSelect')?.value || 'Offline';
+        current.videoType = (current.medium === 'YouTube') ? (document.getElementById('editorVideoTypeSelect')?.value || 'Unlisted') : '';
         current.objective = document.getElementById('editorObjectiveInput')?.value.trim() || '';
         current.importance = document.getElementById('editorImportanceSelect')?.value || 'High';
         current.goodnotesUrl = document.getElementById('editorGoodnotesUrlInput')?.value.trim() || '';
@@ -7114,18 +7135,29 @@
       }
 
       // ── DAILY OPS CONTROLS (/settopic, Fee Form, DPP Broadcast — NO Cash Drawer A10) ──
+      document.getElementById('editorMediumSelect')?.addEventListener('change', (e) => {
+        document.getElementById('editorVideoTypeContainer')?.classList.toggle('hidden', e.target.value !== 'YouTube');
+      });
+      document.getElementById('lockDeliveryMode')?.addEventListener('change', (e) => {
+        document.getElementById('lockVideoType')?.classList.toggle('hidden', e.target.value !== 'YouTube');
+      });
+      document.getElementById('opsTopicDeliveryMode')?.addEventListener('change', (e) => {
+        document.getElementById('opsTopicVideoTypeContainer')?.classList.toggle('hidden', e.target.value !== 'YouTube');
+      });
+
       document.getElementById('lockActiveSubtopicBtn')?.addEventListener('click', async () => {
         const subtopicId = document.getElementById('lockTopicSelect')?.value;
         const deliveryMode = document.getElementById('lockDeliveryMode')?.value || 'Offline';
+        const videoType = (deliveryMode === 'YouTube') ? (document.getElementById('lockVideoType')?.value || 'Unlisted') : '';
         if (!subtopicId) return;
         const ok = await window.cgConfirm({
           badge: 'Lock Subtopic',
-          title: `Lock ${subtopicId} (${deliveryMode})?`,
+          title: `Lock ${subtopicId} (${deliveryMode}${videoType ? ' · ' + videoType : ''})?`,
           body: 'Writes to Settings!B2 & 01_Master_Syllabus and syncs Student Daily Hub.'
         });
         if (!ok) return;
         appState.activeSubtopicLock = subtopicId;
-        window.cgCallGas('setActiveSubtopic', { subtopicId, deliveryMode, status: 'Completed' })
+        window.cgCallGas('setActiveSubtopic', { subtopicId, deliveryMode, videoType, status: 'Completed' })
           .then(res => { renderAll(); showToast(`Locked ${res.activeSubtopic || subtopicId} (${deliveryMode}) in Settings!B2!`, 'emerald'); })
           .catch(err => showToast(`Subtopic lock failed: ${err.message}`, 'rose'));
       });
@@ -7518,15 +7550,16 @@
       document.getElementById('opsLockTopicBtn')?.addEventListener('click', async () => {
         const tid = document.getElementById('opsTopicSelect')?.value;
         const deliveryMode = document.getElementById('opsTopicDeliveryMode')?.value || 'Offline';
+        const videoType = (deliveryMode === 'YouTube') ? (document.getElementById('opsTopicVideoType')?.value || 'Unlisted') : '';
         if (!tid) return;
         const ok = await window.cgConfirm({
           badge: 'Lock Topic',
-          title: `Lock ${tid} (${deliveryMode})?`,
+          title: `Lock ${tid} (${deliveryMode}${videoType ? ' · ' + videoType : ''})?`,
           body: 'Writes to Settings!B2 and updates Student Daily Hub.'
         });
         if (!ok) return;
         appState.activeSubtopicLock = tid;
-        window.cgCallGas('setActiveSubtopic', { subtopicId: tid, deliveryMode, status: 'Completed' })
+        window.cgCallGas('setActiveSubtopic', { subtopicId: tid, deliveryMode, videoType, status: 'Completed' })
           .then(res => { renderAll(); showToast(`Locked ${res.activeSubtopic || tid} in Settings!B2!`, 'emerald'); })
           .catch(err => showToast(`Topic lock failed: ${err.message}`, 'rose'));
       });
