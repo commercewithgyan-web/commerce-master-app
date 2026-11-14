@@ -201,11 +201,8 @@
   <div id="viewAsStudentBanner" class="hidden fixed top-0 left-0 right-0 z-50 bg-amber-500 text-slate-950 px-4 py-2.5 flex items-center justify-between text-xs font-bold shadow-lg">
     <div class="flex items-center gap-2">
       <span class="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping"></span>
-      <span>👁️ Student view: Roll <span id="viewAsStudentRollBadge" class="font-mono underline font-extrabold">CG-00-000</span> (Read-Only)</span>
+      <span>Student view: Roll <span id="viewAsStudentRollBadge" class="font-mono underline font-extrabold">CG-00-000</span> · <button id="btnExitViewAsStudent" type="button" onclick="window.exitViewStudentAsTeacher()" class="underline font-extrabold hover:text-white transition cursor-pointer">Band karo</button></span>
     </div>
-    <button id="btnExitViewAsStudent" type="button" onclick="window.exitViewStudentAsTeacher()" class="px-3 py-1 rounded-lg bg-slate-950 text-white text-xs font-extrabold hover:bg-slate-800 transition shadow cursor-pointer">
-      Band karo ✕
-    </button>
   </div>
 
   <!-- Top Global Header: Full Teacher Command Studio Top Bar (shown when mode === 'teacher') -->
@@ -5095,15 +5092,12 @@
         const opsWs = document.getElementById('teacherOpsWorkspace');
         const studentWs = document.getElementById('studentWorkspace');
         const desktopHeader = document.getElementById('globalDesktopHeader');
-        const mobileShell = document.getElementById('mobileDeviceShellBar');
-
         const liveBanner = document.getElementById('cgLiveBanner');
         if (teacherWs) teacherWs.classList.toggle('hidden', mode !== 'teacher');
         if (opsWs) opsWs.classList.toggle('hidden', mode !== 'ops');
         if (studentWs) studentWs.classList.toggle('hidden', mode !== 'student');
         if (desktopHeader) desktopHeader.classList.toggle('hidden', mode !== 'teacher');
         if (liveBanner) liveBanner.classList.toggle('hidden', mode !== 'teacher');
-        if (mobileShell) mobileShell.classList.toggle('hidden', mode === 'teacher' || window.cgStudentLocked);
 
         const shellOps = document.getElementById('shellBtnOps');
         const shellStu = document.getElementById('shellBtnStudent');
@@ -7169,7 +7163,6 @@
       });
 
       document.getElementById('opsReturnStudioBtn')?.addEventListener('click', () => window.switchAppMode('teacher'));
-      document.getElementById('opsGoStudentBtn')?.addEventListener('click', () => window.switchAppMode('student'));
 
       document.getElementById('opsNewInqJumpBtn')?.addEventListener('click', () => {
         const m = document.getElementById('opsWalkInModal');
@@ -8531,8 +8524,6 @@
     // Enforce strict Student Lock in Telegram: hide teacher/student switcher & roll picker
     var wsToggleBar = $('studentWorkspaceToggleBar');
     if (wsToggleBar) wsToggleBar.classList.add('hidden');
-    var shellBar = $('mobileDeviceShellBar');
-    if (shellBar) shellBar.classList.add('hidden');
     var stuSel = $('tgStudentSelect');
     if (stuSel) {
       stuSel.disabled = true;

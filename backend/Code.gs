@@ -222,6 +222,22 @@ function doGet(e) {
       }
     }
 
+    // Point 5 (SYS-009): Server-side cache-governed read-only guard for View as Student
+    const callerIdForGuard = (verifiedUser && verifiedUser.id) || '';
+    if (callerIdForGuard && isViewAsStudentActive_(callerIdForGuard)) {
+      const studentWriteActions = [
+        'submitStudentQuizAttempt', 'submitAnswer', 'submitRedPenSubmission',
+        'submitRedPenCopy', 'submitRedPenMistake', 'recordPaymentIntimation',
+        'logVideoWatch', 'askDoubt', 'askDoubtGemini', 'askVoiceDoubt'
+      ];
+      if (studentWriteActions.indexOf(action) !== -1) {
+        return jsonResponse({
+          ok: false,
+          error: 'Write operation rejected: View as Student session is strictly read-only (SYS-009).'
+        });
+      }
+    }
+
     let result;
     switch (action) {
       case "getSystemHealth":
@@ -4402,7 +4418,7 @@ function getAppConfig(payload, verifiedUser) {
 
 /**
  * N-3 (C-4 / SYS-009 / SCR-SYS-005): Admin proxy to view student mini app read-only.
- * Requires admin authorization.
+ * Requires admin authorization. Stores server-side marker in CacheService (Point 5).
  */
 function viewStudentAsTeacher(payload, verifiedUser) {
   payload = payload || {};
@@ -4420,6 +4436,13 @@ function viewStudentAsTeacher(payload, verifiedUser) {
     return { ok: false, error: 'Student not found: ' + targetRollNo };
   }
 
+  // Store server-side marker in CacheService (1800s / 30 min expiry)
+  try {
+    CacheService.getScriptCache().put('VIEW_AS_STU_' + String(callerId), targetRollNo, 1800);
+  } catch (e) {
+    Logger.log('Warning setting CacheService view-as-student marker: ' + e.message);
+  }
+
   recordAuditLog_(callerId, 'ADMIN', 'VIEW_AS_STUDENT_START', targetRollNo, { time: Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss') });
 
   return {
@@ -4432,12 +4455,36 @@ function viewStudentAsTeacher(payload, verifiedUser) {
 }
 
 /**
- * N-3: Exits view-as-student session and records audit log.
+ * N-3: Exits view-as-student session and records audit log. Requires verified admin (Point 5).
  */
 function exitViewStudentAsTeacher(payload, verifiedUser) {
   payload = payload || {};
-  const callerId = (verifiedUser && verifiedUser.id) || 'ADMIN';
+  const callerId = (verifiedUser && verifiedUser.id) || '';
+  if (!isAdmin_(callerId)) {
+    return { ok: false, error: 'Unauthorized: Admin privileges required to exit view as student (SYS-009).' };
+  }
   const targetRollNo = String(payload.rollNo || '').trim();
+
+  // Clear server-side cache marker
+  try {
+    CacheService.getScriptCache().remove('VIEW_AS_STU_' + String(callerId));
+  } catch (e) {
+    Logger.log('Warning clearing CacheService view-as-student marker: ' + e.message);
+  }
+
   recordAuditLog_(callerId, 'ADMIN', 'VIEW_AS_STUDENT_END', targetRollNo, { time: Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss') });
   return { ok: true, message: 'View as student ended.' };
+}
+
+/**
+ * Helper to check if caller has an active View as Student session in CacheService
+ */
+function isViewAsStudentActive_(callerId) {
+  if (!callerId) return false;
+  try {
+    const val = CacheService.getScriptCache().get('VIEW_AS_STU_' + String(callerId));
+    return Boolean(val);
+  } catch (e) {
+    return false;
+  }
 }
