@@ -4155,8 +4155,19 @@ function toggleAcademicHoliday(payload) {
     let calSheet = erp.getSheetByName('Academic_Calendar');
     if (!calSheet) {
       calSheet = erp.insertSheet('Academic_Calendar');
-      calSheet.appendRow(['Date', 'Batch_ID', 'Event_Type', 'Title', 'Reason', 'Is_No_DPP_Day', 'Created_By']);
+      calSheet.appendRow(['Date', 'Batch_ID', 'Event_Type', 'Title', 'Reason', 'Is_No_DPP_Day', 'Created_By', 'Is_Holiday', 'Shift_Date_To']);
     }
+    const headers = calSheet.getRange(1, 1, 1, calSheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+    const dateColIdx = headers.indexOf('Date');
+    const batchColIdx = headers.indexOf('Batch_ID');
+    const eventTypeColIdx = headers.indexOf('Event_Type');
+    const titleColIdx = headers.indexOf('Title');
+    const reasonColIdx = headers.indexOf('Reason');
+    const isNoDppColIdx = headers.indexOf('Is_No_DPP_Day');
+    const createdByColIdx = headers.indexOf('Created_By');
+    const isHolidayColIdx = headers.indexOf('Is_Holiday');
+    const shiftDateColIdx = headers.indexOf('Shift_Date_To');
+
     const now = new Date();
     const dateStr = payload.date || Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');
     const reason = payload.reason || 'Institute Holiday';
@@ -4164,31 +4175,45 @@ function toggleAcademicHoliday(payload) {
     const shiftTopics = payload.shiftTopics !== false;
     const notified = payload.notifyStudents !== false;
     const batchId = payload.batchId || 'ALL_BATCHES';
-    const createdBy = payload.createdBy || 'Gyan Sir';
+    const createdBy = payload.createdBy || 'ADMIN';
 
-    // Point 6 (R-22): Check existing holidays for that date and batch
+    // Point 4: Match existing holidays for that date and batch dynamically by header name
     const calData = calSheet.getDataRange().getValues();
     let existingHolidayRow = -1;
+    let existingHolidayReason = '';
     for (let r = 1; r < calData.length; r++) {
-      const rDate = String(calData[r][0] || '').trim();
-      const rBatch = String(calData[r][1] || '').trim();
-      const rType = String(calData[r][2] || '').trim();
-      const rStatus = String(calData[r][7] || '').trim();
-      if (rDate === dateStr && (rBatch === batchId || rBatch === 'ALL_BATCHES') && (rType === 'Holiday' || rType === 'HOLIDAY') && rStatus !== 'CANCELLED') {
-        existingHolidayRow = r + 1;
-        break;
+      const rDate = dateColIdx >= 0 ? String(calData[r][dateColIdx] || '').trim() : '';
+      const rBatch = batchColIdx >= 0 ? String(calData[r][batchColIdx] || '').trim() : '';
+      const rType = eventTypeColIdx >= 0 ? String(calData[r][eventTypeColIdx] || '').trim() : '';
+      const rIsHol = isHolidayColIdx >= 0 ? String(calData[r][isHolidayColIdx] || '').trim().toUpperCase() : '';
+      if (rDate === dateStr && (rBatch === batchId || rBatch === 'ALL_BATCHES') && (rType.toLowerCase() === 'holiday')) {
+        // Active if Is_Holiday is 'TRUE' or not explicitly 'FALSE'
+        if (rIsHol !== 'FALSE') {
+          existingHolidayRow = r + 1;
+          existingHolidayReason = reasonColIdx >= 0 ? String(calData[r][reasonColIdx] || '') : '';
+          break;
+        }
       }
     }
 
     if (!isHoliday) {
-      // Turning off holiday: soft-deactivate without deleting production rows
+      // Turning off holiday: soft-deactivate per Point 4
       if (existingHolidayRow <= 0) {
         return { ok: false, error: 'Cannot turn off holiday: No active holiday exists for ' + dateStr };
       }
-      calSheet.getRange(existingHolidayRow, 3).setValue('Cancelled_Holiday');
-      calSheet.getRange(existingHolidayRow, 6).setValue('FALSE');
-      calSheet.getRange(existingHolidayRow, 8).setValue('CANCELLED');
-      recordAuditLog_(createdBy, 'STAFF', 'CANCEL_HOLIDAY', dateStr, { batchId: batchId, previousReason: reason });
+      // Keep Event_Type = 'Holiday'
+      if (eventTypeColIdx >= 0) {
+        calSheet.getRange(existingHolidayRow, eventTypeColIdx + 1).setValue('Holiday');
+      }
+      // Set Is_Holiday = 'FALSE'
+      if (isHolidayColIdx >= 0) {
+        calSheet.getRange(existingHolidayRow, isHolidayColIdx + 1).setValue('FALSE');
+      }
+      // Set Is_No_DPP_Day back to 'FALSE'
+      if (isNoDppColIdx >= 0) {
+        calSheet.getRange(existingHolidayRow, isNoDppColIdx + 1).setValue('FALSE');
+      }
+      recordAuditLog_('ADMIN', 'STAFF', 'CANCEL_HOLIDAY', dateStr, { batchId: batchId, previousReason: existingHolidayReason || reason });
       return { ok: true, message: 'Holiday turned off and deactivated for ' + dateStr, date: dateStr, isHoliday: false };
     }
 
@@ -4197,16 +4222,20 @@ function toggleAcademicHoliday(payload) {
       return { ok: false, error: 'Holiday already active for date: ' + dateStr };
     }
 
-    calSheet.appendRow([
-      dateStr,
-      batchId,
-      'Holiday',
-      'Holiday (' + reason + ')',
-      reason,
-      'TRUE',
-      createdBy,
-      'ACTIVE'
-    ]);
+    // Append 9-column row dynamically by header name
+    const rowObj = {
+      'Date': dateStr,
+      'Batch_ID': batchId,
+      'Event_Type': 'Holiday',
+      'Title': 'Holiday: ' + reason,
+      'Reason': reason,
+      'Is_No_DPP_Day': 'TRUE',
+      'Created_By': 'ADMIN',
+      'Is_Holiday': 'TRUE',
+      'Shift_Date_To': ''
+    };
+    const rowValues = headers.map(h => rowObj[h] !== undefined ? rowObj[h] : '');
+    calSheet.appendRow(rowValues);
 
     let shiftedCount = 0;
     if (shiftTopics) {

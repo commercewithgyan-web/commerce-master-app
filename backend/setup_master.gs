@@ -438,4 +438,11 @@ function setupMasterErp_(erp) {
     formatHeaders_(marksSheet, ['Date', 'Test_ID', 'Test_Type', 'Batch_ID', 'Roll_No', 'Subject', 'Chapter', 'Max_Marks', 'Marks', 'Entered_By'], '#1E3A8A');
     Logger.log('  ✅ Initialized Marks_Log (R-14)');
   }
+
+  // Academic_Calendar (Point 4: 9-column schema)
+  var calSheet = createOrGetSheet_(erp, 'Academic_Calendar');
+  if (calSheet.getLastRow() === 0) {
+    formatHeaders_(calSheet, ['Date', 'Batch_ID', 'Event_Type', 'Title', 'Reason', 'Is_No_DPP_Day', 'Created_By', 'Is_Holiday', 'Shift_Date_To'], '#047857');
+    Logger.log('  ✅ Initialized Academic_Calendar with 9-column schema (Point 4)');
+  }
 }
