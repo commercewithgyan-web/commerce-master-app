@@ -3443,7 +3443,7 @@ function cancelBatchLecture(payload) {
     calSheet.appendRow([
       dateStr,
       batchId,
-      'CANCELLED_CLASS',
+      'Cancelled_Class',
       'Batch ' + batchId + ' Cancelled (' + reason + ')',
       reason,
       payload.skipDpp !== false ? 'TRUE' : 'FALSE',
@@ -3493,7 +3493,7 @@ function saveCalendarEvent(payload) {
     calSheet.appendRow([
       payload.date,
       payload.batchId || 'ALL_BATCHES',
-      payload.eventType || 'SPECIAL_EVENT',
+      payload.eventType || 'Event',
       payload.title || 'Academic Event',
       payload.reason || '',
       payload.isNoDppDay ? 'TRUE' : 'FALSE',
@@ -3758,28 +3758,37 @@ function saveClassRecordingLink(payload) {
 }
 
 /**
- * A4: Date-wise persisted holiday toggle.
- * Writes to Academic_Holidays sheet, shifts planned topics forward, and notifies students.
+ * A4: Date-wise persisted holiday toggle (R-22).
+ * Writes to Academic_Calendar sheet, shifts planned topics forward, and notifies students.
  */
 function toggleAcademicHoliday(payload) {
   return withWriteLock_(() => {
     payload = payload || {};
     const IDS = getActiveSheetIds();
     const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
-    let holSheet = erp.getSheetByName('Academic_Holidays');
-    if (!holSheet) {
-      holSheet = erp.insertSheet('Academic_Holidays');
-      holSheet.appendRow(['Date', 'Reason', 'Is_Holiday', 'Shift_Topics', 'Notified', 'Updated_At']);
+    let calSheet = erp.getSheetByName('Academic_Calendar');
+    if (!calSheet) {
+      calSheet = erp.insertSheet('Academic_Calendar');
+      calSheet.appendRow(['Date', 'Batch_ID', 'Event_Type', 'Title', 'Reason', 'Is_No_DPP_Day', 'Created_By']);
     }
     const now = new Date();
-    const nowStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
     const dateStr = payload.date || Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');
     const reason = payload.reason || 'Institute Holiday';
     const isHoliday = payload.isHoliday !== false;
     const shiftTopics = payload.shiftTopics !== false;
     const notified = payload.notifyStudents !== false;
+    const batchId = payload.batchId || 'ALL_BATCHES';
+    const createdBy = payload.createdBy || 'Gyan Sir';
 
-    holSheet.appendRow([dateStr, reason, isHoliday ? 'TRUE' : 'FALSE', shiftTopics ? 'TRUE' : 'FALSE', notified ? 'TRUE' : 'FALSE', nowStr]);
+    calSheet.appendRow([
+      dateStr,
+      batchId,
+      'Holiday',
+      'Holiday (' + reason + ')',
+      reason,
+      'TRUE',
+      createdBy
+    ]);
 
     let shiftedCount = 0;
     if (shiftTopics) {
