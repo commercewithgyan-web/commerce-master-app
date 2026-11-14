@@ -2743,6 +2743,23 @@ function appendFeeLedgerEntry_(erp, entryData) {
   const feeLedgerSheet = erp.getSheetByName("Fee_Ledger");
   if (!feeLedgerSheet) throw new Error("Fee_Ledger sheet not found in Master_ERP.");
 
+  // Point 4: Enforce mandatory double-entry fields — no invented defaults
+  if (!entryData.chargeCode || !String(entryData.chargeCode).trim()) {
+    throw new Error("MANDATORY_FIELD_MISSING: Charge_Code is required for Fee_Ledger entry.");
+  }
+  if (!entryData.type || !String(entryData.type).trim()) {
+    throw new Error("MANDATORY_FIELD_MISSING: Type is required for Fee_Ledger entry.");
+  }
+  if (!entryData.creditAccount || !String(entryData.creditAccount).trim()) {
+    throw new Error("MANDATORY_FIELD_MISSING: Credit_Account is required for Fee_Ledger entry.");
+  }
+  if (entryData.amountRs === undefined || entryData.amountRs === null || isNaN(Number(entryData.amountRs))) {
+    throw new Error("MANDATORY_FIELD_MISSING: Valid amountRs is required for Fee_Ledger entry.");
+  }
+  if (!entryData.reason || !String(entryData.reason).trim()) {
+    throw new Error("MANDATORY_FIELD_MISSING: Reason is required for Fee_Ledger entry.");
+  }
+
   const headers = feeLedgerSheet.getRange(1, 1, 1, feeLedgerSheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
   const lastRow = feeLedgerSheet.getLastRow();
   const nextSeq = lastRow; // row 1 is header, so first data row is Seq 1
@@ -2759,7 +2776,7 @@ function appendFeeLedgerEntry_(erp, entryData) {
 
   const now = new Date();
   const timestampStr = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
-  const amountRs = Number(entryData.amountRs || 0);
+  const amountRs = Number(entryData.amountRs);
   const amountPaise = Math.round(amountRs * 100);
 
   // Sanitize Actor: never write raw numeric Telegram ID
@@ -2768,21 +2785,25 @@ function appendFeeLedgerEntry_(erp, entryData) {
     actor = "ADMIN";
   }
 
+  // Derived defaults only for Mode and Debit_Account
+  const modeVal = String(entryData.mode || "UPI").trim();
+  const debitAccountVal = String(entryData.debitAccount || ((modeVal === "CASH") ? "ASSET:CASH" : "ASSET:BANK")).trim();
+
   const entryObj = {
     "Seq": String(nextSeq),
     "Entry_ID": String(entryData.entryId || ("RCP-" + Utilities.formatDate(now, "Asia/Kolkata", "yyyy") + "-" + String(nextSeq).padStart(3, "0"))).trim(),
     "Timestamp": timestampStr,
     "Roll_No": String(entryData.rollNo || "").trim(),
     "Cycle": String(entryData.cycle || Utilities.formatDate(now, "Asia/Kolkata", "MMM-yyyy")).trim(),
-    "Charge_Code": String(entryData.chargeCode || "COMBO_MONTHLY").trim(),
-    "Type": String(entryData.type || "FEE_PAYMENT").trim(),
-    "Debit_Account": String(entryData.debitAccount || ((entryData.mode === "CASH") ? "ASSET:CASH" : "ASSET:BANK")).trim(),
-    "Credit_Account": String(entryData.creditAccount || "REVENUE:TUITION").trim(),
+    "Charge_Code": String(entryData.chargeCode).trim(),
+    "Type": String(entryData.type).trim(),
+    "Debit_Account": debitAccountVal,
+    "Credit_Account": String(entryData.creditAccount).trim(),
     "Amount_Paise": String(amountPaise),
     "Amount_Rs": String(amountRs),
     "Ref_Entry": String(entryData.refEntry || "NA").trim(),
-    "Reason": String(entryData.reason || "Tuition Fee Payment").trim(),
-    "Mode": String(entryData.mode || "UPI").trim(),
+    "Reason": String(entryData.reason).trim(),
+    "Mode": modeVal,
     "UTR": String(entryData.utr || "NA").trim(),
     "Actor": actor,
     "Prev_Hash": prevHash,
