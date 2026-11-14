@@ -779,6 +779,12 @@ function getSyllabusTree(board, classLevel, subject) {
   const IDS = getActiveSheetIds();
   const ss = SpreadsheetApp.openById(IDS.SYLLABUS);
   const rows = sheetToObjects(ss.getSheetByName('Master_Syllabus') || ss.getSheetByName('01_Master_Syllabus'));
+  rows.forEach(r => {
+    if (r.Delivery_Medium) {
+      const dm = String(r.Delivery_Medium).trim();
+      r.Delivery_Medium = (dm === 'CG App' || dm === 'CG_App') ? 'CG_App' : ((dm.indexOf('YouTube') !== -1) ? 'YouTube' : dm);
+    }
+  });
   const filtered = rows.filter(r =>
     (!board || String(r.Board).toUpperCase() === String(board).toUpperCase()) &&
     (!classLevel || String(r.Class) === String(classLevel)) &&

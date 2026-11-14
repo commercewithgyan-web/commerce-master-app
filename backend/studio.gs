@@ -144,12 +144,15 @@ function apiGetCurriculum_(verifiedUser) {
     var r = tm.values[i];
     var id = String(r[c['Topic ID']] || '').trim();
     if (!id) continue;
+    var rawMedium = String(r[c['Mode of Class']] || 'Offline').trim();
+    var medium = (rawMedium === 'CG App' || rawMedium === 'CG_App') ? 'CG_App' : ((rawMedium.indexOf('YouTube') !== -1) ? 'YouTube' : 'Offline');
     rows.push({
       id: id,
       subject: studioSubjectCode_(r[c['Class']], r[c['Subject']]),
       chapter: String(r[c['Chapter Name']] || '').trim(),
       topic: String(r[c['Topic Name']] || '').trim(),
       status: String(r[c['Status']] || 'Upcoming').trim(),
+      medium: medium,
       date: studioDateLabel_(r[c['Date Completed']])
     });
   }

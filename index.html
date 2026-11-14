@@ -8,7 +8,7 @@
   <meta property="og:title" content="Commerce Gyan Studio" />
   <meta property="og:description" content="Dual-role coaching platform for Commerce Gyan in Begusarai, Bihar (Class 11 & 12 Commerce) featuring Mobile Teacher Daily Ops and Student Telegram Mini App." />
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" integrity="sha384-lQXOAyZwHXE55JFyrOMB7nY2Wv+m5ZWNtJcHrd1rceRQXAYNLak8ukN5TjBTcIwz" crossorigin="anonymous"></script>
   <script>
     tailwind.config = { darkMode: 'class' };
   </script>
@@ -851,12 +851,11 @@
                 <input id="editorQuestionsTaughtInput" type="text" placeholder="e.g. Q4, Q7, Q12–15 (TS Grewal)" class="w-full text-xs font-semibold text-slate-800 border border-slate-200 rounded-xl px-3 py-2" />
               </div>
               <div>
-                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Class Delivery Medium (1 of 4)</label>
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Class Delivery Medium (1 of 3)</label>
                 <select id="editorMediumSelect" class="w-full text-xs font-bold text-slate-800 border border-slate-200 rounded-xl px-3 py-2 bg-white">
                   <option value="Offline">Offline Classroom</option>
-                  <option value="CG App">Commerce Gyan App</option>
-                  <option value="YouTube Unlisted">YouTube Unlisted (Mobile Only)</option>
-                  <option value="YouTube Public">YouTube Public</option>
+                  <option value="CG_App">Commerce Gyan App</option>
+                  <option value="YouTube">YouTube</option>
                 </select>
               </div>
               <div class="sm:col-span-2">
@@ -993,9 +992,8 @@
             </select>
             <select id="lockDeliveryMode" class="text-xs font-bold bg-slate-900 border border-indigo-400/40 rounded-xl px-2.5 py-2 text-white">
               <option value="Offline">Offline Classroom</option>
-              <option value="CG App">Commerce Gyan App</option>
-              <option value="YouTube Unlisted">YouTube Unlisted</option>
-              <option value="YouTube Public">YouTube Public</option>
+              <option value="CG_App">Commerce Gyan App</option>
+              <option value="YouTube">YouTube</option>
             </select>
             <button id="lockActiveSubtopicBtn" type="button" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow transition">
               🔒 Lock Active Subtopic (/settopic)
@@ -1931,8 +1929,8 @@
             <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300">Classroom Delivery Mode:</label>
             <select id="opsTopicDeliveryMode" class="w-full text-xs font-semibold border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white">
               <option value="Offline">Offline Classroom (Begusarai Center)</option>
-              <option value="YouTube">YouTube Live Stream</option>
-              <option value="Telegram">Telegram Live Voice / Video</option>
+              <option value="CG_App">Commerce Gyan App</option>
+              <option value="YouTube">YouTube</option>
             </select>
           </div>
         </div>
@@ -2987,7 +2985,8 @@
           time: '05:15 PM',
           notionUrl: 'https://notion.so/commercegyan/fayol-vs-taylor',
           questionsTaught: 'Case Studies Q1–Q8 (NCERT)',
-          medium: 'YouTube Public',
+          medium: 'YouTube',
+          videoType: 'Public',
           objective: 'Distinguish Unity of Command vs Unity of Direction and Functional Foremanship.',
           importance: 'High',
           goodnotesUrl: 'https://drive.google.com/file/d/cg_bst_fayol_notes/view',
@@ -3004,7 +3003,8 @@
           time: '05:15 PM',
           notionUrl: 'https://notion.so/commercegyan/national-income-precautions',
           questionsTaught: 'Q1–Q10 (Sandeep Garg)',
-          medium: 'YouTube Unlisted',
+          medium: 'YouTube',
+          videoType: 'Unlisted',
           objective: 'Apply GDP_MP to NNP_FC conversions and identify excluded transfer items.',
           importance: 'High',
           goodnotesUrl: 'https://drive.google.com/file/d/cg_mac_ni_notes/view',
@@ -3021,7 +3021,7 @@
           time: '07:00 AM',
           notionUrl: 'https://notion.so/commercegyan/brs-overdraft',
           questionsTaught: 'Q14–Q22 (TS Grewal Cl 11)',
-          medium: 'CG App',
+          medium: 'CG_App',
           objective: 'Reconcile Overdraft as per Cash Book with Pass Book using Plus/Minus method.',
           importance: 'High',
           goodnotesUrl: 'https://drive.google.com/file/d/cg_acc11_brs_notes/view',
@@ -3076,15 +3076,15 @@
 
       curriculumTopics: [
         { id: 'C12-ACC-B1-CH01-T01-S01', subject: 'ACC-12', classLevel: '12', chapter: 'Ch 1: Partnership Fundamentals', topic: 'Interest on Capital & Drawings', subtopicsCount: 16, board: 'CBSE & BSEB', status: 'Completed', date: new Date(Date.now() - 86400000 * 3).toISOString().slice(0, 10), windowOffset: -3, medium: 'Offline', notionUrl: 'https://notion.so/commercegyan/partnership-fundamentals', questionsTaught: 'Q1–Q18 (TS Grewal)', objective: 'Prepare P&L Appropriation A/c and apply 6% loan rule.', importance: 'High', videoUrl: 'https://youtu.be/M7lc1UVf-VE' },
-        { id: 'C12-ACC-B1-CH02-T01-S01', subject: 'ACC-12', classLevel: '12', chapter: 'Ch 2: Goodwill — Nature and Valuation', topic: 'Average, Super & Capitalisation Methods', subtopicsCount: 10, board: 'CBSE & BSEB', status: 'Completed', date: new Date(Date.now() - 86400000 * 2).toISOString().slice(0, 10), windowOffset: -2, medium: 'YouTube Public', notionUrl: 'https://notion.so/commercegyan/goodwill-valuation', questionsTaught: 'Q5–Q14', objective: 'Calculate Goodwill under Super Profit & Capitalisation.', importance: 'High', videoUrl: 'https://youtu.be/M7lc1UVf-VE' },
+        { id: 'C12-ACC-B1-CH02-T01-S01', subject: 'ACC-12', classLevel: '12', chapter: 'Ch 2: Goodwill — Nature and Valuation', topic: 'Average, Super & Capitalisation Methods', subtopicsCount: 10, board: 'CBSE & BSEB', status: 'Completed', date: new Date(Date.now() - 86400000 * 2).toISOString().slice(0, 10), windowOffset: -2, medium: 'YouTube', videoType: 'Public', notionUrl: 'https://notion.so/commercegyan/goodwill-valuation', questionsTaught: 'Q5–Q14', objective: 'Calculate Goodwill under Super Profit & Capitalisation.', importance: 'High', videoUrl: 'https://youtu.be/M7lc1UVf-VE' },
         { id: 'C12-ACC-B1-CH03-T02-S01', subject: 'ACC-12', classLevel: '12', chapter: 'Ch 3: Admission of a Partner', topic: 'Hidden Goodwill & Revaluation A/c', subtopicsCount: 18, board: 'CBSE & BSEB', status: 'In Progress', date: new Date().toISOString().slice(0, 10), windowOffset: 0, medium: 'Offline', notionUrl: 'https://notion.so/commercegyan/hidden-goodwill-examples', questionsTaught: 'Q4, Q7, Q12–15', objective: 'Compute Hidden Goodwill & pass adjusting capital entry.', importance: 'High', videoUrl: 'https://youtu.be/M7lc1UVf-VE' },
-        { id: 'C12-ACC-B1-CH06-T01-S02', subject: 'ACC-12', classLevel: '12', chapter: 'Ch 6: Accounting for Share Capital', topic: 'Share Forfeiture & Pro-Rata Re-issue', subtopicsCount: 22, board: 'CBSE & BSEB', status: 'Planned', date: new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 10), windowOffset: 3, medium: 'YouTube Unlisted', notionUrl: 'https://notion.so/commercegyan/share-forfeiture', questionsTaught: 'Q21–Q30', objective: 'Pass forfeiture & pro-rata Capital Reserve entries.', importance: 'High', videoUrl: 'https://youtu.be/M7lc1UVf-VE' },
-        { id: 'C12-BST-B1-CH01-T01-S01', subject: 'BST-12', classLevel: '12', chapter: 'Ch 1: Nature & Significance of Management', topic: 'Effectiveness vs Efficiency & Levels', subtopicsCount: 11, board: 'CBSE & BSEB', status: 'Completed', date: new Date(Date.now() - 86400000 * 1).toISOString().slice(0, 10), windowOffset: -1, medium: 'YouTube Public', notionUrl: '', questionsTaught: 'Case Study Q1–Q6', objective: 'Spot coordination and efficiency keywords in cases.', importance: 'Medium', videoUrl: 'https://youtu.be/M7lc1UVf-VE' },
+        { id: 'C12-ACC-B1-CH06-T01-S02', subject: 'ACC-12', classLevel: '12', chapter: 'Ch 6: Accounting for Share Capital', topic: 'Share Forfeiture & Pro-Rata Re-issue', subtopicsCount: 22, board: 'CBSE & BSEB', status: 'Planned', date: new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 10), windowOffset: 3, medium: 'YouTube', videoType: 'Unlisted', notionUrl: 'https://notion.so/commercegyan/share-forfeiture', questionsTaught: 'Q21–Q30', objective: 'Pass forfeiture & pro-rata Capital Reserve entries.', importance: 'High', videoUrl: 'https://youtu.be/M7lc1UVf-VE' },
+        { id: 'C12-BST-B1-CH01-T01-S01', subject: 'BST-12', classLevel: '12', chapter: 'Ch 1: Nature & Significance of Management', topic: 'Effectiveness vs Efficiency & Levels', subtopicsCount: 11, board: 'CBSE & BSEB', status: 'Completed', date: new Date(Date.now() - 86400000 * 1).toISOString().slice(0, 10), windowOffset: -1, medium: 'YouTube', videoType: 'Public', notionUrl: '', questionsTaught: 'Case Study Q1–Q6', objective: 'Spot coordination and efficiency keywords in cases.', importance: 'Medium', videoUrl: 'https://youtu.be/M7lc1UVf-VE' },
         { id: 'C12-BST-B1-CH02-T04-S01', subject: 'BST-12', classLevel: '12', chapter: 'Ch 2: Principles of Management', topic: 'Fayol 14 Principles vs Taylor', subtopicsCount: 14, board: 'CBSE & BSEB', status: 'In Progress', date: new Date(Date.now() + 86400000 * 1).toISOString().slice(0, 10), windowOffset: 1, medium: 'Offline', notionUrl: '', questionsTaught: 'Q1–Q10 (NCERT)', objective: 'Compare Unity of Command and Functional Foremanship.', importance: 'High', videoUrl: '' },
-        { id: 'C12-MAC-B1-CH01-T05-S01', subject: 'MAC-12', classLevel: '12', chapter: 'Ch 1: National Income & Aggregates', topic: 'Value Added & Precautions', subtopicsCount: 19, board: 'CBSE & BSEB', status: 'In Progress', date: new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10), windowOffset: 2, medium: 'YouTube Unlisted', notionUrl: '', questionsTaught: 'Q1–Q12 (Sandeep Garg)', objective: 'Convert GDP_MP to NNP_FC without double counting.', importance: 'High', videoUrl: 'https://youtu.be/M7lc1UVf-VE' },
+        { id: 'C12-MAC-B1-CH01-T05-S01', subject: 'MAC-12', classLevel: '12', chapter: 'Ch 1: National Income & Aggregates', topic: 'Value Added & Precautions', subtopicsCount: 19, board: 'CBSE & BSEB', status: 'In Progress', date: new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10), windowOffset: 2, medium: 'YouTube', videoType: 'Unlisted', notionUrl: '', questionsTaught: 'Q1–Q12 (Sandeep Garg)', objective: 'Convert GDP_MP to NNP_FC without double counting.', importance: 'High', videoUrl: 'https://youtu.be/M7lc1UVf-VE' },
         { id: 'C12-MAC-B1-CH02-T01-S01', subject: 'MAC-12', classLevel: '12', chapter: 'Ch 2: Money and Banking', topic: 'Credit Multiplier & RBI Tools', subtopicsCount: 12, board: 'CBSE & BSEB', status: 'Planned', date: new Date(Date.now() + 86400000 * 6).toISOString().slice(0, 10), windowOffset: 6, medium: 'Offline', notionUrl: '', questionsTaught: 'Numerical Set A', objective: 'Solve 1/LRR credit creation numericals.', importance: 'High', videoUrl: '' },
-        { id: 'C12-IED-B1-CH03-T01-S01', subject: 'IED-12', classLevel: '12', chapter: 'Ch 3: 1991 Economic Reforms (LPG)', topic: 'Liberalisation, Privatisation & WTO', subtopicsCount: 15, board: 'CBSE & BSEB', status: 'Completed', date: new Date(Date.now() - 86400000 * 2).toISOString().slice(0, 10), windowOffset: -2, medium: 'CG App', notionUrl: '', questionsTaught: 'NCERT Q1–Q9', objective: 'Recall 1991 crisis triggers and GST/Demonetisation facts.', importance: 'Medium', videoUrl: '' },
-        { id: 'C11-ACC-B1-CH05-T01-S01', subject: 'ACC-11', classLevel: '11', chapter: 'Ch 5: Bank Reconciliation Statement', topic: 'Overdraft & Amended Cash Book', subtopicsCount: 14, board: 'CBSE & BSEB', status: 'In Progress', date: new Date().toISOString().slice(0, 10), windowOffset: 0, medium: 'CG App', notionUrl: '', questionsTaught: 'Q14–Q22', objective: 'Reconcile Cash Book and Pass Book overdraft balances.', importance: 'High', videoUrl: '' },
+        { id: 'C12-IED-B1-CH03-T01-S01', subject: 'IED-12', classLevel: '12', chapter: 'Ch 3: 1991 Economic Reforms (LPG)', topic: 'Liberalisation, Privatisation & WTO', subtopicsCount: 15, board: 'CBSE & BSEB', status: 'Completed', date: new Date(Date.now() - 86400000 * 2).toISOString().slice(0, 10), windowOffset: -2, medium: 'CG_App', notionUrl: '', questionsTaught: 'NCERT Q1–Q9', objective: 'Recall 1991 crisis triggers and GST/Demonetisation facts.', importance: 'Medium', videoUrl: '' },
+        { id: 'C11-ACC-B1-CH05-T01-S01', subject: 'ACC-11', classLevel: '11', chapter: 'Ch 5: Bank Reconciliation Statement', topic: 'Overdraft & Amended Cash Book', subtopicsCount: 14, board: 'CBSE & BSEB', status: 'In Progress', date: new Date().toISOString().slice(0, 10), windowOffset: 0, medium: 'CG_App', notionUrl: '', questionsTaught: 'Q14–Q22', objective: 'Reconcile Cash Book and Pass Book overdraft balances.', importance: 'High', videoUrl: '' },
         { id: 'C11-BST-B1-CH02-T01-S01', subject: 'BST-11', classLevel: '11', chapter: 'Ch 2: Forms of Business Organisation', topic: 'Sole Prop, HUF, Partnership & Company', subtopicsCount: 17, board: 'CBSE & BSEB', status: 'Completed', date: new Date(Date.now() - 86400000 * 1).toISOString().slice(0, 10), windowOffset: -1, medium: 'Offline', notionUrl: '', questionsTaught: 'Q1–Q10', objective: 'Identify limited vs unlimited liability across entity forms.', importance: 'Medium', videoUrl: '' },
         { id: 'C11-MIC-B1-CH02-T03-S01', subject: 'MIC-11', classLevel: '11', chapter: 'Ch 2: Consumer Equilibrium & Demand', topic: 'Indifference Curve & Budget Line', subtopicsCount: 16, board: 'CBSE & BSEB', status: 'In Progress', date: new Date(Date.now() + 86400000 * 4).toISOString().slice(0, 10), windowOffset: 4, medium: 'Offline', notionUrl: '', questionsTaught: 'Q3, Q5, Q9', objective: 'Prove MRS_xy = P_x/P_y equilibrium tangency.', importance: 'High', videoUrl: '' },
         { id: 'C11-STA-B1-CH05-T01-S01', subject: 'STA-11', classLevel: '11', chapter: 'Ch 5: Measures of Central Tendency', topic: 'Mean, Median (Ogive) & Mode', subtopicsCount: 18, board: 'CBSE & BSEB', status: 'Planned', date: new Date(Date.now() + 86400000 * 12).toISOString().slice(0, 10), windowOffset: 12, medium: 'Offline', notionUrl: '', questionsTaught: 'Q1–Q15', objective: 'Locate Median graphically using Ogives.', importance: 'High', videoUrl: '' }
@@ -7621,16 +7621,20 @@
                       ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
                       : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300';
                   let deliveryHtml = '';
-                  if (st.medium === 'YouTube Public') {
+                  const isYt = st.medium === 'YouTube' || st.medium === 'YouTube Public' || st.medium === 'YouTube Unlisted';
+                  const isCgApp = st.medium === 'CG_App' || st.medium === 'CG App';
+                  const isUnlisted = st.videoType === 'Unlisted' || st.medium === 'YouTube Unlisted';
+
+                  if (isYt && !isUnlisted) {
                     deliveryHtml = st.videoUrl
                       ? `<button type="button" data-videourl="${escHtml(st.videoUrl)}" data-videotitle="${escHtml(st.topic)}" data-topicid="${escHtml(st.canonicalTopicId || st.canonicalId || '')}" class="stu-watch-video-btn px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold cursor-pointer">▶ Watch Lecture</button>
                          <a href="https://www.youtube.com/@CommerceGyan" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-[11px] font-bold">📺 YouTube Channel ↗</a>`
                       : `<a href="https://www.youtube.com/@CommerceGyan" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-600 text-white text-[11px] font-bold">📺 Watch on YouTube Channel ↗</a>`;
-                  } else if (st.medium === 'YouTube Unlisted') {
+                  } else if (isYt && isUnlisted) {
                     deliveryHtml = st.videoUrl
                       ? `<button type="button" data-videourl="${escHtml(st.videoUrl)}" data-videotitle="${escHtml(st.topic)}" data-topicid="${escHtml(st.canonicalTopicId || st.canonicalId || '')}" class="stu-watch-video-btn px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold cursor-pointer">▶ Watch Unlisted Video</button>`
                       : `<span class="px-2 py-1 rounded-lg bg-slate-200 text-slate-600 text-[10px] font-bold">Video Uploading</span>`;
-                  } else if (st.medium === 'CG App') {
+                  } else if (isCgApp) {
                     deliveryHtml = `<a href="${escHtml(appState.cgAppUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold">📲 Open in CG App ↗</a>`;
                   } else {
                     deliveryHtml = st.goodnotesUrl
@@ -8023,7 +8027,7 @@
         const upiIdEl = document.getElementById('stuUpiIdDisplay');
         if (upiIdEl) upiIdEl.textContent = upiId;
 
-        const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payee)}&am=${dueAmount}&cu=INR&tn=${encodeURIComponent('Fee Roll ' + rollNo)}`;
+        const upiUri = `upi://pay?pa=${upiId.trim()}&pn=${encodeURIComponent(payee)}&am=${dueAmount}&cu=INR&tn=${encodeURIComponent('Fee Roll ' + rollNo)}`;
         const appBtn = document.getElementById('stuOpenUpiAppBtn');
         if (appBtn) appBtn.href = upiUri;
 
