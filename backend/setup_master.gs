@@ -56,6 +56,18 @@ function setupAllSheets() {
   Logger.log('\n📋 Setting up Sheet 5: Books & Expenses...');
   setupSheet5_BooksExpenses(ss5);
 
+  // Step 2b: Setup Master ERP tabs (L-14, N-2, N-3)
+  var erpId = props.getProperty('MASTER_ERP') || props.getProperty('SHEET_ERP');
+  if (erpId) {
+    try {
+      var erp = SpreadsheetApp.openById(erpId);
+      Logger.log('\n📋 Setting up Master ERP (Parent_Comm_Log, Payment_Intimations, Audit_Log)...');
+      setupMasterErp_(erp);
+    } catch (e) {
+      Logger.log('⚠️ Master ERP setup note: ' + e.message);
+    }
+  }
+
   // Step 3: Cleanup default sheets
   cleanupDefaultSheets_([ss1, ss2, ss3, ss4, ss5]);
 
@@ -376,4 +388,32 @@ function applyAllProjectCredentials() {
   }
 
   Logger.log('\n🎉 MASTER BOT & SYSTEM ACTIVATION COMPLETE!');
+}
+
+/**
+ * L-14: Setup Master ERP sheets including Parent_Comm_Log (7 columns).
+ * @param {SpreadsheetApp.Spreadsheet} erp
+ */
+function setupMasterErp_(erp) {
+  if (!erp) return;
+  // Parent_Comm_Log (L-14: Date, Roll_No, Parent_Mobile, Channel, Summary, FollowUp_Date, Logged_By)
+  var commSheet = createOrGetSheet_(erp, 'Parent_Comm_Log');
+  if (commSheet.getLastRow() === 0) {
+    formatHeaders_(commSheet, ['Date', 'Roll_No', 'Parent_Mobile', 'Channel', 'Summary', 'FollowUp_Date', 'Logged_By'], '#4A154B');
+    Logger.log('  ✅ Initialized Parent_Comm_Log with 7-column schema (L-14)');
+  }
+
+  // Payment_Intimations (N-2)
+  var payIntSheet = createOrGetSheet_(erp, 'Payment_Intimations');
+  if (payIntSheet.getLastRow() === 0) {
+    formatHeaders_(payIntSheet, ['Timestamp', 'Roll_No', 'Amount', 'UTR', 'Status', 'Entry_ID'], '#065F46');
+    Logger.log('  ✅ Initialized Payment_Intimations (N-2)');
+  }
+
+  // Audit_Log (N-3)
+  var auditSheet = createOrGetSheet_(erp, 'Audit_Log');
+  if (auditSheet.getLastRow() === 0) {
+    formatHeaders_(auditSheet, ['Timestamp', 'Caller_ID', 'Role', 'Action', 'Target', 'Details', 'Status'], '#1E293B');
+    Logger.log('  ✅ Initialized Audit_Log (N-3)');
+  }
 }
