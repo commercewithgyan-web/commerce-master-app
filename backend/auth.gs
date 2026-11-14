@@ -56,8 +56,7 @@ function verifyTelegramInitData_(initData) {
 
     if (key === 'hash') {
       hash = val;
-    } else if (key !== 'signature') {
-      // Exclude both 'hash' and Telegram's optional 'signature'
+    } else {
       params[key] = val;
       rawParams[key] = rawVal;
     }
