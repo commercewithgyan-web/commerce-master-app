@@ -2769,7 +2769,7 @@ function appendFeeLedgerEntry_(erp, entryData) {
   }
 
   const entryObj = {
-    "Seq": nextSeq,
+    "Seq": String(nextSeq),
     "Entry_ID": String(entryData.entryId || ("RCP-" + Utilities.formatDate(now, "Asia/Kolkata", "yyyy") + "-" + String(nextSeq).padStart(3, "0"))).trim(),
     "Timestamp": timestampStr,
     "Roll_No": String(entryData.rollNo || "").trim(),
@@ -2778,8 +2778,8 @@ function appendFeeLedgerEntry_(erp, entryData) {
     "Type": String(entryData.type || "FEE_PAYMENT").trim(),
     "Debit_Account": String(entryData.debitAccount || ((entryData.mode === "CASH") ? "ASSET:CASH" : "ASSET:BANK")).trim(),
     "Credit_Account": String(entryData.creditAccount || "REVENUE:TUITION").trim(),
-    "Amount_Paise": amountPaise,
-    "Amount_Rs": amountRs,
+    "Amount_Paise": String(amountPaise),
+    "Amount_Rs": String(amountRs),
     "Ref_Entry": String(entryData.refEntry || "NA").trim(),
     "Reason": String(entryData.reason || "Tuition Fee Payment").trim(),
     "Mode": String(entryData.mode || "UPI").trim(),
@@ -2794,9 +2794,12 @@ function appendFeeLedgerEntry_(erp, entryData) {
   const fullSha256 = computeSha256Hex(hashPayload);
   entryObj["Row_Hash"] = fullSha256;
 
-  // Build row strictly by header name
+  // Build row strictly by header name and write as Plain Text (@) to prevent Date/Number coercion
   const rowValues = headers.map(h => entryObj[h] !== undefined ? entryObj[h] : "");
-  feeLedgerSheet.appendRow(rowValues);
+  const targetRow = lastRow + 1;
+  const targetRange = feeLedgerSheet.getRange(targetRow, 1, 1, headers.length);
+  targetRange.setNumberFormat("@");
+  targetRange.setValues([rowValues.map(v => String(v !== undefined && v !== null ? v : ""))]);
 
   return {
     ok: true,
@@ -2830,15 +2833,48 @@ function verifyFeeLedgerChain_(erp) {
     return { ok: false, error: "Fee_Ledger missing Prev_Hash or Row_Hash column." };
   }
 
+  function formatCellForHash_(header, val) {
+    if (val === null || val === undefined) return "";
+    if (val instanceof Date) {
+      return Utilities.formatDate(val, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
+    }
+    if (header === "Amount_Paise") {
+      return String(Math.round(Number(val) || 0));
+    }
+    if (header === "Amount_Rs" || header === "Seq") {
+      return String(Number(val) || 0);
+    }
+    return String(val).trim();
+  }
+
   let expectedPrevHash = "GENESIS";
+  let chainStarted = false;
+  const legacyRows = [];
   const discrepancies = [];
+  let chainedRowCount = 0;
 
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
     const prevHash = String(row[prevHashCol] || "").trim();
     const rowHash = String(row[rowHashCol] || "").trim();
 
-    const hashPayload = headers.filter(h => h !== "Row_Hash").map((h, idx) => String(row[idx] !== undefined ? row[idx] : "")).join("|");
+    // Point 3: Identify legacy rows with 16-character hashes or misaligned schema
+    if (rowHash.length !== 64 || prevHash.length < 7 || String(row[0]).indexOf("INV-") === 0) {
+      legacyRows.push({
+        row: i + 1,
+        entryId: String(row[1] || row[0] || 'UNKNOWN'),
+        status: "LEGACY_NOT_CHAINED",
+        note: "Legacy entry with unaligned columns or 16-char truncated hash"
+      });
+      continue;
+    }
+
+    if (!chainStarted) {
+      expectedPrevHash = prevHash;
+      chainStarted = true;
+    }
+
+    const hashPayload = headers.filter(h => h !== "Row_Hash").map((h, idx) => formatCellForHash_(h, row[idx])).join("|");
     const recomputedHash = computeSha256Hex(hashPayload);
 
     if (rowHash !== recomputedHash) {
@@ -2850,7 +2886,7 @@ function verifyFeeLedgerChain_(erp) {
       });
     }
 
-    if (i > 1 && prevHash !== expectedPrevHash) {
+    if (prevHash !== expectedPrevHash) {
       discrepancies.push({
         row: i + 1,
         issue: "PREV_HASH_BROKEN",
@@ -2860,11 +2896,14 @@ function verifyFeeLedgerChain_(erp) {
     }
 
     expectedPrevHash = rowHash;
+    chainedRowCount++;
   }
 
   return {
     ok: discrepancies.length === 0,
     totalRows: data.length - 1,
+    chainedRows: chainedRowCount,
+    legacyRows: legacyRows,
     verified: discrepancies.length === 0,
     discrepancies: discrepancies
   };
