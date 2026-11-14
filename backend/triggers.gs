@@ -287,34 +287,14 @@ function sendDailyExpenseSummary() {
 }
 
 /**
- * 11:30 PM Worker: Verifies books equation Assets = Liabilities + Equity
+ * 11:30 PM Worker: Retired in v3.2 (L-07). Accounting ledger integrity managed in Master_ERP › Fee_Ledger.
  */
 function checkBalanceSheetIntegrity() {
-  Logger.log('⚖️ Auditing Balance Sheet Integrity (11:30 PM IST)...');
-  var bs = calculateBalanceSheet_();
-
-  if (!bs.verification.isBalanced) {
-    var props = PropertiesService.getScriptProperties();
-    var adminId = props.getProperty('ADMIN_ID');
-    if (adminId) {
-      sendTelegramMessage_(adminId,
-        '⚠️ *ACCOUNTING ALERT: Balance Sheet Variance Detected*\n\n' +
-        '• Total Assets: ' + formatCurrency_(bs.assets.totalAssets) + '\n' +
-        '• Liabilities + Equity: ' + formatCurrency_(bs.verification.totalLiabilitiesAndEquity) + '\n' +
-        '• Variance: *' + formatCurrency_(bs.verification.variance) + '*\n\n' +
-        'Please verify recent manual expense or liability entries.'
-      );
-    }
-  } else {
-    Logger.log('  ✅ Balance Sheet equation verified perfectly: ' + bs.verification.equation);
-  }
+  Logger.log('⚖️ Balance sheet worker retired in v3.2 (L-07); accounting managed in Master_ERP.');
   return {
     ok: true,
-    balanced: bs.verification.isBalanced,
-    equation: bs.verification.equation,
-    totalAssets: bs.assets.totalAssets,
-    totalLiabilitiesAndEquity: bs.verification.totalLiabilitiesAndEquity,
-    variance: bs.verification.variance
+    retired: true,
+    message: 'Balance sheet trigger retired in v3.2; accounting managed in Master_ERP.'
   };
 }
 

@@ -294,19 +294,19 @@ function handleTextMessage_(msg) {
       return;
     }
     if (text.indexOf('/expense') === 0) {
-      handleAdminExpenseCommand_(chatId, text);
+      sendTelegramMessage_(chatId, '⚠️ `/expense` bot command has been retired in v3.2 (L-07). Please record and view expenses in Master ERP.');
       return;
     }
     if (text.indexOf('/pl') === 0) {
-      handleAdminPlCommand_(chatId);
+      sendTelegramMessage_(chatId, '⚠️ `/pl` bot command has been retired in v3.2 (L-07). P&L and financial summaries are managed in Master ERP.');
       return;
     }
     if (text.indexOf('/balance') === 0) {
-      handleAdminBalanceCommand_(chatId);
+      sendTelegramMessage_(chatId, '⚠️ `/balance` bot command has been retired in v3.2 (L-07). Balance sheet integrity is managed in Master ERP.');
       return;
     }
     if (text.indexOf('/ratios') === 0) {
-      handleAdminRatiosCommand_(chatId);
+      sendTelegramMessage_(chatId, '⚠️ `/ratios` bot command has been retired in v3.2 (L-07). Financial ratios are managed in Master ERP.');
       return;
     }
   }
@@ -629,79 +629,24 @@ function handleAdminRejectCommand_(chatId, text) {
 
 
 /**
- * Handles Telegram /pl command: P&L summary
+ * Handles Telegram /pl command: Retired in v3.2 (L-07)
  */
 function handleAdminPlCommand_(chatId) {
-  sendChatAction_(chatId, 'typing');
-  var pl = calculateMonthlyPL_();
-
-  var text =
-    '📊 *PROFIT & LOSS STATEMENT — ' + pl.monthLabel + '*\n' +
-    '━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-    '💰 *Total Revenue*: ' + formatCurrency_(pl.totalRevenue) + '\n' +
-    '• UPI: ' + formatCurrency_(pl.revenueByMode.UPI) + '\n' +
-    '• Cash: ' + formatCurrency_(pl.revenueByMode.Cash) + '\n\n' +
-    '💸 *Total Expenses*: ' + formatCurrency_(pl.totalExpenses) + '\n' +
-    '• Direct Expenses: ' + formatCurrency_(pl.categoryBreakdown['Direct Expense']) + '\n' +
-    '• Utilities: ' + formatCurrency_(pl.categoryBreakdown['Utilities']) + '\n' +
-    '• Marketing: ' + formatCurrency_(pl.categoryBreakdown['Marketing']) + '\n' +
-    '• Admin & Misc: ' + formatCurrency_(pl.categoryBreakdown['Admin'] + pl.categoryBreakdown['Other']) + '\n' +
-    '• Depreciation: ' + formatCurrency_(pl.categoryBreakdown['Depreciation']) + '\n' +
-    '━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-    (pl.isProfitable ? '🟢' : '🔴') + ' *NET PROFIT*: *' + formatCurrency_(pl.netProfit) + '*\n' +
-    '📈 *Profit Margin*: *' + pl.marginPct + '%*';
-
-  sendTelegramMessage_(chatId, text);
+  sendTelegramMessage_(chatId, '⚠️ `/pl` bot command has been retired in v3.2 (L-07). P&L and financial summaries are managed in Master ERP.');
 }
 
 /**
- * Handles Telegram /balance command: Balance Sheet
+ * Handles Telegram /balance command: Retired in v3.2 (L-07)
  */
 function handleAdminBalanceCommand_(chatId) {
-  sendChatAction_(chatId, 'typing');
-  var bs = calculateBalanceSheet_();
-
-  var text =
-    '🏛️ *BALANCE SHEET — ' + bs.asOfDate + '*\n' +
-    '━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-    '💼 *ASSETS*:\n' +
-    '• Fixed Assets (Book Value): ' + formatCurrency_(bs.assets.fixedAssets.total) + '\n' +
-    '• Cash in Hand: ' + formatCurrency_(bs.assets.currentAssets.cashInHand) + '\n' +
-    '• Bank / UPI Balance: ' + formatCurrency_(bs.assets.currentAssets.bankBalance) + '\n' +
-    '• Unpaid Fee Receivables: ' + formatCurrency_(bs.assets.currentAssets.feeReceivables) + '\n' +
-    '👉 *TOTAL ASSETS*: *' + formatCurrency_(bs.assets.totalAssets) + '*\n\n' +
-    '📑 *LIABILITIES*:\n' +
-    '• Total Liabilities: ' + formatCurrency_(bs.liabilities.total) + '\n\n' +
-    '👑 *EQUITY*:\n' +
-    '• Total Equity: ' + formatCurrency_(bs.equity.totalEquity) + '\n' +
-    '━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-    '⚖️ *VERIFICATION (Assets = L + E)*:\n' +
-    (bs.verification.isBalanced ? '✅ *Equation Balanced perfectly!*' : '⚠️ *Variance*: ' + formatCurrency_(bs.verification.variance)) + '\n' +
-    'Total L + E: ' + formatCurrency_(bs.verification.totalLiabilitiesAndEquity);
-
-  sendTelegramMessage_(chatId, text);
+  sendTelegramMessage_(chatId, '⚠️ `/balance` bot command has been retired in v3.2 (L-07). Balance sheet integrity is managed in Master ERP.');
 }
 
 /**
- * Handles Telegram /ratios command: 5 Financial Ratios
+ * Handles Telegram /ratios command: Retired in v3.2 (L-07)
  */
 function handleAdminRatiosCommand_(chatId) {
-  sendChatAction_(chatId, 'typing');
-  var r = calculateRatios_();
-
-  var text =
-    '📈 *INSTITUTE FINANCIAL HEALTH RATIOS*\n' +
-    '━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-    '1️⃣ *Net Profit Margin*: *' + r.netProfitMargin + '%* (Target >40%)\n' +
-    '2️⃣ *Operating Expense Ratio*: *' + r.opexRatio + '%* (Target <60%)\n' +
-    '3️⃣ *Cash Runway*: *' + r.cashRunwayMonths + ' Months* (Target >6m)\n' +
-    '4️⃣ *Fee Collection Rate*: *' + r.collectionRate + '%* (Target >90%)\n' +
-    '5️⃣ *Revenue Per Student*: *' + formatCurrency_(r.revenuePerStudent) + '*\n' +
-    '━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-    '🏥 *Overall Health Score*: ' + r.healthScore + '\n' +
-    '👨‍🎓 Active Students: ' + r.activeStudents;
-
-  sendTelegramMessage_(chatId, text);
+  sendTelegramMessage_(chatId, '⚠️ `/ratios` bot command has been retired in v3.2 (L-07). Financial ratios are managed in Master ERP.');
 }
 
 // ─────────────────────────────────────────────────────────────────────

@@ -8,6 +8,7 @@
   <meta property="og:title" content="Commerce Gyan Studio" />
   <meta property="og:description" content="Dual-role coaching platform for Commerce Gyan in Begusarai, Bihar (Class 11 & 12 Commerce) featuring Mobile Teacher Daily Ops and Student Telegram Mini App." />
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
   <script>
     tailwind.config = { darkMode: 'class' };
   </script>
@@ -196,25 +197,11 @@
   <!-- Toast Container -->
   <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
-  <!-- Desktop Shell Bar for Mobile Mode (shown on md+ screens when in Mobile Ops or Student View) -->
-  <div id="mobileDeviceShellBar" class="hidden md:flex no-print sticky top-0 z-30 bg-slate-950 text-slate-200 border-b border-slate-800 px-4 py-2.5 items-center justify-between text-xs font-semibold shadow-md">
-    <div class="flex items-center gap-2.5">
-      <div class="w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center font-extrabold text-xs text-white shadow-sm">CG</div>
-      <span class="font-bold text-white tracking-tight">Commerce Gyan</span>
-      <span class="text-slate-600">·</span>
-      <span class="text-slate-400">Telegram Mini App Mobile View (430px)</span>
-      <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Mobile-First</span>
-    </div>
-    <div class="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
-      <button id="shellBtnOps" type="button" onclick="window.switchAppMode('ops')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-amber-500 text-slate-950 shadow">
-        <span>📲</span><span>Teacher Daily Ops (5)</span>
-      </button>
-      <button id="shellBtnStudent" type="button" onclick="window.switchAppMode('student')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-300 hover:text-white">
-        <span>🎓</span><span>Student App (6)</span>
-      </button>
-      <button id="shellBtnStudio" type="button" onclick="window.switchAppMode('teacher')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-300 hover:text-white">
-        <span>🖥️</span><span>Expand to Full Studio (11)</span>
-      </button>
+  <!-- Fixed Top Banner for View as Student Mode (SYS-009 / SCR-SYS-005) -->
+  <div id="viewAsStudentBanner" class="hidden fixed top-0 left-0 right-0 z-50 bg-amber-500 text-slate-950 px-4 py-2.5 flex items-center justify-between text-xs font-bold shadow-lg">
+    <div class="flex items-center gap-2">
+      <span class="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping"></span>
+      <span>Student view: Roll <span id="viewAsStudentRollBadge" class="font-mono underline font-extrabold">CG-00-000</span> · <button id="btnExitViewAsStudent" type="button" onclick="window.exitViewStudentAsTeacher()" class="underline font-extrabold hover:text-white transition cursor-pointer">Band karo</button></span>
     </div>
   </div>
 
@@ -517,6 +504,18 @@
 
         <!-- Middle Grid: Today's Classes (EMStudio style) + All 8 Subjects Overview + Tasks -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Teacher Aaj Alerts & Payment Intimations Box (N-2 / SFE-010) -->
+          <div id="dashboardAlertsBox" class="lg:col-span-3 hidden p-4 rounded-2xl bg-amber-50/80 border-2 border-amber-300/80 space-y-2.5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-base">🔔</span>
+                <h3 class="text-xs font-extrabold uppercase tracking-wider text-amber-950">Aaj Alerts &amp; Payment Intimations</h3>
+              </div>
+              <span id="alertsCountBadge" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-300 text-amber-950">0 Pending</span>
+            </div>
+            <div id="dashboardAlertsList" class="space-y-2 text-xs"></div>
+          </div>
+
           <!-- Today's Lessons & Batches -->
           <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
             <div class="flex items-center justify-between">
@@ -719,10 +718,13 @@
               <input id="calEventTitle" type="text" placeholder="Event title (e.g. Ch 3 Class Test)" class="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 font-semibold" />
               <input id="calEventDate" type="date" class="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 font-semibold" />
               <select id="calEventType" class="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 font-semibold">
-                <option value="Class Test">Class Test</option>
-                <option value="Revision Marathon">Revision Marathon</option>
-                <option value="Festival / Event">Festival / Teachers' Day</option>
-                <option value="Holiday">Holiday</option>
+                <option value="Class_Test">Class Test</option>
+                <option value="Revision">Revision Marathon</option>
+                <option value="Event">Festival / Event</option>
+                <option value="Holiday">Institute Holiday</option>
+                <option value="Teacher_Leave">Teacher Leave</option>
+                <option value="PTM">Parent Teacher Meeting (PTM)</option>
+                <option value="Cancelled_Class">Cancelled Class</option>
               </select>
               <select id="calEventBatch" class="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 font-semibold">
                 <option value="ALL">All Batches (11 &amp; 12)</option>
@@ -1430,9 +1432,16 @@
         <div id="subtab-classroom-analytics" class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h2 class="text-lg font-extrabold text-slate-900">Weighted Gradebook & 3-Track DPP Assessment</h2>
-            <p class="text-xs text-slate-500">Weights: <strong>Unit Tests (40%)</strong> · <strong>7 PM DPP (25%)</strong> · <strong>Board Mock (25%)</strong> · <strong>Project/Viva (10%)</strong>. Supports CBSE 9-Point (<code class="mono">A1–E</code>) and BSEB Division scales.</p>
+            <p id="gradeWeightsLabel" class="text-xs text-slate-500">Weights: <span class="text-amber-600 font-medium">weights set nahi hain</span></p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
+            <select id="gradebookTestType" class="text-xs font-semibold border border-slate-200 rounded-xl px-2.5 py-2 bg-slate-50" title="Assessment Type">
+              <option value="Unit Test">Unit Test</option>
+              <option value="7 PM DPP">7 PM DPP</option>
+              <option value="Board Mock">Board Mock</option>
+              <option value="Project/Viva">Project/Viva</option>
+            </select>
+            <input id="gradebookMaxMarks" type="number" min="1" max="500" value="100" class="w-16 text-xs font-semibold border border-slate-200 rounded-xl px-2 py-2 bg-slate-50 text-center" placeholder="Max" title="Max Marks">
             <select id="gradeScaleSelect" class="text-xs font-semibold border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
               <option value="CBSE">CBSE 9-Point Scale (A1, A2, B1, B2...)</option>
               <option value="BSEB">BSEB Bihar Board Scale (1st Div / Distinction)</option>
@@ -1440,6 +1449,9 @@
             </select>
             <button id="awardTopperCoinsBtn" type="button" class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition shadow-sm">
               🪙 Award +25 CG Coins to ≥90% Scorers
+            </button>
+            <button id="saveGradebookMarksBtn" type="button" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm">
+              💾 Save to Marks_Log
             </button>
           </div>
         </div>
@@ -1450,10 +1462,10 @@
               <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 <th class="py-3 px-4">Student</th>
                 <th class="py-3 px-4">Batch</th>
-                <th class="py-3 px-3 text-center">Unit Test (40%)</th>
-                <th class="py-3 px-3 text-center">7 PM DPP (25%)</th>
-                <th class="py-3 px-3 text-center">Board Mock (25%)</th>
-                <th class="py-3 px-3 text-center">Viva/Proj (10%)</th>
+                <th id="thWeightUnitTest" class="py-3 px-3 text-center">Unit Test</th>
+                <th id="thWeightDpp" class="py-3 px-3 text-center">7 PM DPP</th>
+                <th id="thWeightMock" class="py-3 px-3 text-center">Board Mock</th>
+                <th id="thWeightViva" class="py-3 px-3 text-center">Viva/Proj</th>
                 <th class="py-3 px-4 text-center">Weighted Avg</th>
                 <th class="py-3 px-4">Scale Grade</th>
               </tr>
@@ -1713,6 +1725,23 @@
           </div>
         </div>
 
+        <!-- SUBTAB: VIEW AS STUDENT PROXY (SYS-009 / SCR-SYS-005) -->
+        <div id="subtab-system-viewasstudent" class="bg-white rounded-2xl border border-amber-200 bg-amber-50/20 p-5 shadow-sm space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-100 pb-3">
+            <div>
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">SYS-009 · SCR-SYS-005</span>
+              <h3 class="text-base font-extrabold text-slate-900 mt-1">👁️ Student ki tarah dekho (Admin View-As-Student Proxy)</h3>
+              <p class="text-xs text-slate-600">Select any active student by Roll No to inspect their Telegram Mini App exactly as they see it. The session is strictly read-only on the server, marked with a top banner, and logged in Audit_Log.</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 max-w-md">
+            <input id="viewAsStudentRollInput" type="text" placeholder="Enter Roll No (e.g. CG-11-001)" class="flex-1 text-xs font-mono uppercase border border-slate-300 rounded-xl px-3 py-2 bg-white text-slate-900" />
+            <button id="btnStartViewAsStudent" type="button" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition shadow-sm cursor-pointer">
+              Student ki tarah dekho →
+            </button>
+          </div>
+        </div>
+
         <!-- SUBTAB: SYSTEM HEALTH & AUDIT LOG (B5 + B10) -->
         <div id="subtab-system-audit" class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1776,8 +1805,8 @@
         <button id="opsReturnStudioBtn" type="button" class="h-8 px-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold flex items-center gap-1 shadow-sm">
           <span>🖥️</span><span>Studio</span>
         </button>
-        <button id="opsGoStudentBtn" type="button" class="h-8 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1 shadow-sm">
-          <span>🎓</span><span>Student</span>
+        <button id="btnOpenViewAsStudentModal" type="button" class="h-8 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-bold flex items-center gap-1 shadow-sm cursor-pointer">
+          <span>👁️</span><span>Student View</span>
         </button>
       </div>
     </div>
@@ -1994,21 +2023,8 @@
 
   <!-- ==================== STUDENT TELEGRAM MINI APP VIEW (6 PRE-RENDERED TABS, 0MS TOGGLE) ==================== -->
   <div id="studentWorkspace" class="hidden flex-1 max-w-[440px] w-full mx-auto p-3 sm:p-4 space-y-4 pb-28 min-h-screen bg-slate-50 dark:bg-slate-950 sm:shadow-2xl sm:border-x sm:border-slate-200 dark:sm:border-slate-800 relative">
-    <!-- Switcher Bar for Gyan Sir / Admin Preview -->
-    <div id="studentWorkspaceToggleBar" class="flex items-center justify-between p-2.5 rounded-2xl bg-slate-900 border border-indigo-500/30 text-white shadow-sm">
-      <div class="flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-        <span class="text-xs font-bold text-slate-200">Student Mobile Preview</span>
-      </div>
-      <div class="flex items-center gap-1.5">
-        <button id="stuBackToOpsBtn" type="button" onclick="window.switchAppMode('ops')" class="h-8 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition flex items-center gap-1 shadow-sm cursor-pointer">
-          <span>📲</span><span>Ops</span>
-        </button>
-        <button id="studentCardToggleBtn" type="button" onclick="window.switchAppMode('teacher')" class="h-8 px-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1 shadow-sm cursor-pointer">
-          <span>🖥️</span><span>Studio</span>
-        </button>
-      </div>
-    </div>
+    <!-- Student Workspace Header Bar (Replaced by #viewAsStudentBanner when viewing as student; hidden for regular students) -->
+    <div id="studentWorkspaceToggleBar" class="hidden"></div>
 
     <!-- Student Profile Header Card -->
     <div class="bg-slate-900 text-white rounded-3xl p-4 sm:p-5 shadow-lg space-y-3 border border-slate-800">
@@ -2564,24 +2580,56 @@
         <button id="closeStudentUpiModalBtn" type="button" class="h-8 px-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold">✕</button>
       </div>
       <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-center space-y-2.5">
-        <div class="w-36 h-36 mx-auto bg-white p-2 rounded-xl shadow-inner border border-slate-200 flex items-center justify-center">
-          <div class="w-full h-full bg-slate-900 rounded-lg p-2 flex flex-col items-center justify-center text-white text-[10px]">
-            <span class="font-extrabold text-base text-amber-400">CG UPI QR</span>
-            <span class="text-[9px] text-slate-300 mt-1 font-mono">Scan in PhonePe / GPay</span>
-            <span class="text-[8px] text-emerald-400 mt-1 font-mono">commercewithgyan@okhdfcbank</span>
-          </div>
+        <div class="flex items-center justify-between text-xs px-1">
+          <span class="text-slate-500 font-medium">Outstanding Dues:</span>
+          <strong id="stuUpiAmountDisplay" class="text-base font-extrabold text-indigo-600 dark:text-indigo-400 font-mono">₹1,400</strong>
+        </div>
+        <!-- On-Device Client-Side Generated QR Code (No 3rd party requests) -->
+        <div id="stuUpiQrCodeContainer" class="w-44 h-44 mx-auto bg-white p-2.5 rounded-2xl shadow-inner border border-slate-200 flex items-center justify-center overflow-hidden">
+          <div class="animate-pulse text-xs text-slate-400 font-medium">Generating QR...</div>
         </div>
         <div>
-          <p class="text-xs font-bold text-slate-900 dark:text-white font-mono">commercewithgyan@okhdfcbank</p>
-          <button id="stuCopyUpiBtn" type="button" class="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline mt-0.5">📋 Copy UPI ID</button>
+          <p id="stuUpiIdDisplay" class="text-xs font-bold text-slate-900 dark:text-white font-mono select-all">--</p>
+          <div class="flex items-center justify-center gap-3 mt-1">
+            <button id="stuCopyUpiBtn" type="button" class="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline cursor-pointer">📋 Copy UPI ID</button>
+          </div>
         </div>
+        <a id="stuOpenUpiAppBtn" href="#" class="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200 dark:border-indigo-800 transition">
+          <span>📱</span><span>Open in PhonePe / GPay / Paytm ↗</span>
+        </a>
       </div>
       <div class="space-y-2">
-        <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300">Transaction UTR / Reference ID:</label>
-        <input id="stuUtrInput" type="text" placeholder="e.g. 432109876543 (12-digit UTR)" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono" />
-        <button id="stuSubmitPaymentProofBtn" type="button" class="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5">
-          <span>✓</span><span>Submit Payment Proof to Gyan Sir</span>
+        <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300">Transaction UTR / Reference ID (Optional):</label>
+        <input id="stuUtrInput" type="text" placeholder="e.g. 432109876543" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono" />
+        <button id="stuSubmitPaymentProofBtn" type="button" class="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer">
+          <span>✓</span><span>Maine pay kiya (Intimate Gyan Sir)</span>
         </button>
+        <p class="text-[10px] text-slate-400 text-center">Submitting alerts Gyan Sir. Once verified, official receipt is generated in Fee_Ledger.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- View as Student Modal (SYS-009 / SCR-SYS-005) -->
+  <div id="viewAsStudentModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">👁️</span>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Student ki tarah dekho</h3>
+            <p class="text-[10px] text-slate-500">SYS-009: Read-Only Admin Proxy</p>
+          </div>
+        </div>
+        <button id="btnCloseViewAsStudentModal" type="button" class="text-slate-400 hover:text-slate-600 text-sm font-bold cursor-pointer">✕</button>
+      </div>
+      <div class="space-y-2">
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Target Student Roll No:</label>
+        <input id="modalViewAsStudentRollInput" type="text" placeholder="e.g. CG-11-001" class="w-full text-xs font-mono uppercase border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white" />
+        <p class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">⚠️ The session will be strictly read-only on the server. Student quiz attempts, doubts, and fee intimations are rejected.</p>
+      </div>
+      <div class="flex gap-2">
+        <button id="btnCancelViewAsStudentModal" type="button" class="flex-1 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">Radd karo</button>
+        <button id="btnConfirmViewAsStudentModal" type="button" class="flex-1 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow-sm cursor-pointer">Kholo →</button>
       </div>
     </div>
   </div>
@@ -2903,15 +2951,15 @@
         { id: 'REC_ATT', label: '3 Consecutive On-Time Arrivals', coins: 10 },
         { id: 'REC_DISC', label: 'Parent Acknowledgement / Discipline Reset', coins: 5 }
       ],
+      // N-1: 5 active SWOT fields sourced dynamically from SWOT_Config in Sheets
       swotFieldOptions: [
-        { key: 'attendance', label: 'Attendance % & Streak' },
-        { key: 'testPerf', label: 'Unit Test & Mock Score' },
-        { key: 'dpp', label: '7 PM DPP Performance' },
-        { key: 'practice', label: 'Self-Paced Practice Accuracy' },
-        { key: 'attentiveness', label: 'Classroom Attentiveness' },
-        { key: 'fees', label: 'Fee Plan & Cleared Months' }
+        { key: 'Attendance', label: 'Attendance % & Streak' },
+        { key: 'Test', label: 'Unit Test & Board Mock Scores' },
+        { key: 'DPP', label: '7 PM Daily Practice Papers' },
+        { key: 'Practice Paper', label: 'Self-Paced Practice Papers' },
+        { key: 'Attentiveness', label: 'Classroom Attentiveness & Participation' }
       ],
-      selectedSwotFields: ['attendance', 'testPerf', 'dpp', 'practice', 'attentiveness', 'fees'],
+      selectedSwotFields: ['Attendance', 'Test', 'DPP', 'Practice Paper', 'Attentiveness'],
       swotManualNotes: {},
 
       lessons: [
@@ -3065,18 +3113,13 @@
         { roll: 'CG-1103', name: 'Akshat Mishra', parentName: 'Sunil Mishra', batch: 'Class 11 · ISC', subjects: ['Accountancy', 'Business Studies', 'Statistics'], status: 'Enrolled', joinDate: '2026-07-01', clearedMonths: ['Jul', 'Aug', 'Sep', 'Oct', 'Nov'], phone: '9835011103', parentPhone: '9835091103', sibling: false, coins: 60, unitTest: 76, dppScore: 79, mockScore: 74, vivaScore: 82, att: ['P','A','P','P','P','L','P'], note: 'Joined for Class 11 Accountancy & EPS', plan: 'Monthly', baseFee: 1200, daysLate: 0, lateWaived: false, feePaid: true }
       ],
 
-      tasks: (() => {
-        try {
-          const saved = localStorage.getItem('cg_teacher_tasks_v1');
-          if (saved) return JSON.parse(saved);
-        } catch (_) {}
-        return [
-          { id: 1, text: 'Export GoodNotes Chalkboard PDF for 12th Accountancy Ch 3', subject: 'ACC-12', action: 'endclass', done: false },
-          { id: 2, text: 'Dispatch 7:00 PM Question Bank DPP to Batch', subject: 'ACC-12', action: 'dpp', done: false },
-          { id: 3, text: 'Mark Batch Attendance & send Absent Video Alerts', subject: 'ACC-11', action: 'attendance', done: false },
-          { id: 4, text: 'Upload Unlisted YouTube lecture link in End Class', subject: 'BST-12', action: 'endclass', done: true }
-        ];
-      })(),
+      // R-19: Persistent tasks loaded exclusively from Academic_Tasks in Sheets
+      tasks: [
+        { id: 1, text: 'Export GoodNotes Chalkboard PDF for 12th Accountancy Ch 3', subject: 'ACC-12', action: 'endclass', done: false },
+        { id: 2, text: 'Dispatch 7:00 PM Question Bank DPP to Batch', subject: 'ACC-12', action: 'dpp', done: false },
+        { id: 3, text: 'Mark Batch Attendance & send Absent Video Alerts', subject: 'ACC-11', action: 'attendance', done: false },
+        { id: 4, text: 'Upload Unlisted YouTube lecture link in End Class', subject: 'BST-12', action: 'endclass', done: true }
+      ],
 
       dailyClassNotes: [
         { date: new Date().toISOString().slice(0, 10), subject: 'Accountancy', topic: 'Ch 3: Hidden Goodwill & Revaluation Reserve', dppTitle: 'DPP #42 · Hidden Goodwill (10 MCQs)', goodnotesUrl: 'https://drive.google.com/file/d/cg_hidden_goodwill_notes/view' },
@@ -3101,7 +3144,7 @@
 
     // Persist tasks helper (A3)
     function saveTasksState() {
-      try { localStorage.setItem('cg_teacher_tasks_v1', JSON.stringify(appState.tasks)); } catch (_) {}
+      // R-19: LocalStorage copy removed. Persistent state resides strictly in Academic_Tasks.
     }
 
     // HTML Escape Helper
@@ -3165,6 +3208,15 @@
       } catch (_) {}
       const initData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
       const isSandboxPreview = !initData;
+      // SYS-009: Server & client-side read-only guard for View as Student proxy
+      if (window.isViewAsStudent) {
+        const studentWriteActions = ['submitStudentQuizAttempt', 'submitRedPenSubmission', 'recordPaymentIntimation', 'logVideoWatch', 'askDoubt', 'askDoubtGemini', 'askVoiceDoubt'];
+        if (studentWriteActions.indexOf(resolvedAction) !== -1) {
+          showToast('Write operation rejected: View as Student session is strictly read-only (SYS-009).', 'rose');
+          return Promise.reject(new Error('Write operation rejected: View as Student session is strictly read-only (SYS-009).'));
+        }
+        payload = Object.assign({}, payload, { isViewAsStudent: true, viewAsStudentRollNo: window.viewAsStudentRollNo });
+      }
       // Preview/sandbox guard for student quiz attempts (S2)
       if (isSandboxPreview && resolvedAction === 'submitStudentQuizAttempt') {
         return Promise.resolve({ sandbox: true, isCorrect: payload.isCorrect !== false, earnedCoins: 0, explanation: payload.explanation || 'Sandbox preview mode — not written to Sheet.' });
@@ -3631,7 +3683,9 @@
 
     // ==================== RENDER: STUDENTS CRM ====================
     function computeWeightedAvg(s) {
-      return Math.round(s.unitTest * 0.40 + s.dppScore * 0.25 + s.mockScore * 0.25 + s.vivaScore * 0.10);
+      const w = appState.gradeWeights || { unitTest: 40, dpp: 25, mock: 25, viva: 10 };
+      const total = (w.unitTest || 40) + (w.dpp || 25) + (w.mock || 25) + (w.viva || 10);
+      return Math.round(((s.unitTest || 0) * (w.unitTest || 40) + (s.dppScore || 0) * (w.dpp || 25) + (s.mockScore || 0) * (w.mock || 25) + (s.vivaScore || 0) * (w.viva || 10)) / total);
     }
 
     function renderStudents() {
@@ -4800,12 +4854,16 @@
       if (pickerBox) {
         pickerBox.classList.toggle('hidden', !isTeacherView);
         if (isTeacherView && cbBox) {
-          cbBox.innerHTML = (appState.swotFieldOptions || []).map(f => `
-            <label class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white border border-indigo-200 text-[11px] font-bold cursor-pointer">
-              <input type="checkbox" class="swot-field-cb rounded text-indigo-600" value="${escHtml(f.key)}" ${appState.selectedSwotFields.includes(f.key) ? 'checked' : ''} />
-              <span>${escHtml(f.label)}</span>
-            </label>
-          `).join('');
+          if (!appState.swotFieldOptions || !appState.swotFieldOptions.length) {
+            cbBox.innerHTML = '<span class="text-xs text-amber-600 font-semibold">SWOT fields configure nahi hain (SWOT_Config tab check karein).</span>';
+          } else {
+            cbBox.innerHTML = appState.swotFieldOptions.map(f => `
+              <label class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white border border-indigo-200 text-[11px] font-bold cursor-pointer">
+                <input type="checkbox" class="swot-field-cb rounded text-indigo-600" value="${escHtml(f.key)}" ${appState.selectedSwotFields.includes(f.key) ? 'checked' : ''} />
+                <span>${escHtml(f.label)}</span>
+              </label>
+            `).join('');
+          }
         }
         if (isTeacherView && manInput) {
           manInput.value = (appState.swotManualNotes && appState.swotManualNotes[stu.roll]) || '';
@@ -5048,15 +5106,12 @@
         const opsWs = document.getElementById('teacherOpsWorkspace');
         const studentWs = document.getElementById('studentWorkspace');
         const desktopHeader = document.getElementById('globalDesktopHeader');
-        const mobileShell = document.getElementById('mobileDeviceShellBar');
-
         const liveBanner = document.getElementById('cgLiveBanner');
         if (teacherWs) teacherWs.classList.toggle('hidden', mode !== 'teacher');
         if (opsWs) opsWs.classList.toggle('hidden', mode !== 'ops');
         if (studentWs) studentWs.classList.toggle('hidden', mode !== 'student');
         if (desktopHeader) desktopHeader.classList.toggle('hidden', mode !== 'teacher');
         if (liveBanner) liveBanner.classList.toggle('hidden', mode !== 'teacher');
-        if (mobileShell) mobileShell.classList.toggle('hidden', mode === 'teacher' || window.cgStudentLocked);
 
         const shellOps = document.getElementById('shellBtnOps');
         const shellStu = document.getElementById('shellBtnStudent');
@@ -5177,17 +5232,40 @@
         });
       });
 
-      // Add Task
+      // Add Task (R-19: Real error handling, zero fake-success toasts)
+            // R-19: Load initial persistent tasks from Academic_Tasks
+      window.cgCallGas('getAcademicTasks', {}).then(res => {
+        if (res && res.tasks && res.tasks.length) {
+          appState.tasks = res.tasks.map(t => ({
+            id: t.Task_ID || t.id,
+            text: t.Task_Text || t.text,
+            subject: t.Subject || t.subject || 'ACC-12',
+            done: String(t.Status || t.status).toUpperCase() === 'COMPLETED',
+            action: t.Action_Route || t.action || ''
+          }));
+          renderTasks();
+        }
+      }).catch(err => {
+        console.warn('Academic tasks load note: ' + err.message);
+      });
+
       document.getElementById('addTaskBtn')?.addEventListener('click', () => {
         const input = document.getElementById('newTaskInput');
         const subj = document.getElementById('newTaskSubject')?.value || 'ACC-12';
         if (!input || !input.value.trim()) return;
-        appState.tasks.unshift({ id: Date.now(), text: input.value.trim(), subject: subj, done: false });
-        input.value = '';
-        saveTasksState();
-        renderTasks();
-        window.cgCallGas('saveTeacherTasks', { tasks: appState.tasks }).catch(() => {});
-        showToast('Task added & saved', 'emerald');
+        const taskText = input.value.trim();
+        const newTask = { id: Date.now(), text: taskText, subject: subj, done: false };
+        showToast('Saving task to Academic_Tasks in Google Sheets...', 'indigo');
+        window.cgCallGas('saveAcademicTask', newTask)
+          .then(res => {
+            appState.tasks.unshift(newTask);
+            input.value = '';
+            renderTasks();
+            showToast('✓ Task added & saved to Academic_Tasks', 'emerald');
+          })
+          .catch(err => {
+            showToast(`Task save failed: ${err.message}`, 'rose');
+          });
       });
 
       // Dashboard DPP Cascade + Dispatch
@@ -5264,10 +5342,18 @@
         if (!appState.holidays) appState.holidays = {};
         appState.holidays[dateStr] = !isAlready;
         appState.holidayThursday = Object.values(appState.holidays).some(Boolean);
-        window.cgCallGas('toggleHolidayDate', { date: dateStr, isHoliday: appState.holidays[dateStr] }).catch(() => {});
-        addAuditEvent(`${dateStr} marked ${appState.holidays[dateStr] ? 'Holiday (topics shifted)' : 'Working Day'}`);
-        renderAll();
-        showToast(appState.holidays[dateStr] ? `Holiday set for ${dateStr} — topics shifted!` : `Restored ${dateStr}`, 'amber');
+        showToast(`Saving holiday for ${dateStr} to Academic_Calendar...`, 'indigo');
+        window.cgCallGas('toggleAcademicHoliday', { date: dateStr, isHoliday: appState.holidays[dateStr], reason: 'Holiday toggle' })
+          .then(() => {
+            addAuditEvent(`${dateStr} marked ${appState.holidays[dateStr] ? 'Holiday (topics shifted)' : 'Working Day'}`);
+            renderAll();
+            showToast(appState.holidays[dateStr] ? `✓ Holiday set for ${dateStr} in Academic_Calendar — topics shifted!` : `✓ Restored ${dateStr}`, 'emerald');
+          })
+          .catch(err => {
+            appState.holidays[dateStr] = isAlready;
+            renderAll();
+            showToast(`Holiday save failed: ${err.message}`, 'rose');
+          });
       });
       document.getElementById('addTimetableSlotBtn')?.addEventListener('click', () => document.getElementById('addSlotFormCard')?.classList.toggle('hidden'));
       document.getElementById('cancelSlotBtn')?.addEventListener('click', () => document.getElementById('addSlotFormCard')?.classList.add('hidden'));
@@ -5281,9 +5367,15 @@
         appState.timetableSlots.push({ day, time, subject, topic, type });
         appState.academicEvents.unshift({ id: 'EV-' + Date.now().toString().slice(-4), date: dateStr, title: `${subject}: ${topic}`, type, batch: subject.includes('11') ? 'Class 11' : 'Class 12' });
         document.getElementById('addSlotFormCard')?.classList.add('hidden');
-        window.cgCallGas('saveWeeklyTimetable', { slots: appState.timetableSlots }).catch(() => {});
-        renderAll();
-        showToast(`Added ${subject} (${type}) on ${day} ${dateStr} & notified students`, 'emerald');
+        showToast(`Saving timetable slot for ${day}...`, 'indigo');
+        window.cgCallGas('saveWeeklyTimetable', { slots: appState.timetableSlots })
+          .then(() => {
+            renderAll();
+            showToast(`✓ Added ${subject} (${type}) on ${day} ${dateStr} & synced!`, 'emerald');
+          })
+          .catch(err => {
+            showToast(`Slot save failed: ${err.message}`, 'rose');
+          });
       });
       document.getElementById('saveWeeklyRoutineBtn')?.addEventListener('click', async () => {
         const ok = await window.cgConfirm({ badge: 'Weekly Timetable', title: 'Save Weekly Routine?', body: 'Save Mon–Sat editable slots to TIMETABLE_WEEKLY in Google Sheets and sync Student Daily Hub?' });
@@ -5300,9 +5392,15 @@
         if (!title) { showToast('Enter Event / Test Title', 'amber'); return; }
         appState.academicEvents.unshift({ id: 'EV-' + Date.now().toString().slice(-4), date, title, type, batch });
         document.getElementById('calEventTitle').value = '';
-        window.cgCallGas('saveAcademicEvent', { date, title, type, batch }).catch(() => {});
-        renderAll();
-        showToast(`Scheduled "${title}" & synced to Student Daily Hub!`, 'emerald');
+        showToast(`Saving academic event "${title}" to Academic_Calendar...`, 'indigo');
+        window.cgCallGas('saveCalendarEvent', { date, title, eventType: type, batchId: batch })
+          .then(() => {
+            renderAll();
+            showToast(`✓ Scheduled "${title}" into Academic_Calendar & synced!`, 'emerald');
+          })
+          .catch(err => {
+            showToast(`Event save failed: ${err.message}`, 'rose');
+          });
       });
       document.getElementById('cancelAndRescheduleBtn')?.addEventListener('click', async () => {
         const batch = document.getElementById('cancelBatchSelect')?.value || 'Class 12';
@@ -5316,10 +5414,16 @@
         });
         if (!ok) return;
         appState.academicEvents.unshift({ id: 'EV-' + Date.now().toString().slice(-4), date, title: `Rescheduled (${reason})`, type: 'Holiday Shift', batch });
-        window.cgCallGas('cancelAndRescheduleClass', { batch, date, reason }).catch(() => {});
-        addAuditEvent(`Cancelled & shifted ${batch} on ${date}: ${reason}`);
-        renderAll();
-        showToast(`${batch} class on ${date} shifted forward & students notified.`, 'amber');
+        showToast(`Cancelling ${batch} class on ${date}...`, 'indigo');
+        window.cgCallGas('cancelBatchLecture', { batchId: batch, date, reason })
+          .then(() => {
+            addAuditEvent(`Cancelled & shifted ${batch} on ${date}: ${reason}`);
+            renderAll();
+            showToast(`✓ ${batch} class on ${date} cancelled in Academic_Calendar & shifted forward!`, 'emerald');
+          })
+          .catch(err => {
+            showToast(`Cancellation failed: ${err.message}`, 'rose');
+          });
       });
 
       // Lesson planner & A3 cascading editor
@@ -5547,7 +5651,7 @@
           const ok = await window.cgConfirm({
             badge: 'Commit Attendance',
             title: `Commit Batch Attendance (${batchId})?`,
-            body: `Present: ${pCnt} (+2🪙 each) · Late: ${lCnt} · Absent: ${aCnt}\nThis updates Attendance_Daily and triggers REC-01 recovery.`
+            body: `Present: ${pCnt} (+2🪙 each) · Late: ${lCnt} · Absent: ${aCnt} · Excused: ${records.filter(r => r.status === 'E').length}\nThis updates Attendance_Logs and triggers REC-01 recovery for Late/Absent (Excused is exempted).`
           });
           if (!ok) return;
         }
@@ -5607,6 +5711,75 @@
       document.getElementById('heatmapStudentFilter')?.addEventListener('change', renderTeacherWeaknessHeatmap);
       document.getElementById('dppQbClassFilter')?.addEventListener('change', populateDppQuestionBankFilters);
       document.getElementById('dppQbSubjectFilter')?.addEventListener('change', populateDppQuestionBankFilters);
+      // R-14, R-30: Save Gradebook entries to Master_ERP › Marks_Log with confirmation
+      document.getElementById('saveGradebookMarksBtn')?.addEventListener('click', async () => {
+        const testType = document.getElementById('gradebookTestType')?.value || 'Unit Test';
+        const maxMarks = Number(document.getElementById('gradebookMaxMarks')?.value) || 100;
+        const count = appState.students.length;
+
+        const ok = await window.cgConfirm({
+          badge: 'Save Marks',
+          title: `${count} students ke marks save karein?`,
+          body: `Test: ${testType} (Max Marks: ${maxMarks}) · Yeh marks Sheets ke Marks_Log tab mein permanently record honge.`
+        });
+        if (!ok) return;
+
+        showToast('Saving marks to Marks_Log in Google Sheets...', 'indigo');
+        const promises = appState.students.map(s => {
+          return window.cgCallGas('saveMarksLog', {
+            rollNo: s.roll,
+            testId: 'TEST-' + (s.batch || 'C12_EVE') + '-' + (s.subject || 'ACC'),
+            testType: testType,
+            batchId: s.batch || 'C12_EVE',
+            subject: s.subject || 'Accountancy',
+            chapter: 'Chapter Assessment',
+            maxMarks: maxMarks,
+            marks: s.unitTest || 0
+          });
+        });
+
+        Promise.all(promises)
+          .then(results => {
+            showToast(`✓ Successfully saved ${results.length} student scores to Marks_Log!`, 'emerald');
+          })
+          .catch(err => {
+            showToast(`Marks save failed: ${err.message}`, 'rose');
+          });
+      });
+
+      // R-15: Fetch dynamic grade weights on boot
+      window.cgCallGas('getGradeWeights', {}).then(res => {
+        const lbl = document.getElementById('gradeWeightsLabel');
+        const thU = document.getElementById('thWeightUnitTest');
+        const thD = document.getElementById('thWeightDpp');
+        const thM = document.getElementById('thWeightMock');
+        const thV = document.getElementById('thWeightViva');
+
+        if (res && res.configured && res.weights) {
+          appState.gradeWeights = res.weights;
+          if (lbl) {
+            lbl.innerHTML = `Weights: <strong>Unit Tests (${res.weights.unitTest}%)</strong> · <strong>7 PM DPP (${res.weights.dpp}%)</strong> · <strong>Board Mock (${res.weights.mock}%)</strong> · <strong>Project/Viva (${res.weights.viva}%)</strong>. Supports CBSE 9-Point (<code class="mono">A1–E</code>) and BSEB Division scales.`;
+          }
+          if (thU) thU.textContent = `Unit Test (${res.weights.unitTest}%)`;
+          if (thD) thD.textContent = `7 PM DPP (${res.weights.dpp}%)`;
+          if (thM) thM.textContent = `Board Mock (${res.weights.mock}%)`;
+          if (thV) thV.textContent = `Viva/Proj (${res.weights.viva}%)`;
+        } else {
+          appState.gradeWeights = null;
+          if (lbl) {
+            lbl.innerHTML = `Weights: <span class="text-amber-600 font-semibold">weights set nahi hain</span> (CONFIG_APP_SETTINGS mein WEIGHT_* set karein).`;
+          }
+          if (thU) thU.textContent = 'Unit Test';
+          if (thD) thD.textContent = '7 PM DPP';
+          if (thM) thM.textContent = 'Board Mock';
+          if (thV) thV.textContent = 'Viva/Proj';
+        }
+        renderGradebook();
+      }).catch(() => {
+        const lbl = document.getElementById('gradeWeightsLabel');
+        if (lbl) lbl.innerHTML = `Weights: <span class="text-amber-600 font-semibold">weights set nahi hain</span>.`;
+      });
+
       document.getElementById('awardTopperCoinsBtn')?.addEventListener('click', async () => {
         const toppers = appState.students.filter(s => computeWeightedAvg(s) >= 90);
         if (!toppers.length) { showToast('No students currently scoring ≥ 90%', 'amber'); return; }
@@ -6026,6 +6199,24 @@
         document.getElementById('swotModalOverlay')?.classList.add('hidden');
       });
       document.getElementById('printSwotReceiptBtn')?.addEventListener('click', () => window.print());
+            // N-1: Fetch dynamic SWOT_Config from Google Sheets on boot
+      window.cgCallGas('getSwotConfig', {}).then(res => {
+        if (res && res.fields && res.fields.length) {
+          appState.swotFieldOptions = res.fields.map(f => ({
+            key: f.Field_Key || f.key,
+            label: f.Label || f.label
+          }));
+          appState.selectedSwotFields = appState.swotFieldOptions.map(o => o.key);
+        } else {
+          appState.swotFieldOptions = [];
+          appState.selectedSwotFields = [];
+        }
+      }).catch(err => {
+        appState.swotFieldOptions = [];
+        appState.selectedSwotFields = [];
+        console.warn('SWOT config load note: ' + err.message);
+      });
+
       document.getElementById('saveSwotFieldsBtn')?.addEventListener('click', () => {
         const checked = [...document.querySelectorAll('.swot-field-cb:checked')].map(el => el.value);
         appState.selectedSwotFields = checked.length ? checked : ['attendance', 'fees'];
@@ -6148,15 +6339,16 @@
           const stu = appState.students.find(s => s.roll === attBtn.dataset.attroll);
           const idx = Number(attBtn.dataset.attidx);
           if (stu && !Number.isNaN(idx)) {
-            const cycle = ['P', 'A', 'L'];
+            const cycle = ['P', 'A', 'L', 'E'];
             const curSt = stu.att[idx] || 'P';
-            const nextSt = curSt === 'E' ? 'P' : cycle[(cycle.indexOf(curSt) + 1) % cycle.length];
+            const curIdx = cycle.indexOf(curSt);
+            const nextSt = cycle[(curIdx >= 0 ? curIdx + 1 : 0) % cycle.length];
             stu.att[idx] = nextSt;
             stu.attUncommitted = true;
             appState.uncommittedAttendance = true;
             renderAttendance();
             try { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); } catch (_) {}
-            showToast(`${stu.name}: Marked ${nextSt} (${idx === 6 ? 'Today' : 'Day ' + (idx + 1)})`, nextSt === 'P' ? 'emerald' : (nextSt === 'L' ? 'amber' : 'rose'));
+            showToast(`${stu.name}: Marked ${nextSt} (${idx === 6 ? 'Today' : 'Day ' + (idx + 1)})`, nextSt === 'P' ? 'emerald' : (nextSt === 'L' ? 'amber' : (nextSt === 'E' ? 'sky' : 'rose')));
           }
           return;
         }
@@ -6504,13 +6696,7 @@
           return;
         }
 
-        const delJBtn = e.target.closest('.del-journal-btn');
-        if (delJBtn) {
-          const idx = Number(delJBtn.dataset.delj);
-          appState.journalRows.splice(idx, 1);
-          renderJournalSandbox();
-          return;
-        }
+
         const jeopBtn = e.target.closest('.jeop-tile-btn');
         if (jeopBtn) {
           const tile = appState.jeopardyTiles.find(t => t.id === jeopBtn.dataset.jeopid);
@@ -6533,10 +6719,18 @@
         if (taskCb) {
           const t = appState.tasks.find(x => x.id === Number(taskCb.dataset.taskid));
           if (t) {
+            const prevDone = t.done;
             t.done = taskCb.checked;
-            saveTasksState();
             renderTasks();
-            window.cgCallGas('saveTeacherTasks', { tasks: appState.tasks }).catch(() => {});
+            window.cgCallGas('toggleAcademicTask', { taskId: t.id })
+              .then(res => {
+                showToast(`✓ Task marked ${t.done ? 'completed' : 'open'} in Academic_Tasks`, 'emerald');
+              })
+              .catch(err => {
+                t.done = prevDone;
+                renderTasks();
+                showToast(`Task toggle failed: ${err.message}`, 'rose');
+              });
           }
           return;
         }
@@ -7019,7 +7213,6 @@
       });
 
       document.getElementById('opsReturnStudioBtn')?.addEventListener('click', () => window.switchAppMode('teacher'));
-      document.getElementById('opsGoStudentBtn')?.addEventListener('click', () => window.switchAppMode('student'));
 
       document.getElementById('opsNewInqJumpBtn')?.addEventListener('click', () => {
         const m = document.getElementById('opsWalkInModal');
@@ -7433,12 +7626,12 @@
                   let deliveryHtml = '';
                   if (st.medium === 'YouTube Public') {
                     deliveryHtml = st.videoUrl
-                      ? `<button type="button" data-videourl="${escHtml(st.videoUrl)}" data-videotitle="${escHtml(st.topic)}" class="stu-watch-video-btn px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold cursor-pointer">▶ Watch Lecture</button>
+                      ? `<button type="button" data-videourl="${escHtml(st.videoUrl)}" data-videotitle="${escHtml(st.topic)}" data-topicid="${escHtml(st.canonicalTopicId || st.canonicalId || '')}" class="stu-watch-video-btn px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold cursor-pointer">▶ Watch Lecture</button>
                          <a href="https://www.youtube.com/@CommerceGyan" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-[11px] font-bold">📺 YouTube Channel ↗</a>`
                       : `<a href="https://www.youtube.com/@CommerceGyan" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-600 text-white text-[11px] font-bold">📺 Watch on YouTube Channel ↗</a>`;
                   } else if (st.medium === 'YouTube Unlisted') {
                     deliveryHtml = st.videoUrl
-                      ? `<button type="button" data-videourl="${escHtml(st.videoUrl)}" data-videotitle="${escHtml(st.topic)}" class="stu-watch-video-btn px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold cursor-pointer">▶ Watch Unlisted Video</button>`
+                      ? `<button type="button" data-videourl="${escHtml(st.videoUrl)}" data-videotitle="${escHtml(st.topic)}" data-topicid="${escHtml(st.canonicalTopicId || st.canonicalId || '')}" class="stu-watch-video-btn px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold cursor-pointer">▶ Watch Unlisted Video</button>`
                       : `<span class="px-2 py-1 rounded-lg bg-slate-200 text-slate-600 text-[10px] font-bold">Video Uploading</span>`;
                   } else if (st.medium === 'CG App') {
                     deliveryHtml = `<a href="${escHtml(appState.cgAppUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold">📲 Open in CG App ↗</a>`;
@@ -7558,6 +7751,17 @@
       document.getElementById('stuSyllabusTreeContainer')?.addEventListener('click', (e) => {
         const vidBtn = e.target.closest('.stu-watch-video-btn');
         if (!vidBtn) return;
+        const topicId = String(vidBtn.dataset.topicid || '').trim();
+        // R-29: Log video watch event strictly with Canonical_Topic_ID (never invented or fallback)
+        if (topicId && topicId !== 'TOPIC') {
+          window.cgCallGas('logVideoWatch', {
+            canonicalTopicId: topicId,
+            deliveryMedium: 'YouTube',
+            watched: true
+          }).catch(err => {
+            console.warn('logVideoWatch error: ' + err.message);
+          });
+        }
         const playerBox = document.getElementById('stuVideoPlayerBox');
         if (!playerBox) return;
 
@@ -7780,14 +7984,65 @@
         opsCrmFilter.addEventListener('change', () => renderPipeline());
       }
 
-      // ── STUDENT UPI MODAL & SELECTOR LISTENERS ──
+      // ── N-2 (C-3 / SFE-010 / SCR-S-FEE-003): PAY BY UPI & ON-DEVICE QR ──
+      // Pure on-device standard Reed-Solomon QR code generator (Zero 3rd-party image services)
+      function renderOnDeviceQrSvg(text, container) {
+        if (!container) return;
+        try {
+          if (typeof qrcode === 'function') {
+            const qr = qrcode(0, 'M');
+            qr.addData(text);
+            qr.make();
+            container.innerHTML = qr.createSvgTag({ scalable: true, margin: 2 });
+            const svg = container.querySelector('svg');
+            if (svg) {
+              svg.setAttribute('class', 'w-full h-full');
+              svg.style.shapeRendering = 'crispEdges';
+            }
+            return;
+          }
+        } catch (err) {
+          console.error('On-device QR generation failed:', err);
+        }
+        container.innerHTML = '<div class="text-xs text-rose-500 font-bold p-2 text-center">QR generate nahi ho saka. UPI ID copy karein.</div>';
+      }
+
+      function openStudentUpiPaymentSheet(rollNo) {
+        const overlay = document.getElementById('studentUpiModalOverlay');
+        const cfg = appState.upiConfig || {};
+        const upiId = String(cfg.UPI_ID || '').trim();
+        if (!upiId) {
+          if (overlay) overlay.classList.add('hidden');
+          showToast('UPI abhi set nahi hai, teacher se baat karein', 'amber');
+          return;
+        }
+        if (!overlay) return;
+        const stu = appState.students.find(s => s.roll === rollNo) || appState.students[0];
+        const payee = cfg.UPI_PAYEE_NAME || 'Commerce Gyan';
+        const dueAmount = (stu && stu.balance !== undefined) ? stu.balance : ((stu && stu.plan === 'Quarterly') ? 3300 : 1400);
+
+        const amtEl = document.getElementById('stuUpiAmountDisplay');
+        if (amtEl) amtEl.textContent = `₹${dueAmount.toLocaleString('en-IN')}`;
+        const upiIdEl = document.getElementById('stuUpiIdDisplay');
+        if (upiIdEl) upiIdEl.textContent = upiId;
+
+        const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payee)}&am=${dueAmount}&cu=INR&tn=${encodeURIComponent('Fee Roll ' + rollNo)}`;
+        const appBtn = document.getElementById('stuOpenUpiAppBtn');
+        if (appBtn) appBtn.href = upiUri;
+
+        const qrContainer = document.getElementById('stuUpiQrCodeContainer');
+        renderOnDeviceQrSvg(upiUri, qrContainer);
+        overlay.classList.remove('hidden');
+      }
+
       const openUpiBtn = document.getElementById('stuOpenUpiModalBtn');
       if (openUpiBtn) {
         openUpiBtn.addEventListener('click', () => {
-          const overlay = document.getElementById('studentUpiModalOverlay');
-          if (overlay) overlay.classList.remove('hidden');
+          const roll = document.getElementById('tgStudentSelect')?.value || (appState.students[0] && appState.students[0].roll) || 'CG-11-001';
+          openStudentUpiPaymentSheet(roll);
         });
       }
+
       const closeUpiBtn = document.getElementById('closeStudentUpiModalBtn');
       if (closeUpiBtn) {
         closeUpiBtn.addEventListener('click', () => {
@@ -7795,19 +8050,20 @@
           if (overlay) overlay.classList.add('hidden');
         });
       }
+
       const copyUpiBtn = document.getElementById('stuCopyUpiBtn');
       if (copyUpiBtn) {
         copyUpiBtn.addEventListener('click', () => {
-          const upiId = 'commercewithgyan@okhdfcbank';
+          const upiId = String((appState.upiConfig && appState.upiConfig.UPI_ID) || '').trim();
+          if (!upiId) {
+            showToast('UPI abhi set nahi hai, teacher se baat karein', 'amber');
+            return;
+          }
           if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(upiId)
               .then(() => {
-                showToast(`Copied UPI ID: ${upiId}`, 'emerald');
-                try {
-                  if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-                    window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-                  }
-                } catch (e) {}
+                showToast(`✓ Copied UPI ID: ${upiId}`, 'emerald');
+                try { window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success'); } catch (_) {}
               })
               .catch(() => showToast(`UPI ID: ${upiId}`, 'indigo'));
           } else {
@@ -7815,39 +8071,167 @@
           }
         });
       }
+
       const submitUpiBtn = document.getElementById('stuSubmitPaymentProofBtn');
       if (submitUpiBtn) {
         submitUpiBtn.addEventListener('click', () => {
           const utr = (document.getElementById('stuUtrInput')?.value || '').trim();
-          if (!utr) {
-            showToast('Please enter the 12-digit UTR / Reference ID', 'amber');
-            return;
-          }
-          const rollNo = document.getElementById('tgStudentSelect')?.value || appState.students[0].roll;
+          const rollNo = document.getElementById('tgStudentSelect')?.value || (appState.students[0] && appState.students[0].roll) || 'CG-11-001';
           const stu = appState.students.find(s => s.roll === rollNo) || appState.students[0];
-          const cfg = appState.feeSettings || { monthlyBase: 1200, quarterlyBase: 3300 };
-          const amt = (stu && stu.plan === 'Quarterly') ? cfg.quarterlyBase : cfg.monthlyBase;
+          const dueAmount = (stu && stu.balance !== undefined) ? stu.balance : 1400;
+
           submitUpiBtn.disabled = true;
-          submitUpiBtn.textContent = 'Submitting Proof…';
-          window.cgCallGas('recordFeePayment', {
-            rollNo,
-            planKey: (stu && stu.plan === 'Quarterly') ? 'COMBO_QUARTERLY' : 'COMBO_MONTHLY',
-            paidAmountINR: amt,
-            paymentMode: 'UPI_QR',
-            utrNumber: utr
+          submitUpiBtn.textContent = 'Submitting Intimation…';
+
+          window.cgCallGas('recordPaymentIntimation', {
+            rollNo: rollNo,
+            amount: dueAmount,
+            utr: utr
           }).then(() => {
-            showToast(`Payment Proof (${utr}) submitted to Gyan Sir for verification!`, 'emerald');
+            showToast('✓ Payment intimated to Gyan Sir! Status: Teacher check kar rahe hain.', 'emerald');
             if (document.getElementById('stuUtrInput')) document.getElementById('stuUtrInput').value = '';
             const overlay = document.getElementById('studentUpiModalOverlay');
             if (overlay) overlay.classList.add('hidden');
+            appState.paymentIntimatedRolls = appState.paymentIntimatedRolls || [];
+            appState.paymentIntimatedRolls.push(rollNo);
+            renderAll();
           }).catch(err => {
-            showToast(`Payment proof failed: ${err.message}. Please retry or send UTR on WhatsApp.`, 'rose');
+            showToast(`Intimation failed: ${err.message}`, 'rose');
           }).finally(() => {
             submitUpiBtn.disabled = false;
-            submitUpiBtn.textContent = '✓ Submit Payment Proof to Gyan Sir';
+            submitUpiBtn.textContent = '✓ Maine pay kiya (Intimate Gyan Sir)';
           });
         });
       }
+
+      // N-2: Render Teacher Aaj Alerts for pending payment intimations
+      function renderTeacherAajAlerts() {
+        const box = document.getElementById('dashboardAlertsBox');
+        const list = document.getElementById('dashboardAlertsList');
+        const badge = document.getElementById('alertsCountBadge');
+        if (!box || !list) return;
+
+        window.cgCallGas('getPaymentIntimations', {}).then(res => {
+          const pending = (res && res.intimations || []).filter(r => String(r.Status || '').trim().toLowerCase() === 'pending');
+          if (!pending.length) {
+            box.classList.add('hidden');
+            return;
+          }
+          box.classList.remove('hidden');
+          if (badge) badge.textContent = `${pending.length} Pending`;
+          list.innerHTML = pending.map(p => `
+            <div class="p-3 rounded-xl bg-white border border-amber-200 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+              <div class="space-y-0.5">
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded font-mono font-bold bg-amber-100 text-amber-900 text-[10px]">Roll ${escHtml(p.Roll_No)}</span>
+                  <span class="font-bold text-slate-900">Maine pay kiya: ₹${Number(p.Amount || 0).toLocaleString('en-IN')}</span>
+                  <span class="text-[10px] text-slate-400 font-mono">${escHtml(p.Timestamp || '')}</span>
+                </div>
+                <p class="text-[11px] text-slate-600 font-mono">UTR: <strong>${escHtml(p.UTR || 'None')}</strong> · Student intimates payment via UPI QR</p>
+              </div>
+              <button type="button" data-prefillroll="${escHtml(p.Roll_No)}" data-prefillamt="${p.Amount}" data-prefillutr="${escHtml(p.UTR || '')}" class="open-record-prefilled-btn px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition">
+                Record Payment →
+              </button>
+            </div>
+          `).join('');
+        }).catch(() => {});
+      }
+
+      document.body.addEventListener('click', (e) => {
+        const prefillBtn = e.target.closest('.open-record-prefilled-btn');
+        if (prefillBtn) {
+          switchTab('tab-erp_fees');
+          const rollSel = document.getElementById('feeFormRollSelect');
+          if (rollSel) rollSel.value = prefillBtn.dataset.prefillroll;
+          const amtInp = document.getElementById('feeFormAmount');
+          if (amtInp) amtInp.value = prefillBtn.dataset.prefillamt;
+          const utrInp = document.getElementById('feeFormUtr');
+          if (utrInp) utrInp.value = prefillBtn.dataset.prefillutr;
+          showToast(`Pre-filled payment for Roll ${prefillBtn.dataset.prefillroll}`, 'indigo');
+          document.getElementById('feeFormRollSelect')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+
+      // On-boot load of Central App Config & Aaj Alerts
+      window.cgCallGas('getAppConfig', {}).then(res => {
+        if (res && res.config) {
+          appState.upiConfig = res.config;
+          if (res.config.COMMERCE_GYAN_APP_URL) appState.cgAppUrl = res.config.COMMERCE_GYAN_APP_URL;
+        }
+      }).catch(() => {});
+      setTimeout(renderTeacherAajAlerts, 1000);
+
+      // ==================== N-3 (SYS-009 / SCR-SYS-005): VIEW AS STUDENT PROXY ====================
+      window.isViewAsStudent = false;
+      window.viewAsStudentRollNo = null;
+
+      window.startViewAsStudent = function(targetRoll) {
+        targetRoll = String(targetRoll || '').trim();
+        if (!targetRoll) {
+          showToast('Please enter or select a valid Roll No.', 'rose');
+          return;
+        }
+        showToast(`Connecting to student view: ${targetRoll}...`, 'indigo');
+        window.cgCallGas('viewStudentAsTeacher', { rollNo: targetRoll })
+          .then(res => {
+            window.isViewAsStudent = true;
+            window.viewAsStudentRollNo = targetRoll;
+            const banner = document.getElementById('viewAsStudentBanner');
+            const badge = document.getElementById('viewAsStudentRollBadge');
+            if (banner) banner.classList.remove('hidden');
+            if (badge) badge.textContent = targetRoll;
+
+            const modal = document.getElementById('viewAsStudentModal');
+            if (modal) modal.classList.add('hidden');
+
+            if (res && res.studentData && typeof window.applyStudentBootstrap === 'function') {
+              window.applyStudentBootstrap(res.studentData, targetRoll);
+            }
+            if (typeof window.loadStudentBootstrap === 'function') {
+              window.loadStudentBootstrap(targetRoll);
+            }
+            window.switchAppMode('student');
+            showToast(`👁️ Viewing as Student (${targetRoll}) — Read-Only`, 'amber');
+          })
+          .catch(err => {
+            showToast(`Failed to view as student: ${err.message || err}`, 'rose');
+          });
+      };
+
+      window.exitViewStudentAsTeacher = function() {
+        const roll = window.viewAsStudentRollNo || '';
+        window.cgCallGas('exitViewStudentAsTeacher', { rollNo: roll })
+          .finally(() => {
+            window.isViewAsStudent = false;
+            window.viewAsStudentRollNo = null;
+            const banner = document.getElementById('viewAsStudentBanner');
+            if (banner) banner.classList.add('hidden');
+            window.switchAppMode('ops');
+            showToast('✓ Exited View as Student session.', 'indigo');
+          });
+      };
+
+      document.getElementById('btnOpenViewAsStudentModal')?.addEventListener('click', () => {
+        const modal = document.getElementById('viewAsStudentModal');
+        if (modal) modal.classList.remove('hidden');
+      });
+      document.getElementById('btnCloseViewAsStudentModal')?.addEventListener('click', () => {
+        document.getElementById('viewAsStudentModal')?.classList.add('hidden');
+      });
+      document.getElementById('btnCancelViewAsStudentModal')?.addEventListener('click', () => {
+        document.getElementById('viewAsStudentModal')?.classList.add('hidden');
+      });
+      document.getElementById('btnConfirmViewAsStudentModal')?.addEventListener('click', () => {
+        const val = document.getElementById('modalViewAsStudentRollInput')?.value;
+        window.startViewAsStudent(val);
+      });
+      document.getElementById('btnStartViewAsStudent')?.addEventListener('click', () => {
+        const val = document.getElementById('viewAsStudentRollInput')?.value;
+        window.startViewAsStudent(val);
+      });
+      document.getElementById('btnExitViewAsStudent')?.addEventListener('click', () => {
+        window.exitViewStudentAsTeacher();
+      });
 
       const tgStudentSelect = document.getElementById('tgStudentSelect');
       if (tgStudentSelect) {
@@ -7873,15 +8257,7 @@
           }
           return;
         }
-        const jIn = e.target.closest('.journal-input');
-        if (jIn) {
-          const idx = Number(jIn.dataset.jidx);
-          const field = jIn.dataset.jfield;
-          if (appState.journalRows[idx] && field) {
-            appState.journalRows[idx][field] = (field === 'dr' || field === 'cr') ? (Number(jIn.value) || 0) : jIn.value;
-            renderJournalSandbox();
-          }
-        }
+
       });
     });
   </script>
@@ -8201,8 +8577,6 @@
     // Enforce strict Student Lock in Telegram: hide teacher/student switcher & roll picker
     var wsToggleBar = $('studentWorkspaceToggleBar');
     if (wsToggleBar) wsToggleBar.classList.add('hidden');
-    var shellBar = $('mobileDeviceShellBar');
-    if (shellBar) shellBar.classList.add('hidden');
     var stuSel = $('tgStudentSelect');
     if (stuSel) {
       stuSel.disabled = true;
