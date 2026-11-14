@@ -389,6 +389,22 @@ function doPost(e) {
       }
     }
 
+    // Point 5 (SYS-009): Server-side cache-governed read-only guard for View as Student
+    const callerIdForGuard = (verifiedUser && verifiedUser.id) || '';
+    if (callerIdForGuard && isViewAsStudentActive_(callerIdForGuard)) {
+      const studentWriteActions = [
+        'submitStudentQuizAttempt', 'submitAnswer', 'submitRedPenSubmission',
+        'submitRedPenCopy', 'submitRedPenMistake', 'recordPaymentIntimation',
+        'logVideoWatch', 'askDoubt', 'askDoubtGemini', 'askVoiceDoubt'
+      ];
+      if (studentWriteActions.indexOf(action) !== -1) {
+        return jsonResponse({
+          ok: false,
+          error: 'Write operation rejected: View as Student session is strictly read-only (SYS-009).'
+        });
+      }
+    }
+
     requestData._verifiedUser = verifiedUser;
 
     let result;
@@ -4284,6 +4300,7 @@ function getGradeWeights() {
 /**
  * R-29: Logs student video watch events in Syllabus Planner › Video_Watch_Log.
  * Roll_No is extracted strictly from the verified Telegram user session (POST only, never payload-spoofed).
+ * Requires valid Canonical_Topic_ID (rejects missing or fallback 'TOPIC').
  */
 function logVideoWatch(payload, verifiedUser) {
   return withWriteLock_(() => {
@@ -4293,8 +4310,8 @@ function logVideoWatch(payload, verifiedUser) {
       return { ok: false, error: 'Unauthorized: Session must be authenticated with valid student Roll_No.' };
     }
     const topicId = String(payload.topicId || payload.canonicalTopicId || '').trim();
-    if (!topicId) {
-      return { ok: false, error: 'Missing mandatory field: canonicalTopicId.' };
+    if (!topicId || topicId === 'TOPIC') {
+      return { ok: false, error: 'Validation error: Valid canonicalTopicId is required.' };
     }
     const deliveryMedium = String(payload.deliveryMedium || 'YouTube').trim();
     const watched = payload.watched !== false ? 'TRUE' : 'FALSE';
@@ -4322,33 +4339,24 @@ function logVideoWatch(payload, verifiedUser) {
 
 /**
  * N-1: Reads active SWOT fields dynamically from Master_ERP › SWOT_Config.
- * Returns only fields where Active_Status === 'Active'.
+ * Returns empty fields array if tab is missing or has no active fields.
+ * Seeding is handled by setupMasterErp_, never on read.
  */
 function getSwotConfig() {
-  const IDS = getActiveSheetIds();
-  const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
-  let swotSheet = erp.getSheetByName('SWOT_Config');
-  if (!swotSheet) {
-    swotSheet = erp.insertSheet('SWOT_Config');
-    swotSheet.appendRow(['Field_Key', 'Label', 'Field_Type', 'Active_Status']);
-    const seed = [
-      ['Attendance', 'Attendance % & Streak', 'Metric', 'Active'],
-      ['Test', 'Unit Test & Board Mock Scores', 'Metric', 'Active'],
-      ['DPP', '7 PM Daily Practice Papers', 'Metric', 'Active'],
-      ['Practice Paper', 'Self-Paced Practice Papers', 'Metric', 'Active'],
-      ['Attentiveness', 'Classroom Attentiveness & Participation', 'Subjective', 'Active']
-    ];
-    seed.forEach(r => swotSheet.appendRow(r));
+  try {
+    const IDS = getActiveSheetIds();
+    const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+    const swotSheet = erp.getSheetByName('SWOT_Config');
+    if (!swotSheet) {
+      return { ok: true, fields: [] };
+    }
+    const rows = sheetToObjects(swotSheet);
+    const activeFields = rows.filter(r => String(r.Active_Status || '').trim().toLowerCase() === 'active');
+    return { ok: true, fields: activeFields };
+  } catch (err) {
+    Logger.log('Error reading SWOT_Config: ' + err.message);
+    return { ok: true, fields: [] };
   }
-  const rows = sheetToObjects(swotSheet);
-  const activeFields = rows.filter(r => String(r.Active_Status || '').trim().toLowerCase() === 'active');
-  return { ok: true, fields: activeFields.length ? activeFields : [
-    { Field_Key: 'Attendance', Label: 'Attendance % & Streak', Field_Type: 'Metric', Active_Status: 'Active' },
-    { Field_Key: 'Test', Label: 'Unit Test & Board Mock Scores', Field_Type: 'Metric', Active_Status: 'Active' },
-    { Field_Key: 'DPP', Label: '7 PM Daily Practice Papers', Field_Type: 'Metric', Active_Status: 'Active' },
-    { Field_Key: 'Practice Paper', Label: 'Self-Paced Practice Papers', Field_Type: 'Metric', Active_Status: 'Active' },
-    { Field_Key: 'Attentiveness', Label: 'Classroom Attentiveness & Participation', Field_Type: 'Subjective', Active_Status: 'Active' }
-  ]};
 }
 
 

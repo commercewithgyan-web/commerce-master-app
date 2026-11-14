@@ -4851,12 +4851,16 @@
       if (pickerBox) {
         pickerBox.classList.toggle('hidden', !isTeacherView);
         if (isTeacherView && cbBox) {
-          cbBox.innerHTML = (appState.swotFieldOptions || []).map(f => `
-            <label class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white border border-indigo-200 text-[11px] font-bold cursor-pointer">
-              <input type="checkbox" class="swot-field-cb rounded text-indigo-600" value="${escHtml(f.key)}" ${appState.selectedSwotFields.includes(f.key) ? 'checked' : ''} />
-              <span>${escHtml(f.label)}</span>
-            </label>
-          `).join('');
+          if (!appState.swotFieldOptions || !appState.swotFieldOptions.length) {
+            cbBox.innerHTML = '<span class="text-xs text-amber-600 font-semibold">SWOT fields configure nahi hain (SWOT_Config tab check karein).</span>';
+          } else {
+            cbBox.innerHTML = appState.swotFieldOptions.map(f => `
+              <label class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white border border-indigo-200 text-[11px] font-bold cursor-pointer">
+                <input type="checkbox" class="swot-field-cb rounded text-indigo-600" value="${escHtml(f.key)}" ${appState.selectedSwotFields.includes(f.key) ? 'checked' : ''} />
+                <span>${escHtml(f.label)}</span>
+              </label>
+            `).join('');
+          }
         }
         if (isTeacherView && manInput) {
           manInput.value = (appState.swotManualNotes && appState.swotManualNotes[stu.roll]) || '';
@@ -6200,8 +6204,13 @@
             label: f.Label || f.label
           }));
           appState.selectedSwotFields = appState.swotFieldOptions.map(o => o.key);
+        } else {
+          appState.swotFieldOptions = [];
+          appState.selectedSwotFields = [];
         }
       }).catch(err => {
+        appState.swotFieldOptions = [];
+        appState.selectedSwotFields = [];
         console.warn('SWOT config load note: ' + err.message);
       });
 
@@ -7607,12 +7616,12 @@
                   let deliveryHtml = '';
                   if (st.medium === 'YouTube Public') {
                     deliveryHtml = st.videoUrl
-                      ? `<button type="button" data-videourl="${escHtml(st.videoUrl)}" data-videotitle="${escHtml(st.topic)}" data-topicid="${escHtml(st.canonicalTopicId || st.canonicalId || st.topic)}" class="stu-watch-video-btn px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold cursor-pointer">▶ Watch Lecture</button>
+                      ? `<button type="button" data-videourl="${escHtml(st.videoUrl)}" data-videotitle="${escHtml(st.topic)}" data-topicid="${escHtml(st.canonicalTopicId || st.canonicalId || '')}" class="stu-watch-video-btn px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold cursor-pointer">▶ Watch Lecture</button>
                          <a href="https://www.youtube.com/@CommerceGyan" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-[11px] font-bold">📺 YouTube Channel ↗</a>`
                       : `<a href="https://www.youtube.com/@CommerceGyan" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-600 text-white text-[11px] font-bold">📺 Watch on YouTube Channel ↗</a>`;
                   } else if (st.medium === 'YouTube Unlisted') {
                     deliveryHtml = st.videoUrl
-                      ? `<button type="button" data-videourl="${escHtml(st.videoUrl)}" data-videotitle="${escHtml(st.topic)}" data-topicid="${escHtml(st.canonicalTopicId || st.canonicalId || st.topic)}" class="stu-watch-video-btn px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold cursor-pointer">▶ Watch Unlisted Video</button>`
+                      ? `<button type="button" data-videourl="${escHtml(st.videoUrl)}" data-videotitle="${escHtml(st.topic)}" data-topicid="${escHtml(st.canonicalTopicId || st.canonicalId || '')}" class="stu-watch-video-btn px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold cursor-pointer">▶ Watch Unlisted Video</button>`
                       : `<span class="px-2 py-1 rounded-lg bg-slate-200 text-slate-600 text-[10px] font-bold">Video Uploading</span>`;
                   } else if (st.medium === 'CG App') {
                     deliveryHtml = `<a href="${escHtml(appState.cgAppUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold">📲 Open in CG App ↗</a>`;
@@ -7732,14 +7741,17 @@
       document.getElementById('stuSyllabusTreeContainer')?.addEventListener('click', (e) => {
         const vidBtn = e.target.closest('.stu-watch-video-btn');
         if (!vidBtn) return;
-        // R-29: Log video watch event
-        window.cgCallGas('logVideoWatch', {
-          canonicalTopicId: vidBtn.dataset.topicid || vidBtn.dataset.videotitle || 'TOPIC',
-          deliveryMedium: 'YouTube',
-          watched: true
-        }).catch(err => {
-          console.warn('logVideoWatch error: ' + err.message);
-        });
+        const topicId = String(vidBtn.dataset.topicid || '').trim();
+        // R-29: Log video watch event strictly with Canonical_Topic_ID (never invented or fallback)
+        if (topicId && topicId !== 'TOPIC') {
+          window.cgCallGas('logVideoWatch', {
+            canonicalTopicId: topicId,
+            deliveryMedium: 'YouTube',
+            watched: true
+          }).catch(err => {
+            console.warn('logVideoWatch error: ' + err.message);
+          });
+        }
         const playerBox = document.getElementById('stuVideoPlayerBox');
         if (!playerBox) return;
 

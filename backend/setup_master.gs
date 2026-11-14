@@ -416,4 +416,26 @@ function setupMasterErp_(erp) {
     formatHeaders_(auditSheet, ['Timestamp', 'Caller_ID', 'Role', 'Action', 'Target', 'Details', 'Status'], '#1E293B');
     Logger.log('  ✅ Initialized Audit_Log (N-3)');
   }
+
+  // SWOT_Config (N-1)
+  var swotSheet = createOrGetSheet_(erp, 'SWOT_Config');
+  if (swotSheet.getLastRow() === 0) {
+    formatHeaders_(swotSheet, ['Field_Key', 'Label', 'Field_Type', 'Active_Status'], '#312E81');
+    var seed = [
+      ['Attendance', 'Attendance % & Streak', 'Metric', 'Active'],
+      ['Test', 'Unit Test & Board Mock Scores', 'Metric', 'Active'],
+      ['DPP', '7 PM Daily Practice Papers', 'Metric', 'Active'],
+      ['Practice Paper', 'Self-Paced Practice Papers', 'Metric', 'Active'],
+      ['Attentiveness', 'Classroom Attentiveness & Participation', 'Subjective', 'Active']
+    ];
+    seed.forEach(function(r) { swotSheet.appendRow(r); });
+    Logger.log('  ✅ Initialized SWOT_Config with 5 active fields (N-1)');
+  }
+
+  // Marks_Log (R-14)
+  var marksSheet = createOrGetSheet_(erp, 'Marks_Log');
+  if (marksSheet.getLastRow() === 0) {
+    formatHeaders_(marksSheet, ['Date', 'Test_ID', 'Test_Type', 'Batch_ID', 'Roll_No', 'Subject', 'Chapter', 'Max_Marks', 'Marks', 'Entered_By'], '#1E3A8A');
+    Logger.log('  ✅ Initialized Marks_Log (R-14)');
+  }
 }
