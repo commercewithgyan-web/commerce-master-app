@@ -2106,6 +2106,47 @@ function setActiveSubtopic(payload) {
   }, 10000);
 }
 
+/**
+ * Updates student streak in Attendance_State (R-31 / L-10).
+ * Status 'P' increments streak.
+ * Status 'E' (Excused) or 'L' (Late) preserves current streak (never counted as unexcused absent).
+ * Status 'A' (Absent) resets streak to 0.
+ */
+function updateAttendanceStreak_(erp, rollNo, status, dateStr) {
+  try {
+    let stateSheet = erp.getSheetByName('Attendance_State');
+    if (!stateSheet) {
+      stateSheet = erp.insertSheet('Attendance_State');
+      stateSheet.appendRow(['Roll_No', 'Streak', 'Last_Date', 'Updated_At']);
+    }
+    const data = stateSheet.getDataRange().getValues();
+    const nowStr = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
+    let foundRow = -1;
+    let currentStreak = 0;
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]).trim() === String(rollNo).trim()) {
+        foundRow = i + 1;
+        currentStreak = Number(data[i][1]) || 0;
+        break;
+      }
+    }
+    let newStreak = currentStreak;
+    if (status === 'P') {
+      newStreak = currentStreak + 1;
+    } else if (status === 'A') {
+      newStreak = 0; // Unexcused absence breaks streak
+    } // For 'E' (Excused) and 'L' (Late), streak is preserved
+
+    if (foundRow > 0) {
+      stateSheet.getRange(foundRow, 2, 1, 3).setValues([[newStreak, dateStr, nowStr]]);
+    } else {
+      stateSheet.appendRow([rollNo, newStreak, dateStr, nowStr]);
+    }
+  } catch (err) {
+    Logger.log('Warning updating Attendance_State streak: ' + err.message);
+  }
+}
+
 function markBatchAttendance(payload) {
   return withWriteLock_(() => {
     const IDS = getActiveSheetIds();
@@ -2151,11 +2192,14 @@ function markBatchAttendance(payload) {
       }
 
 
-      // 3. Late / Absent Recovery Task Assignment (REC-01)
+      // 3. Late / Absent Recovery Task Assignment (REC-01) - Excused ('E') is exempted
       if ((st === 'L' || st === 'A') && revQueueSheet) {
         revQueueSheet.appendRow([r.rollNo, topicKey, dateStr, dateStr, 0, 'REC-01_PENDING']);
         rec01List.push(r.rollNo);
       }
+
+      // 4. Update Attendance_State Streak (R-31 / L-10)
+      updateAttendanceStreak_(erp, r.rollNo, st, dateStr);
     });
 
 

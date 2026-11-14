@@ -5547,7 +5547,7 @@
           const ok = await window.cgConfirm({
             badge: 'Commit Attendance',
             title: `Commit Batch Attendance (${batchId})?`,
-            body: `Present: ${pCnt} (+2🪙 each) · Late: ${lCnt} · Absent: ${aCnt}\nThis updates Attendance_Daily and triggers REC-01 recovery.`
+            body: `Present: ${pCnt} (+2🪙 each) · Late: ${lCnt} · Absent: ${aCnt} · Excused: ${records.filter(r => r.status === 'E').length}\nThis updates Attendance_Logs and triggers REC-01 recovery for Late/Absent (Excused is exempted).`
           });
           if (!ok) return;
         }
@@ -6148,15 +6148,16 @@
           const stu = appState.students.find(s => s.roll === attBtn.dataset.attroll);
           const idx = Number(attBtn.dataset.attidx);
           if (stu && !Number.isNaN(idx)) {
-            const cycle = ['P', 'A', 'L'];
+            const cycle = ['P', 'A', 'L', 'E'];
             const curSt = stu.att[idx] || 'P';
-            const nextSt = curSt === 'E' ? 'P' : cycle[(cycle.indexOf(curSt) + 1) % cycle.length];
+            const curIdx = cycle.indexOf(curSt);
+            const nextSt = cycle[(curIdx >= 0 ? curIdx + 1 : 0) % cycle.length];
             stu.att[idx] = nextSt;
             stu.attUncommitted = true;
             appState.uncommittedAttendance = true;
             renderAttendance();
             try { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); } catch (_) {}
-            showToast(`${stu.name}: Marked ${nextSt} (${idx === 6 ? 'Today' : 'Day ' + (idx + 1)})`, nextSt === 'P' ? 'emerald' : (nextSt === 'L' ? 'amber' : 'rose'));
+            showToast(`${stu.name}: Marked ${nextSt} (${idx === 6 ? 'Today' : 'Day ' + (idx + 1)})`, nextSt === 'P' ? 'emerald' : (nextSt === 'L' ? 'amber' : (nextSt === 'E' ? 'sky' : 'rose')));
           }
           return;
         }
