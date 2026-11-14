@@ -1,0 +1,4 @@
+# Production Clasp Ignore List
+# Exclude staging authorization helper and internal test files
+staging_authorize.gs
+tests/**
