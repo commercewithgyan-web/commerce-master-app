@@ -407,8 +407,14 @@ function setupMasterErp_(erp) {
   // Payment_Intimations (N-2)
   var payIntSheet = createOrGetSheet_(erp, 'Payment_Intimations');
   if (payIntSheet.getLastRow() === 0) {
-    formatHeaders_(payIntSheet, ['Timestamp', 'Roll_No', 'Amount', 'UTR', 'Status', 'Entry_ID'], '#065F46');
-    Logger.log('  ✅ Initialized Payment_Intimations (N-2)');
+    formatHeaders_(payIntSheet, ['Timestamp', 'Roll_No', 'Amount', 'UTR', 'Status', 'Entry_ID', 'Updated_At'], '#065F46');
+    Logger.log('  ✅ Initialized Payment_Intimations with 7-column schema (N-2)');
+  } else {
+    var intimHeaders = payIntSheet.getRange(1, 1, 1, payIntSheet.getLastColumn()).getValues()[0].map(function(h) { return String(h).trim(); });
+    if (intimHeaders.indexOf('Updated_At') === -1) {
+      payIntSheet.getRange(1, intimHeaders.length + 1).setValue('Updated_At');
+      Logger.log('  ✅ Harmonized Payment_Intimations to 7 columns with Updated_At');
+    }
   }
 
   // Audit_Log (N-3)

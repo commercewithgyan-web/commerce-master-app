@@ -3102,6 +3102,9 @@
       promises: [
         { promiseId: 'PRM-261111-001', date: '2026-11-11', enquiryId: 'ENQ-261110-003', studentName: 'Neha Kumari', discountPct: 10, flatOffINR: 0, status: 'PENDING', approvedBy: 'Gyan Sir', notes: 'Early bird counseling scholarship' }
       ],
+      rosterLoaded: false,
+      rosterLoading: false,
+      rosterLoadError: false,
       students: [
         { roll: 'CG-1201', name: 'Aarav Sharma', parentName: 'Sanjay Sharma', batch: 'Class 12 · CBSE', subjects: ['Accountancy', 'Business Studies', 'Economics'], status: 'Enrolled', joinDate: '2026-04-15', clearedMonths: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'], phone: '9835011201', parentPhone: '9835091201', sibling: false, coins: 145, unitTest: 94, dppScore: 92, mockScore: 90, vivaScore: 95, att: ['P','P','P','P','P','P','P'], note: 'Strong in Partnership & Cash Flow', plan: 'Quarterly', baseFee: 3300, daysLate: 0, lateWaived: false, feePaid: true },
         { roll: 'CG-1202', name: 'Ananya Verma', parentName: 'Rakesh Verma', batch: 'Class 12 · BSEB', subjects: ['Accountancy', 'Business Studies', 'Economics'], status: 'Enrolled', joinDate: '2026-04-18', clearedMonths: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'], phone: '9835011202', parentPhone: '9835011202', sibling: true, coins: 180, unitTest: 96, dppScore: 95, mockScore: 92, vivaScore: 98, att: ['P','P','P','P','P','P','P'], note: 'State Rank Contender · Sibling Linked (ONB-09)', plan: 'Monthly', baseFee: 1200, daysLate: 0, lateWaived: false, feePaid: true },
@@ -4401,8 +4404,14 @@
       const latePct = Number(cfg.latePct) || 5;
 
       const feeRollSel = document.getElementById('feeFormRollSelect');
-      if (feeRollSel && feeRollSel.options.length !== (appState.students.length + 1)) {
-        feeRollSel.innerHTML = '<option value="">-- Select Student --</option>' + appState.students.map(s => `<option value="${escHtml(s.roll)}">${escHtml(s.name)} (${escHtml(s.roll)})</option>`).join('');
+      if (feeRollSel) {
+        if (appState.rosterLoadError || (!appState.rosterLoaded && !appState.rosterLoading)) {
+          feeRollSel.innerHTML = '<option value="">⚠️ Error: Roster load failed</option>';
+        } else if (appState.rosterLoading && !appState.rosterLoaded) {
+          feeRollSel.innerHTML = '<option value="">⏳ Syncing live roster...</option>';
+        } else {
+          feeRollSel.innerHTML = '<option value="">-- Select Student --</option>' + appState.students.map(s => `<option value="${escHtml(s.roll)}">${escHtml(s.name)} (${escHtml(s.roll)})</option>`).join('');
+        }
       }
 
       const overdueCount = appState.students.filter(s => !s.feePaid && (s.daysLate || 0) > 5).length;
@@ -6860,6 +6869,7 @@
 
       // Refresh Live CRM Pipeline & Sheet Configs from Google Sheets
       window.syncLiveErpFromSheets = function(showSuccessToast) {
+        appState.rosterLoading = true;
         return window.cgCallGas('getCrmData', {}).then(data => {
           if (data && Array.isArray(data.inquiries) && data.inquiries.length) {
             appState.inquiries = data.inquiries.slice(-30).reverse().map(r => ({
@@ -6901,6 +6911,41 @@
           }
           if (data && Array.isArray(data.students) && data.students.length) {
             appState.activeStudentCount = data.students.length;
+            appState.students = data.students.map(s => {
+              const roll = String(s.Roll_No || s.roll || '').trim();
+              const name = String(s.Student_Name || s.name || '').trim();
+              const batch = String(s.Class_Level || s.Batch || s.batch || 'Class 12').trim();
+              const phone = String(s.Contact_Number || s.phone || '').trim();
+              const parentPhone = String(s.Parent_Mobile || s.parentPhone || '').trim();
+              const feeStatus = String(s.Fee_Status || '').trim().toLowerCase();
+              return {
+                roll: roll,
+                name: name,
+                parentName: String(s.Parent_Name || s.parentName || '').trim(),
+                batch: batch,
+                subjects: Array.isArray(s.subjects) ? s.subjects : ['Accountancy', 'Business Studies', 'Economics'],
+                status: String(s.Status || s.status || 'Enrolled').trim(),
+                joinDate: String(s.Join_Date || s.joinDate || '').slice(0, 10),
+                clearedMonths: [],
+                phone: phone,
+                parentPhone: parentPhone,
+                sibling: Boolean(s.sibling),
+                coins: Number(s.Coin_Balance || s.coins || 0),
+                unitTest: Number(s.unitTest || 0),
+                dppScore: Number(s.dppScore || 0),
+                mockScore: Number(s.mockScore || 0),
+                vivaScore: Number(s.vivaScore || 0),
+                att: Array.isArray(s.att) ? s.att : ['P','P','P','P','P','P','P'],
+                note: String(s.note || '').trim(),
+                plan: String(s.Plan || s.plan || 'Monthly').trim(),
+                baseFee: Number(s.baseFee || 1200),
+                daysLate: Number(s.daysLate || 0),
+                lateWaived: Boolean(s.lateWaived),
+                feePaid: feeStatus === 'paid'
+              };
+            });
+            appState.rosterLoaded = true;
+            appState.rosterLoadError = false;
           }
           if (data && data.feeSettings) {
             appState.feeSettings = Object.assign({}, appState.feeSettings, data.feeSettings);
@@ -6911,7 +6956,13 @@
           renderAll();
           if (showSuccessToast) showToast(`Synced ${appState.inquiries.length} inquiries & ${appState.activeStudentCount} students from Google Sheets!`, 'emerald');
         }).catch(err => {
+          appState.rosterLoaded = false;
+          appState.rosterLoadError = true;
+          renderFees();
           if (showSuccessToast) showToast(`Sync note: ${err.message}`, 'amber');
+        }).finally(() => {
+          appState.rosterLoading = false;
+          renderFees();
         });
       };
 
