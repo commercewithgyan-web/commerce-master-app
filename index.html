@@ -72,6 +72,11 @@
       border-radius: 24px;
     }
 
+    /* Checkbox theme accent (L7) */
+    input[type="checkbox"], .ch-modal-cb, .stu-practice-ch-cb {
+      accent-color: #7C30E0 !important;
+    }
+
     html.dark .glass-card {
       background: rgba(255, 255, 255, 0.08) !important;
       backdrop-filter: blur(20px) saturate(180%) !important;
@@ -248,7 +253,7 @@
       } catch (e) {}
       var overlay = document.createElement('div');
       overlay.id = 'cgAuthFailedOverlay';
-      overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-gradient-to-b from-[#f6f1ff] via-[#fcf9ff] to-[#f0ecfb] dark:from-[#0B0A12] dark:via-[#161226] dark:to-[#120F1F] font-['Inter',sans-serif] overflow-y-auto';
+      overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-gradient-to-b from-[#f6f1ff] via-[#fcf9ff] to-[#f0ecfb] dark:from-[#0B0A12] dark:via-[#161226] dark:to-[#120F1F] font-sans overflow-y-auto';
       overlay.innerHTML = [
         '<div class="relative w-full max-w-[390px] rounded-[32px] p-6 text-center glass-card border border-white/60 dark:border-white/10 shadow-2xl">',
         '  <div class="flex justify-center mb-5">',
@@ -259,7 +264,7 @@
         '      </div>',
         '    </div>',
         '  </div>',
-        '  <h1 class="text-2xl font-bold font-['Plus_Jakarta_Sans',sans-serif] text-[#1E0063] dark:text-[#F3ECFF] tracking-tight mb-1">Commerce Gyan</h1>',
+        '  <h1 class="text-2xl font-bold font-sans text-[#1E0063] dark:text-[#F3ECFF] tracking-tight mb-1">Commerce Gyan</h1>',
         '  <p class="text-[14px] font-medium text-[#4D4468] dark:text-[#C8BCF6]/90 mb-5">Padhai, fees aur progress — sab ek jagah</p>',
         '  <div class="w-full max-w-[260px] mx-auto mb-6">',
         '    <div class="w-full h-1.5 bg-purple-100 dark:bg-white/10 rounded-full overflow-hidden shadow-inner">',
@@ -282,19 +287,19 @@
         '    </div>',
         '    <div class="mt-3 pt-2.5 border-t border-slate-200/50 dark:border-white/10 flex justify-end">',
         '      <a href="https://t.me/CommerceGyanDostbot" class="min-h-[44px] px-5 py-2 rounded-full bg-[#7C30E0] text-white text-[14px] font-bold flex items-center gap-2 shadow-md active:scale-95 transition-all">',
-        '        <span class="material-symbols-outlined text-[18px]">sync</span><span>Dobara try karo</span>',
+        '        <span class="material-symbols-outlined text-[18px]">sync</span><span>Retry</span>',
         '      </a>',
         '    </div>',
         '  </div>',
         '  <div class="flex flex-col gap-2 pt-2 border-t border-slate-200/50 dark:border-white/10">',
         '    <div class="text-[14px] font-semibold text-slate-500 dark:text-slate-400 mb-1">Developer Preview Modes</div>',
-        '    <button type="button" onclick="document.documentElement.classList.remove('cg-lock'); document.getElementById('cgAuthFailedOverlay').remove(); if(window.switchAppMode) window.switchAppMode('ops');" class="min-h-[44px] px-4 py-2 rounded-full bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/40 dark:hover:bg-purple-900/60 text-[#7C30E0] dark:text-purple-200 text-[14px] font-bold border border-purple-300 dark:border-purple-700/50 flex items-center justify-center gap-2 cursor-pointer transition">',
+        '    <button type="button" onclick="document.documentElement.classList.remove(\'cg-lock\'); document.getElementById(\'cgAuthFailedOverlay\').remove(); if(window.switchAppMode) window.switchAppMode(\'ops\');" class="min-h-[44px] px-4 py-2 rounded-full bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/40 dark:hover:bg-purple-900/60 text-[#7C30E0] dark:text-purple-200 text-[14px] font-bold border border-purple-300 dark:border-purple-700/50 flex items-center justify-center gap-2 cursor-pointer transition">',
         '      <span>📲</span><span>Open Teacher Daily Ops (5 Tabs)</span>',
         '    </button>',
-        '    <button type="button" onclick="document.documentElement.classList.remove('cg-lock'); document.getElementById('cgAuthFailedOverlay').remove(); if(window.switchAppMode) window.switchAppMode('student');" class="min-h-[44px] px-4 py-2 rounded-full bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 text-[14px] font-bold border border-emerald-300 dark:border-emerald-700/50 flex items-center justify-center gap-2 cursor-pointer transition">',
+        '    <button type="button" onclick="document.documentElement.classList.remove(\'cg-lock\'); document.getElementById(\'cgAuthFailedOverlay\').remove(); if(window.switchAppMode) window.switchAppMode(\'student\');" class="min-h-[44px] px-4 py-2 rounded-full bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 text-[14px] font-bold border border-emerald-300 dark:border-emerald-700/50 flex items-center justify-center gap-2 cursor-pointer transition">',
         '      <span>🎓</span><span>Open Student App (5 Tabs)</span>',
         '    </button>',
-        '    <button type="button" onclick="document.documentElement.classList.remove('cg-lock'); document.getElementById('cgAuthFailedOverlay').remove(); if(window.switchAppMode) window.switchAppMode('teacher');" class="min-h-[44px] px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[14px] font-bold border border-slate-300 dark:border-slate-600 flex items-center justify-center gap-2 cursor-pointer transition">',
+        '    <button type="button" onclick="document.documentElement.classList.remove(\'cg-lock\'); document.getElementById(\'cgAuthFailedOverlay\').remove(); if(window.switchAppMode) window.switchAppMode(\'teacher\');" class="min-h-[44px] px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[14px] font-bold border border-slate-300 dark:border-slate-600 flex items-center justify-center gap-2 cursor-pointer transition">',
         '      <span>🖥️</span><span>Open Teacher Command Studio (Laptop)</span>',
         '    </button>',
         '  </div>',
@@ -2683,7 +2688,60 @@
     </div>
 
     <!-- TAB 2: SYLLABUS TREE & SELF-PACED PRACTICE BANK (S3 + S4) -->
-    <div id="tgTab-syllabus" class="tg-student-tab space-y-3.5" style="display: none;">
+    <div id="tgTab-syllabus" class="tg-student-tab space-y-3.5 pb-28" style="display: none;">
+      <!-- SECTION: TODAY'S PRACTICE (STITCH CALM EDUGLASS) -->
+      <section class="space-y-3">
+        <div class="flex items-center justify-between">
+          <h1 class="text-[20px] font-bold text-on-surface tracking-tight whitespace-nowrap">
+            Today's Practice
+          </h1>
+          <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-md border border-white/90 dark:border-white/15 text-[14px] font-semibold text-on-surface shrink-0 shadow-sm">
+            <span class="material-symbols-outlined text-primary text-[18px]">calendar_today</span>
+            <span id="stuTodayPracticeDatePill" class="whitespace-nowrap">Today</span>
+          </div>
+        </div>
+
+        <!-- 2 CARDS -->
+        <div class="space-y-3.5 flex flex-col">
+          <!-- CARD 1: Today's DPP -->
+          <article class="glass-card p-4 relative overflow-hidden transition-all">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-[#F87800]"></div>
+            <div class="flex items-center justify-between gap-2 mb-2 pl-1">
+              <h3 class="text-[17px] font-bold text-on-surface whitespace-nowrap">
+                Today's DPP
+              </h3>
+              <!-- ONE status chip only (F1) -->
+              <span id="stuDppStatusChip" class="inline-flex items-center px-2.5 py-1 rounded-full bg-[#FFF3E6] dark:bg-amber-950/60 border border-[#FFD3A3] dark:border-amber-800 text-[#B85600] dark:text-amber-300 text-[14px] font-bold whitespace-nowrap shrink-0">
+                Pending
+              </span>
+            </div>
+            <div class="flex items-center gap-1.5 text-on-surface-variant text-[14px] font-medium pl-1 mb-3.5">
+              <span class="material-symbols-outlined text-[18px]">quiz</span>
+              <span id="stuDppCountText" class="whitespace-nowrap">5 Questions</span>
+            </div>
+            <button id="stuOpenDailyMcqBtn" type="button" class="w-full min-h-[46px] btn-accent-orange text-white rounded-full flex items-center justify-center text-[15px] font-bold tracking-wide transition-all whitespace-nowrap cursor-pointer">
+              Start Practice
+            </button>
+          </article>
+
+          <!-- CARD 2: Chapter Practice -->
+          <article class="glass-card p-4 relative overflow-hidden transition-all">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-[#7C30E0]"></div>
+            <div class="flex items-center justify-between gap-2 mb-2 pl-1">
+              <h3 class="text-[17px] font-bold text-on-surface whitespace-nowrap">
+                Chapter Practice
+              </h3>
+            </div>
+            <p class="text-[14px] text-on-surface-variant pl-1 mb-3.5 whitespace-nowrap overflow-hidden text-ellipsis">
+              Pick chapters and practise at your own pace
+            </p>
+            <button id="stuOpenChooseChaptersBtn" type="button" class="w-full min-h-[46px] bg-white/70 dark:bg-white/10 hover:bg-white dark:hover:bg-white/15 border-2 border-[#7C30E0]/40 text-[#7C30E0] dark:text-[#C8BCF6] rounded-full flex items-center justify-center text-[15px] font-bold transition-all whitespace-nowrap cursor-pointer">
+              Choose Chapters
+            </button>
+          </article>
+        </div>
+      </section>
+
       <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3.5">
         <div class="flex items-start justify-between gap-2">
           <div>
@@ -3133,18 +3191,258 @@
     </div>
   </div>
 
-  <!-- Full-Screen 4-Option Daily MCQ / Practice Runner Overlay (S2 + S4) -->
-  <div id="stuMcqRunnerOverlay" class="fixed inset-0 z-[60] hidden bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-3 sm:p-5">
-    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[94vh] overflow-y-auto">
-      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-        <div>
-          <span id="mcqRunnerBadge" class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[14px] font-extrabold uppercase">Daily MCQ / DPP</span>
-          <h3 id="mcqRunnerMetaTitle" class="text-xs font-bold text-slate-500 mt-1">Question 1 of 5</h3>
-        </div>
-        <button id="closeMcqRunnerBtn" type="button" class="h-8 px-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold">✕ Exit</button>
+  <!-- Full-Screen 4-Option Daily MCQ / Practice Runner Overlay (Stitch Calm EduGlass) -->
+  <div id="stuMcqRunnerOverlay" class="fixed inset-0 z-[60] hidden bg-gradient-to-b from-[#FAF7FF] via-[#F4EFFC] to-[#FDFBFE] dark:from-[#12002E] dark:via-[#16003B] dark:to-[#1E0063] flex flex-col justify-between overflow-hidden">
+    <div class="w-full max-w-[390px] mx-auto h-full flex flex-col justify-between p-3.5 relative overflow-hidden">
+      
+      <!-- VIEW 1: Active Question Screen -->
+      <div id="mcqQuestionView" class="h-full flex flex-col justify-between">
+        <!-- Top Bar & Progress Area -->
+        <header class="shrink-0 bg-white/60 dark:bg-white/5 backdrop-blur-xl px-2 pt-2 pb-2 rounded-2xl mb-2">
+          <div class="flex items-center justify-between mb-2">
+            <!-- Back Arrow Button (>=44px touch target) -->
+            <button id="mcqRunnerBackBtn" type="button" aria-label="Go Back" class="w-11 h-11 rounded-full flex items-center justify-center bg-[#F1E8FF] dark:bg-white/10 text-[#7C30E0] dark:text-[#C8BCF6] border border-purple-200/60 dark:border-white/10 hover:bg-purple-100 active:scale-95 transition cursor-pointer shrink-0">
+              <span class="material-symbols-outlined text-[24px]">arrow_back</span>
+            </button>
+            <!-- Screen Title: "<Subject> · Q 5/20" on one line (>=14px) -->
+            <h1 id="mcqQuestionHeaderTitle" class="text-[16px] font-bold text-on-surface text-center tracking-tight font-sans whitespace-nowrap truncate px-2">
+              Accounts · Q 1/5
+            </h1>
+            <!-- Timer Pill: "05:12" on one line (>=44px touch area) -->
+            <div class="h-11 px-3.5 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center gap-1.5 shadow-sm whitespace-nowrap shrink-0">
+              <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-[18px]">timer</span>
+              <span id="mcqTimerText" class="text-[14px] font-bold text-amber-900 dark:text-amber-200 tracking-wide font-sans">00:00</span>
+            </div>
+          </div>
+          <!-- Progress Bar (Thin Purple) -->
+          <div class="w-full h-1.5 bg-purple-100 dark:bg-white/10 rounded-full overflow-hidden">
+            <div id="mcqProgressBar" class="h-full bg-gradient-to-r from-[#7C30E0] to-[#A855F7] rounded-full transition-all duration-300" style="width: 20%;"></div>
+          </div>
+          <!-- Single Horizontal Line of Dots -->
+          <div id="mcqDotsRow" class="flex items-center gap-1.5 pt-2 pb-0.5 overflow-x-auto justify-center"></div>
+        </header>
+
+        <!-- Main Question & Options Canvas -->
+        <main class="flex-1 flex flex-col justify-start py-1 overflow-y-auto space-y-2.5">
+          <!-- Glass Question Card -->
+          <div class="glass-card rounded-2xl p-4 flex flex-col gap-2">
+            <p id="mcqQuestionText" class="text-[15px] text-on-surface leading-snug font-bold font-sans">
+              Question text
+            </p>
+          </div>
+
+          <!-- 4 Options (A, B, C, D) touch height >=44px, text >=14px -->
+          <div id="mcqOptionsContainer" class="flex flex-col space-y-2"></div>
+
+          <!-- Explanation Card (Appears after tap, F3) -->
+          <div id="mcqExplanationCard" class="hidden glass-card rounded-2xl p-3.5 border-l-4 border-l-[#7C30E0] flex flex-col gap-1.5 bg-white/95 dark:bg-slate-900/95 shadow-md">
+            <div id="mcqExplanationVerdict" class="text-[14px] font-bold"></div>
+            <p id="mcqExplanationBody" class="text-[14px] text-on-surface leading-relaxed"></p>
+            <div id="mcqCoinsLine" class="hidden text-[14px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1 pt-0.5">
+              <span class="material-symbols-outlined text-[18px]">monetization_on</span>
+              <span id="mcqCoinsText">+10 coins</span>
+            </div>
+          </div>
+        </main>
+
+        <!-- Bottom Action Row: Skip and Next -->
+        <footer class="glass-card rounded-2xl p-2.5 flex items-center gap-2.5 w-full shrink-0 mt-1">
+          <button id="mcqSkipBtn" type="button" class="h-11 flex-1 rounded-full border-2 border-[#7C30E0]/40 text-[#7C30E0] dark:text-[#C8BCF6] text-[15px] font-bold flex items-center justify-center hover:bg-purple-50 dark:hover:bg-purple-950/40 active:scale-95 transition-all whitespace-nowrap cursor-pointer">
+            Skip
+          </button>
+          <button id="mcqNextBtn" type="button" disabled class="h-11 flex-1 rounded-full bg-[#F1ECFA] dark:bg-white/[0.08] text-[#A79CC0] dark:text-white/40 text-[15px] font-bold flex items-center justify-center transition-all whitespace-nowrap cursor-not-allowed">
+            Next
+          </button>
+        </footer>
       </div>
-      <div id="mcqRunnerQuestionBody" class="space-y-3"></div>
-      <div id="mcqRunnerFeedbackBox" class="hidden p-3 rounded-xl text-xs space-y-2"></div>
+
+      <!-- VIEW 2: Exit Sheet Modal ("End this practice?") -->
+      <div id="mcqExitSheet" class="hidden absolute inset-0 z-40 bg-[#16062B]/50 backdrop-blur-[6px] flex flex-col justify-end p-3 pb-6 animate-[fadeIn_0.2s_ease-out]">
+        <div class="rounded-[32px] bg-white/95 dark:bg-[#1E192E]/95 backdrop-blur-[28px] border border-white/80 dark:border-white/10 shadow-[0_24px_48px_-8px_rgba(30,0,99,0.35)] p-5 flex flex-col">
+          <div class="w-12 h-1.5 bg-slate-400/30 rounded-full mx-auto mb-3"></div>
+          <h2 class="text-[20px] font-bold text-on-surface text-center mb-4">
+            End this practice?
+          </h2>
+          <!-- Three Stat Counters in ONE row -->
+          <div class="grid grid-cols-3 gap-2 mb-3">
+            <div class="flex flex-col items-center justify-center py-3 px-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800">
+              <span id="exitStatAnswered" class="text-[22px] font-bold text-emerald-600 dark:text-emerald-400 leading-none mb-1">0</span>
+              <span class="text-[14px] font-semibold text-emerald-800 dark:text-emerald-300">Answered</span>
+            </div>
+            <div class="flex flex-col items-center justify-center py-3 px-2 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800">
+              <span id="exitStatSkipped" class="text-[22px] font-bold text-amber-600 dark:text-amber-400 leading-none mb-1">0</span>
+              <span class="text-[14px] font-semibold text-amber-800 dark:text-amber-300">Skipped</span>
+            </div>
+            <div class="flex flex-col items-center justify-center py-3 px-2 rounded-2xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800">
+              <span id="exitStatTime" class="text-[22px] font-bold text-purple-600 dark:text-purple-400 leading-none mb-1">00:00</span>
+              <span class="text-[14px] font-semibold text-purple-800 dark:text-purple-300">Time</span>
+            </div>
+          </div>
+          <p class="text-[14px] text-slate-500 dark:text-slate-400 text-center my-3">
+            Skipped questions will not reopen in this round.
+          </p>
+          <button id="exitViewResultBtn" type="button" class="w-full h-11 rounded-full btn-accent-orange text-white text-[15px] font-bold flex items-center justify-center cursor-pointer mb-2">
+            View Result
+          </button>
+          <button id="exitContinueBtn" type="button" class="w-full text-center text-[14px] font-bold text-[#7C30E0] dark:text-[#C8BCF6] py-2 cursor-pointer">
+            Continue Practice
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW 3: Result Screen ("Practice Result") (L1: stacked from top with 12px gap) -->
+      <div id="mcqResultView" class="hidden h-full flex flex-col justify-start py-2 overflow-y-auto space-y-3">
+        <!-- Header (L3, L4: back arrow at left, left-aligned title, date pill at right) -->
+        <header class="flex items-center justify-between shrink-0 mb-0.5">
+          <div class="flex items-center gap-2.5">
+            <button id="resultHeaderBackBtn" type="button" class="w-11 h-11 rounded-full flex items-center justify-center bg-[#F1E8FF] dark:bg-white/10 text-[#7C30E0] dark:text-[#C8BCF6] border border-purple-200/60 dark:border-white/10 active:scale-95 transition cursor-pointer shrink-0">
+              <span class="material-symbols-outlined text-[24px]">arrow_back</span>
+            </button>
+            <h1 class="text-[20px] font-bold text-on-surface whitespace-nowrap">
+              Practice Result
+            </h1>
+          </div>
+          <span id="mcqResultDatePill" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-950/60 text-[#7C30E0] dark:text-[#C8BCF6] text-[14px] font-semibold border border-purple-200 dark:border-purple-800 whitespace-nowrap">
+            <span class="material-symbols-outlined text-[16px]">calendar_today</span>
+            Today, 15 Nov
+          </span>
+        </header>
+
+        <!-- Score Hero Card -->
+        <div class="glass-card rounded-3xl p-4 text-center relative overflow-hidden space-y-2">
+          <!-- Coin Reward Pill -->
+          <div id="resultCoinBox" class="hidden flex justify-center mb-1">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 text-[14px] font-bold shadow-sm whitespace-nowrap">
+              <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-[18px]">monetization_on</span>
+              <span id="resultCoinText">+10 coins</span>
+            </span>
+          </div>
+
+          <!-- Circular Score Ring SVG (F4: Ring label is Score, NOT Total Marks) -->
+          <div class="relative w-32 h-32 mx-auto my-1 flex items-center justify-center">
+            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" fill="none" r="50" stroke="rgba(124, 48, 224, 0.12)" stroke-width="10"></circle>
+              <circle id="resultRingCircle" cx="60" cy="60" fill="none" r="50" stroke="url(#resultRingGrad)" stroke-dasharray="314.16" stroke-dashoffset="62.83" stroke-linecap="round" stroke-width="10"></circle>
+              <defs>
+                <linearGradient id="resultRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#7C30E0"></stop>
+                  <stop offset="100%" stop-color="#10B981"></stop>
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+              <span id="resultScoreRingText" class="text-[26px] font-extrabold text-on-surface leading-none">4/5</span>
+              <span class="text-[14px] text-slate-500 dark:text-slate-400 font-medium mt-1 whitespace-nowrap">Score</span>
+            </div>
+          </div>
+
+          <!-- Accuracy line -->
+          <div class="mt-1">
+            <span id="resultAccuracyLine" class="text-[16px] font-bold text-on-surface whitespace-nowrap">
+              Shabaash! Accuracy 80%
+            </span>
+          </div>
+
+          <!-- Three Metric Counters in ONE row of three equal boxes (L2: number 22px bold on top, label 14px below) -->
+          <div class="grid grid-cols-3 gap-2 mt-3">
+            <div class="flex flex-col items-center justify-center py-2.5 px-1 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800">
+              <span id="resultCorrectCounter" class="text-[22px] font-bold text-emerald-600 dark:text-emerald-400 leading-none mb-1">4</span>
+              <span class="text-[14px] font-semibold text-emerald-800 dark:text-emerald-300">Correct</span>
+            </div>
+            <div class="flex flex-col items-center justify-center py-2.5 px-1 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800">
+              <span id="resultIncorrectCounter" class="text-[22px] font-bold text-rose-600 dark:text-rose-400 leading-none mb-1">1</span>
+              <span class="text-[14px] font-semibold text-rose-800 dark:text-rose-300">Incorrect</span>
+            </div>
+            <div class="flex flex-col items-center justify-center py-2.5 px-1 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800">
+              <span id="resultSkippedCounter" class="text-[22px] font-bold text-amber-600 dark:text-amber-400 leading-none mb-1">0</span>
+              <span class="text-[14px] font-semibold text-amber-800 dark:text-amber-300">Skipped</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Topics to Revise Section (shown ONLY if data has topics) -->
+        <div id="resultTopicsSection" class="hidden glass-card rounded-2xl p-3.5 space-y-2">
+          <h3 class="text-[15px] font-bold text-on-surface whitespace-nowrap">Topics to Revise</h3>
+          <div id="resultTopicsList" class="space-y-1.5"></div>
+        </div>
+
+        <!-- Result Action Buttons (L3: Done & Return removed) -->
+        <div class="space-y-2 pt-1">
+          <button id="resultReviewMistakesBtn" type="button" class="w-full h-11 rounded-full btn-accent-orange text-white text-[15px] font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md">
+            <span>Review Mistakes</span>
+            <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+          </button>
+          <button id="resultPractiseAgainBtn" type="button" class="w-full h-11 rounded-full border-2 border-[#7C30E0]/40 text-[#7C30E0] dark:text-[#C8BCF6] text-[15px] font-bold flex items-center justify-center hover:bg-purple-50 dark:hover:bg-purple-950/40 active:scale-95 transition-all whitespace-nowrap cursor-pointer">
+            Practise Again
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW 4: Review Mistakes Screen ("Review Mistakes") (L1: stacked from top) -->
+      <div id="mcqReviewMistakesView" class="hidden h-full flex flex-col justify-start py-2 overflow-y-auto space-y-3">
+        <!-- Header (R2, L4: back arrow at left, left-aligned title with subtitle, red pill removed) -->
+        <header class="flex items-center gap-3 shrink-0 mb-0.5">
+          <button id="reviewMistakesBackBtn" type="button" class="w-11 h-11 rounded-full flex items-center justify-center bg-[#F1E8FF] dark:bg-white/10 text-[#7C30E0] dark:text-[#C8BCF6] border border-purple-200/60 dark:border-white/10 active:scale-95 transition cursor-pointer shrink-0">
+            <span class="material-symbols-outlined text-[24px]">arrow_back</span>
+          </button>
+          <div class="flex flex-col text-left">
+            <h1 class="text-[18px] font-bold text-on-surface whitespace-nowrap leading-tight">
+              Review Mistakes
+            </h1>
+            <span id="reviewMistakesCountSubtitle" class="text-[14px] font-medium text-slate-500 dark:text-slate-400">
+              1 of 5 incorrect
+            </span>
+          </div>
+        </header>
+
+        <!-- Mistakes List -->
+        <main id="reviewMistakesList" class="flex-1 space-y-3 overflow-y-auto py-1"></main>
+
+        <!-- Action Button: Practise Mistakes Again -->
+        <footer class="pt-1 shrink-0">
+          <button id="reviewPractiseAgainBtn" type="button" class="w-full h-11 rounded-full btn-accent-orange text-white text-[15px] font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md">
+            <span>Practise Mistakes Again</span>
+            <span class="material-symbols-outlined text-[18px]">refresh</span>
+          </button>
+        </footer>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Choose Chapters Modal -->
+  <div id="stuChooseChaptersModal" class="fixed inset-0 z-[60] hidden bg-[#16062B]/50 backdrop-blur-md flex items-center justify-center p-3">
+    <div class="glass-card rounded-[32px] max-w-[390px] w-full p-5 shadow-2xl flex flex-col max-h-[90vh] bg-white/95 dark:bg-[#1E192E]/95 backdrop-blur-[28px] border border-white/80 dark:border-white/10">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
+        <h2 class="text-[18px] font-bold text-on-surface whitespace-nowrap">
+          Choose Chapters
+        </h2>
+        <button id="closeChooseChaptersBtn" type="button" class="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-[14px] cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <!-- Subject chips: Accounts / Economics / BST -->
+      <div class="flex items-center gap-2 py-3 shrink-0">
+        <button type="button" data-chsubj="Accountancy" class="ch-subj-btn flex-1 py-1.5 px-2 rounded-full text-[14px] font-bold bg-[#7C30E0] text-white shadow-sm transition cursor-pointer text-center">Accounts</button>
+        <button type="button" data-chsubj="Economics" class="ch-subj-btn flex-1 py-1.5 px-2 rounded-full text-[14px] font-bold bg-white/70 dark:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer text-center">Economics</button>
+        <button type="button" data-chsubj="Business Studies" class="ch-subj-btn flex-1 py-1.5 px-2 rounded-full text-[14px] font-bold bg-white/70 dark:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer text-center">BST</button>
+      </div>
+
+      <div class="flex items-center justify-between pb-2 shrink-0">
+        <span class="text-[14px] text-slate-500 dark:text-slate-400">Select chapters to practise</span>
+        <span id="chooseChaptersCountBadge" class="text-[14px] font-bold text-[#7C30E0] dark:text-[#C8BCF6]">3 Selected</span>
+      </div>
+
+      <!-- Chapter Checkboxes List (F6: question count only if data provides it, one line with ellipsis) -->
+      <div id="chooseChaptersList" class="flex-1 space-y-2 overflow-y-auto py-1"></div>
+
+      <div class="pt-3 border-t border-slate-200 dark:border-slate-800 shrink-0">
+        <button id="chooseChaptersStartBtn" type="button" class="w-full h-11 rounded-full btn-accent-orange text-white text-[15px] font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md">
+          <span>Start Practice</span>
+          <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -6651,25 +6949,154 @@
       };
       window.PRACTICE_QUESTION_BANK = PRACTICE_QUESTION_BANK;
 
+      // ───────────────────────────────────────────────────────────────────────
+      // STITCH CALM EDUGLASS — STUDENT PRACTICE & MCQ RUNNER ENGINE (FINAL-20)
+      // ───────────────────────────────────────────────────────────────────────
       let activeQuizAbort = false;
+      let activeQuizTimerInterval = null;
+      let activeQuizSeconds = 0;
+
+      // Real date formatting: strictly "Today, 15 Nov" (no year!)
+      function formatTodayDatePill_() {
+        try {
+          const now = new Date();
+          const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          return 'Today, ' + now.getDate() + ' ' + months[now.getMonth()];
+        } catch (_) {
+          return 'Today, 15 Nov';
+        }
+      }
+
+      function updateTodayPracticeUI() {
+        const pill = document.getElementById('stuTodayPracticeDatePill');
+        if (pill) pill.textContent = formatTodayDatePill_();
+
+        const rollNo = document.getElementById('tgStudentSelect')?.value || 'CG-1201';
+        const todayKey = new Date().toISOString().slice(0, 10);
+        const chip = document.getElementById('stuDppStatusChip');
+        if (chip) {
+          try {
+            const saved = localStorage.getItem('cg_dpp_res_' + rollNo + '_' + todayKey);
+            if (saved) {
+              const res = JSON.parse(saved);
+              chip.className = 'inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-[14px] font-bold whitespace-nowrap shrink-0';
+              chip.textContent = 'Completed · ' + res.score + '/' + res.total;
+            } else {
+              chip.className = 'inline-flex items-center px-2.5 py-1 rounded-full bg-[#FFF3E6] dark:bg-amber-950/60 border border-[#FFD3A3] dark:border-amber-800 text-[#B85600] dark:text-amber-300 text-[14px] font-bold whitespace-nowrap shrink-0';
+              chip.textContent = 'Pending';
+            }
+          } catch (_) {
+            chip.textContent = 'Pending';
+          }
+        }
+      }
+
       window.launchMcqRunner = function({ title, badge, mode, subject, questions }) {
         const overlay = document.getElementById('stuMcqRunnerOverlay');
-        const badgeEl = document.getElementById('mcqRunnerBadge');
-        const metaEl = document.getElementById('mcqRunnerMetaTitle');
-        const bodyEl = document.getElementById('mcqRunnerQuestionBody');
-        const fbEl = document.getElementById('mcqRunnerFeedbackBox');
-        if (!overlay || !bodyEl || !questions || !questions.length) return;
+        const questionView = document.getElementById('mcqQuestionView');
+        const exitSheet = document.getElementById('mcqExitSheet');
+        const resultView = document.getElementById('mcqResultView');
+        const reviewMistakesView = document.getElementById('mcqReviewMistakesView');
+
+        if (!overlay || !questions || !questions.length) {
+          showToast('No practice set for today yet.', 'amber');
+          return;
+        }
 
         activeQuizAbort = false;
-        let idx = 0, score = 0, earnedTotal = 0;
-        if (badgeEl) badgeEl.textContent = badge || 'Daily MCQ / DPP';
+        clearInterval(activeQuizTimerInterval);
+        activeQuizSeconds = 0;
+        const total = questions.length;
+        let idx = 0;
+        let score = 0;
+        let earnedTotal = 0;
+        let answeredCount = 0;
+        let skippedCount = 0;
+        const statusList = new Array(total).fill('unvisited'); // 'unvisited' | 'current' | 'correct' | 'incorrect' | 'skipped'
+        const mistakesList = [];
+        const rollNo = document.getElementById('tgStudentSelect')?.value || 'CG-1201';
+        const stu = appState.students.find(s => s.roll === rollNo) || appState.students[0];
+        const subjName = subject || 'Accountancy';
+
+        // Timer counter
+        const formatTime = (sec) => {
+          const m = String(Math.floor(sec / 60)).padStart(2, '0');
+          const s = String(sec % 60).padStart(2, '0');
+          return `${m}:${s}`;
+        };
+
+        const timerTextEl = document.getElementById('mcqTimerText');
+        if (timerTextEl) timerTextEl.textContent = '00:00';
+        activeQuizTimerInterval = setInterval(() => {
+          if (!activeQuizAbort) {
+            activeQuizSeconds++;
+            if (timerTextEl) timerTextEl.textContent = formatTime(activeQuizSeconds);
+          }
+        }, 1000);
+
+        // Show Question View, hide others
+        questionView.classList.remove('hidden');
+        exitSheet.classList.add('hidden');
+        resultView.classList.add('hidden');
+        reviewMistakesView.classList.add('hidden');
+        overlay.classList.remove('hidden');
+
+        const updateDotsRow = () => {
+          const dotsRow = document.getElementById('mcqDotsRow');
+          if (!dotsRow) return;
+          dotsRow.innerHTML = questions.map((_, i) => {
+            const st = (i === idx) ? 'current' : statusList[i];
+            let dotCls = 'w-6 h-6 rounded-full text-[14px] font-bold flex items-center justify-center shrink-0 transition-all ';
+            if (st === 'current') {
+              dotCls += 'bg-[#7C30E0] text-white ring-2 ring-[#7C30E0]/40 scale-105';
+            } else if (st === 'correct') {
+              dotCls += 'bg-emerald-500 text-white';
+            } else if (st === 'incorrect') {
+              dotCls += 'bg-rose-500 text-white';
+            } else if (st === 'skipped') {
+              dotCls += 'bg-amber-400 text-white';
+            } else {
+              dotCls += 'bg-purple-100 dark:bg-white/10 text-slate-500 dark:text-slate-400';
+            }
+            return `<span class="${dotCls}">${i + 1}</span>`;
+          }).join('');
+        };
 
         const renderStep = () => {
           if (activeQuizAbort) return;
           const q = questions[idx];
           const startedAt = Date.now();
-          if (metaEl) metaEl.textContent = `${title || 'Practice'} · Question ${idx + 1} of ${questions.length}`;
-          if (fbEl) { fbEl.classList.add('hidden'); fbEl.innerHTML = ''; }
+
+          // Header: "<Subject> · Q 5/20"
+          const headerTitle = document.getElementById('mcqQuestionHeaderTitle');
+          if (headerTitle) headerTitle.textContent = `${subjName} · Q ${idx + 1}/${total}`;
+
+          // Progress bar
+          const pBar = document.getElementById('mcqProgressBar');
+          if (pBar) pBar.style.width = `${Math.round(((idx + 1) / total) * 100)}%`;
+
+          // Dots row
+          updateDotsRow();
+
+          // Question body
+          const qTextEl = document.getElementById('mcqQuestionText');
+          const qText = q.q || q.question || q.Question || 'Question';
+          if (qTextEl) qTextEl.textContent = qText;
+
+          // Explanation card hidden initially
+          const expCard = document.getElementById('mcqExplanationCard');
+          if (expCard) expCard.classList.add('hidden');
+
+          // Action buttons reset (R4)
+          const skipBtn = document.getElementById('mcqSkipBtn');
+          if (skipBtn) skipBtn.classList.remove('hidden');
+
+          const nextBtn = document.getElementById('mcqNextBtn');
+          if (nextBtn) {
+            nextBtn.disabled = true;
+            nextBtn.className = 'h-11 flex-1 rounded-full bg-[#F1ECFA] dark:bg-white/[0.08] text-[#A79CC0] dark:text-white/40 text-[15px] font-bold flex items-center justify-center transition-all whitespace-nowrap cursor-not-allowed';
+            nextBtn.textContent = (idx + 1 === total) ? 'Finish' : 'Next';
+          }
 
           const opts = Array.isArray(q.options) ? q.options.slice(0, 4) : [
             q.OptionA || q.a || 'Option A',
@@ -6677,128 +7104,458 @@
             q.OptionC || q.c || 'Option C',
             q.OptionD || q.d || 'Option D'
           ];
-          const qText = q.q || q.question || q.Question || 'Question';
           const corrKey = String(q.correct || q.CorrectAnswerKey || 'A').toUpperCase().charAt(0);
+          let hasAnswered = false;
 
-          bodyEl.innerHTML = `
-            <div class="space-y-3">
-              <div class="text-[14px] font-bold text-indigo-600 dark:text-indigo-400">${escHtml(q.chapter || '')} ${q.topic ? '· ' + escHtml(q.topic) : ''}</div>
-              <p class="text-sm font-bold text-slate-900 dark:text-white leading-snug">${escHtml(qText)}</p>
-              <div class="space-y-2" id="mcqRunnerOptsList">
-                ${opts.map((optText, i) => {
-                  const key = ['A', 'B', 'C', 'D'][i];
-                  return `<button type="button" data-optkey="${key}" class="mcq-runner-opt-btn w-full text-left px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 text-xs font-semibold text-slate-800 dark:text-slate-100 min-h-[44px] flex items-center gap-2 transition cursor-pointer">
-                    <span class="w-6 h-6 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 flex items-center justify-center font-extrabold text-[14px] shrink-0">${key}</span>
-                    <span>${escHtml(optText)}</span>
-                  </button>`;
-                }).join('')}
-              </div>
-            </div>
-          `;
+          const optsBox = document.getElementById('mcqOptionsContainer');
+          if (optsBox) {
+            optsBox.innerHTML = opts.map((optText, i) => {
+              const key = ['A', 'B', 'C', 'D'][i];
+              return `<button type="button" data-optkey="${key}" class="mcq-opt-card min-h-[46px] w-full rounded-2xl px-3.5 py-2.5 bg-white/70 dark:bg-white/5 border border-purple-100 dark:border-white/10 hover:border-[#7C30E0] active:scale-[0.99] transition flex items-center justify-between text-left cursor-pointer">
+                <div class="flex items-center gap-2.5 min-w-0 pr-2">
+                  <span class="mcq-opt-key w-7 h-7 rounded-full bg-purple-100 dark:bg-white/10 text-on-surface text-[14px] font-bold flex items-center justify-center shrink-0">${key}</span>
+                  <span class="text-[14px] font-medium text-on-surface leading-tight">${escHtml(optText)}</span>
+                </div>
+                <div class="mcq-opt-marker w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center shrink-0"></div>
+              </button>`;
+            }).join('');
 
-          bodyEl.querySelectorAll('.mcq-runner-opt-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-              const allBtns = bodyEl.querySelectorAll('.mcq-runner-opt-btn');
-              allBtns.forEach(b => { b.disabled = true; });
-              const chosen = btn.dataset.optkey;
-              const isCorr = chosen === corrKey;
-              const timeTakenSec = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
-              const rollNo = document.getElementById('tgStudentSelect')?.value || 'CG-1201';
-              const stu = appState.students.find(s => s.roll === rollNo) || appState.students[0];
+            optsBox.querySelectorAll('.mcq-opt-card').forEach(card => {
+              card.addEventListener('click', () => {
+                if (hasAnswered) return;
+                hasAnswered = true;
+                answeredCount++;
 
-              allBtns.forEach(b => {
-                if (b.dataset.optkey === corrKey) {
-                  b.className = 'mcq-runner-opt-btn w-full text-left px-3.5 py-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/70 border-2 border-emerald-500 text-emerald-950 dark:text-emerald-100 text-xs font-bold min-h-[44px] flex items-center gap-2';
-                } else if (b === btn && !isCorr) {
-                  b.className = 'mcq-runner-opt-btn w-full text-left px-3.5 py-2.5 rounded-xl bg-rose-100 dark:bg-rose-950/70 border-2 border-rose-500 text-rose-950 dark:text-rose-100 text-xs font-bold min-h-[44px] flex items-center gap-2';
+                const chosen = card.dataset.optkey;
+                const isCorr = chosen === corrKey;
+                const timeTakenSec = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+
+                if (isCorr) {
+                  score++;
+                  statusList[idx] = 'correct';
+                } else {
+                  statusList[idx] = 'incorrect';
+                  mistakesList.push({
+                    qNum: idx + 1,
+                    question: qText,
+                    chosenKey: chosen,
+                    correctKey: corrKey,
+                    chosenText: opts[['A','B','C','D'].indexOf(chosen)] || chosen,
+                    correctText: opts[['A','B','C','D'].indexOf(corrKey)] || corrKey,
+                    explanation: q.exp || 'Review NCERT textbook guidance.',
+                    chapter: q.chapter || subjName,
+                    topic: q.topic || ''
+                  });
                 }
-              });
+                updateDotsRow();
 
-              if (isCorr) score++;
-              appState.mcqAttempts.push({
-                roll: rollNo,
-                subject: subject || q.subject || 'Accountancy',
-                chapter: q.chapter || 'Daily Hub',
-                topic: q.topic || 'Concept',
-                correct: isCorr,
-                mode: mode || 'daily',
-                ts: new Date().toISOString()
-              });
-              if (stu) renderStudentRadar(stu);
-              renderTeacherWeaknessHeatmap();
+                // Style option cards (F3: Do NOT put verdict inside option card)
+                optsBox.querySelectorAll('.mcq-opt-card').forEach(c => {
+                  c.disabled = true;
+                  c.style.pointerEvents = 'none';
+                  const k = c.dataset.optkey;
+                  const marker = c.querySelector('.mcq-opt-marker');
+                  const keySpan = c.querySelector('.mcq-opt-key');
 
-              window.cgCallGas('submitStudentQuizAttempt', {
-                rollNo, qid: q.qid || q.id || `Q-${idx + 1}`, questionId: q.qid || q.id || `Q-${idx + 1}`,
-                selectedOption: chosen, isCorrect: isCorr, timeTakenSec, explanation: q.exp || ''
-              }).then(res => {
-                const coinsAwarded = (res && !res.sandbox && Number(res.earnedCoins || res.coinsEarned || 0)) || 0;
-                if (coinsAwarded > 0 && stu) {
-                  stu.coins += coinsAwarded;
-                  earnedTotal += coinsAwarded;
-                  renderTelegramMiniApp();
+                  if (k === corrKey) {
+                    // Correct option (Green)
+                    c.className = 'mcq-opt-card min-h-[46px] w-full rounded-2xl px-3.5 py-2.5 bg-emerald-50 dark:bg-emerald-950/60 border-2 border-emerald-500 text-emerald-950 dark:text-emerald-100 transition flex items-center justify-between text-left shadow-sm';
+                    if (keySpan) keySpan.className = 'mcq-opt-key w-7 h-7 rounded-full bg-emerald-500 text-white text-[14px] font-bold flex items-center justify-center shrink-0';
+                    if (marker) marker.innerHTML = '<span class="material-symbols-outlined text-emerald-600 text-[20px]">check_circle</span>';
+                  } else if (k === chosen && !isCorr) {
+                    // Chosen incorrect option (Red)
+                    c.className = 'mcq-opt-card min-h-[46px] w-full rounded-2xl px-3.5 py-2.5 bg-rose-50 dark:bg-rose-950/60 border-2 border-rose-500 text-rose-950 dark:text-rose-100 transition flex items-center justify-between text-left shadow-sm';
+                    if (keySpan) keySpan.className = 'mcq-opt-key w-7 h-7 rounded-full bg-rose-500 text-white text-[14px] font-bold flex items-center justify-center shrink-0';
+                    if (marker) marker.innerHTML = '<span class="material-symbols-outlined text-rose-600 text-[20px]">cancel</span>';
+                  }
+                });
+
+                // Show Explanation Card with verdict as title (F3)
+                if (expCard) {
+                  const verdictEl = document.getElementById('mcqExplanationVerdict');
+                  const bodyEl = document.getElementById('mcqExplanationBody');
+                  const coinsBox = document.getElementById('mcqCoinsLine');
+                  const coinsText = document.getElementById('mcqCoinsText');
+
+                  if (verdictEl) {
+                    if (isCorr) {
+                      verdictEl.className = 'text-[14px] font-bold text-emerald-600 dark:text-emerald-400';
+                      verdictEl.textContent = 'Correct';
+                    } else {
+                      verdictEl.className = 'text-[14px] font-bold text-rose-600 dark:text-rose-400';
+                      verdictEl.textContent = `Incorrect · Answer: ${corrKey}`;
+                    }
+                  }
+                  if (bodyEl) {
+                    bodyEl.textContent = q.exp || 'Review official CBSE concepts and key working notes.';
+                  }
+
+                  expCard.classList.remove('hidden');
                 }
-                const expText = (res && res.explanation) || q.exp || 'Review working note and NCERT rule.';
-                if (fbEl) {
-                  fbEl.className = isCorr
-                    ? 'p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 text-emerald-900 dark:text-emerald-100 text-xs space-y-2'
-                    : 'p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-300 text-rose-900 dark:text-rose-100 text-xs space-y-2';
-                  fbEl.innerHTML = `
-                    <p class="font-extrabold">${isCorr ? `✅ Sahi Jawab! ${coinsAwarded ? `(+${coinsAwarded} 🪙)` : (res && res.sandbox ? '(Sandbox Preview)' : '')}` : `❌ Galat Jawab (Correct: ${corrKey})`}</p>
-                    <p class="leading-relaxed">${escHtml(expText)}</p>
-                    <button type="button" id="mcqRunnerNextBtn" class="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold">${idx + 1 < questions.length ? 'Next Question →' : 'View Final Score'}</button>
-                  `;
-                  fbEl.classList.remove('hidden');
-                  document.getElementById('mcqRunnerNextBtn')?.addEventListener('click', advance);
+
+                // Enable Next Button and hide Skip (R3, R4)
+                const skipBtn = document.getElementById('mcqSkipBtn');
+                if (skipBtn) skipBtn.classList.add('hidden');
+                if (nextBtn) {
+                  nextBtn.disabled = false;
+                  nextBtn.className = 'h-11 w-full rounded-full btn-accent-orange text-white text-[15px] font-bold flex items-center justify-center transition-all whitespace-nowrap cursor-pointer shadow-md';
                 }
+
+                // Haptic feedback & async submit to GAS
                 if (isCorr) {
                   try { window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success'); } catch (_) {}
-                  setTimeout(() => { if (!activeQuizAbort && idx < questions.length) advance(); }, 1200);
+                } else {
+                  try { window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('warning'); } catch (_) {}
                 }
-              }).catch(err => {
-                if (fbEl) {
-                  fbEl.className = 'p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs space-y-2';
-                  fbEl.innerHTML = `<p class="font-bold">Could not verify attempt with server (${escHtml(err.message)}). No coins awarded.</p>
-                    <p>${escHtml(q.exp || '')}</p>
-                    <button type="button" id="mcqRunnerNextBtn" class="w-full py-2 rounded-xl bg-indigo-600 text-white text-xs font-extrabold">${idx + 1 < questions.length ? 'Next Question →' : 'Finish'}</button>`;
-                  fbEl.classList.remove('hidden');
-                  document.getElementById('mcqRunnerNextBtn')?.addEventListener('click', advance);
-                }
+
+                window.cgCallGas('submitStudentQuizAttempt', {
+                  rollNo, qid: q.qid || `Q-${idx + 1}`, questionId: q.qid || `Q-${idx + 1}`,
+                  selectedOption: chosen, isCorrect: isCorr, timeTakenSec, explanation: q.exp || ''
+                }).then(res => {
+                  const coinsAwarded = (res && !res.sandbox && Number(res.earnedCoins || res.coinsEarned || 0)) || (isCorr ? 10 : 0);
+                  if (coinsAwarded > 0 && stu) {
+                    stu.coins += coinsAwarded;
+                    earnedTotal += coinsAwarded;
+                    const coinsBox = document.getElementById('mcqCoinsLine');
+                    const coinsText = document.getElementById('mcqCoinsText');
+                    if (coinsBox && coinsText) {
+                      coinsText.textContent = `+${coinsAwarded} coins`;
+                      coinsBox.classList.remove('hidden');
+                    }
+                  }
+                }).catch(() => {});
               });
             });
-          });
-        };
-
-        let advancedIdx = -1;
-        const advance = () => {
-          if (advancedIdx === idx) return;
-          advancedIdx = idx;
-          idx++;
-          if (idx < questions.length) {
-            renderStep();
-          } else {
-            if (metaEl) metaEl.textContent = 'Quiz Complete';
-            if (fbEl) fbEl.classList.add('hidden');
-            bodyEl.innerHTML = `
-              <div class="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 text-center space-y-2">
-                <div class="text-3xl">🎯</div>
-                <h4 class="text-base font-extrabold text-slate-900 dark:text-white">Score: ${score} / ${questions.length}</h4>
-                <p class="text-xs text-slate-600 dark:text-slate-300">${earnedTotal > 0 ? `🪙 +${earnedTotal} CG Coins verified & added!` : 'Completed! Wrong answers queued for revision.'}</p>
-                <button type="button" id="mcqRunnerDoneCloseBtn" class="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-extrabold mt-2">Done &amp; Return</button>
-              </div>
-            `;
-            document.getElementById('mcqRunnerDoneCloseBtn')?.addEventListener('click', () => overlay.classList.add('hidden'));
           }
         };
 
-        overlay.classList.remove('hidden');
+        // Navigation handlers
+        const advance = () => {
+          idx++;
+          if (idx < total) {
+            renderStep();
+          } else {
+            showResult();
+          }
+        };
+
+        const skipCurrent = () => {
+          statusList[idx] = 'skipped';
+          skippedCount++;
+          advance();
+        };
+
+        const showResult = () => {
+          clearInterval(activeQuizTimerInterval);
+          questionView.classList.add('hidden');
+          exitSheet.classList.add('hidden');
+          reviewMistakesView.classList.add('hidden');
+          resultView.classList.remove('hidden');
+
+          const accuracy = Math.round((score / total) * 100) || 0;
+          const datePill = document.getElementById('mcqResultDatePill');
+          if (datePill) datePill.innerHTML = `<span class="material-symbols-outlined text-[16px]">calendar_today</span> ${formatTodayDatePill_()}`;
+
+          // Ring & Score
+          const ringText = document.getElementById('resultScoreRingText');
+          if (ringText) ringText.textContent = `${score}/${total}`;
+
+          const ringCircle = document.getElementById('resultRingCircle');
+          if (ringCircle) {
+            const circumference = 314.16;
+            const offset = circumference - (circumference * accuracy) / 100;
+            ringCircle.style.strokeDashoffset = String(offset);
+          }
+
+          // Accuracy line: "Shabaash! Accuracy 80%" or "Keep going! Accuracy 40%"
+          const accLine = document.getElementById('resultAccuracyLine');
+          if (accLine) {
+            accLine.textContent = (accuracy >= 50)
+              ? `Shabaash! Accuracy ${accuracy}%`
+              : `Keep going! Accuracy ${accuracy}%`;
+          }
+
+          // Counters: Correct, Incorrect, Skipped in 3 equal boxes (L2)
+          const corrEl = document.getElementById('resultCorrectCounter');
+          if (corrEl) corrEl.textContent = String(score);
+
+          const incEl = document.getElementById('resultIncorrectCounter');
+          const incCount = total - score - skippedCount;
+          if (incEl) incEl.textContent = String(Math.max(0, incCount));
+
+          const skpEl = document.getElementById('resultSkippedCounter');
+          if (skpEl) skpEl.textContent = String(skippedCount);
+
+          // Coins
+          const coinBox = document.getElementById('resultCoinBox');
+          const coinText = document.getElementById('resultCoinText');
+          if (coinBox && coinText) {
+            if (earnedTotal > 0) {
+              coinText.textContent = `+${earnedTotal} coins`;
+              coinBox.classList.remove('hidden');
+            } else {
+              coinBox.classList.add('hidden');
+            }
+          }
+
+          // Review Mistakes button (orange)
+          const revBtn = document.getElementById('resultReviewMistakesBtn');
+          if (revBtn) {
+            if (mistakesList.length > 0) {
+              revBtn.classList.remove('hidden');
+            } else {
+              revBtn.classList.add('hidden');
+            }
+          }
+
+          // Topics to Revise
+          const topicsSec = document.getElementById('resultTopicsSection');
+          const topicsList = document.getElementById('resultTopicsList');
+          const rawTopics = [...new Set(mistakesList.map(m => m.topic || m.chapter).filter(Boolean))];
+          if (topicsSec && topicsList) {
+            if (rawTopics.length > 0) {
+              topicsList.innerHTML = rawTopics.map(t => `
+                <div class="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-800 text-[14px] font-semibold text-on-surface truncate">
+                  ${escHtml(t)}
+                </div>
+              `).join('');
+              topicsSec.classList.remove('hidden');
+            } else {
+              topicsSec.classList.add('hidden');
+            }
+          }
+
+          // Save today's result on device (localStorage, key with date + roll)
+          const todayKey = new Date().toISOString().slice(0, 10);
+          try {
+            localStorage.setItem('cg_dpp_res_' + rollNo + '_' + todayKey, JSON.stringify({
+              completed: true, score: score, total: total, date: todayKey
+            }));
+            updateTodayPracticeUI();
+          } catch (_) {}
+        };
+
+        const showReviewMistakes = () => {
+          resultView.classList.add('hidden');
+          reviewMistakesView.classList.remove('hidden');
+
+          const subtitle = document.getElementById('reviewMistakesCountSubtitle');
+          if (subtitle) subtitle.textContent = `${mistakesList.length} of ${total} incorrect`;
+
+          const listEl = document.getElementById('reviewMistakesList');
+          if (listEl) {
+            listEl.innerHTML = mistakesList.map((m) => `
+              <div class="glass-card rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/60 text-[#7C30E0] dark:text-[#C8BCF6] text-[14px] font-bold">Q${m.qNum}</span>
+                </div>
+                <p class="text-[15px] font-bold text-on-surface leading-snug">${escHtml(m.question)}</p>
+                <div class="space-y-2 text-[14px]">
+                  <div class="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200">
+                    <div class="text-[14px] font-bold text-rose-700 dark:text-rose-300">Your answer · ${escHtml(m.chosenKey)}</div>
+                    <div class="text-[15px] font-medium leading-relaxed mt-1">${escHtml(m.chosenText)}</div>
+                  </div>
+                  <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200">
+                    <div class="text-[14px] font-bold text-emerald-700 dark:text-emerald-300">Correct answer · ${escHtml(m.correctKey)}</div>
+                    <div class="text-[15px] font-medium leading-relaxed mt-1">${escHtml(m.correctText)}</div>
+                  </div>
+                </div>
+                <div class="p-3 rounded-xl bg-purple-50/70 dark:bg-purple-950/40 border-l-[3px] border-[#7C30E0] text-[14px] text-on-surface leading-relaxed">
+                  <div class="font-bold text-[#7C30E0] dark:text-[#C8BCF6] mb-1">Explanation</div>
+                  <div class="text-[14px] font-normal leading-relaxed">${escHtml(m.explanation)}</div>
+                </div>
+              </div>
+            `).join('');
+          }
+        };
+
+        // Wire event buttons
+        document.getElementById('mcqNextBtn')?.replaceWith(document.getElementById('mcqNextBtn').cloneNode(true));
+        document.getElementById('mcqNextBtn')?.addEventListener('click', advance);
+
+        document.getElementById('mcqSkipBtn')?.replaceWith(document.getElementById('mcqSkipBtn').cloneNode(true));
+        document.getElementById('mcqSkipBtn')?.addEventListener('click', skipCurrent);
+
+        document.getElementById('mcqRunnerBackBtn')?.replaceWith(document.getElementById('mcqRunnerBackBtn').cloneNode(true));
+        document.getElementById('mcqRunnerBackBtn')?.addEventListener('click', () => {
+          // Open Exit Sheet with real session counters
+          document.getElementById('exitStatAnswered').textContent = String(answeredCount);
+          document.getElementById('exitStatSkipped').textContent = String(skippedCount);
+          document.getElementById('exitStatTime').textContent = formatTime(activeQuizSeconds);
+          exitSheet.classList.remove('hidden');
+        });
+
+        document.getElementById('exitContinueBtn')?.replaceWith(document.getElementById('exitContinueBtn').cloneNode(true));
+        document.getElementById('exitContinueBtn')?.addEventListener('click', () => {
+          exitSheet.classList.add('hidden');
+        });
+
+        document.getElementById('exitViewResultBtn')?.replaceWith(document.getElementById('exitViewResultBtn').cloneNode(true));
+        document.getElementById('exitViewResultBtn')?.addEventListener('click', () => {
+          showResult();
+        });
+
+        document.getElementById('resultReviewMistakesBtn')?.replaceWith(document.getElementById('resultReviewMistakesBtn').cloneNode(true));
+        document.getElementById('resultReviewMistakesBtn')?.addEventListener('click', showReviewMistakes);
+
+        document.getElementById('reviewMistakesBackBtn')?.replaceWith(document.getElementById('reviewMistakesBackBtn').cloneNode(true));
+        document.getElementById('reviewMistakesBackBtn')?.addEventListener('click', () => {
+          reviewMistakesView.classList.add('hidden');
+          resultView.classList.remove('hidden');
+        });
+
+        document.getElementById('reviewPractiseAgainBtn')?.replaceWith(document.getElementById('reviewPractiseAgainBtn').cloneNode(true));
+        document.getElementById('reviewPractiseAgainBtn')?.addEventListener('click', () => {
+          const mistakeQs = mistakesList.map(m => {
+            return questions.find(q => (q.q || q.question) === m.question) || {
+              q: m.question, options: [m.chosenText, m.correctText], correct: m.correctKey, exp: m.explanation
+            };
+          });
+          window.launchMcqRunner({
+            title: 'Review Mistakes Practice',
+            badge: 'Review Mistakes',
+            mode: 'mistakes',
+            subject: subjName,
+            questions: mistakeQs
+          });
+        });
+
+        document.getElementById('resultPractiseAgainBtn')?.replaceWith(document.getElementById('resultPractiseAgainBtn').cloneNode(true));
+        document.getElementById('resultPractiseAgainBtn')?.addEventListener('click', () => {
+          window.launchMcqRunner({
+            title: title || 'Practice',
+            badge: badge || 'Practice',
+            mode: mode || 'daily',
+            subject: subjName,
+            questions: questions
+          });
+        });
+
+        const closeResultScreen = () => {
+          clearInterval(activeQuizTimerInterval);
+          overlay.classList.add('hidden');
+          document.documentElement.classList.remove('cg-lock');
+          if (window.updateTodayPracticeUI) window.updateTodayPracticeUI();
+        };
+        document.getElementById('resultHeaderBackBtn')?.replaceWith(document.getElementById('resultHeaderBackBtn').cloneNode(true));
+        document.getElementById('resultHeaderBackBtn')?.addEventListener('click', closeResultScreen);
+        document.getElementById('resultDoneCloseBtn')?.replaceWith(document.getElementById('resultDoneCloseBtn').cloneNode(true));
+        document.getElementById('resultDoneCloseBtn')?.addEventListener('click', closeResultScreen);
+
         renderStep();
       };
 
-      document.getElementById('closeMcqRunnerBtn')?.addEventListener('click', () => {
-        activeQuizAbort = true;
-        document.getElementById('stuMcqRunnerOverlay')?.classList.add('hidden');
+      // Choose Chapters Modal handler
+      let selectedPracticeSubject = 'Accountancy';
+      function openChooseChaptersModal() {
+        const modal = document.getElementById('stuChooseChaptersModal');
+        if (!modal) return;
+        renderChooseChaptersList(selectedPracticeSubject);
+        modal.classList.remove('hidden');
+      }
+      window.openChooseChaptersModal = openChooseChaptersModal;
+
+      function renderChooseChaptersList(subj) {
+        selectedPracticeSubject = subj;
+        const listEl = document.getElementById('chooseChaptersList');
+        const badge = document.getElementById('chooseChaptersCountBadge');
+        if (!listEl) return;
+
+        // Update active subject chip
+        document.querySelectorAll('.ch-subj-btn').forEach(btn => {
+          if (btn.dataset.chsubj === subj) {
+            btn.className = 'ch-subj-btn flex-1 py-1.5 px-2 rounded-full text-[14px] font-bold bg-[#7C30E0] text-white shadow-sm transition cursor-pointer text-center';
+          } else {
+            btn.className = 'ch-subj-btn flex-1 py-1.5 px-2 rounded-full text-[14px] font-bold bg-white/70 dark:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer text-center';
+          }
+        });
+
+        const bank = (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK[subj]) || [];
+        const chs = [...new Set(bank.map(q => q.chapter).filter(Boolean))];
+        const defaultChs = [
+          'Ch 1: Partnership Fundamentals',
+          'Ch 2: Goodwill Valuation',
+          'Ch 3: Admission of a Partner',
+          'Ch 4: Retirement and Death of Partner',
+          'Ch 5: Dissolution of Partnership Firm'
+        ];
+        const parseChNum = (str) => {
+          const m = String(str).match(/(?:ch(?:apter)?|\b)\s*(\d+)/i);
+          return m ? parseInt(m[1], 10) : 999;
+        };
+        const displayChs = (chs.length ? chs : defaultChs).sort((a, b) => parseChNum(a) - parseChNum(b));
+        const isRealBackendData = !!(window.__practiceQuestionsFromGas && window.__practiceQuestionsFromGas[subj]);
+
+        listEl.innerHTML = displayChs.map((ch) => {
+          // Question count only if real backend data provides it (R6)
+          const qCount = bank.filter(q => q.chapter === ch).length;
+          const countBadge = (isRealBackendData && qCount > 0) ? `<span class="text-[14px] font-bold text-[#7C30E0] dark:text-[#C8BCF6] shrink-0">${qCount} Qs</span>` : '';
+          return `<label class="flex items-center justify-between p-2.5 rounded-xl hover:bg-purple-50/50 dark:hover:bg-purple-950/30 border border-transparent cursor-pointer transition">
+            <div class="flex items-center gap-2.5 min-w-0 pr-2">
+              <input type="checkbox" class="ch-modal-cb w-5 h-5 rounded text-[#7C30E0] focus:ring-[#7C30E0]" style="accent-color: #7C30E0;" value="${escHtml(ch)}" checked />
+              <span class="text-[14px] font-semibold text-on-surface truncate">${escHtml(ch)}</span>
+            </div>
+            ${countBadge}
+          </label>`;
+        }).join('');
+
+        const updateSelectedCount = () => {
+          const cnt = listEl.querySelectorAll('.ch-modal-cb:checked').length;
+          if (badge) badge.textContent = `${cnt} Selected`;
+        };
+        listEl.querySelectorAll('.ch-modal-cb').forEach(cb => cb.addEventListener('change', updateSelectedCount));
+        updateSelectedCount();
+      }
+
+      document.querySelectorAll('.ch-subj-btn').forEach(btn => {
+        btn.addEventListener('click', () => renderChooseChaptersList(btn.dataset.chsubj));
       });
 
+      document.getElementById('stuOpenChooseChaptersBtn')?.addEventListener('click', openChooseChaptersModal);
+      document.getElementById('closeChooseChaptersBtn')?.addEventListener('click', () => {
+        document.getElementById('stuChooseChaptersModal')?.classList.add('hidden');
+      });
+
+      document.getElementById('chooseChaptersStartBtn')?.addEventListener('click', () => {
+        const modal = document.getElementById('stuChooseChaptersModal');
+        const selected = [...(modal ? modal.querySelectorAll('.ch-modal-cb:checked') : [])].map(c => c.value);
+        if (!selected.length) {
+          showToast('Please select at least 1 chapter.', 'amber');
+          return;
+        }
+        modal.classList.add('hidden');
+        const rollNo = document.getElementById('tgStudentSelect')?.value || 'CG-1201';
+        const stu = appState.students.find(s => s.roll === rollNo) || appState.students[0];
+        const stuCls = (stu && stu.batch && stu.batch.includes('11')) ? '11' : '12';
+
+        window.cgCallGas('getPracticeQuestions', {
+          subject: selectedPracticeSubject, classLevel: stuCls, chapters: selected, rollNo
+        }).then(list => {
+          const gasItems = Array.isArray(list) ? list : (list && list.questions) || [];
+          const fallbackBank = (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK[selectedPracticeSubject]) || [];
+          const merged = gasItems.length ? gasItems : fallbackBank;
+          const filtered = merged.filter(q => !q.chapter || selected.some(ch => ch.includes(q.chapter) || q.chapter.includes(ch.split(':')[0])));
+          const finalQs = filtered.length ? filtered : merged;
+          window.launchMcqRunner({
+            title: `${selectedPracticeSubject} Practice`,
+            badge: 'Chapter Practice',
+            mode: 'practice',
+            subject: selectedPracticeSubject,
+            questions: finalQs
+          });
+        }).catch(() => {
+          const fallbackBank = (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK[selectedPracticeSubject]) || window.PRACTICE_QUESTION_BANK['Accountancy'];
+          window.launchMcqRunner({
+            title: `${selectedPracticeSubject} Practice`,
+            badge: 'Chapter Practice',
+            mode: 'practice',
+            subject: selectedPracticeSubject,
+            questions: fallbackBank
+          });
+        });
+      });
+
+      // Daily DPP Start Button listener
       document.getElementById('stuOpenDailyMcqBtn')?.addEventListener('click', () => {
         const rollNo = document.getElementById('tgStudentSelect')?.value || 'CG-1201';
         const stu = appState.students.find(s => s.roll === rollNo) || appState.students[0];
@@ -6806,11 +7563,15 @@
         window.cgCallGas('getDailyQuestion', { classLevel: cls, subtopicId: appState.activeSubtopicLock })
           .then(qs => {
             const list = Array.isArray(qs) && qs.length ? qs : PRACTICE_QUESTION_BANK['Accountancy'];
-            window.launchMcqRunner({ title: 'Daily MCQ / DPP', badge: '7:00 PM DPP', mode: 'daily', subject: 'Accountancy', questions: list });
+            window.launchMcqRunner({ title: 'Today\'s DPP', badge: 'Daily Practice', mode: 'daily', subject: 'Accountancy', questions: list });
           }).catch(() => {
-            window.launchMcqRunner({ title: 'Daily MCQ / DPP', badge: '7:00 PM DPP', mode: 'daily', subject: 'Accountancy', questions: PRACTICE_QUESTION_BANK['Accountancy'] });
+            window.launchMcqRunner({ title: 'Today\'s DPP', badge: 'Daily Practice', mode: 'daily', subject: 'Accountancy', questions: PRACTICE_QUESTION_BANK['Accountancy'] });
           });
       });
+
+      window.updateTodayPracticeUI = updateTodayPracticeUI;
+      // Initial call to set Today's Practice UI
+      updateTodayPracticeUI();
 
       document.getElementById('tgOpenReceiptBtn')?.addEventListener('click', () => {
         openSwotModal(document.getElementById('tgStudentSelect')?.value || 'CG-1201');
@@ -8384,7 +9145,7 @@
             <div class="space-y-1 max-h-36 overflow-y-auto custom-scroll">
               ${bankChapters.map(ch => `
                 <label class="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[14px] font-semibold text-slate-800 dark:text-slate-200 cursor-pointer">
-                  <input type="checkbox" class="stu-practice-ch-cb rounded text-indigo-600" value="${escHtml(ch)}" checked />
+                  <input type="checkbox" class="stu-practice-ch-cb rounded text-[#7C30E0] focus:ring-[#7C30E0]" style="accent-color: #7C30E0;" value="${escHtml(ch)}" checked />
                   <span class="truncate">${escHtml(ch)}</span>
                 </label>
               `).join('')}
@@ -9100,7 +9861,7 @@
     if (!gate) {
       gate = document.createElement('div');
       gate.id = 'cgGate';
-      gate.className = 'fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-gradient-to-b from-[#f6f1ff] via-[#fcf9ff] to-[#f0ecfb] dark:from-[#0B0A12] dark:via-[#161226] dark:to-[#120F1F] font-['Inter',sans-serif]';
+      gate.className = 'fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-gradient-to-b from-[#f6f1ff] via-[#fcf9ff] to-[#f0ecfb] dark:from-[#0B0A12] dark:via-[#161226] dark:to-[#120F1F] font-sans';
       gate.innerHTML = [
         '<div class="relative w-full max-w-[340px] rounded-[32px] p-6 text-center glass-card border border-white/60 dark:border-white/10 shadow-2xl">',
         '  <div class="flex justify-center mb-4">',
@@ -9109,7 +9870,7 @@
         '      <span class="text-[14px] font-bold tracking-wider uppercase opacity-90">COMMERCE</span>',
         '    </div>',
         '  </div>',
-        '  <h1 id="cgGateTitle" class="text-xl font-bold font-['Plus_Jakarta_Sans',sans-serif] text-[#1E0063] dark:text-[#F3ECFF] tracking-tight mb-1">Commerce Gyan</h1>',
+        '  <h1 id="cgGateTitle" class="text-xl font-bold font-sans text-[#1E0063] dark:text-[#F3ECFF] tracking-tight mb-1">Commerce Gyan</h1>',
         '  <p id="cgGateMsg" class="text-[14px] font-medium text-[#4D4468] dark:text-[#C8BCF6]/90 mb-4 leading-relaxed"></p>',
         '  <div id="cgGateProgress" class="w-full max-w-[220px] mx-auto mb-2">',
         '    <div class="w-full h-1.5 bg-purple-100 dark:bg-white/10 rounded-full overflow-hidden shadow-inner">',

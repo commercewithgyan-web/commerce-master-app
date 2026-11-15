@@ -263,7 +263,7 @@ function createQuestionPdfFromTemplate_(data) {
   var qid = data.qid || ('Q_SUBJ_' + classLevel + '_' + rawDate);
 
   // 1. Idempotency Check
-  var hashInput = ['QUESTION', classLevel, data.subject || 'Accountancy', qid, data.questionText || ''].join(':::');
+  var hashInput = ['DPP_DESIGN_V2', 'QUESTION', classLevel, data.subject || 'Accountancy', qid, data.questionText || ''].join(':::');
   var contentHash = computeContentHash_(hashInput);
   var cachedUrl = typeof findCachedRender_ === 'function' ? findCachedRender_(contentHash) : null;
   if (cachedUrl && !data.bypassCache) {
@@ -326,7 +326,7 @@ function createAnswerPdfFromTemplate_(data) {
   var qid = data.qid || ('A_SUBJ_' + classLevel + '_' + rawDate);
 
   // 1. Idempotency Check
-  var hashInput = ['ANSWER', classLevel, data.subject || 'Accountancy', qid, data.questionText || '', data.answerText || '', data.marksBreakdown || '', data.commonMistakes || ''].join(':::');
+  var hashInput = ['DPP_DESIGN_V2', 'ANSWER', classLevel, data.subject || 'Accountancy', qid, data.questionText || '', data.answerText || '', data.marksBreakdown || '', data.commonMistakes || ''].join(':::');
   var contentHash = computeContentHash_(hashInput);
   var cachedUrl = typeof findCachedRender_ === 'function' ? findCachedRender_(contentHash) : null;
   if (cachedUrl && !data.bypassCache) {
@@ -438,20 +438,41 @@ function analyzeAndStructureBlock_(rawText, subject, existingRenderSpec) {
  * @return {string}
  */
 function cleanQuestionRecapText_(rawText) {
-  if (!rawText) return '';
+  if (!rawText) return "";
   var s = String(rawText);
   // Strip entire table blocks including all intermediate rows
-  s = s.replace(/#(TABLE|TACCOUNT|CAPITAL|JOURNAL)[\s\S]*?#END\1/gi, '');
+  s = s.replace(/#(TABLE|TACCOUNT|CAPITAL|JOURNAL)[\s\S]*?#END\1/gi, "");
   // Strip any remaining markdown pipe lines
-  s = s.replace(/^\s*\|.*\|\s*$/gm, '');
+  s = s.replace(/^\s*\|.*\|\s*$/gm, "");
   // Strip remaining DSL tags
-  s = s.replace(/#END(TABLE|TACCOUNT|CAPITAL|JOURNAL|FLOW|FORMULA|CARD)/gi, '');
-  s = s.replace(/#(TABLE|TACCOUNT|CAPITAL|JOURNAL|FLOW|FORMULA|CARD|GRAPH)[^\n]*/gi, '');
+  s = s.replace(/#END(TABLE|TACCOUNT|CAPITAL|JOURNAL|FLOW|FORMULA|CARD)/gi, "");
+  s = s.replace(/#(TABLE|TACCOUNT|CAPITAL|JOURNAL|FLOW|FORMULA|CARD|GRAPH)[^\n]*/gi, "");
   // Clean whitespace
-  s = s.replace(/\s+/g, ' ').trim();
-  // Limit to clean 1-2 line summary (~160-200 chars)
-  if (s.length > 200) {
-    s = s.substring(0, 197) + '...';
+  s = s.replace(/\s+/g, " ").trim();
+  // Cut only at sentence boundaries, never mid-word or mid-number (PA5)
+  if (s.length > 250) {
+    var sentenceEndRegex = /([.?!])\s+/g;
+    var match;
+    var cutIndex = -1;
+    while ((match = sentenceEndRegex.exec(s)) !== null) {
+      var endPos = match.index + 1;
+      if (endPos >= 140 && endPos <= 260) {
+        cutIndex = endPos;
+      } else if (endPos > 260) {
+        if (cutIndex === -1 && endPos <= 290) {
+          cutIndex = endPos;
+        }
+        break;
+      }
+    }
+    if (cutIndex !== -1 && cutIndex < s.length) {
+      s = s.substring(0, cutIndex).trim() + " …";
+    } else if (s.length > 260) {
+      var lastSpace = s.lastIndexOf(" ", 240);
+      if (lastSpace > 100) {
+        s = s.substring(0, lastSpace).replace(/[\s,₹;:\-]+$/, "").trim() + " …";
+      }
+    }
   }
   return s;
 }
@@ -468,7 +489,8 @@ function calcBlockEstMm_(blk) {
       return 26;
     case 'text':
       var chars = (blk.text || '').length;
-      return 6 + Math.ceil(chars / 85) * 4.5;
+      var lineCount = (blk.text || '').split('\n').filter(function(l) { return l.trim(); }).length;
+      return 8 + Math.max(lineCount * 6.5, Math.ceil(chars / 75) * 5.2);
     case 'card':
       var bodyChars = (blk.body || blk.text || '').length;
       return 6 + Math.ceil(bodyChars / 85) * 4.5;
@@ -491,7 +513,8 @@ function calcBlockEstMm_(blk) {
       var tLines = blk.trapsText ? blk.trapsText.split('\n').filter(function(l) { return l.trim(); }).length : 0;
       return 18 + ((rLines + tLines) * 4.8) + 14;
     case 'question_header':
-      return 18;
+    case 'answer_header':
+      return 12;
     case 'question_workingspace':
       return 55;
     case 'question_footer':
@@ -742,7 +765,34 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
   }
 
   flushBuffer();
-  return blocks;
+
+  // Consolidate orphan heading cards into following blocks (PB1)
+  var mergedBlocks = [];
+  for (var bi = 0; bi < blocks.length; bi++) {
+    var cur = blocks[bi];
+    var nxt = (bi + 1 < blocks.length) ? blocks[bi + 1] : null;
+    if (cur.type === "text" && cur.text && nxt) {
+      var tLines = cur.text.trim().split("\n").filter(function(l) { return l.trim(); });
+      if (tLines.length === 1 && tLines[0].length <= 80 && (/:$/.test(tLines[0].trim()) || /^(sequential steps|karl pearson|step-by-step|working notes|calculation|flowchart)/i.test(tLines[0].trim()))) {
+        var cleanTitle = tLines[0].trim().replace(/:$/, "");
+        if (nxt.type === "formula") {
+          nxt.label = cleanTitle;
+          continue;
+        } else if (nxt.type === "flow") {
+          nxt.title = cleanTitle;
+          continue;
+        } else if (nxt.type === "table" || nxt.type === "taccount" || nxt.type === "capital") {
+          if (!nxt.title) nxt.title = cleanTitle;
+          continue;
+        } else if (nxt.type === "calculation") {
+          nxt.title = cleanTitle;
+          continue;
+        }
+      }
+    }
+    mergedBlocks.push(cur);
+  }
+  return mergedBlocks;
 }
 
 /**
@@ -750,35 +800,35 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
  */
 function classifyAndPushUnmarked_(text, subject, blocks) {
   if (!text) return;
-  var lines = text.split('\n');
-  var tableLines = lines.filter(function(l) { return l.indexOf('|') !== -1; });
+  var lines = text.split("\n");
+  var tableLines = lines.filter(function(l) { return l.indexOf("|") !== -1; });
 
   if (tableLines.length >= 2) {
     var headerLine = tableLines[0].toLowerCase();
-    if (headerLine.indexOf('date') !== -1 && headerLine.indexOf('particulars') !== -1 && (headerLine.indexOf('dr') !== -1 || headerLine.indexOf('debit') !== -1)) {
+    if (headerLine.indexOf("date") !== -1 && headerLine.indexOf("particulars") !== -1 && (headerLine.indexOf("dr") !== -1 || headerLine.indexOf("debit") !== -1)) {
       blocks.push({
-        type: 'journal',
+        type: "journal",
         rowsText: text,
         estHeight: 16 + tableLines.length * 6.5
       });
       return;
     }
 
-    if (headerLine.indexOf('particulars') !== -1 && (headerLine.indexOf('alok') !== -1 || headerLine.indexOf('deepak') !== -1 || headerLine.indexOf('partner') !== -1 || headerLine.indexOf('rohit') !== -1 || (headerLine.match(/\([₹rs\.]+\)/g) || []).length >= 4)) {
+    if (headerLine.indexOf("particulars") !== -1 && (headerLine.indexOf("alok") !== -1 || headerLine.indexOf("deepak") !== -1 || headerLine.indexOf("partner") !== -1 || headerLine.indexOf("rohit") !== -1 || (headerLine.match(/\([₹rs\.]+\)/g) || []).length >= 4)) {
       blocks.push({
-        type: 'capital',
-        partnersText: 'Partners',
+        type: "capital",
+        partnersText: "Partners",
         rowsText: text,
         estHeight: 16 + tableLines.length * 6.5
       });
       return;
     }
 
-    var cols = tableLines[0].split('|');
+    var cols = tableLines[0].split("|");
     if (cols.length === 4 || (headerLine.match(/particulars/g) || []).length === 2) {
       blocks.push({
-        type: 'taccount',
-        title: 'Ledger Account',
+        type: "taccount",
+        title: "Ledger Account",
         rowsText: text,
         estHeight: 16 + tableLines.length * 6.5
       });
@@ -786,48 +836,59 @@ function classifyAndPushUnmarked_(text, subject, blocks) {
     }
 
     blocks.push({
-      type: 'table',
+      type: "table",
       rowsText: text,
       estHeight: 14 + tableLines.length * 6.5
     });
     return;
   }
 
-  // Statistics Formula Auto-Judgment
-  if (/(\\frac|\\sigma|\\bar\{x\}|\\sum|\\sqrt|r\s*=|Mean\s*=|SD\s*=)/i.test(text)) {
+  // 1. Step-by-step Calculation Auto-Judgment (PA2)
+  if (/Step-by-step Calculation/i.test(text) || (/^\s*1\.\s+/m.test(text) && /\b(Given data|Product|Denominator|Coefficient|Calculation)\b/i.test(text))) {
     blocks.push({
-      type: 'formula',
+      type: "calculation",
+      title: "STEP-BY-STEP CALCULATION",
+      text: text,
+      estHeight: 18 + lines.length * 5.5
+    });
+    return;
+  }
+
+  // 2. Statistics Formula Auto-Judgment (PA1) - only short isolated expressions
+  if (lines.length <= 4 && /(\\frac|\\sigma|\\bar\{x\}|\\sum|\\sqrt|r\s*=|Mean\s*=|SD\s*=)/i.test(text)) {
+    blocks.push({
+      type: "formula",
       formula: text,
-      label: 'Formula',
+      label: "Formula",
       estHeight: 20
     });
     return;
   }
 
-  // BST Flowchart Auto-Judgment
-  if (text.indexOf('->') !== -1 && text.split('->').length >= 3) {
+  // 3. BST Flowchart Auto-Judgment
+  if (text.indexOf("->") !== -1 && text.split("->").length >= 3) {
     blocks.push({
-      type: 'flow',
+      type: "flow",
       steps: text,
-      estHeight: 12 + text.split('->').length * 6.5
+      estHeight: 12 + text.split("->").length * 6.5
     });
     return;
   }
 
-  // BST Case Study Auto-Judgment
+  // 4. BST Case Study Auto-Judgment
   if (/^(Case\s*(Study|Scenario)|Read\s*the\s*following\s*scenario)/i.test(text)) {
-    var parts = text.split('\n\n');
+    var parts = text.split("\n\n");
     var caseBody = parts[0];
     blocks.push({
-      type: 'card',
-      title: 'Case Scenario',
+      type: "card",
+      title: "Case Scenario",
       body: caseBody,
       estHeight: 14 + Math.ceil(caseBody.length / 80) * 5
     });
     if (parts.length > 1) {
-      var remaining = parts.slice(1).join('\n\n');
+      var remaining = parts.slice(1).join("\n\n");
       blocks.push({
-        type: 'text',
+        type: "text",
         text: remaining,
         estHeight: Math.max(12, Math.ceil(remaining.length / 85) * 5.5 + 4)
       });
@@ -835,33 +896,23 @@ function classifyAndPushUnmarked_(text, subject, blocks) {
     return;
   }
 
-  // Economics Graph Auto-Judgment
+  // 5. Economics Graph Auto-Judgment (PA3 - Prevent duplicate graph if graph block already present)
   var textLower = text.toLowerCase();
-  if (subject.indexOf('eco') !== -1 || subject.indexOf('economics') !== -1) {
-    if (textLower.indexOf('shift in demand') !== -1 || textLower.indexOf('increase in demand') !== -1 || textLower.indexOf('decrease in demand') !== -1) {
+  var hasGraphAlready = false;
+  for (var bi = 0; bi < blocks.length; bi++) {
+    if (blocks[bi].type === "graph") { hasGraphAlready = true; break; }
+  }
+  if (!hasGraphAlready && (subject.indexOf("eco") !== -1 || subject.indexOf("economics") !== -1)) {
+    if (textLower.indexOf("shift in demand") !== -1 || textLower.indexOf("increase in demand") !== -1 || textLower.indexOf("decrease in demand") !== -1) {
       blocks.push({
-        type: 'text',
+        type: "text",
         text: text,
         estHeight: Math.max(12, Math.ceil(text.length / 85) * 5.5 + 4)
       });
       blocks.push({
-        type: 'graph',
-        template: 'demand_shift',
-        caption: 'Rightward Shift in Demand Curve (Increase in Demand)',
-        estHeight: 52
-      });
-      return;
-    }
-    if (textLower.indexOf('ppc') !== -1 || textLower.indexOf('production possibility') !== -1) {
-      blocks.push({
-        type: 'text',
-        text: text,
-        estHeight: Math.max(12, Math.ceil(text.length / 85) * 5.5 + 4)
-      });
-      blocks.push({
-        type: 'graph',
-        template: 'ppc',
-        caption: 'Production Possibility Curve (PPC)',
+        type: "graph",
+        template: "demand_shift",
+        caption: "Rightward Shift in Demand Curve (Increase in Demand)",
         estHeight: 52
       });
       return;
@@ -869,7 +920,7 @@ function classifyAndPushUnmarked_(text, subject, blocks) {
   }
 
   blocks.push({
-    type: 'text',
+    type: "text",
     text: text,
     estHeight: Math.max(12, Math.ceil(text.length / 85) * 5.5 + 4)
   });
@@ -880,45 +931,30 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
   var isAns = !!isAnswerKey;
   var classLevel = Number(data.classLevel) || 12;
   var marks = Number(data.marks) || 6;
-  var bgBase64 = data.bgBase64 || getStationeryBackgroundBase64_();
 
   // Header metadata
   var rawDate = formatDateDps_(data.date);
-  var subjectText = 'Class ' + classLevel + ' • ' + (data.subject || 'Accountancy');
-  var topicText = String(data.chapter || (classLevel === 11 ? 'Bank Reconciliation Statement' : 'Partnership Accounts Fundamentals'));
-  if (topicText.length > 48) {
-    topicText = topicText.substring(0, 46) + '...';
-  }
-  var baseSheetNumber = formatSheetNumberDps_(data.qid, classLevel, marks, isAns);
+  var subjectOnly = String(data.subject || 'Accountancy').trim();
+  var subjectText = 'Class ' + classLevel + ' • ' + subjectOnly;
+  var topicText = String(data.chapter || (classLevel === 11 ? 'Bank Reconciliation Statement' : 'Partnership Accounts Fundamentals')).trim();
+  var baseSheetNumber = data.sheetNo || data.sheetNumber || formatSheetNumberDps_(data.qid, classLevel, marks, isAns);
 
   // Build content blocks
   var blocks = [];
   if (!isAns) {
-    // Question PDF Layout (Publication Grade)
-    blocks.push({
-      type: 'question_header',
-      marks: marks,
-      classLevel: classLevel,
-      topicText: topicText,
-      dateStr: rawDate,
-      estMm: 18
-    });
+    // Question PDF Layout (Publication Grade - Compact C1: badge & marks on top line of first card)
     var qBlocks = analyzeAndStructureBlock_(data.questionText || '', data.subject, data.renderSpec);
+    if (qBlocks.length > 0) {
+      qBlocks[0].isFirstQuestionBlock = true;
+      qBlocks[0].marks = marks;
+      qBlocks[0].qBadge = 'Q1';
+    }
     for (var qb = 0; qb < qBlocks.length; qb++) {
       qBlocks[qb].estMm = calcBlockEstMm_(qBlocks[qb]);
       blocks.push(qBlocks[qb]);
     }
-    blocks.push({
-      type: 'question_workingspace',
-      estMm: 55
-    });
-    blocks.push({
-      type: 'question_footer',
-      estMm: 14
-    });
   } else {
-    // Model Answer PDF Layout (Publication Grade)
-    // 1. Recap Box (Stripped of raw table/pipes, clean 1-2 lines)
+    // Model Answer PDF Layout (Publication Grade - Compact C1: badge & marks on top line of recap box)
     var cleanRecap = cleanQuestionRecapText_(data.recapText || data.questionText || '');
     blocks.push({
       type: 'recap',
@@ -927,10 +963,9 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
       marks: marks,
       classLevel: classLevel,
       dateStr: rawDate,
-      estMm: 26
+      estMm: 24
     });
 
-    // 2. Answer Blocks (from mainAnswerJson if present, else parsed from answerText)
     var ansBlocks = [];
     if (data.mainAnswerJson) {
       try {
@@ -945,29 +980,36 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
 
     for (var ab = 0; ab < ansBlocks.length; ab++) {
       var aBlk = ansBlocks[ab];
+      aBlk.isAnswer = true;
       aBlk.drCrCheck = !!data.drCrCheck;
       aBlk.estMm = calcBlockEstMm_(aBlk);
       blocks.push(aBlk);
     }
 
-    // 3. Combined Footer Block (Rubric + Common Traps wrapped together in ONE keep-together block)
+    // Separate Rubric and Traps blocks so they can paginate naturally across pages (B1)
     var rubric = data.markingScheme || data.marksBreakdown || '';
     var traps = data.commonTraps || data.commonMistakes || '';
-    if (rubric || traps) {
-      var rLines = rubric ? rubric.split('\n').filter(function(l) { return l.trim(); }).length : 0;
-      var tLines = traps ? traps.split('\n').filter(function(l) { return l.trim(); }).length : 0;
-      var footerEstMm = 18 + ((rLines + tLines) * 4.8) + 14;
+    if (rubric) {
+      var rLines = rubric.split('\n').filter(function(l) { return l.trim(); }).length;
       blocks.push({
-        type: 'footer_block',
-        name: 'footer_block',
-        rubricText: rubric,
-        trapsText: traps,
-        estMm: footerEstMm
+        type: 'rubric',
+        name: 'rubric',
+        text: rubric,
+        estMm: 16 + (rLines * 5)
+      });
+    }
+    if (traps) {
+      var tLines = traps.split('\n').filter(function(l) { return l.trim(); }).length;
+      blocks.push({
+        type: 'traps',
+        name: 'traps',
+        text: traps,
+        estMm: 16 + (tLines * 5)
       });
     }
   }
 
-  // Greedy Paginator with strict 192mm Cutoff
+  // Greedy Paginator with strict Cutoff per page
   var paginated = paginateBlocks_(blocks);
   var pages = paginated.pages;
   var pageMms = paginated.pageMms;
@@ -976,6 +1018,7 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
   var headerData = {
     isAns: isAns,
     classLevel: classLevel,
+    subjectOnly: subjectOnly,
     subjectText: subjectText,
     topicText: topicText,
     formattedDate: rawDate,
@@ -984,7 +1027,7 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
     marks: marks
   };
 
-  var fullHtml = buildMultiPageDocumentHtml_(pages, headerData, bgBase64);
+  var fullHtml = buildMultiPageDocumentHtml_(pages, headerData);
   return {
     html: fullHtml,
     pageCount: totalPages,
@@ -993,29 +1036,32 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
 }
 
 /**
- * Greedy block packing into pages with 192mm strict cutoff and page millimeter tracking
+ * Greedy block packing into pages with 205mm strict cutoff and page millimeter tracking
  * @param {Array<Object>} blocks
  * @return {{ pages: Array<Array<Object>>, pageMms: Array<number> }}
  */
 function paginateBlocks_(blocks) {
-  var MAX_PAGE_MM = 192;
-  var PAGE1_HEADER_MM = 12; // 12mm for Page 1 title line
+  var MAX_PAGE_1_MM = 175; // Page 1 limit (accounting for 50mm header + 14mm instructions + 17mm footer + margins)
+  var MAX_PAGE_N_MM = 195; // Page 2+ limit (no instructions box)
   var pages = [];
   var pageMms = [];
   var currentPage = [];
-  var currentMm = PAGE1_HEADER_MM;
+  var currentMm = 0;
+  var isPage1 = true;
 
   for (var i = 0; i < blocks.length; i++) {
     var blk = blocks[i];
     var est = blk.estMm || calcBlockEstMm_(blk);
     blk.estMm = est;
     var pbb = !!blk.pageBreakBefore;
+    var maxForPage = isPage1 ? MAX_PAGE_1_MM : MAX_PAGE_N_MM;
 
-    if ((pbb || (currentMm + est > MAX_PAGE_MM)) && currentPage.length > 0) {
+    if ((pbb || (currentMm + est > maxForPage)) && currentPage.length > 0) {
       pages.push(currentPage);
       pageMms.push(Math.round(currentMm * 10) / 10);
       currentPage = [blk];
       currentMm = est;
+      isPage1 = false;
     } else {
       currentPage.push(blk);
       currentMm += est;
@@ -1034,54 +1080,122 @@ function paginateBlocks_(blocks) {
 }
 
 /**
- * Builds full HTML document containing all .page containers with stationery background
+ * Builds full HTML document containing all .page containers with branded Header, Instructions, and Footer
  * @param {Array<Array<Object>>} pages
  * @param {Object} headerData
- * @param {string} bgBase64
  * @return {string}
  */
-function buildMultiPageDocumentHtml_(pages, headerData, bgBase64) {
+function buildMultiPageDocumentHtml_(pages, headerData) {
   var totalPages = pages.length;
   var isAns = headerData.isAns;
-  var pillText = isAns ? 'DAILY PRACTICE SHEET • ANSWER KEY' : 'DAILY PRACTICE SHEET';
+  var docTitle = isAns ? 'Commerce with Gyan DPP Answer Key' : 'Commerce with Gyan DPP';
+
+  var logoBase64 = typeof getDppLogoBase64_ === 'function' ? getDppLogoBase64_() : '';
+  var photoBase64 = typeof getDppPhotoBase64_ === 'function' ? getDppPhotoBase64_() : '';
+  var watermarkBase64 = typeof getDppWatermarkBase64_ === 'function' ? getDppWatermarkBase64_() : '';
+
+  var headerBgColor = isAns ? '#08060F' : '#1E0063';
+  var headerGradient = isAns
+    ? 'linear-gradient(120deg, #08060F 0%, #160A33 60%, #2B0F66 100%)'
+    : 'linear-gradient(120deg, #1E0063 0%, #4A12A8 55%, #7C30E0 100%)';
+  var kickerText = isAns
+    ? ('ANSWER KEY · DPP NO. ' + escapeHtml_(headerData.sheetNumber))
+    : ('DAILY PRACTICE PAPER · NO. ' + escapeHtml_(headerData.sheetNumber));
+
+  var instructionsText = isAns
+    ? 'Check your register answer and correct any mistakes in red pen.'
+    : 'Solve this question in your practice register. The model answer will be shared tomorrow at 08:15 AM IST.';
 
   var pagesHtml = pages.map(function(pageBlocks, pageIndex) {
     var pageNum = pageIndex + 1;
-    var sheetNumber = headerData.sheetNumber;
-    if (totalPages > 1) {
-      sheetNumber += ' [' + pageNum + '/' + totalPages + ']';
-    }
 
-    var page1TitleHtml = '';
-    if (pageIndex === 0) {
-      var titleText = isAns
-        ? 'OFFICIAL MODEL ANSWER KEY • ' + escapeHtml_(headerData.subjectText).toUpperCase()
-        : 'DAILY PRACTICE PROBLEM • ' + escapeHtml_(headerData.subjectText).toUpperCase();
-      page1TitleHtml = '<div style="font-size: 10pt; font-weight: 800; color: #1e3a8a; text-transform: uppercase; margin-bottom: 7px; letter-spacing: 0.3px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #1e3a8a; padding-bottom: 3px;">' +
-        '<span>' + titleText + '</span>' +
-        '<span style="color: #1d4ed8; font-size: 9.5pt; font-weight: 700;">[ ' + headerData.marks + ' Marks ]</span>' +
+    // Header HTML: 50mm, rounded corners, table-based, robust across all engines
+    var headerHtml = '<div class="hd" style="position: relative; z-index: 1; height: 50mm; border-radius: 6mm; background-color: ' + headerBgColor + '; background: -webkit-' + headerGradient + '; background: ' + headerGradient + '; color: #ffffff; overflow: hidden; margin-bottom: 3.5mm;">\n' +
+      '  <table style="width: 100%; height: 50mm; border-collapse: collapse; table-layout: fixed;">\n' +
+      '    <tr>\n' +
+      '      <td style="vertical-align: middle; padding: 4.5mm 6mm; text-align: left;">\n' +
+      '        <div style="display: inline-block; background: #ffffff; border-radius: 2.5mm; padding: 1.6mm 2.6mm; margin-bottom: 2mm; line-height: 0;">\n' +
+      '          <img src="data:image/jpeg;base64,' + logoBase64 + '" style="height: 14mm; display: block; border: 0;" alt="Commerce with Gyan" />\n' +
+      '        </div>\n' +
+      '        <div style="font-size: 8pt; font-weight: 700; letter-spacing: 0.16em; color: #FFC88F; text-transform: uppercase; margin-bottom: 1.2mm;">' + escapeHtml_(kickerText) + '</div>\n' +
+      '        <div style="font-size: ' + (headerData.topicText.length > 38 ? '15pt' : (headerData.topicText.length > 28 ? '16.5pt' : '18.5pt')) + '; font-weight: 700; line-height: 1.18; color: #ffffff; margin-bottom: 2mm; max-height: 13.5mm; overflow: hidden;">' + escapeHtml_(headerData.topicText) + '</div>\n' +
+      '        <div>\n' +
+      '          <span style="display: inline-block; border: 0.3mm solid rgba(255,255,255,0.45); border-radius: 4mm; padding: 0.6mm 3mm; font-size: 9.5pt; color: #ffffff; margin-right: 2mm;">Class ' + headerData.classLevel + '</span>\n' +
+      '          <span style="display: inline-block; border: 0.3mm solid rgba(255,255,255,0.45); border-radius: 4mm; padding: 0.6mm 3mm; font-size: 9.5pt; color: #ffffff; margin-right: 2mm;">' + escapeHtml_(headerData.subjectOnly) + '</span>\n' +
+      '          <span style="display: inline-block; background: #F87800; border: 0.3mm solid #F87800; border-radius: 4mm; padding: 0.6mm 3mm; font-size: 9.5pt; color: #ffffff; font-weight: 700;">' + escapeHtml_(headerData.formattedDate) + '</span>\n' +
+      '        </div>\n' +
+      '      </td>\n' +
+      '      <td style="width: 48mm; text-align: center; vertical-align: middle; padding-right: 2mm;">\n' +
+      '        <div style="width: 38mm; height: 38mm; border-radius: 50%; padding: 1mm; background: #F87800; display: inline-block; box-sizing: border-box; overflow: hidden;">\n' +
+      '          <img src="data:image/jpeg;base64,' + photoBase64 + '" style="width: 36mm; height: 36mm; border-radius: 50%; display: block; object-fit: cover;" alt="Gyan Sir" />\n' +
+      '        </div>\n' +
+      '      </td>\n' +
+      '    </tr>\n' +
+      '  </table>\n' +
       '</div>\n';
+
+    // Page 1 only: Single-line Instructions box
+    var instructionsHtml = '';
+    if (pageIndex === 0) {
+      instructionsHtml = '<div style="border: 0.3mm solid #E6DDF7; border-radius: 2.5mm; background: #ffffff; padding: 2mm 3.5mm; margin-bottom: 3.5mm;">\n' +
+        '  <table style="width: 100%; border-collapse: collapse;">\n' +
+        '    <tr>\n' +
+        '      <td style="width: 26mm; font-size: 7.5pt; font-weight: 700; letter-spacing: 0.14em; color: #6B6485; vertical-align: middle; white-space: nowrap;">INSTRUCTIONS</td>\n' +
+        '      <td style="font-size: 9pt; color: #1B1530; vertical-align: middle;">' + escapeHtml_(instructionsText) + '</td>\n' +
+        '    </tr>\n' +
+        '  </table>\n' +
+        '</div>\n';
     }
 
     var blocksHtml = pageBlocks.map(function(blk) {
       return renderBlockHtml_(blk);
     }).join('\n');
 
+    // Footer on EVERY page: 17mm, orange top border, social icons, page circle, no Play Store
+    var footerHtml = '<div style="position: absolute; left: 0; right: 0; bottom: 0; height: 17mm; box-sizing: border-box; background-color: ' + headerBgColor + '; border-top: 1mm solid #F87800; z-index: 10;">\n' +
+      '  <table style="width: 100%; height: 16mm; border-collapse: collapse; table-layout: fixed; margin: 0; padding: 0;">\n' +
+      '    <tr>\n' +
+      '      <td style="vertical-align: top; padding-top: 2.8mm; padding-left: 10mm; white-space: nowrap; line-height: 1.25;">\n' +
+      '        <div style="font-size: 6.5pt; letter-spacing: 0.16em; color: #FFC88F; font-weight: 700; text-transform: uppercase;">OFFLINE COACHING</div>\n' +
+      '        <div style="font-size: 10.5pt; font-weight: 700; color: #ffffff;">Commerce Gyan</div>\n' +
+      '        <div style="font-size: 7.5pt; color: #ffffff; opacity: 0.9;">Behind G.D. College, 2nd Floor, Begusarai · 9278569860</div>\n' +
+      '      </td>\n' +
+      '      <td style="width: 1mm; vertical-align: top; padding-top: 3.5mm; text-align: center; padding-left: 3mm; padding-right: 3mm;">\n' +
+      '        <div style="width: 0.3mm; height: 9mm; background: rgba(255,255,255,0.3); margin: 0 auto;"></div>\n' +
+      '      </td>\n' +
+      '      <td style="vertical-align: top; padding-top: 2.8mm; white-space: nowrap; line-height: 1.25;">\n' +
+      '        <div style="font-size: 6.5pt; letter-spacing: 0.16em; color: #FFC88F; font-weight: 700; text-transform: uppercase;">ONLINE CLASSES</div>\n' +
+      '        <div style="font-size: 10.5pt; font-weight: 700; color: #ffffff;">Commerce with Gyan</div>\n' +
+      '        <div style="font-size: 7.5pt; color: #ffffff; opacity: 0.9;">\n' +
+      '          <span style="display: inline-block; vertical-align: middle; line-height: 0; margin-right: 1.2mm;">\n' +
+      '            <svg style="width: 3.6mm; height: 3.6mm; vertical-align: middle;" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="4" fill="#FF0000"/><path d="M10 9l5 3-5 3z" fill="#fff"/></svg>\n' +
+      '            <svg style="width: 3.6mm; height: 3.6mm; vertical-align: middle; margin-left: 1mm;" viewBox="0 0 24 24"><defs><linearGradient id="ig_' + pageNum + '" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FDB022"/><stop offset=".5" stop-color="#E1306C"/><stop offset="1" stop-color="#7C3AED"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="6" fill="url(#ig_' + pageNum + ')"/><circle cx="12" cy="12" r="4.3" fill="none" stroke="#fff" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="#fff"/></svg>\n' +
+      '            <svg style="width: 3.6mm; height: 3.6mm; vertical-align: middle; margin-left: 1mm;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#29A9EB"/><path d="M5.5 11.6l11-4.3c.5-.2 1 .1.8.9l-1.9 8.8c-.1.6-.5.8-1 .5l-2.9-2.1-1.4 1.3c-.2.2-.3.3-.6.3l.2-3 5.4-4.9c.2-.2 0-.3-.3-.1l-6.7 4.2-2.9-.9c-.6-.2-.6-.6.1-.9z" fill="#fff"/></svg>\n' +
+      '          </span>\n' +
+      '          <span style="font-style: normal; font-weight: 600; vertical-align: middle;">@CommerceWithGyan</span>\n' +
+      '        </div>\n' +
+      '      </td>\n' +
+      '      <td style="width: 20mm; vertical-align: top; padding-top: 4.5mm; text-align: right; padding-right: 10mm;">\n' +
+      '        <div style="width: 7mm; height: 7mm; border-radius: 50%; background: #ffffff; color: ' + headerBgColor + '; font-weight: 800; font-size: 8.5pt; text-align: center; line-height: 7mm; display: inline-block;">' + pageNum + '</div>\n' +
+      '      </td>\n' +
+      '    </tr>\n' +
+      '  </table>\n' +
+      '</div>\n';
+
+    var watermarkHtml = watermarkBase64
+      ? ('  <div class="watermark" style="position: absolute; left: 45mm; top: 88.5mm; width: 120mm; height: 120mm; opacity: 0.06; z-index: 0; pointer-events: none; text-align: center; line-height: 0;">\n' +
+         '    <img src="data:image/png;base64,' + watermarkBase64 + '" style="width: 120mm; height: 120mm; display: block; border: 0;" alt="" />\n' +
+         '  </div>\n')
+      : '';
+
     return '<div class="page">\n' +
-      '  <img src="data:image/png;base64,' + bgBase64 + '" style="position: absolute; top: 0; left: 0; width: 210mm; height: 297mm; z-index: 0;" />\n' +
-      '  <!-- 1. NO. Box (top-right purple box centered) -->\n' +
-      '  <div style="position: absolute; top: 4.8mm; left: 174mm; width: 28mm; height: 7.5mm; display: flex; align-items: center; justify-content: center; font-size: 8pt; font-weight: bold; color: #5b1865; z-index: 2; white-space: nowrap;">' + escapeHtml_(sheetNumber) + '</div>\n' +
-      '  <!-- 2. Subject Line (Underline after Subject :) -->\n' +
-      '  <div style="position: absolute; top: 23.8mm; left: 35mm; width: 43mm; font-size: 9pt; font-weight: bold; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2;">' + escapeHtml_(headerData.subjectText) + '</div>\n' +
-      '  <!-- 3. Topic Line (Underline after Topic :) -->\n' +
-      '  <div style="position: absolute; top: 23.8mm; left: 104mm; width: 44mm; font-size: 8.5pt; font-weight: bold; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2;">' + escapeHtml_(headerData.topicText) + '</div>\n' +
-      '  <!-- 4. Date Line (Underline after Date :) -->\n' +
-      '  <div style="position: absolute; top: 23.8mm; left: 173mm; width: 25mm; text-align: center; font-size: 9pt; font-weight: bold; color: #0f172a; letter-spacing: 0.5px; z-index: 2; background: #ffffff; padding: 0 2px;">' + escapeHtml_(headerData.formattedDate) + '</div>\n' +
-      '  <!-- 5. Safe Usable Content Container -->\n' +
-      '  <div class="content">\n' +
-      page1TitleHtml +
+      watermarkHtml +
+      headerHtml +
+      instructionsHtml +
+      '  <div class="content-flow">\n' +
       blocksHtml + '\n' +
       '  </div>\n' +
+      footerHtml +
       '</div>';
   }).join('\n');
 
@@ -1089,7 +1203,7 @@ function buildMultiPageDocumentHtml_(pages, headerData, bgBase64) {
     '<html>\n' +
     '<head>\n' +
     '<meta charset="utf-8">\n' +
-    '<title>' + escapeHtml_(pillText) + '</title>\n' +
+    '<title>' + escapeHtml_(docTitle) + '</title>\n' +
     '<style>\n' +
     '  @page {\n' +
     '    size: 210mm 297mm;\n' +
@@ -1107,7 +1221,7 @@ function buildMultiPageDocumentHtml_(pages, headerData, bgBase64) {
     '    font-family: \'Segoe UI\', Roboto, \'Helvetica Neue\', Arial, sans-serif;\n' +
     '    font-size: 10pt;\n' +
     '    line-height: 1.48;\n' +
-    '    color: #0f172a;\n' +
+    '    color: #1B1530;\n' +
     '    -webkit-font-smoothing: antialiased;\n' +
     '  }\n' +
     '  .page {\n' +
@@ -1119,19 +1233,17 @@ function buildMultiPageDocumentHtml_(pages, headerData, bgBase64) {
     '    break-after: page;\n' +
     '    box-sizing: border-box;\n' +
     '    background: #ffffff;\n' +
+    '    padding: 8mm 10mm 0;\n' +
     '  }\n' +
     '  .page:last-child {\n' +
     '    page-break-after: auto;\n' +
     '    break-after: auto;\n' +
     '  }\n' +
-    '  .content {\n' +
+    '  .content-flow {\n' +
     '    position: relative;\n' +
     '    z-index: 1;\n' +
-    '    padding: 60mm 12mm 28mm 18mm;\n' +
     '    box-sizing: border-box;\n' +
-    '    width: 210mm;\n' +
-    '    height: 297mm;\n' +
-    '    overflow: hidden;\n' +
+    '    width: 100%;\n' +
     '  }\n' +
     '  .keep-together {\n' +
     '    break-inside: avoid !important;\n' +
@@ -1145,27 +1257,26 @@ function buildMultiPageDocumentHtml_(pages, headerData, bgBase64) {
     '    font-family: \'Segoe UI\', Roboto, sans-serif;\n' +
     '  }\n' +
     '  .content-card {\n' +
-    '    background: rgba(255, 255, 255, 0.94);\n' +
-    '    border: 1px solid #cbd5e1;\n' +
-    '    border-radius: 10px;\n' +
-    '    padding: 9px 13px;\n' +
-    '    margin-bottom: 8px;\n' +
-    '    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);\n' +
+    '    background: #ffffff;\n' +
+    '    border: 0.3mm solid #E6DDF7;\n' +
+    '    border-radius: 2.5mm;\n' +
+    '    padding: 2.4mm 3.5mm;\n' +
+    '    margin-bottom: 2.6mm;\n' +
     '    break-inside: avoid;\n' +
     '    page-break-inside: avoid;\n' +
     '  }\n' +
     '  .content-block {\n' +
-    '    margin-bottom: 8px;\n' +
+    '    margin-bottom: 2.6mm;\n' +
     '    break-inside: avoid;\n' +
     '    page-break-inside: avoid;\n' +
     '  }\n' +
     '  .recap-box {\n' +
-    '    margin-bottom: 8px;\n' +
+    '    margin-bottom: 2.6mm;\n' +
     '    break-inside: avoid;\n' +
     '    page-break-inside: avoid;\n' +
     '  }\n' +
     '  .footer-block {\n' +
-    '    margin-top: 6px;\n' +
+    '    margin-top: 2.6mm;\n' +
     '    break-inside: avoid;\n' +
     '    page-break-inside: avoid;\n' +
     '  }\n' +
@@ -1186,6 +1297,25 @@ function buildMultiPageDocumentHtml_(pages, headerData, bgBase64) {
     '    padding: 1px 3px;\n' +
     '    font-weight: 600;\n' +
     '  }\n' +
+    '  .watermark {\n' +
+    '    position: absolute;\n' +
+    '    left: 45mm;\n' +
+    '    top: 88.5mm;\n' +
+    '    width: 120mm;\n' +
+    '    height: 120mm;\n' +
+    '    opacity: 0.05;\n' +
+    '    z-index: 0;\n' +
+    '    pointer-events: none;\n' +
+    '  }\n' +
+    '  .d2-item {\n' +
+    '    box-sizing: border-box;\n' +
+    '  }\n' +
+    '  .d2-lvl-1 { margin-left: 0mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 2mm; font-size: 10pt; line-height: 1.48; color: #1B1530; }\n' +
+    '  .d2-lvl-2 { margin-left: 5mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 9.5pt; line-height: 1.45; color: #1B1530; }\n' +
+    '  .d2-lvl-3 { margin-left: 10mm; padding-left: 7.5mm; text-indent: -7.5mm; margin-bottom: 1.5mm; font-size: 9.5pt; line-height: 1.45; color: #1B1530; }\n' +
+    '  .d2-lvl-4 { margin-left: 15mm; padding-left: 7mm; text-indent: -7mm; margin-bottom: 1.5mm; font-size: 9pt; line-height: 1.45; color: #1B1530; }\n' +
+    '  .d2-lvl-5 { margin-left: 20mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 9pt; line-height: 1.45; color: #1B1530; }\n' +
+    '  .d2-lvl-6 { margin-left: 25mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 8.5pt; line-height: 1.45; color: #1B1530; }\n' +
     '</style>\n' +
     '</head>\n' +
     '<body>\n' +
@@ -1201,6 +1331,8 @@ function renderBlockHtml_(blk) {
       return renderRecapBoxBlockHtml_(blk);
     case 'question_header':
       return renderQuestionHeaderBlockHtml_(blk);
+    case 'answer_header':
+      return renderAnswerHeaderBlockHtml_(blk);
     case 'question_workingspace':
       return renderQuestionWorkingSpaceBlockHtml_(blk);
     case 'question_footer':
@@ -1215,10 +1347,12 @@ function renderBlockHtml_(blk) {
       return renderTableBlockHtml_(blk);
     case 'graph':
       return renderEconomicsSvgBlock_(blk.template, blk.caption);
+    case 'calculation':
+      return renderCalculationBlock_(blk.text, blk.title);
     case 'formula':
       return renderStatisticsFormulaBlock_(blk.formula, blk.label);
     case 'flow':
-      return renderBstFlowchartBlock_(blk.steps);
+      return renderBstFlowchartBlock_(blk.steps, blk.title);
     case 'card':
       return renderCaseStudyCardBlock_(blk.title, blk.body);
     case 'footer_block':
@@ -1229,7 +1363,7 @@ function renderBlockHtml_(blk) {
       return renderTrapsOnlyHtml_(blk.text);
     case 'text':
     default:
-      return renderGenericTextBlock_(blk.text || '');
+      return renderGenericTextBlock_(blk.text || '', blk);
   }
 }
 
@@ -1237,23 +1371,34 @@ function renderBlockHtml_(blk) {
  * Renders Original Problem Recap box (clean 1-2 line summary, stripped of raw tables/pipes)
  */
 function renderRecapBoxBlockHtml_(blk) {
-  return '<div class="recap-box keep-together" style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3.5px solid #1d4ed8; border-radius: 6px; padding: 6px 10px; margin-bottom: 8px;">' +
-    '<div style="font-size: 8pt; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px;">Original Problem Recap</div>' +
-    '<div style="font-size: 9pt; color: #334155; margin-top: 2px; font-weight: 500; line-height: 1.4;">' + escapeHtml_(blk.text || '') + '</div>' +
+  var marks = blk.marks || 6;
+  return '<div class="recap-box keep-together" style="background: #F4EEFF; border: 0.3mm solid #E6DDF7; border-left: 1.2mm solid #7C30E0; border-radius: 2.5mm; padding: 2.4mm 3.5mm; margin-bottom: 2.6mm;">' +
+    '<table style="width: 100%; border-collapse: collapse; margin-bottom: 1.5mm;">' +
+      '<tr>' +
+        '<td style="vertical-align: middle; text-align: left;">' +
+          '<span style="display: inline-block; width: 7.5mm; height: 7.5mm; border-radius: 2mm; background: #FFEEDD; color: #C25E00; font-weight: 800; font-size: 10pt; text-align: center; line-height: 7.5mm; margin-right: 2.5mm; vertical-align: middle;">A1</span>' +
+          '<span style="font-size: 7.5pt; font-weight: 700; color: #7C30E0; text-transform: uppercase; letter-spacing: 0.12em; vertical-align: middle;">ORIGINAL PROBLEM RECAP</span>' +
+        '</td>' +
+        '<td style="vertical-align: middle; text-align: right;">' +
+          '<span style="display: inline-block; color: #F87800; font-weight: 700; border: 0.3mm solid #FFD2A8; border-radius: 3mm; padding: 0.5mm 3mm; font-size: 8.5pt;">' + marks + ' Marks</span>' +
+        '</td>' +
+      '</tr>' +
+    '</table>' +
+    '<div style="font-size: 9pt; color: #1E0063; font-weight: 500; line-height: 1.4;">' + escapeHtml_(blk.text || '') + '</div>' +
   '</div>';
 }
 
 /**
- * Renders combined Footer Block containing BOTH Marking Scheme (green) and Common Traps (red)
+ * Renders combined Footer Block containing BOTH Marking Scheme (purple tint) and Common Traps (orange tint)
  */
 function renderFooterBlockHtml_(blk) {
   var rubricHtml = '';
   if (blk.rubricText) {
-    rubricHtml = '<div class="content-card" style="background: rgba(240, 253, 244, 0.95); border: 1px solid #86efac; border-radius: 10px; padding: 9px 13px; margin-bottom: 7px;">' +
-      '<div style="font-size: 9.5pt; font-weight: 700; color: #15803d; display: flex; align-items: center; gap: 6px;">' +
-        '<span>✅</span><strong>CBSE Step-by-Step Marking Scheme & Rubric</strong>' +
+    rubricHtml = '<div class="content-card" style="background: #F4EEFF; border: 0.3mm solid #E6DDF7; border-left: 1.2mm solid #7C30E0; border-radius: 2.5mm; padding: 2.4mm 3.5mm; margin-bottom: 2.6mm;">' +
+      '<div style="font-size: 9pt; font-weight: 700; color: #1E0063; margin-bottom: 1.5mm;">' +
+        'CBSE Step-by-Step Marking Scheme & Rubric' +
       '</div>' +
-      '<div style="font-size: 9pt; color: #166534; margin-top: 4px; line-height: 1.45;">' +
+      '<div style="font-size: 9pt; color: #1E0063; line-height: 1.45;">' +
         formatBulletListDps_(blk.rubricText) +
       '</div>' +
     '</div>';
@@ -1261,87 +1406,72 @@ function renderFooterBlockHtml_(blk) {
 
   var trapsHtml = '';
   if (blk.trapsText) {
-    trapsHtml = '<div class="content-card" style="background: rgba(254, 242, 242, 0.95); border: 1px solid #fca5a5; border-radius: 10px; padding: 9px 13px; margin-bottom: 0;">' +
-      '<div style="font-size: 9.5pt; font-weight: 700; color: #991b1b; display: flex; align-items: center; gap: 6px;">' +
-        '<span>⚠️</span><strong>Common Examiner Traps to Avoid</strong>' +
+    trapsHtml = '<div class="content-card" style="background: #FFF4EA; border: 0.3mm solid #FFD2A8; border-left: 1.2mm solid #F87800; border-radius: 2.5mm; padding: 2.4mm 3.5mm; margin-bottom: 0;">' +
+      '<div style="font-size: 9pt; font-weight: 700; color: #C25E00; margin-bottom: 1.5mm;">' +
+        'Common Examiner Traps to Avoid' +
       '</div>' +
-      '<div style="font-size: 9pt; color: #9f1239; margin-top: 4px; line-height: 1.45;">' +
+      '<div style="font-size: 9pt; color: #C25E00; line-height: 1.45;">' +
         formatBulletListDps_(blk.trapsText) +
       '</div>' +
     '</div>';
   }
 
-  return '<div class="footer-block keep-together" style="margin-top: 6px;">' +
+  return '<div class="footer-block keep-together" style="margin-top: 2.6mm;">' +
     rubricHtml +
     trapsHtml +
   '</div>';
 }
 
 function renderRubricOnlyHtml_(text) {
-  return '<div class="content-card keep-together" style="background: rgba(240, 253, 244, 0.95); border: 1px solid #86efac; border-radius: 10px; padding: 9px 13px; margin-bottom: 7px;">' +
-    '<div style="font-size: 9.5pt; font-weight: 700; color: #15803d; display: flex; align-items: center; gap: 6px;">' +
-      '<span>✅</span><strong>CBSE Step-by-Step Marking Scheme & Rubric</strong>' +
+  return '<div class="content-card keep-together" style="background: #F4EEFF; border: 0.3mm solid #E6DDF7; border-left: 1.2mm solid #7C30E0; border-radius: 2.5mm; padding: 2.4mm 3.5mm; margin-bottom: 2.6mm;">' +
+    '<div style="font-size: 9pt; font-weight: 700; color: #1E0063; margin-bottom: 1.5mm;">' +
+      'CBSE Step-by-Step Marking Scheme & Rubric' +
     '</div>' +
-    '<div style="font-size: 9pt; color: #166534; margin-top: 4px; line-height: 1.45;">' +
+    '<div style="font-size: 9pt; color: #1E0063; line-height: 1.45;">' +
       formatBulletListDps_(text) +
     '</div>' +
   '</div>';
 }
 
 function renderTrapsOnlyHtml_(text) {
-  return '<div class="content-card keep-together" style="background: rgba(254, 242, 242, 0.95); border: 1px solid #fca5a5; border-radius: 10px; padding: 9px 13px; margin-bottom: 7px;">' +
-    '<div style="font-size: 9.5pt; font-weight: 700; color: #991b1b; display: flex; align-items: center; gap: 6px;">' +
-      '<span>⚠️</span><strong>Common Examiner Traps to Avoid</strong>' +
+  return '<div class="content-card keep-together" style="background: #FFF4EA; border: 0.3mm solid #FFD2A8; border-left: 1.2mm solid #F87800; border-radius: 2.5mm; padding: 2.4mm 3.5mm; margin-bottom: 2.6mm;">' +
+    '<div style="font-size: 9pt; font-weight: 700; color: #C25E00; margin-bottom: 1.5mm;">' +
+      'Common Examiner Traps to Avoid' +
     '</div>' +
-    '<div style="font-size: 9pt; color: #9f1239; margin-top: 4px; line-height: 1.45;">' +
+    '<div style="font-size: 9pt; color: #C25E00; line-height: 1.45;">' +
       formatBulletListDps_(text) +
     '</div>' +
   '</div>';
 }
 
 /**
- * Question Sheet Header
+ * Question Sheet Header Card: purple number badge ("Q1"), orange marks tag ("6 Marks")
  */
 function renderQuestionHeaderBlockHtml_(blk) {
-  return '<div class="content-card keep-together" style="margin-bottom: 8px;">' +
-    '<div style="display: flex; justify-content: space-between; align-items: center;">' +
-      '<div style="display: flex; align-items: center; gap: 8px;">' +
-        '<span style="background: #1d4ed8; color: #ffffff; font-weight: 700; border-radius: 999px; padding: 2px 10px; font-size: 8.5pt; letter-spacing: 0.3px;">Q1</span>' +
-        '<span style="background: #fef3c7; color: #92400e; font-weight: 600; border-radius: 999px; padding: 2px 10px; font-size: 8.5pt;">CBSE Class ' + blk.classLevel + ' • ' + escapeHtml_(blk.topicText || 'Practice Problem') + '</span>' +
-      '</div>' +
-      '<span style="color: #1d4ed8; font-weight: 800; font-size: 9.5pt;">[ ' + blk.marks + ' Marks ]</span>' +
-    '</div>' +
-  '</div>';
+  return '';
 }
 
 /**
- * Question Sheet Working Space
+ * Answer Sheet Header Card (Compact C1: embedded directly inside recap box)
+ */
+function renderAnswerHeaderBlockHtml_(blk) {
+  return '';
+}
+
+/**
+ * Unused legacy Question Working Space (kept harmless for backwards compatibility)
  */
 function renderQuestionWorkingSpaceBlockHtml_(blk) {
-  return '<div class="content-card keep-together" style="border: 1.5px dashed #cbd5e1; background: rgba(255, 255, 255, 0.92); margin-top: 8px;">' +
-    '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">' +
-      '<span style="font-size: 9pt; font-weight: 700; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.5px;">✍️ Solution & Working Space</span>' +
-      '<span style="font-size: 8pt; color: #64748b; font-weight: 600;">(Show journal entries, ledger accounts, and working notes neatly)</span>' +
-    '</div>' +
-    '<div style="min-height: 52mm; border-bottom: 1px dashed #e2e8f0;"></div>' +
-  '</div>';
+  return '';
 }
 
 /**
- * Question Sheet Footer Notice
+ * Unused legacy Question Footer Notice (kept harmless for backwards compatibility)
  */
 function renderQuestionFooterBlockHtml_(blk) {
-  return '<div class="keep-together" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 7px 11px; margin-top: 6px; display: flex; align-items: center; gap: 8px;">' +
-    '<span style="font-size: 14px;">✍️</span>' +
-    '<div style="font-size: 8.5pt; color: #334155; line-height: 1.35;">' +
-      '<strong>CBSE Practice Register Assignment:</strong> Solve this question in your physical practice register tonight. Official Step-by-Step Model Answer Key with CBSE Marking Rubric will be shared tomorrow at <strong>08:15 AM IST</strong>.' +
-    '</div>' +
-  '</div>';
+  return '';
 }
 
-/**
- * Renders T-Account with Dr./Cr. header and mandatory Equal-Row Padding Rule
- */
 function renderTAccountBlockHtml_(blk) {
   var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
   if (lines.length === 0) return '';
@@ -1384,10 +1514,10 @@ function renderTAccountBlockHtml_(blk) {
     var left = drItems[r] || { desc: '&nbsp;', amt: '' };
     var right = crItems[r] || { desc: '&nbsp;', amt: '' };
 
-    trs.push('<tr style="border-bottom: 1px solid #cbd5e1;">' +
-      '<td style="padding: 5.5px 8px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + (left.desc === '&nbsp;' ? '&nbsp;' : escapeHtml_(left.desc)) + '</td>' +
-      '<td style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #1d4ed8; font-variant-numeric: tabular-nums; font-weight: 600; color: #0f172a;">' + escapeHtml_(left.amt) + '</td>' +
-      '<td style="padding: 5.5px 8px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + (right.desc === '&nbsp;' ? '&nbsp;' : escapeHtml_(right.desc)) + '</td>' +
+    trs.push('<tr style="border-bottom: 1px solid #E6DDF7;">' +
+      '<td style="padding: 5.5px 8px; border-right: 1px solid #E6DDF7; color: #0f172a;">' + (left.desc === '&nbsp;' ? '&nbsp;' : escapeHtml_(left.desc)) + '</td>' +
+      '<td style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #7C30E0; font-variant-numeric: tabular-nums; font-weight: 600; color: #0f172a;">' + escapeHtml_(left.amt) + '</td>' +
+      '<td style="padding: 5.5px 8px; border-right: 1px solid #E6DDF7; color: #0f172a;">' + (right.desc === '&nbsp;' ? '&nbsp;' : escapeHtml_(right.desc)) + '</td>' +
       '<td style="padding: 5.5px 8px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: #0f172a;">' + escapeHtml_(right.amt) + '</td>' +
     '</tr>');
   }
@@ -1396,10 +1526,10 @@ function renderTAccountBlockHtml_(blk) {
   if (drTotal || crTotal) {
     var dt = drTotal || { desc: 'Total', amt: '' };
     var ct = crTotal || { desc: 'Total', amt: '' };
-    trs.push('<tr style="border-top: 1px solid #cbd5e1; border-bottom: 3px double #0f172a; font-weight: bold; background: #f8fafc;">' +
-      '<td style="padding: 5.5px 8px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + escapeHtml_(dt.desc) + '</td>' +
-      '<td style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #1d4ed8; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(dt.amt) + '</td>' +
-      '<td style="padding: 5.5px 8px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + escapeHtml_(ct.desc) + '</td>' +
+    trs.push('<tr style="border-top: 1px solid #E6DDF7; border-bottom: 3px double #1E0063; font-weight: bold; background: #f8fafc;">' +
+      '<td style="padding: 5.5px 8px; border-right: 1px solid #E6DDF7; color: #0f172a;">' + escapeHtml_(dt.desc) + '</td>' +
+      '<td style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #7C30E0; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(dt.amt) + '</td>' +
+      '<td style="padding: 5.5px 8px; border-right: 1px solid #E6DDF7; color: #0f172a;">' + escapeHtml_(ct.desc) + '</td>' +
       '<td style="padding: 5.5px 8px; text-align: right; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(ct.amt) + '</td>' +
     '</tr>');
   }
@@ -1407,18 +1537,18 @@ function renderTAccountBlockHtml_(blk) {
   var colgroupHtml = '<colgroup><col style="width: 36%;"><col style="width: 14%;"><col style="width: 36%;"><col style="width: 14%;"></colgroup>';
 
   return '<div class="content-card keep-together">' +
-    '<div style="font-weight: 700; font-size: 9.5pt; color: #1e3a8a; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">' +
+    '<div style="font-weight: 700; font-size: 9.5pt; color: #1E0063; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">' +
       '<span>Dr.</span>' +
       '<span style="text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title || 'Ledger Account') + '</span>' +
       '<span>Cr.</span>' +
     '</div>' +
-    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #cbd5e1; table-layout: fixed; font-family: inherit;">' +
+    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #E6DDF7; table-layout: fixed; font-family: inherit;">' +
       colgroupHtml +
       '<thead>' +
-        '<tr style="background: #dbeafe; color: #0f172a; font-weight: 700; border-bottom: 1px solid #cbd5e1;">' +
-          '<th style="padding: 5.5px 8px; text-align: left; border-right: 1px solid #cbd5e1;">Particulars</th>' +
-          '<th style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #1d4ed8;">Amount (₹)</th>' +
-          '<th style="padding: 5.5px 8px; text-align: left; border-right: 1px solid #cbd5e1;">Particulars</th>' +
+        '<tr style="background: #F4EEFF; color: #1E0063; font-weight: 700; border-bottom: 1px solid #E6DDF7;">' +
+          '<th style="padding: 5.5px 8px; text-align: left; border-right: 1px solid #E6DDF7;">Particulars</th>' +
+          '<th style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #7C30E0;">Amount (₹)</th>' +
+          '<th style="padding: 5.5px 8px; text-align: left; border-right: 1px solid #E6DDF7;">Particulars</th>' +
           '<th style="padding: 5.5px 8px; text-align: right;">Amount (₹)</th>' +
         '</tr>' +
       '</thead>' +
@@ -1444,9 +1574,9 @@ function renderCapitalAccountBlockHtml_(blk) {
 
   var ths = headerCols.map(function(c, idx) {
     var isDivider = (idx + 1 === midColIndex);
-    var divStyle = isDivider ? 'border-right: 2px solid #1d4ed8;' : 'border-right: 1px solid #cbd5e1;';
+    var divStyle = isDivider ? 'border-right: 2px solid #7C30E0;' : 'border-right: 1px solid #E6DDF7;';
     var fontSize = (nPartners >= 4) ? '8pt' : '9pt';
-    return '<th style="background: #dbeafe; color: #0f172a; padding: 5px 6px; ' + divStyle + ' font-weight: 700; text-align: center; font-size: ' + fontSize + ';">' + escapeHtml_(c) + '</th>';
+    return '<th style="background: #F4EEFF; color: #0f172a; padding: 5px 6px; ' + divStyle + ' font-weight: 700; text-align: center; font-size: ' + fontSize + ';">' + escapeHtml_(c) + '</th>';
   }).join('');
 
   var drItems = [];
@@ -1455,23 +1585,60 @@ function renderCapitalAccountBlockHtml_(blk) {
   var crTotal = null;
 
   for (var i = 1; i < lines.length; i++) {
-    var cols = splitPipes_(lines[i]);
-    var isTotal = /total/i.test(cols[0]) || (cols[1] && /total/i.test(cols[1])) || (cols[midColIndex] && /total/i.test(cols[midColIndex]));
-    var leftCols = cols.slice(0, midColIndex);
-    var rightCols = cols.slice(midColIndex);
+    var line = lines[i];
+    var rawTokens = line.split('|').map(function(s) { return s.trim(); });
+    if (rawTokens.length > 0 && rawTokens[0] === '' && rawTokens[rawTokens.length - 1] === '') {
+      rawTokens.shift();
+      rawTokens.pop();
+    }
 
-    while (leftCols.length < midColIndex) leftCols.push('');
-    while (rightCols.length < midColIndex) rightCols.push('');
+    var byIdx = -1;
+    for (var k = 0; k < rawTokens.length; k++) {
+      if (/^by\s/i.test(rawTokens[k])) {
+        byIdx = k;
+        break;
+      }
+    }
+
+    var leftCols, rightCols;
+    var isTotal = /total/i.test(rawTokens[0]) || /total/i.test(rawTokens[midColIndex]);
 
     if (isTotal) {
+      if (rawTokens.length > 0 && rawTokens[0] === '') rawTokens.shift();
+      leftCols = rawTokens.slice(0, midColIndex);
+      rightCols = rawTokens.slice(midColIndex);
+      while (leftCols.length < midColIndex) leftCols.push('');
+      while (rightCols.length < midColIndex) rightCols.push('');
       drTotal = leftCols;
       crTotal = rightCols;
-    } else {
-      var leftHasContent = leftCols.some(function(c) { return c && c.trim(); });
-      var rightHasContent = rightCols.some(function(c) { return c && c.trim(); });
-      if (leftHasContent) drItems.push(leftCols);
-      if (rightHasContent) crItems.push(rightCols);
+      continue;
     }
+
+    if (byIdx !== -1) {
+      var rawLeft = rawTokens.slice(0, byIdx);
+      var rawRight = rawTokens.slice(byIdx);
+      while (rawRight.length < midColIndex) rawRight.push('');
+      rightCols = rawRight.slice(0, midColIndex);
+
+      var leftNonEmpty = rawLeft.filter(function(s) { return s.trim() !== ''; });
+      if (leftNonEmpty.length === 0) {
+        leftCols = [];
+        for (var p = 0; p < midColIndex; p++) leftCols.push('');
+      } else {
+        while (rawLeft.length < midColIndex) rawLeft.push('');
+        leftCols = rawLeft.slice(0, midColIndex);
+      }
+    } else {
+      leftCols = rawTokens.slice(0, midColIndex);
+      while (leftCols.length < midColIndex) leftCols.push('');
+      rightCols = [];
+      for (var p2 = 0; p2 < midColIndex; p2++) rightCols.push('');
+    }
+
+    var leftHasContent = leftCols.some(function(c) { return c && c.trim(); });
+    var rightHasContent = rightCols.some(function(c) { return c && c.trim(); });
+    if (leftHasContent) drItems.push(leftCols);
+    if (rightHasContent) crItems.push(rightCols);
   }
 
   // Equal-Row Padding Rule: Pad shorter side before Total
@@ -1491,11 +1658,11 @@ function renderCapitalAccountBlockHtml_(blk) {
 
     var tds = rowCols.map(function(c, cIdx) {
       var isDivider = (cIdx + 1 === midColIndex);
-      var divStyle = isDivider ? 'border-right: 2px solid #1d4ed8;' : 'border-right: 1px solid #cbd5e1;';
+      var divStyle = isDivider ? 'border-right: 2px solid #7C30E0;' : 'border-right: 1px solid #E6DDF7;';
       var isAmt = (cIdx !== 0 && cIdx !== midColIndex) && /[\d,]+/.test(c);
       var align = isAmt ? 'right' : 'left';
       var textVal = (c === '&nbsp;') ? '&nbsp;' : escapeHtml_(c);
-      return '<td style="padding: ' + cellPad + '; border-bottom: 1px solid #cbd5e1; ' + divStyle + ' text-align: ' + align + '; font-size: ' + cellFontSize + '; font-variant-numeric: tabular-nums; color: #0f172a; white-space: nowrap;">' + textVal + '</td>';
+      return '<td style="padding: ' + cellPad + '; border-bottom: 1px solid #E6DDF7; ' + divStyle + ' text-align: ' + align + '; font-size: ' + cellFontSize + '; font-variant-numeric: tabular-nums; color: #0f172a; white-space: nowrap;">' + textVal + '</td>';
     }).join('');
     trs.push('<tr>' + tds + '</tr>');
   }
@@ -1508,10 +1675,10 @@ function renderCapitalAccountBlockHtml_(blk) {
 
     var totalTds = totalColsArr.map(function(c, cIdx) {
       var isDivider = (cIdx + 1 === midColIndex);
-      var divStyle = isDivider ? 'border-right: 2px solid #1d4ed8;' : 'border-right: 1px solid #cbd5e1;';
+      var divStyle = isDivider ? 'border-right: 2px solid #7C30E0;' : 'border-right: 1px solid #E6DDF7;';
       var isAmt = (cIdx !== 0 && cIdx !== midColIndex) && /[\d,]+/.test(c);
       var align = isAmt ? 'right' : 'left';
-      return '<td style="padding: ' + cellPad + '; border-top: 1px solid #cbd5e1; border-bottom: 3px double #0f172a; ' + divStyle + ' text-align: ' + align + '; font-size: ' + cellFontSize + '; font-weight: bold; background: #f8fafc; font-variant-numeric: tabular-nums; color: #0f172a; white-space: nowrap;">' + escapeHtml_(c) + '</td>';
+      return '<td style="padding: ' + cellPad + '; border-top: 1px solid #E6DDF7; border-bottom: 3px double #1E0063; ' + divStyle + ' text-align: ' + align + '; font-size: ' + cellFontSize + '; font-weight: bold; background: #f8fafc; font-variant-numeric: tabular-nums; color: #0f172a; white-space: nowrap;">' + escapeHtml_(c) + '</td>';
     }).join('');
     trs.push('<tr>' + totalTds + '</tr>');
   }
@@ -1519,12 +1686,12 @@ function renderCapitalAccountBlockHtml_(blk) {
   var heading = blk.title || "PARTNERS' CAPITAL ACCOUNTS";
 
   return '<div class="content-card keep-together">' +
-    '<div style="font-weight: 700; font-size: 9.5pt; color: #1e3a8a; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">' +
+    '<div style="font-weight: 700; font-size: 9.5pt; color: #1E0063; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">' +
       '<span>Dr.</span>' +
       '<span style="text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(heading) + ' (' + nPartners + ' Partners)</span>' +
       '<span>Cr.</span>' +
     '</div>' +
-    '<table style="width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #cbd5e1; table-layout: fixed; font-family: inherit;">' +
+    '<table style="width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #E6DDF7; table-layout: fixed; font-family: inherit;">' +
       colgroupHtml +
       '<thead><tr>' + ths + '</tr></thead>' +
       '<tbody>' + trs.join('\n') + '</tbody>' +
@@ -1549,14 +1716,14 @@ function renderJournalBlockHtml_(blk) {
       if (isHeader && /particular|date|l\.f|dr|cr|amount/i.test(rawLine)) {
         isHeader = false;
         var ths = cols.map(function(c) {
-          return '<th style="background: #dbeafe; color: #0f172a; padding: 5.5px 8px; border-right: 1px solid #cbd5e1; font-weight: 700; text-align: center; font-size: 9.5pt;">' + escapeHtml_(c) + '</th>';
+          return '<th style="background: #F4EEFF; color: #0f172a; padding: 5.5px 8px; border-right: 1px solid #E6DDF7; font-weight: 700; text-align: center; font-size: 9.5pt;">' + escapeHtml_(c) + '</th>';
         }).join('');
-        trs.push('<tr style="border-bottom: 1px solid #cbd5e1;">' + ths + '</tr>');
+        trs.push('<tr style="border-bottom: 1px solid #E6DDF7;">' + ths + '</tr>');
         continue;
       }
 
       var isTotal = /total/i.test(rawLine);
-      var borderStyle = isTotal ? 'border-top: 1px solid #cbd5e1; border-bottom: 3px double #0f172a; font-weight: bold; background: #f8fafc;' : 'border-bottom: 1px solid #cbd5e1;';
+      var borderStyle = isTotal ? 'border-top: 1px solid #E6DDF7; border-bottom: 3px double #1E0063; font-weight: bold; background: #f8fafc;' : 'border-bottom: 1px solid #E6DDF7;';
 
       var tds = cols.map(function(c, cIdx) {
         var isAmt = (cIdx === 3 || cIdx === 4) && /[\d,]+/.test(c);
@@ -1568,15 +1735,15 @@ function renderJournalBlockHtml_(blk) {
     } else {
       var isNarration = /^\s*\(Being/i.test(rawLine);
       var fontStyle = isNarration ? 'font-style: italic; color: #475569; padding-left: 20px;' : 'font-weight: bold; color: #0f172a;';
-      trs.push('<tr><td colspan="10" style="padding: 4px 8px; ' + fontStyle + ' font-size: 9pt; border-left: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1;">' + escapeHtml_(rawLine) + '</td></tr>');
+      trs.push('<tr><td colspan="10" style="padding: 4px 8px; ' + fontStyle + ' font-size: 9pt; border-left: 1px solid #cbd5e1; border-right: 1px solid #E6DDF7;">' + escapeHtml_(rawLine) + '</td></tr>');
     }
   }
 
   var colgroupHtml = '<colgroup><col style="width: 12%;"><col style="width: 48%;"><col style="width: 8%;"><col style="width: 16%;"><col style="width: 16%;"></colgroup>';
 
   return '<div class="content-card keep-together">' +
-    '<div style="font-weight: 700; font-size: 9.5pt; color: #1e3a8a; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px;">Journal Entries</div>' +
-    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #cbd5e1; table-layout: fixed; font-family: inherit;">' +
+    '<div style="font-weight: 700; font-size: 9.5pt; color: #1E0063; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px;">Journal Entries</div>' +
+    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #E6DDF7; table-layout: fixed; font-family: inherit;">' +
       colgroupHtml +
       '<tbody>' + trs.join('\n') + '</tbody>' +
     '</table>' +
@@ -1587,12 +1754,12 @@ function renderJournalBlockHtml_(blk) {
  * Renders generic styled CBSE table (Balance Sheet, Trial Balance, Statistics) with Equal-Row Padding Rule for 2-sided tables
  */
 function renderTableBlockHtml_(blk) {
-  var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
-  if (lines.length === 0) return '';
+  var lines = String(blk.rowsText || "").trim().split("\n").filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
+  if (lines.length === 0) return "";
 
   var headerCols = [];
   var startIndex = 0;
-  if (lines.length > 0 && lines[0].indexOf('|') !== -1) {
+  if (lines.length > 0 && lines[0].indexOf("|") !== -1) {
     var firstCols = splitPipes_(lines[0]);
     if (/particular|date|debit|credit|amount|plus|minus|liabilities|assets|class|f|mid/i.test(lines[0])) {
       headerCols = firstCols;
@@ -1600,7 +1767,8 @@ function renderTableBlockHtml_(blk) {
     }
   }
 
-  var isBS = (headerCols.length === 4 && /balance sheet|revaluation|realisation|trading|p&l|cash|bank/i.test(blk.title || ''));
+  // Detect 2-sided account or Balance Sheet (PA7)
+  var isBS = (headerCols.length === 4 && (/liabilit|particular|date|dr/i.test(headerCols[0]) || /asset|particular/i.test(headerCols[2]) || /balance sheet|revaluation|realisation|trading|p&l|cash|bank/i.test(blk.title || "")));
 
   if (isBS) {
     var leftItems = [];
@@ -1610,18 +1778,18 @@ function renderTableBlockHtml_(blk) {
 
     for (var i = startIndex; i < lines.length; i++) {
       var raw = lines[i];
-      if (raw.indexOf('|') !== -1) {
+      if (raw.indexOf("|") !== -1) {
         var cols = splitPipes_(raw);
         if (cols.length >= 4) {
           var isTot = /total/i.test(cols[0]) || /total/i.test(cols[2]);
           if (isTot) {
-            leftTotal = { desc: cols[0] || 'Total', amt: cols[1] || '' };
-            rightTotal = { desc: cols[2] || 'Total', amt: cols[3] || '' };
+            leftTotal = { desc: cols[0] || "Total", amt: cols[1] || "" };
+            rightTotal = { desc: cols[2] || "Total", amt: cols[3] || "" };
           } else {
-            var lDesc = (cols[0] || '').trim();
-            var lAmt = (cols[1] || '').trim();
-            var rDesc = (cols[2] || '').trim();
-            var rAmt = (cols[3] || '').trim();
+            var lDesc = (cols[0] || "").trim();
+            var lAmt = (cols[1] || "").trim();
+            var rDesc = (cols[2] || "").trim();
+            var rAmt = (cols[3] || "").trim();
             if (lDesc || lAmt) leftItems.push({ desc: lDesc, amt: lAmt });
             if (rDesc || rAmt) rightItems.push({ desc: rDesc, amt: rAmt });
           }
@@ -1632,48 +1800,47 @@ function renderTableBlockHtml_(blk) {
     var maxRows = Math.max(leftItems.length, rightItems.length);
     var trs = [];
 
-    // Header row
+    // Header row: brand purple fill (PB2, T4)
     var ths = headerCols.map(function(c, cIdx) {
-      var divStyle = (cIdx === 1) ? 'border-right: 2px solid #1d4ed8;' : 'border-right: 1px solid #cbd5e1;';
-      var align = (cIdx === 1 || cIdx === 3) ? 'right' : 'left';
-      return '<th style="background: #dbeafe; color: #0f172a; padding: 5.5px 8px; ' + divStyle + ' font-weight: 700; text-align: ' + align + '; font-size: 9.5pt;">' + escapeHtml_(c) + '</th>';
-    }).join('');
-    trs.push('<tr style="border-bottom: 1px solid #cbd5e1;">' + ths + '</tr>');
+      var divStyle = (cIdx === 1) ? "border-right: 2px solid #7C30E0;" : "border-right: 1px solid #E6DDF7;";
+      var align = (cIdx === 1 || cIdx === 3) ? "right" : "left";
+      return '<th style="background: #F4EEFF; color: #1E0063; padding: 5.5px 8px; ' + divStyle + ' font-weight: 700; text-align: ' + align + '; font-size: 9.5pt;">' + escapeHtml_(c) + '</th>';
+    }).join("");
+    trs.push('<tr style="border-bottom: 1px solid #E6DDF7;">' + ths + '</tr>');
 
-    // Data rows with Equal-Row Padding Rule
+    // Data rows: col 0 and col 2 (Assets) strictly LEFT aligned (PA7)
     for (var r = 0; r < maxRows; r++) {
-      var left = leftItems[r] || { desc: '&nbsp;', amt: '' };
-      var right = rightItems[r] || { desc: '&nbsp;', amt: '' };
-      trs.push('<tr style="border-bottom: 1px solid #cbd5e1;">' +
-        '<td style="padding: 5.5px 8px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + (left.desc === '&nbsp;' ? '&nbsp;' : escapeHtml_(left.desc)) + '</td>' +
-        '<td style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #1d4ed8; font-variant-numeric: tabular-nums; font-weight: 600; color: #0f172a;">' + escapeHtml_(left.amt) + '</td>' +
-        '<td style="padding: 5.5px 8px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + (right.desc === '&nbsp;' ? '&nbsp;' : escapeHtml_(right.desc)) + '</td>' +
-        '<td style="padding: 5.5px 8px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: #0f172a;">' + escapeHtml_(right.amt) + '</td>' +
+      var left = leftItems[r] || { desc: "&nbsp;", amt: "" };
+      var right = rightItems[r] || { desc: "&nbsp;", amt: "" };
+      trs.push('<tr style="border-bottom: 1px solid #E6DDF7;">' +
+        '<td style="padding: 5.5px 8px; border-right: 1px solid #E6DDF7; text-align: left; color: #1B1530;">' + (left.desc === "&nbsp;" ? "&nbsp;" : escapeHtml_(left.desc)) + '</td>' +
+        '<td style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #7C30E0; font-variant-numeric: tabular-nums; font-weight: 600; color: #1B1530;">' + escapeHtml_(left.amt) + '</td>' +
+        '<td style="padding: 5.5px 8px; border-right: 1px solid #E6DDF7; text-align: left; color: #1B1530;">' + (right.desc === "&nbsp;" ? "&nbsp;" : escapeHtml_(right.desc)) + '</td>' +
+        '<td style="padding: 5.5px 8px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: #1B1530;">' + escapeHtml_(right.amt) + '</td>' +
       '</tr>');
     }
 
-    // Double-underline Total row
     if (leftTotal || rightTotal) {
-      var lt = leftTotal || { desc: 'Total', amt: '' };
-      var rt = rightTotal || { desc: 'Total', amt: '' };
-      trs.push('<tr style="border-top: 1px solid #cbd5e1; border-bottom: 3px double #0f172a; font-weight: bold; background: #f8fafc;">' +
-        '<td style="padding: 5.5px 8px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + escapeHtml_(lt.desc) + '</td>' +
-        '<td style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #1d4ed8; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(lt.amt) + '</td>' +
-        '<td style="padding: 5.5px 8px; border-right: 1px solid #cbd5e1; color: #0f172a;">' + escapeHtml_(rt.desc) + '</td>' +
-        '<td style="padding: 5.5px 8px; text-align: right; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(rt.amt) + '</td>' +
+      var lt = leftTotal || { desc: "Total", amt: "" };
+      var rt = rightTotal || { desc: "Total", amt: "" };
+      trs.push('<tr style="border-top: 1px solid #E6DDF7; border-bottom: 3px double #1E0063; font-weight: bold; background: #F4EEFF;">' +
+        '<td style="padding: 5.5px 8px; border-right: 1px solid #E6DDF7; text-align: left; color: #1E0063;">' + escapeHtml_(lt.desc) + '</td>' +
+        '<td style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #7C30E0; font-variant-numeric: tabular-nums; color: #1E0063;">' + escapeHtml_(lt.amt) + '</td>' +
+        '<td style="padding: 5.5px 8px; border-right: 1px solid #E6DDF7; text-align: left; color: #1E0063;">' + escapeHtml_(rt.desc) + '</td>' +
+        '<td style="padding: 5.5px 8px; text-align: right; font-variant-numeric: tabular-nums; color: #1E0063;">' + escapeHtml_(rt.amt) + '</td>' +
       '</tr>');
     }
 
     var colgroupHtml = '<colgroup><col style="width: 36%;"><col style="width: 14%;"><col style="width: 36%;"><col style="width: 14%;"></colgroup>';
-    var contdNotice = blk.isContinuation ? '<div style="font-size: 8pt; font-weight: bold; color: #64748b; margin-bottom: 3px;">(Table Continued from previous page)</div>' : '';
-    var titleHeader = blk.title ? '<div style="font-weight: 700; font-size: 9.5pt; color: #1e3a8a; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title) + '</div>' : '';
+    var contdNotice = blk.isContinuation ? '<div style="font-size: 8pt; font-weight: bold; color: #64748b; margin-bottom: 3px;">(Table Continued from previous page)</div>' : "";
+    var titleHeader = blk.title ? '<div style="font-weight: 700; font-size: 9.5pt; color: #1E0063; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title) + '</div>' : "";
 
     return '<div class="content-card keep-together">' +
       titleHeader +
       contdNotice +
-      '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #cbd5e1; table-layout: fixed; font-family: inherit;">' +
+      '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: rgba(255, 255, 255, 0.92); border: 1px solid #E6DDF7; table-layout: fixed; font-family: inherit;">' +
         colgroupHtml +
-        '<tbody>' + trs.join('\n') + '</tbody>' +
+        '<tbody>' + trs.join("\n") + '</tbody>' +
       '</table>' +
     '</div>';
   }
@@ -1683,38 +1850,40 @@ function renderTableBlockHtml_(blk) {
   var isHeader = true;
   for (var i = 0; i < lines.length; i++) {
     var rawLine = lines[i];
-    if (rawLine.indexOf('|') !== -1) {
+    if (rawLine.indexOf("|") !== -1) {
       var cols = splitPipes_(rawLine);
       if (isHeader && /particular|date|debit|credit|amount|plus|minus|class|f|mid/i.test(rawLine)) {
         isHeader = false;
         var ths = cols.map(function(c, cIdx) {
-          var align = (cIdx === 0) ? 'left' : 'right';
-          return '<th style="background: #dbeafe; color: #0f172a; padding: 5.5px 8px; border-right: 1px solid #cbd5e1; font-weight: 700; text-align: ' + align + '; font-size: 9.5pt;">' + escapeHtml_(c) + '</th>';
-        }).join('');
-        trs.push('<tr style="border-bottom: 1px solid #cbd5e1;">' + ths + '</tr>');
+          var isAmt = /amount|₹|rs|dr|cr|debit|credit|total|bal|f|mid/i.test(c);
+          var align = (cIdx === 0 || (cIdx === 2 && cols.length === 4) || !isAmt) ? "left" : "right";
+          return '<th style="background: #F4EEFF; color: #1E0063; padding: 5.5px 8px; border-right: 1px solid #E6DDF7; font-weight: 700; text-align: ' + align + '; font-size: 9.5pt;">' + escapeHtml_(c) + '</th>';
+        }).join("");
+        trs.push('<tr style="border-bottom: 1px solid #E6DDF7;">' + ths + '</tr>');
         continue;
       }
 
       var isTotal = /total/i.test(rawLine);
-      var borderStyle = isTotal ? 'border-top: 1px solid #cbd5e1; border-bottom: 3px double #0f172a; font-weight: bold; background: #f8fafc;' : 'border-bottom: 1px solid #cbd5e1;';
+      var borderStyle = isTotal ? "border-top: 1px solid #E6DDF7; border-bottom: 3px double #1E0063; font-weight: bold; background: #F4EEFF;" : "border-bottom: 1px solid #E6DDF7;";
 
       var tds = cols.map(function(c, cIdx) {
-        var isAmt = (cIdx > 0) && /[\d,]+/.test(c);
-        var align = (cIdx === 0) ? 'left' : 'right';
-        return '<td style="padding: 5.5px 8px; ' + borderStyle + ' border-right: 1px solid #cbd5e1; text-align: ' + align + '; font-size: 9.5pt; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(c) + '</td>';
-      }).join('');
-      trs.push('<tr>' + tds + '</tr>');
+        var headerName = headerCols[cIdx] || "";
+        var isAmt = (cIdx === 1 || (cIdx === 3 && cols.length === 4)) || /amount|₹|rs|dr|cr|debit|credit|total|bal|f|mid/i.test(headerName) || (/^[\d,.\-₹\s]+$/.test(c.trim()) && cIdx > 0);
+        var align = (cIdx === 0 || (cIdx === 2 && cols.length === 4) || /particular|asset|liabilit|desc|item|name|account/i.test(headerName)) ? "left" : (isAmt ? "right" : "left");
+        return '<td style="padding: 5.5px 8px; ' + borderStyle + ' border-right: 1px solid #E6DDF7; text-align: ' + align + '; font-size: 9.5pt; font-variant-numeric: tabular-nums; color: #1B1530;">' + escapeHtml_(c) + '</td>';
+      }).join("");
+      trs.push("<tr>" + tds + "</tr>");
     }
   }
 
   var colgroupHtml = generateArbitraryColgroup_(headerCols.length > 0 ? headerCols : (lines[0] ? splitPipes_(lines[0]) : []), blk.title);
-  var titleHeader = blk.title ? '<div style="font-weight: 700; font-size: 9.5pt; color: #1e3a8a; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title) + '</div>' : '';
+  var titleHeader = blk.title ? '<div style="font-weight: 700; font-size: 9.5pt; color: #1E0063; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title) + '</div>' : "";
 
   return '<div class="content-card keep-together">' +
     titleHeader +
-    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #cbd5e1; table-layout: fixed; font-family: inherit;">' +
+    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: rgba(255, 255, 255, 0.92); border: 1px solid #E6DDF7; table-layout: fixed; font-family: inherit;">' +
       colgroupHtml +
-      '<tbody>' + trs.join('\n') + '</tbody>' +
+      '<tbody>' + trs.join("\n") + '</tbody>' +
     '</table>' +
   '</div>';
 }
@@ -1723,48 +1892,64 @@ function renderTableBlockHtml_(blk) {
  * Pure inline vector SVG generators for Economics diagrams
  */
 function renderEconomicsSvgBlock_(templateName, caption) {
-  templateName = String(templateName || 'demand_shift').toLowerCase().trim();
-  caption = caption || 'Economic Analysis Diagram';
+  templateName = String(templateName || "demand_shift").toLowerCase().trim();
+  caption = caption || "Economic Analysis Diagram";
 
-  var svgContent = '';
-  if (templateName === 'cost_curves' || templateName === 'ac_mc') {
-    svgContent = '<svg width="340" height="175" viewBox="0 0 340 175" style="background:#fff; font-family:-apple-system, sans-serif; margin:0 auto; display:block;">\n' +
-      '<line x1="40" y1="15" x2="40" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
-      '<line x1="40" y1="145" x2="310" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
-      '<text x="35" y="14" font-size="10" font-weight="bold" text-anchor="end" fill="#0f172a">Cost (₹)</text>\n' +
-      '<text x="310" y="160" font-size="10" font-weight="bold" text-anchor="end" fill="#0f172a">Output</text>\n' +
-      '<path d="M 50 40 Q 140 120 270 90" stroke="#0284c7" stroke-width="2.2" fill="none" />\n' +
-      '<text x="275" y="93" font-size="10" font-weight="bold" fill="#0284c7">AC</text>\n' +
-      '<path d="M 60 120 Q 130 140 230 30" stroke="#9333ea" stroke-width="2.2" fill="none" />\n' +
-      '<text x="235" y="32" font-size="10" font-weight="bold" fill="#9333ea">MC</text>\n' +
-      '<circle cx="150" cy="100" r="3.5" fill="#e11d48" />\n' +
-      '<text x="145" y="115" font-size="9" font-weight="bold" fill="#e11d48">MC cuts AC at min</text>\n' +
-      '<defs><marker id="arr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1e293b"/></marker></defs>\n' +
+  var svgContent = "";
+  if (templateName === "cost_curves" || templateName === "ac_mc") {
+    svgContent = '<svg width="360" height="195" viewBox="0 0 360 195" style="background:#fff; font-family:-apple-system, sans-serif; margin:0 auto; display:block;">\n' +
+      '<defs><marker id="arr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1E0063"/></marker></defs>\n' +
+      '<line x1="60" y1="20" x2="60" y2="160" stroke="#1E0063" stroke-width="1.8" marker-end="url(#arr)" />\n' +
+      '<line x1="60" y1="160" x2="330" y2="160" stroke="#1E0063" stroke-width="1.8" marker-end="url(#arr)" />\n' +
+      '<text x="55" y="18" font-size="10.5" font-weight="bold" text-anchor="end" fill="#1E0063">Cost (₹)</text>\n' +
+      '<text x="330" y="178" font-size="10.5" font-weight="bold" text-anchor="end" fill="#1E0063">Output (Units)</text>\n' +
+      '<text x="48" y="172" font-size="10" font-weight="bold" fill="#64748b">O</text>\n' +
+      '<path d="M 75 50 Q 160 135 290 105" stroke="#7C30E0" stroke-width="2.2" fill="none" />\n' +
+      '<text x="295" y="108" font-size="11" font-weight="bold" fill="#7C30E0">AC</text>\n' +
+      '<path d="M 85 135 Q 150 155 250 40" stroke="#1E0063" stroke-width="2.2" fill="none" />\n' +
+      '<text x="255" y="42" font-size="11" font-weight="bold" fill="#1E0063">MC</text>\n' +
+      '<circle cx="170" cy="115" r="3.5" fill="#F87800" />\n' +
+      '<text x="165" y="130" font-size="9" font-weight="bold" fill="#F87800">MC cuts AC at min</text>\n' +
     '</svg>';
   } else {
-    // Default: Demand Shift
-    svgContent = '<svg width="340" height="175" viewBox="0 0 340 175" style="background:#fff; font-family:-apple-system, sans-serif; margin:0 auto; display:block;">\n' +
-      '<line x1="40" y1="15" x2="40" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
-      '<line x1="40" y1="145" x2="310" y2="145" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)" />\n' +
-      '<text x="35" y="14" font-size="10" font-weight="bold" text-anchor="end" fill="#0f172a">Price (₹)</text>\n' +
-      '<text x="310" y="160" font-size="10" font-weight="bold" text-anchor="end" fill="#0f172a">Quantity (Units)</text>\n' +
-      '<text x="28" y="156" font-size="10" font-weight="bold" fill="#64748b">O</text>\n' +
-      '<line x1="60" y1="130" x2="270" y2="30" stroke="#0284c7" stroke-width="2.2" />\n' +
-      '<text x="275" y="34" font-size="11" font-weight="bold" fill="#0284c7">S</text>\n' +
-      '<line x1="60" y1="30" x2="245" y2="130" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="4,3" />\n' +
-      '<text x="250" y="134" font-size="11" font-weight="bold" fill="#64748b">D₀</text>\n' +
-      '<line x1="90" y1="30" x2="275" y2="130" stroke="#9333ea" stroke-width="2.2" />\n' +
-      '<text x="280" y="134" font-size="11" font-weight="bold" fill="#9333ea">D₁</text>\n' +
-      '<circle cx="152" cy="80" r="3.5" fill="#1e293b" />\n' +
-      '<text x="142" y="75" font-size="9.5" font-weight="bold" fill="#1e293b">E₀</text>\n' +
-      '<circle cx="182" cy="66" r="3.5" fill="#9333ea" />\n' +
-      '<text x="178" y="60" font-size="9.5" font-weight="bold" fill="#9333ea">E₁</text>\n' +
-      '<defs><marker id="arr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1e293b"/></marker></defs>\n' +
+    // Demand Shift: exact line intersection coordinates & markers (PA4)
+    // S line: (90, 150) to (310, 40)
+    // D0 line: (90, 50) to (290, 150) -> E0 = (190, 100)
+    // D1 line: (115, 37.5) to (315, 137.5) -> E1 = (215, 87.5)
+    svgContent = '<svg width="370" height="205" viewBox="0 0 370 205" style="background:#fff; font-family:-apple-system, sans-serif; margin:0 auto; display:block;">\n' +
+      '<defs>\n' +
+      '  <marker id="arr-axis" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1E0063"/></marker>\n' +
+      '  <marker id="arr-orange" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#F87800"/></marker>\n' +
+      '</defs>\n' +
+      '<line x1="65" y1="20" x2="65" y2="170" stroke="#1E0063" stroke-width="1.8" marker-end="url(#arr-axis)" />\n' +
+      '<line x1="65" y1="170" x2="350" y2="170" stroke="#1E0063" stroke-width="1.8" marker-end="url(#arr-axis)" />\n' +
+      '<text x="60" y="18" font-size="10.5" font-weight="bold" text-anchor="end" fill="#1E0063">Price (₹)</text>\n' +
+      '<text x="350" y="190" font-size="10.5" font-weight="bold" text-anchor="end" fill="#1E0063">Quantity (Units)</text>\n' +
+      '<text x="52" y="182" font-size="10.5" font-weight="bold" fill="#64748b">O</text>\n' +
+      '<line x1="65" y1="100" x2="190" y2="100" stroke="#64748b" stroke-width="1.2" stroke-dasharray="3,3" />\n' +
+      '<line x1="190" y1="100" x2="190" y2="170" stroke="#64748b" stroke-width="1.2" stroke-dasharray="3,3" />\n' +
+      '<text x="58" y="104" font-size="10" font-weight="bold" text-anchor="end" fill="#1E0063">P₀</text>\n' +
+      '<text x="190" y="184" font-size="10" font-weight="bold" text-anchor="middle" fill="#1E0063">Q₀</text>\n' +
+      '<line x1="65" y1="87.5" x2="215" y2="87.5" stroke="#F87800" stroke-width="1.2" stroke-dasharray="3,3" />\n' +
+      '<line x1="215" y1="87.5" x2="215" y2="170" stroke="#F87800" stroke-width="1.2" stroke-dasharray="3,3" />\n' +
+      '<text x="58" y="91.5" font-size="10" font-weight="bold" text-anchor="end" fill="#F87800">P₁</text>\n' +
+      '<text x="215" y="184" font-size="10" font-weight="bold" text-anchor="middle" fill="#F87800">Q₁</text>\n' +
+      '<line x1="90" y1="150" x2="310" y2="40" stroke="#1E0063" stroke-width="2.2" />\n' +
+      '<text x="315" y="38" font-size="11.5" font-weight="bold" fill="#1E0063">S</text>\n' +
+      '<line x1="90" y1="50" x2="290" y2="150" stroke="#64748b" stroke-width="1.8" stroke-dasharray="4,3" />\n' +
+      '<text x="295" y="154" font-size="11.5" font-weight="bold" fill="#64748b">D₀</text>\n' +
+      '<line x1="115" y1="37.5" x2="315" y2="137.5" stroke="#7C30E0" stroke-width="2.2" />\n' +
+      '<text x="320" y="142" font-size="11.5" font-weight="bold" fill="#7C30E0">D₁</text>\n' +
+      '<line x1="140" y1="75" x2="165" y2="75" stroke="#F87800" stroke-width="2" marker-end="url(#arr-orange)" />\n' +
+      '<circle cx="190" cy="100" r="3.5" fill="#1E0063" />\n' +
+      '<text x="175" y="96" font-size="10" font-weight="bold" fill="#1E0063">E₀</text>\n' +
+      '<circle cx="215" cy="87.5" r="3.5" fill="#F87800" />\n' +
+      '<text x="225" y="84" font-size="10" font-weight="bold" fill="#F87800">E₁</text>\n' +
     '</svg>';
   }
 
   return '<div class="content-card keep-together" style="text-align: center;">\n' +
-    '<div style="font-size: 9.5pt; font-weight: 700; color: #1e3a8a; margin-bottom: 6px; letter-spacing: 0.3px;">Figure: ' + escapeHtml_(caption) + '</div>\n' +
+    '<div style="font-size: 9.5pt; font-weight: 700; color: #1E0063; margin-bottom: 6px; letter-spacing: 0.3px;">Figure: ' + escapeHtml_(caption) + '</div>\n' +
     svgContent + '\n' +
   '</div>';
 }
@@ -1773,34 +1958,115 @@ function renderEconomicsSvgBlock_(templateName, caption) {
  * Renders LaTeX / Stats formula via pure stacked fraction CSS
  */
 function renderStatisticsFormulaBlock_(formulaRaw, label) {
-  label = label || 'Standard Deviation Formula & Calculation';
-  var inner = String(formulaRaw || '')
-    .replace(/\[FRAC:\s*([^/\]]+)\s*\/\s*([^\]]+)\]/gi, '<span class="frac"><span class="num">$1</span><span class="den">$2</span></span>')
-    .replace(/\\frac\{([^}]+)\}\s*\{([^}]+)\}/g, '<span class="frac"><span class="num">$1</span><span class="den">$2</span></span>')
-    .replace(/\[\s*([^\]]+)\s*\]\s*\/\s*\[\s*([^\]]+)\s*\]/g, '<span class="frac"><span class="num">$1</span><span class="den">$2</span></span>')
-    .replace(/√\(([^)]+)\)/g, '<span style="font-size: 1.15em; font-weight: bold; color: #1d4ed8;">√( </span><span style="display:inline-block; vertical-align:middle; padding:0 3px;">$1</span><span style="font-size: 1.15em; font-weight: bold; color: #1d4ed8;"> )</span>')
-    .replace(/\\sqrt\{([^}]+)\}/g, '<span style="font-size: 1.15em; font-weight: bold; color: #1d4ed8;">√( </span><span style="display:inline-block; vertical-align:middle; padding:0 3px;">$1</span><span style="font-size: 1.15em; font-weight: bold; color: #1d4ed8;"> )</span>')
-    .replace(/\\sum/g, 'Σ')
-    .replace(/\\sigma/g, 'σ');
+  label = label || "Karl Pearson's Coefficient of Correlation (r)";
+  var raw = String(formulaRaw || "").trim();
 
-  return '<div class="content-card keep-together" style="border-left: 4px solid #1d4ed8; text-align: center;">\n' +
-    '<div style="font-size: 9pt; font-weight: 700; color: #1d4ed8; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 0.4px;">' + escapeHtml_(label) + '</div>\n' +
-    '<div style="font-size: 10.5pt; line-height: 1.6; color: #0f172a;">' + inner + '</div>\n' +
+  // Parse r = \frac{\sum xy}{\sqrt{\sum x^2 \cdot \sum y^2}}
+  var fracMatch = raw.match(/r\s*=\s*\\frac\{([^}]+)\}\s*\{([\s\S]*)\}/i);
+  var innerHtml = "";
+  if (fracMatch) {
+    var num = fracMatch[1].replace(/\\sum/g, "Σ").replace(/\\cdot/g, " · ").trim();
+    var den = fracMatch[2].trim();
+    var radicand = den;
+    if (/^\\sqrt\{/i.test(den)) {
+      radicand = den.replace(/^\\sqrt\{/i, "").replace(/\}$/, "");
+    }
+    radicand = radicand.replace(/\\sum/g, "Σ").replace(/x\^2/g, "x²").replace(/y\^2/g, "y²").replace(/\\cdot/g, " · ").trim();
+
+    var denHtml = '<span style="display:inline-flex; align-items:baseline;"><span style="font-size:1.25em; line-height:1; vertical-align:-1px;">&radic;</span><span style="border-top:1.5px solid currentColor; padding-top:1px; margin-left:-1px; display:inline-block;">' + escapeHtml_(radicand) + '</span></span>';
+
+    innerHtml = '<div style="display: inline-flex; align-items: center; gap: 8px; font-size: 11pt; font-weight: 600; color: #1E0063;">' +
+      '<span>r =</span>' +
+      '<span class="frac" style="display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; padding: 0 4px;">' +
+        '<span class="num" style="border-bottom: 1.5px solid #1E0063; padding-bottom: 2px;">' + escapeHtml_(num) + '</span>' +
+        '<span class="den" style="padding-top: 2px;">' + denHtml + '</span>' +
+      '</span>' +
+    '</div>';
+  } else {
+    var cleaned = raw
+      .replace(/\\frac\{([^}]+)\}\s*\{([^}]+)\}/g, '<span class="frac"><span class="num">$1</span><span class="den">$2</span></span>')
+      .replace(/\\cdot/g, " · ")
+      .replace(/x\^2/g, "x²").replace(/y\^2/g, "y²")
+      .replace(/\\sum/g, "Σ").replace(/\\sigma/g, "σ")
+      .replace(/\\sqrt\{([^}]+)\}/g, '<span style="display:inline-flex; align-items:baseline;"><span style="font-size:1.2em;">&radic;</span><span style="border-top:1.5px solid currentColor; padding-top:1px; margin-left:-1px;">$1</span></span>')
+      .replace(/√\(([^)]+)\)/g, '<span style="display:inline-flex; align-items:baseline;"><span style="font-size:1.2em;">&radic;</span><span style="border-top:1.5px solid currentColor; padding-top:1px; margin-left:-1px;">$1</span></span>');
+    innerHtml = '<div style="font-size: 11pt; line-height: 1.6; color: #1E0063;">' + cleaned + '</div>';
+  }
+
+  return '<div class="content-card keep-together" style="border-left: 1.2mm solid #7C30E0; text-align: center; padding: 3mm 4mm;">\n' +
+    '<div style="font-size: 9pt; font-weight: 700; color: #1E0063; text-transform: uppercase; margin-bottom: 3mm; letter-spacing: 0.4px;">' + escapeHtml_(label) + '</div>\n' +
+    innerHtml + '\n' +
   '</div>';
+}
+
+function renderCalculationBlock_(text, title) {
+  title = title || "STEP-BY-STEP CALCULATION";
+  var rawLines = String(text || "").split("\n");
+  var renderedHtml = [];
+
+  for (var i = 0; i < rawLines.length; i++) {
+    var line = rawLines[i].trim();
+    if (!line) continue;
+    if (/^Step-by-step Calculation:?$/i.test(line)) continue;
+
+    var stepMatch = line.match(/^(\d+\.\s+[^:]+:?)/);
+    if (stepMatch) {
+      var stepHeading = stepMatch[1];
+      var rest = line.substring(stepHeading.length).trim();
+      var cleanHeading = formatMathSnippet_(stepHeading);
+      var lineOut = '<div style="font-weight: 700; color: #1E0063; margin-top: 2.2mm; margin-bottom: 0.8mm; font-size: 9.5pt;">' + cleanHeading + '</div>';
+      if (rest) {
+        lineOut += '<div style="margin-left: 5mm; margin-bottom: 0.8mm; color: #1B1530; font-size: 9.5pt;">' + formatMathSnippet_(rest) + '</div>';
+      }
+      renderedHtml.push(lineOut);
+      continue;
+    }
+
+    if (/^[•\-\*]\s*/.test(line)) {
+      var bText = line.replace(/^[•\-\*]\s*/, "");
+      renderedHtml.push('<div style="margin-left: 5mm; margin-bottom: 0.8mm; color: #1B1530; font-size: 9.5pt;">• ' + formatMathSnippet_(bText) + '</div>');
+      continue;
+    }
+
+    var interpMatch = line.match(/^Interpretation:\s*(.*)/i);
+    if (interpMatch) {
+      renderedHtml.push('<div style="margin-top: 2.5mm; font-weight: 500; color: #1E0063; font-size: 9.5pt; padding: 1.5mm 2.5mm; background: #F4EEFF; border-radius: 1.5mm; border-left: 0.8mm solid #7C30E0;"><span style="font-weight: 700; color: #7C30E0;">Interpretation: </span>' + escapeHtml_(interpMatch[1]) + '</div>');
+      continue;
+    }
+
+    renderedHtml.push('<div style="margin-left: 5mm; margin-bottom: 0.8mm; color: #1B1530; font-size: 9.5pt; font-family: inherit;">' + formatMathSnippet_(line) + '</div>');
+  }
+
+  return '<div class="content-card keep-together" style="border-left: 1.2mm solid #7C30E0; text-align: left; padding: 3mm 4mm;">\n' +
+    '<div style="font-size: 9pt; font-weight: 700; color: #1E0063; text-transform: uppercase; margin-bottom: 2mm; letter-spacing: 0.4px;">' + escapeHtml_(title) + '</div>\n' +
+    renderedHtml.join("\n") + "\n" +
+  '</div>';
+}
+
+function formatMathSnippet_(str) {
+  if (!str) return "";
+  var s = String(str);
+  s = s.replace(/\\cdot/g, " · ");
+  s = s.replace(/x\^2/g, "x²").replace(/y\^2/g, "y²");
+  s = s.replace(/\\sum/g, "Σ").replace(/\\sigma/g, "σ");
+  s = s.replace(/√\(\s*([\d,]+)\s*\)/g, "√$1");
+  s = s.replace(/\\sqrt\{\s*([\d,]+)\s*\}/g, "√$1");
+  return escapeHtml_(s);
 }
 
 /**
  * Renders Business Studies vertical step flowchart with directional connectors
  */
-function renderBstFlowchartBlock_(stepsText) {
-  var steps = String(stepsText || '').split(/->|\n/).map(function(s) { return s.trim(); }).filter(Boolean);
+function renderBstFlowchartBlock_(stepsText, title) {
+  var steps = String(stepsText || "").split(/->|\n/).map(function(s) { return s.trim(); }).filter(Boolean);
+  var headerTitle = title || "Staffing Process Flowchart";
   var items = steps.map(function(s, idx) {
-    var arrow = (idx < steps.length - 1) ? '<div style="font-size: 13px; color: #1d4ed8; font-weight: bold; margin: 1px 0;">↓</div>' : '';
-    return '<div style="background: #eff6ff; border: 1.5px solid #3b82f6; border-radius: 8px; padding: 5px 10px; margin: 2px 0; font-weight: 700; font-size: 9.5pt; color: #1e3a8a; display: inline-block; min-width: 240px; box-shadow: 0 1px 2px rgba(30, 58, 138, 0.05);">' + escapeHtml_(s) + '</div>' + arrow;
-  }).join('');
+    var arrow = (idx < steps.length - 1) ? '<div style="font-size: 13px; color: #7C30E0; font-weight: bold; margin: 1px 0;">↓</div>' : "";
+    return '<div style="background: #F4EEFF; border: 0.3mm solid #E6DDF7; border-radius: 2.5mm; padding: 5px 10px; margin: 2px 0; font-weight: 700; font-size: 9.5pt; color: #1E0063; display: inline-block; min-width: 240px; box-shadow: 0 1px 2px rgba(30, 0, 99, 0.05);">' + escapeHtml_(s) + '</div>' + arrow;
+  }).join("");
 
   return '<div class="content-card keep-together" style="text-align: center;">' +
-    '<div style="font-size: 9.5pt; font-weight: 700; color: #1e3a8a; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.4px;">Sequential Planning Process Flowchart</div>' +
+    '<div style="font-size: 9.5pt; font-weight: 700; color: #1E0063; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.4px;">' + escapeHtml_(headerTitle) + '</div>' +
     items +
   '</div>';
 }
@@ -1809,27 +2075,182 @@ function renderBstFlowchartBlock_(stepsText) {
  * Renders Business Studies Case Study callout card
  */
 function renderCaseStudyCardBlock_(title, body) {
-  return '<div class="content-card keep-together" style="border-left: 4px solid #1d4ed8;">\n' +
-    '<div style="font-size: 9.5pt; font-weight: bold; color: #1d4ed8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px;">📌 ' + escapeHtml_(title || 'Case Scenario') + '</div>\n' +
-    '<div style="font-size: 10pt; line-height: 1.48; color: #1e293b; font-style: italic;">' + escapeHtml_(body) + '</div>\n' +
+  return '<div class="content-card keep-together" style="border-left: 1.2mm solid #7C30E0;">\n' +
+    '<div style="font-size: 9.5pt; font-weight: bold; color: #7C30E0; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(title || 'Case Scenario') + '</div>\n' +
+    '<div style="font-size: 10pt; line-height: 1.48; color: #1B1530; font-style: italic;">' + escapeHtml_(body) + '</div>\n' +
   '</div>';
+}
+
+/**
+ * D2 Multi-Level Hierarchy Engine for Answer Content
+ * Level 1: 1, 2, 3
+ * Level 2: A, B, C
+ * Level 3: 1A, 1B, 1C
+ * Level 4: I, II, III
+ * Level 5: a, b, c
+ * Level 6: i, ii, iii
+ * 5 mm indent per level, hanging indent.
+ */
+function formatAnswerContentWithD2Hierarchy_(text) {
+  var lines = String(text || '').trim().split('\n');
+  var out = [];
+  var level2Counter = 0;
+  var inLevel1 = false;
+
+  for (var i = 0; i < lines.length; i++) {
+    var rawLine = lines[i];
+    var trimmed = rawLine.trim();
+    if (!trimmed) continue;
+
+    var leadingSpaces = rawLine.search(/\S|$/);
+
+    // Section headings (e.g. Working Notes:, Step-by-step Calculation:, etc.) - never numbered
+    if (/^(Working Notes|Step-by-step Calculation|Explanation of Steps|Chain of Effects|Sequential Steps|Interpretation|Business Case Scenario)\b/i.test(trimmed) && !/^\d+\./.test(trimmed)) {
+      level2Counter = 0;
+      inLevel1 = false;
+      out.push('<div style="font-weight: 700; margin-top: 3.5mm; margin-bottom: 2mm; color: #1E0063; font-size: 10pt; letter-spacing: 0.3px;">' + escapeHtml_(trimmed) + '</div>');
+      continue;
+    }
+
+    // CBSE marks breakdown lines (e.g. '• 1.0 Mark: ...' or '1.0 Mark: ...') - never renumber
+    if (/^[•\-\s]*(\d+(\.\d+)?\s*Marks?:)/i.test(trimmed)) {
+      out.push('<div style="margin-left: 4mm; margin-bottom: 1.5mm; font-size: 9pt; color: #1E0063; line-height: 1.45;">' + escapeHtml_(trimmed) + '</div>');
+      continue;
+    }
+
+    // Legal / accounting citations like "Section 52(2)" - never renumber
+    if (/^Section\s+\d+/i.test(trimmed)) {
+      out.push('<div style="margin-bottom: 2mm; font-size: 10pt; line-height: 1.48; color: #1B1530;">' + escapeHtml_(trimmed) + '</div>');
+      continue;
+    }
+
+    // Level 1: 1, 2, 3
+    var mLvl1 = trimmed.match(/^(\d+)[\.\)]\s+(.*)/);
+    if (mLvl1 && leadingSpaces < 2) {
+      var num = mLvl1[1];
+      var content1 = mLvl1[2];
+      level2Counter = 0;
+      inLevel1 = true;
+      var formatted1 = escapeHtml_(content1).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+      out.push('<div class="d2-item d2-lvl-1" style="margin-left: 0mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 2mm; font-size: 10pt; line-height: 1.48; color: #1B1530;">' +
+        '<span style="font-weight: 700; color: #1E0063;">' + num + '.</span> ' + formatted1 + '</div>');
+      continue;
+    }
+
+    // Level 2: A, B, C OR indented bullets under Level 1
+    var mLvl2 = trimmed.match(/^([A-Z])[\.\)]\s+(.*)/);
+    var mBullet = (leadingSpaces >= 2 || inLevel1) ? trimmed.match(/^[•\-\*]\s+(.*)/) : null;
+
+    if (mLvl2) {
+      var letter = mLvl2[1];
+      var content2 = mLvl2[2];
+      level2Counter = letter.charCodeAt(0) - 65 + 1;
+      var formatted2 = escapeHtml_(content2).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+      out.push('<div class="d2-item d2-lvl-2" style="margin-left: 5mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 9.5pt; line-height: 1.45; color: #1B1530;">' +
+        '<span style="font-weight: 700; color: #7C30E0;">' + letter + '.</span> ' + formatted2 + '</div>');
+      continue;
+    } else if (mBullet && inLevel1) {
+      var letterAuto = String.fromCharCode(65 + level2Counter);
+      level2Counter++;
+      var contentB = mBullet[1];
+      var formattedB = escapeHtml_(contentB).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+      out.push('<div class="d2-item d2-lvl-2" style="margin-left: 5mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 9.5pt; line-height: 1.45; color: #1B1530;">' +
+        '<span style="font-weight: 700; color: #7C30E0;">' + letterAuto + '.</span> ' + formattedB + '</div>');
+      continue;
+    }
+
+    // Level 3: 1A, 1B, 1C
+    var mLvl3 = trimmed.match(/^(\d+[A-Z])[\.\)]\s+(.*)/);
+    if (mLvl3) {
+      var tag3 = mLvl3[1];
+      var content3 = mLvl3[2];
+      var formatted3 = escapeHtml_(content3).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+      out.push('<div class="d2-item d2-lvl-3" style="margin-left: 10mm; padding-left: 7.5mm; text-indent: -7.5mm; margin-bottom: 1.5mm; font-size: 9.5pt; line-height: 1.45; color: #1B1530;">' +
+        '<span style="font-weight: 700; color: #7C30E0;">' + tag3 + '.</span> ' + formatted3 + '</div>');
+      continue;
+    }
+
+    // Level 4: I, II, III
+    var mLvl4 = trimmed.match(/^(I|II|III|IV|V|VI|VII|VIII|IX|X)[\.\)]\s+(.*)/);
+    if (mLvl4) {
+      var tag4 = mLvl4[1];
+      var content4 = mLvl4[2];
+      var formatted4 = escapeHtml_(content4).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+      out.push('<div class="d2-item d2-lvl-4" style="margin-left: 15mm; padding-left: 7mm; text-indent: -7mm; margin-bottom: 1.5mm; font-size: 9pt; line-height: 1.45; color: #1B1530;">' +
+        '<span style="font-weight: 700; color: #F87800;">' + tag4 + '.</span> ' + formatted4 + '</div>');
+      continue;
+    }
+
+    // Level 5: a, b, c (excluding roman numerals)
+    var mLvl5 = trimmed.match(/^([a-z])[\\.\)]\s+(.*)/);
+    if (mLvl5 && ['i', 'v', 'x'].indexOf(mLvl5[1]) === -1) {
+      var tag5 = mLvl5[1];
+      var content5 = mLvl5[2];
+      var formatted5 = escapeHtml_(content5).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+      out.push('<div class="d2-item d2-lvl-5" style="margin-left: 20mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 9pt; line-height: 1.45; color: #1B1530;">' +
+        '<span style="font-weight: 700; color: #1E0063;">' + tag5 + '.</span> ' + formatted5 + '</div>');
+      continue;
+    }
+
+    // Level 6: i, ii, iii
+    var mLvl6 = trimmed.match(/^(i|ii|iii|iv|v|vi|vii|viii|ix|x)[\\.\)]\s+(.*)/);
+    if (mLvl6) {
+      var tag6 = mLvl6[1];
+      var content6 = mLvl6[2];
+      var formatted6 = escapeHtml_(content6).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+      out.push('<div class="d2-item d2-lvl-6" style="margin-left: 25mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 8.5pt; line-height: 1.45; color: #1B1530;">' +
+        '<span style="font-weight: 700; color: #7C30E0;">' + tag6 + '.</span> ' + formatted6 + '</div>');
+      continue;
+    }
+
+    // Indented calculation or equation under active level
+    if (leadingSpaces >= 2 && inLevel1) {
+      out.push('<div style="margin-left: 6mm; margin-bottom: 1.5mm; font-size: 9.5pt; line-height: 1.45; color: #334155;">' + escapeHtml_(trimmed) + '</div>');
+    } else {
+      var fmtGeneric = escapeHtml_(trimmed).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+      out.push('<div style="margin-bottom: 2mm; font-size: 10pt; line-height: 1.48; color: #1B1530;">' + fmtGeneric + '</div>');
+    }
+  }
+
+  return out.join('\n');
 }
 
 /**
  * Renders generic text with headings and list markers
  */
-function renderGenericTextBlock_(text) {
-  if (!text) return '';
-  var lines = String(text).trim().split('\n');
+function renderGenericTextBlock_(text, blk) {
+  if (!text && (!blk || !blk.isFirstQuestionBlock)) return '';
+  var isAnswer = blk && blk.isAnswer;
+  if (isAnswer) {
+    var d2Content = formatAnswerContentWithD2Hierarchy_(text);
+    return '<div class="content-card keep-together">' + d2Content + '</div>';
+  }
+
+  var lines = String(text || '').trim().split('\n');
   var out = [];
+
+  if (blk && blk.isFirstQuestionBlock) {
+    var marks = blk.marks || 6;
+    out.push('<table style="width: 100%; border-collapse: collapse; margin-bottom: 2.5mm;">' +
+      '<tr>' +
+        '<td style="vertical-align: middle; text-align: left;">' +
+          '<span style="display: inline-block; width: 7.5mm; height: 7.5mm; border-radius: 2mm; background: #F1E8FF; color: #7C30E0; font-weight: 800; font-size: 10pt; text-align: center; line-height: 7.5mm;">Q1</span>' +
+        '</td>' +
+        '<td style="vertical-align: middle; text-align: right;">' +
+          '<span style="display: inline-block; color: #F87800; font-weight: 700; border: 0.3mm solid #FFD2A8; border-radius: 3mm; padding: 0.5mm 3mm; font-size: 8.5pt;">' + marks + ' Marks</span>' +
+        '</td>' +
+      '</tr>' +
+    '</table>');
+  }
 
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i];
+    if (!line.trim()) continue;
     var formatted = escapeHtml_(line).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
     if (/^\s*([0-9]+\.|\-|\•)\s+/.test(line)) {
       out.push('<div style="padding-left: 12px; margin-bottom: 4px; font-size: 10pt; line-height: 1.48; color: #0f172a;">' + formatted + '</div>');
     } else if (line.indexOf('Adjustments:') === 0 || line.indexOf('Instructions:') === 0 || line.indexOf('Working Notes:') === 0) {
-      out.push('<div style="font-weight: bold; margin-top: 6px; margin-bottom: 4px; color: #1e3a8a; font-size: 10pt; letter-spacing: 0.3px;">' + formatted + '</div>');
+      out.push('<div style="font-weight: bold; margin-top: 6px; margin-bottom: 4px; color: #1E0063; font-size: 10pt; letter-spacing: 0.3px;">' + formatted + '</div>');
     } else {
       out.push('<div style="margin-bottom: 6px; font-size: 10.5pt; line-height: 1.48; color: #0f172a;">' + formatted + '</div>');
     }
@@ -1852,19 +2273,17 @@ function formatBulletListDps_(text) {
   return lines.map(function(l) {
     l = l.trim();
     if (!l) return '';
+    // Strip emojis to guarantee clean PDF rendering without missing glyphs
+    l = l.replace(/[\u{1F300}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
+    if (!l) return '';
+    if (!l.startsWith('•') && !l.startsWith('-') && !/^\d+\./.test(l)) {
+      l = '• ' + l;
+    }
     var escaped = escapeHtml_(l);
     return '<div style="margin-bottom: 2px;">' + escaped + '</div>';
   }).filter(Boolean).join('\n');
 }
 
-/**
- * Formats date into DD / MM / YYYY
- */
-/**
- * Formats date into clean human DD-MMM-YYYY for DPP card headers
- * @param {*} dateVal
- * @return {string}
- */
 function formatHumanDppDate_(dateVal) {
   if (!dateVal) return Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd-MMM-yyyy');
   var s = String(dateVal).trim();
@@ -1882,26 +2301,38 @@ function formatHumanDppDate_(dateVal) {
 }
 
 function formatDateDps_(dateVal) {
-  if (!dateVal) return Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd / MM / yyyy');
-  if (dateVal instanceof Date) return Utilities.formatDate(dateVal, 'Asia/Kolkata', 'dd / MM / yyyy');
+  var monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  if (!dateVal) {
+    return Utilities.formatDate(new Date(), 'Asia/Kolkata', 'd MMM');
+  }
+  if (dateVal instanceof Date) {
+    return Utilities.formatDate(dateVal, 'Asia/Kolkata', 'd MMM');
+  }
   var s = String(dateVal).trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
     var parts = s.split('-');
-    return parts[2] + ' / ' + parts[1] + ' / ' + parts[0];
+    var day = parseInt(parts[2], 10);
+    var monIdx = parseInt(parts[1], 10) - 1;
+    return day + ' ' + (monthNames[monIdx] || 'Nov');
   }
-  var months = { jan:'01', feb:'02', mar:'03', apr:'04', may:'05', jun:'06', jul:'07', aug:'08', sep:'09', oct:'10', nov:'11', dec:'12' };
-  var m = s.match(/^(\d{1,2})[-/ ]([a-zA-Z]{3})[-/ ](\d{4})$/);
+  var m = s.match(/^(\d{1,2})[-/ ]([a-zA-Z]{3})/);
   if (m) {
-    var day = ('0' + m[1]).slice(-2);
-    var mon = months[m[2].toLowerCase()] || '11';
-    return day + ' / ' + mon + ' / ' + m[3];
+    var day = parseInt(m[1], 10);
+    var monStr = m[2].charAt(0).toUpperCase() + m[2].slice(1).toLowerCase();
+    return day + ' ' + monStr;
   }
-  return s;
+  var mSlash = s.match(/^(\d{1,2})[-/ ](\d{1,2})/);
+  if (mSlash) {
+    var day = parseInt(mSlash[1], 10);
+    var monIdx = parseInt(mSlash[2], 10) - 1;
+    return day + ' ' + (monthNames[monIdx] || 'Nov');
+  }
+  if (/^\d{1,2}\s+[a-zA-Z]{3}$/.test(s)) {
+    return s;
+  }
+  return '15 Nov';
 }
 
-/**
- * Formats question/sheet number e.g. Q-12-04 or A-12-04
- */
 function formatSheetNumberDps_(rawQid, classLevel, marks, isAns) {
   var prefix = isAns ? 'A-' : 'Q-';
   var markPad = Number(marks) < 10 ? ('0' + Number(marks)) : String(marks);
@@ -1950,6 +2381,7 @@ function testGenerateQuestionPdf(classLevel) {
   var subtopic = getActiveSubtopic_(classLevel);
   var qData = getApprovedSubjectiveQuestion_(classLevel, subtopic);
   var result = createQuestionPdfFromTemplate_({
+    bypassCache: true,
     date: todayStr,
     classLevel: classLevel,
     subject: qData.subject,
@@ -1982,6 +2414,7 @@ function testGenerateAnswerPdf(classLevel) {
   var subtopic = getActiveSubtopic_(classLevel);
   var qData = getApprovedSubjectiveQuestion_(classLevel, subtopic);
   var result = createAnswerPdfFromTemplate_({
+    bypassCache: true,
     date: todayStr,
     classLevel: classLevel,
     subject: qData.subject,
@@ -2014,6 +2447,7 @@ function testGenerateAccountancyMultiPagePdf(classLevel) {
   var todayStr = getKolkataDate();
 
   var result = createAnswerPdfFromTemplate_({
+    bypassCache: true,
     date: todayStr,
     classLevel: classLevel,
     subject: 'Accountancy',
@@ -2077,6 +2511,7 @@ function testGenerateEconomicsGraphPdf(classLevel) {
   var todayStr = getKolkataDate();
 
   var result = createAnswerPdfFromTemplate_({
+    bypassCache: true,
     date: todayStr,
     classLevel: classLevel,
     subject: 'Economics',
@@ -2119,6 +2554,7 @@ function testGenerateStatisticsFormulaPdf(classLevel) {
   var todayStr = getKolkataDate();
 
   var result = createAnswerPdfFromTemplate_({
+    bypassCache: true,
     date: todayStr,
     classLevel: classLevel,
     subject: 'Statistics',
@@ -2170,6 +2606,7 @@ function testGenerateBstFlowchartPdf(classLevel) {
   var todayStr = getKolkataDate();
 
   var result = createAnswerPdfFromTemplate_({
+    bypassCache: true,
     date: todayStr,
     classLevel: classLevel,
     subject: 'Business Studies',
