@@ -598,13 +598,13 @@ function validateBlocks_(blocks) {
 // SHARED RENDER HELPERS
 // ─────────────────────────────────────────────────────────────────────
 
-var DPP_TABLE_STYLE_ = 'width: 100%; border-collapse: collapse; font-size: 9.5pt; border: 1px solid #E6DDF7; table-layout: fixed; font-family: inherit;';
-var DPP_TH_STYLE_ = 'background: #F4EEFF; color: #1E0063; padding: 5px 7px; border-right: 1px solid #E6DDF7; border-bottom: 1px solid #E6DDF7; font-weight: 700; font-size: 9pt; vertical-align: bottom;';
-var DPP_TD_BASE_ = 'padding: 4.5px 7px; border-right: 1px solid #E6DDF7; color: #1B1530; font-size: 9.5pt; vertical-align: top; font-variant-numeric: tabular-nums;';
+var DPP_TABLE_STYLE_ = 'width: 100%; border-collapse: collapse; font-size: 10.5pt; border: 1px solid #E6DDF7; table-layout: fixed; font-family: inherit;';
+var DPP_TH_STYLE_ = 'background: #F4EEFF; color: #1E0063; padding: 5px 7px; border-right: 1px solid #E6DDF7; border-bottom: 1px solid #E6DDF7; font-weight: 700; font-size: 10pt; vertical-align: bottom;';
+var DPP_TD_BASE_ = 'padding: 4.5px 7px; border-right: 1px solid #E6DDF7; color: #1B1530; font-size: 10.5pt; vertical-align: top; font-variant-numeric: tabular-nums;';
 var DPP_TOTAL_ROW_ = 'border-top: 1px solid #1E0063; border-bottom: 3px double #1E0063; font-weight: 700;';
 
 function dppTableTitleHtml_(title) {
-  return title ? '<div style="font-weight: 700; font-size: 9.5pt; color: #1E0063; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(title) + '</div>' : '';
+  return title ? '<div style="font-weight: 700; font-size: 10.5pt; color: #1E0063; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(title) + '</div>' : '';
 }
 
 /** Leading spaces → indent level (2 spaces per level). */
@@ -709,7 +709,7 @@ function renderPreformattedBlockHtml_(blk) {
   var parts = [], buf = [];
   function flush() {
     if (!buf.length) return;
-    parts.push('<pre style="font-family: \'Roboto Mono\', \'Courier New\', monospace; font-size: 8.4pt; line-height: 1.42; white-space: pre; margin: 0; color: #1B1530;">' + escapeHtml_(buf.join('\n')) + '</pre>');
+    parts.push('<pre style="font-family: \'Roboto Mono\', \'Courier New\', monospace; font-size: 9.2pt; line-height: 1.42; white-space: pre; margin: 0; color: #1B1530;">' + escapeHtml_(buf.join('\n')) + '</pre>');
     buf = [];
   }
   lines.forEach(function(l) {

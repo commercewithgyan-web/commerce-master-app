@@ -486,17 +486,20 @@ function calcBlockEstMm_(blk) {
   if (!blk) return 15;
   switch (blk.type) {
     case 'recap':
-      return 26;
+      return 33;
     case 'text':
       var chars = (blk.text || '').length;
-      var lineCount = (blk.text || '').split('\n').filter(function(l) { return l.trim(); }).length;
-      return 8 + Math.max(lineCount * 6.5, Math.ceil(chars / 75) * 5.2);
+      // Calibrated on Chrome renders at 11pt: ~92 characters per printed line, 6 mm per line, 2 mm between items.
+      var tLinesArr = (blk.text || '').split('\n').filter(function(l) { return l.trim(); });
+      var tMm = 0;
+      tLinesArr.forEach(function(l) { tMm += Math.max(1, Math.ceil(l.trim().length / 92)) * 6 + 2; });
+      return 8 + Math.max(tMm, Math.ceil(chars / 92) * 6);
     case 'card':
       var bodyChars = (blk.body || blk.text || '').length;
-      return 6 + Math.ceil(bodyChars / 85) * 4.5;
+      return 8 + Math.ceil(bodyChars / 76) * 5.2;
     case 'preformatted':
       var pLines = String(blk.text || '').split('\n').length;
-      return 8 + pLines * 4.3;
+      return 8 + pLines * 4.7;
     case 'taccount':
     case 'capital':
     case 'table':
@@ -507,19 +510,22 @@ function calcBlockEstMm_(blk) {
         var wrapped = 0;
         lines.slice(1).forEach(function(l) {
           var longest = Math.max.apply(null, l.split('|').map(function(c) { return c.trim().length; }).concat([1]));
-          wrapped += Math.max(1, Math.ceil(longest / 45));
+          wrapped += Math.max(1, Math.ceil(longest / 40));
         });
-        return 20 + wrapped * 5.6;
+        return 20 + wrapped * 6.2;
       }
       var rowCount = Math.max(1, lines.length > 1 ? lines.length - 1 : lines.length);
-      return 16 + (rowCount * 6.8) + 10;
+      // Long particulars / narrations wrap onto a second line at the 10.5pt table font.
+      var wraps = lines.filter(function(l) { return Math.max.apply(null, l.split('|').map(function(c) { return c.trim().length; })) > 48; }).length;
+      var titleMm = (blk.type === 'taccount' || blk.type === 'capital') && String(blk.title || '').length > 45 ? 5 : 0;
+      return 16 + (rowCount * 7.6) + (wraps * 4.6) + 10 + titleMm + (blk.type === 'taccount' ? 3 : 0);
     case 'graph':
-      return 62;
+      return 68;
     case 'formula':
-      return 22;
+      return 34;
     case 'flow':
       var steps = String(blk.steps || '').split(/->|\n/).map(function(s) { return s.trim(); }).filter(Boolean);
-      return 14 + (steps.length * 12);
+      return 16 + (steps.length * 13.5);
     case 'footer_block':
       var rLines = blk.rubricText ? blk.rubricText.split('\n').filter(function(l) { return l.trim(); }).length : 0;
       var tLines = blk.trapsText ? blk.trapsText.split('\n').filter(function(l) { return l.trim(); }).length : 0;
@@ -1003,7 +1009,7 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
       marks: marks,
       classLevel: classLevel,
       dateStr: rawDate,
-      estMm: 24
+      estMm: 33
     });
 
     var ansBlocks = [];
@@ -1048,7 +1054,7 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
         type: 'rubric',
         name: 'rubric',
         text: rubric,
-        estMm: 16 + (rLines * 5)
+        estMm: 16 + (rLines * 6)
       });
     }
     if (traps) {
@@ -1057,7 +1063,7 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
         type: 'traps',
         name: 'traps',
         text: traps,
-        estMm: 16 + (tLines * 5)
+        estMm: 16 + (tLines * 6)
       });
     }
   }
@@ -1096,8 +1102,8 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
  * @return {{ pages: Array<Array<Object>>, pageMms: Array<number> }}
  */
 function paginateBlocks_(blocks) {
-  var MAX_PAGE_1_MM = 175; // Page 1 limit (accounting for 50mm header + 14mm instructions + 17mm footer + margins)
-  var MAX_PAGE_N_MM = 195; // Page 2+ limit (no instructions box)
+  var MAX_PAGE_1_MM = 200; // Page 1: measured 205 mm between instructions and footer, minus safety margin
+  var MAX_PAGE_N_MM = 210; // Page 2+: measured 218 mm (no instructions box), minus safety margin
   var pages = [];
   var pageMms = [];
   var currentPage = [];
@@ -1277,7 +1283,7 @@ function buildMultiPageDocumentHtml_(pages, headerData) {
     '    padding: 0;\n' +
     '    background: #ffffff;\n' +
     '    font-family: \'Segoe UI\', Roboto, \'Helvetica Neue\', Arial, sans-serif;\n' +
-    '    font-size: 10pt;\n' +
+    '    font-size: 11pt;\n' +
     '    line-height: 1.48;\n' +
     '    color: #1B1530;\n' +
     '    -webkit-font-smoothing: antialiased;\n' +
@@ -1368,12 +1374,12 @@ function buildMultiPageDocumentHtml_(pages, headerData) {
     '  .d2-item {\n' +
     '    box-sizing: border-box;\n' +
     '  }\n' +
-    '  .d2-lvl-1 { margin-left: 0mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 2mm; font-size: 10pt; line-height: 1.48; color: #1B1530; }\n' +
-    '  .d2-lvl-2 { margin-left: 5mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 9.5pt; line-height: 1.45; color: #1B1530; }\n' +
-    '  .d2-lvl-3 { margin-left: 10mm; padding-left: 7.5mm; text-indent: -7.5mm; margin-bottom: 1.5mm; font-size: 9.5pt; line-height: 1.45; color: #1B1530; }\n' +
-    '  .d2-lvl-4 { margin-left: 15mm; padding-left: 7mm; text-indent: -7mm; margin-bottom: 1.5mm; font-size: 9pt; line-height: 1.45; color: #1B1530; }\n' +
-    '  .d2-lvl-5 { margin-left: 20mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 9pt; line-height: 1.45; color: #1B1530; }\n' +
-    '  .d2-lvl-6 { margin-left: 25mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 8.5pt; line-height: 1.45; color: #1B1530; }\n' +
+    '  .d2-lvl-1 { margin-left: 0mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 2mm; font-size: 11pt; line-height: 1.48; color: #1B1530; }\n' +
+    '  .d2-lvl-2 { margin-left: 5mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 10.5pt; line-height: 1.45; color: #1B1530; }\n' +
+    '  .d2-lvl-3 { margin-left: 10mm; padding-left: 7.5mm; text-indent: -7.5mm; margin-bottom: 1.5mm; font-size: 10.5pt; line-height: 1.45; color: #1B1530; }\n' +
+    '  .d2-lvl-4 { margin-left: 15mm; padding-left: 7mm; text-indent: -7mm; margin-bottom: 1.5mm; font-size: 10pt; line-height: 1.45; color: #1B1530; }\n' +
+    '  .d2-lvl-5 { margin-left: 20mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 10pt; line-height: 1.45; color: #1B1530; }\n' +
+    '  .d2-lvl-6 { margin-left: 25mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 9.5pt; line-height: 1.45; color: #1B1530; }\n' +
     '</style>\n' +
     '</head>\n' +
     '<body>\n' +
@@ -1436,15 +1442,15 @@ function renderRecapBoxBlockHtml_(blk) {
     '<table style="width: 100%; border-collapse: collapse; margin-bottom: 1.5mm;">' +
       '<tr>' +
         '<td style="vertical-align: middle; text-align: left;">' +
-          '<span style="display: inline-block; width: 7.5mm; height: 7.5mm; border-radius: 2mm; background: #FFEEDD; color: #C25E00; font-weight: 800; font-size: 10pt; text-align: center; line-height: 7.5mm; margin-right: 2.5mm; vertical-align: middle;">A1</span>' +
+          '<span style="display: inline-block; width: 7.5mm; height: 7.5mm; border-radius: 2mm; background: #FFEEDD; color: #C25E00; font-weight: 800; font-size: 11pt; text-align: center; line-height: 7.5mm; margin-right: 2.5mm; vertical-align: middle;">A1</span>' +
           '<span style="font-size: 7.5pt; font-weight: 700; color: #7C30E0; text-transform: uppercase; letter-spacing: 0.12em; vertical-align: middle;">ORIGINAL PROBLEM RECAP</span>' +
         '</td>' +
         '<td style="vertical-align: middle; text-align: right;">' +
-          '<span style="display: inline-block; color: #F87800; font-weight: 700; border: 0.3mm solid #FFD2A8; border-radius: 3mm; padding: 0.5mm 3mm; font-size: 8.5pt;">' + marks + ' Marks</span>' +
+          '<span style="display: inline-block; color: #F87800; font-weight: 700; border: 0.3mm solid #FFD2A8; border-radius: 3mm; padding: 0.5mm 3mm; font-size: 9.5pt;">' + marks + ' Marks</span>' +
         '</td>' +
       '</tr>' +
     '</table>' +
-    '<div style="font-size: 9pt; color: #1E0063; font-weight: 500; line-height: 1.4;">' + escapeHtml_(blk.text || '') + '</div>' +
+    '<div style="font-size: 10pt; color: #1E0063; font-weight: 500; line-height: 1.4;">' + escapeHtml_(blk.text || '') + '</div>' +
   '</div>';
 }
 
@@ -1455,10 +1461,10 @@ function renderFooterBlockHtml_(blk) {
   var rubricHtml = '';
   if (blk.rubricText) {
     rubricHtml = '<div class="content-card" style="background: #F4EEFF; border: 0.3mm solid #E6DDF7; border-left: 1.2mm solid #7C30E0; border-radius: 2.5mm; padding: 2.4mm 3.5mm; margin-bottom: 2.6mm;">' +
-      '<div style="font-size: 9pt; font-weight: 700; color: #1E0063; margin-bottom: 1.5mm;">' +
+      '<div style="font-size: 10pt; font-weight: 700; color: #1E0063; margin-bottom: 1.5mm;">' +
         'CBSE Step-by-Step Marking Scheme & Rubric' +
       '</div>' +
-      '<div style="font-size: 9pt; color: #1E0063; line-height: 1.45;">' +
+      '<div style="font-size: 10pt; color: #1E0063; line-height: 1.45;">' +
         formatBulletListDps_(blk.rubricText) +
       '</div>' +
     '</div>';
@@ -1467,10 +1473,10 @@ function renderFooterBlockHtml_(blk) {
   var trapsHtml = '';
   if (blk.trapsText) {
     trapsHtml = '<div class="content-card" style="background: #FFF4EA; border: 0.3mm solid #FFD2A8; border-left: 1.2mm solid #F87800; border-radius: 2.5mm; padding: 2.4mm 3.5mm; margin-bottom: 0;">' +
-      '<div style="font-size: 9pt; font-weight: 700; color: #C25E00; margin-bottom: 1.5mm;">' +
+      '<div style="font-size: 10pt; font-weight: 700; color: #C25E00; margin-bottom: 1.5mm;">' +
         'Common Examiner Traps to Avoid' +
       '</div>' +
-      '<div style="font-size: 9pt; color: #C25E00; line-height: 1.45;">' +
+      '<div style="font-size: 10pt; color: #C25E00; line-height: 1.45;">' +
         formatBulletListDps_(blk.trapsText) +
       '</div>' +
     '</div>';
@@ -1484,10 +1490,10 @@ function renderFooterBlockHtml_(blk) {
 
 function renderRubricOnlyHtml_(text) {
   return '<div class="content-card keep-together" style="background: #F4EEFF; border: 0.3mm solid #E6DDF7; border-left: 1.2mm solid #7C30E0; border-radius: 2.5mm; padding: 2.4mm 3.5mm; margin-bottom: 2.6mm;">' +
-    '<div style="font-size: 9pt; font-weight: 700; color: #1E0063; margin-bottom: 1.5mm;">' +
+    '<div style="font-size: 10pt; font-weight: 700; color: #1E0063; margin-bottom: 1.5mm;">' +
       'CBSE Step-by-Step Marking Scheme & Rubric' +
     '</div>' +
-    '<div style="font-size: 9pt; color: #1E0063; line-height: 1.45;">' +
+    '<div style="font-size: 10pt; color: #1E0063; line-height: 1.45;">' +
       formatBulletListDps_(text) +
     '</div>' +
   '</div>';
@@ -1495,10 +1501,10 @@ function renderRubricOnlyHtml_(text) {
 
 function renderTrapsOnlyHtml_(text) {
   return '<div class="content-card keep-together" style="background: #FFF4EA; border: 0.3mm solid #FFD2A8; border-left: 1.2mm solid #F87800; border-radius: 2.5mm; padding: 2.4mm 3.5mm; margin-bottom: 2.6mm;">' +
-    '<div style="font-size: 9pt; font-weight: 700; color: #C25E00; margin-bottom: 1.5mm;">' +
+    '<div style="font-size: 10pt; font-weight: 700; color: #C25E00; margin-bottom: 1.5mm;">' +
       'Common Examiner Traps to Avoid' +
     '</div>' +
-    '<div style="font-size: 9pt; color: #C25E00; line-height: 1.45;">' +
+    '<div style="font-size: 10pt; color: #C25E00; line-height: 1.45;">' +
       formatBulletListDps_(text) +
     '</div>' +
   '</div>';
@@ -1578,7 +1584,7 @@ function renderTAccountBlockHtml_(blk) {
       var align = isCenterCol[colIdx] ? 'center' : (isAmtCol[colIdx] ? 'right' : 'left');
       var style = DPP_TD_BASE_ + ' text-align: ' + align + ';';
       if (isAmtCol[colIdx]) style += ' white-space: nowrap;';
-      if (isCenterCol[colIdx]) style += ' white-space: nowrap; font-size: 8.5pt; padding-left: 3px; padding-right: 3px;';
+      if (isCenterCol[colIdx]) style += ' white-space: nowrap; font-size: 9.5pt; padding-left: 3px; padding-right: 3px;';
       if (!isAmtCol[colIdx] && !isCenterCol[colIdx] && side.raw) {
         var lead = (String(side.raw[i] || '').match(/^(\s*)/) || ['', ''])[1].length;
         var lvl = Math.min(3, Math.floor(lead / 2));
@@ -1617,9 +1623,9 @@ function renderTAccountBlockHtml_(blk) {
 
   return '<div class="content-card keep-together" data-kind="ledger">' +
     '<table style="width: 100%; border-collapse: collapse; margin-bottom: 3px;"><tr>' +
-      '<td style="width: 15%; font-weight: 700; font-size: 9.5pt; color: #1E0063; text-align: left;">Dr.</td>' +
-      '<td style="font-weight: 700; font-size: 9.5pt; color: #1E0063; text-align: center; text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title || 'Ledger Account') + '</td>' +
-      '<td style="width: 15%; font-weight: 700; font-size: 9.5pt; color: #1E0063; text-align: right;">Cr.</td>' +
+      '<td style="width: 15%; font-weight: 700; font-size: 10.5pt; color: #1E0063; text-align: left;">Dr.</td>' +
+      '<td style="font-weight: 700; font-size: 10.5pt; color: #1E0063; text-align: center; text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title || 'Ledger Account') + '</td>' +
+      '<td style="width: 15%; font-weight: 700; font-size: 10.5pt; color: #1E0063; text-align: right;">Cr.</td>' +
     '</tr></table>' +
     '<table style="' + DPP_TABLE_STYLE_ + '">' + colgroupFromWidths_(widths) +
       '<thead><tr>' + ths + '</tr></thead>' +
@@ -1756,7 +1762,7 @@ function renderCapitalAccountBlockHtml_(blk) {
   var heading = blk.title || "PARTNERS' CAPITAL ACCOUNTS";
 
   return '<div class="content-card keep-together">' +
-    '<div style="font-weight: 700; font-size: 9.5pt; color: #1E0063; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">' +
+    '<div style="font-weight: 700; font-size: 10.5pt; color: #1E0063; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">' +
       '<span>Dr.</span>' +
       '<span style="text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(heading) + ' (' + nPartners + ' Partners)</span>' +
       '<span>Cr.</span>' +
@@ -1804,7 +1810,7 @@ function renderJournalBlockHtml_(blk) {
     if (raw.indexOf('|') === -1) {
       var t = raw.trim();
       if (/^\(?being\b/i.test(t)) {
-        trs.push('<tr style="border-bottom: 1px solid #CFC3EA;">' + emptyRowExcept(pIdx, escapeHtml_(t), ' padding-left: ' + (2 + prof.narrationIndentMm) + 'mm; font-style: italic; color: #475569; font-size: 9pt;') + '</tr>');
+        trs.push('<tr style="border-bottom: 1px solid #CFC3EA;">' + emptyRowExcept(pIdx, escapeHtml_(t), ' padding-left: ' + (2 + prof.narrationIndentMm) + 'mm; font-style: italic; color: #475569; font-size: 10pt;') + '</tr>');
       } else {
         trs.push('<tr><td colspan="' + n + '" style="' + DPP_TD_BASE_ + ' font-weight: 700; color: #1E0063;">' + escapeHtml_(t) + '</td></tr>');
       }
@@ -1823,7 +1829,7 @@ function renderJournalBlockHtml_(blk) {
         return td(drTag + text, 'left', ' padding-left: ' + indent + 'mm;' + (isTotal ? ' font-weight: 700;' : ''));
       }
       if (i === drIdx || i === crIdx) return td(escapeHtml_(val), 'right', ' white-space: nowrap;' + (isTotal ? ' font-weight: 700;' : ''));
-      return td(escapeHtml_(val), 'center', ' font-size: 9pt;');
+      return td(escapeHtml_(val), 'center', ' font-size: 10pt;');
     }).join('');
     trs.push('<tr' + (isTotal ? ' style="' + DPP_TOTAL_ROW_ + '"' : '') + '>' + cells + '</tr>');
   });
@@ -1896,7 +1902,7 @@ function renderTableBlockHtml_(blk) {
     var div = cIdx === 1 ? ' border-right: 2px solid #7C30E0;' : '';
     return '<th style="' + DPP_TH_STYLE_ + ' text-align: ' + align + ';' + div + '">' + escapeHtml_(c) + '</th>';
   }).join('');
-  var contdNotice = blk.isContinuation ? '<div style="font-size: 8pt; font-weight: bold; color: #64748b; margin-bottom: 3px;">(Table Continued from previous page)</div>' : '';
+  var contdNotice = blk.isContinuation ? '<div style="font-size: 9pt; font-weight: bold; color: #64748b; margin-bottom: 3px;">(Table Continued from previous page)</div>' : '';
 
   return '<div class="content-card keep-together" data-kind="balance_sheet">' +
     dppTableTitleHtml_(blk.title) +
@@ -2014,7 +2020,7 @@ function renderEconomicsSvgBlock_(templateName, caption) {
   }
 
   return '<div class="content-card keep-together" style="text-align: center;">\n' +
-    '<div style="font-size: 9.5pt; font-weight: 700; color: #1E0063; margin-bottom: 6px; letter-spacing: 0.3px;">Figure: ' + escapeHtml_(caption) + '</div>\n' +
+    '<div style="font-size: 10.5pt; font-weight: 700; color: #1E0063; margin-bottom: 6px; letter-spacing: 0.3px;">Figure: ' + escapeHtml_(caption) + '</div>\n' +
     svgContent + '\n' +
   '</div>';
 }
@@ -2040,7 +2046,7 @@ function renderStatisticsFormulaBlock_(formulaRaw, label) {
 
     var denHtml = '<span style="display:inline-flex; align-items:baseline;"><span style="font-size:1.25em; line-height:1; vertical-align:-1px;">&radic;</span><span style="border-top:1.5px solid currentColor; padding-top:1px; margin-left:-1px; display:inline-block;">' + escapeHtml_(radicand) + '</span></span>';
 
-    innerHtml = '<div style="display: inline-flex; align-items: center; gap: 8px; font-size: 11pt; font-weight: 600; color: #1E0063;">' +
+    innerHtml = '<div style="display: inline-flex; align-items: center; gap: 8px; font-size: 12pt; font-weight: 600; color: #1E0063;">' +
       '<span>r =</span>' +
       '<span class="frac" style="display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; padding: 0 4px;">' +
         '<span class="num" style="border-bottom: 1.5px solid #1E0063; padding-bottom: 2px;">' + escapeHtml_(num) + '</span>' +
@@ -2055,11 +2061,11 @@ function renderStatisticsFormulaBlock_(formulaRaw, label) {
       .replace(/\\sum/g, "Σ").replace(/\\sigma/g, "σ")
       .replace(/\\sqrt\{([^}]+)\}/g, '<span style="display:inline-flex; align-items:baseline;"><span style="font-size:1.2em;">&radic;</span><span style="border-top:1.5px solid currentColor; padding-top:1px; margin-left:-1px;">$1</span></span>')
       .replace(/√\(([^)]+)\)/g, '<span style="display:inline-flex; align-items:baseline;"><span style="font-size:1.2em;">&radic;</span><span style="border-top:1.5px solid currentColor; padding-top:1px; margin-left:-1px;">$1</span></span>');
-    innerHtml = '<div style="font-size: 11pt; line-height: 1.6; color: #1E0063;">' + cleaned + '</div>';
+    innerHtml = '<div style="font-size: 12pt; line-height: 1.6; color: #1E0063;">' + cleaned + '</div>';
   }
 
   return '<div class="content-card keep-together" style="border-left: 1.2mm solid #7C30E0; text-align: center; padding: 3mm 4mm;">\n' +
-    '<div style="font-size: 9pt; font-weight: 700; color: #1E0063; text-transform: uppercase; margin-bottom: 3mm; letter-spacing: 0.4px;">' + escapeHtml_(label) + '</div>\n' +
+    '<div style="font-size: 10pt; font-weight: 700; color: #1E0063; text-transform: uppercase; margin-bottom: 3mm; letter-spacing: 0.4px;">' + escapeHtml_(label) + '</div>\n' +
     innerHtml + '\n' +
   '</div>';
 }
@@ -2079,9 +2085,9 @@ function renderCalculationBlock_(text, title) {
       var stepHeading = stepMatch[1];
       var rest = line.substring(stepHeading.length).trim();
       var cleanHeading = formatMathSnippet_(stepHeading);
-      var lineOut = '<div style="font-weight: 700; color: #1E0063; margin-top: 2.2mm; margin-bottom: 0.8mm; font-size: 9.5pt;">' + cleanHeading + '</div>';
+      var lineOut = '<div style="font-weight: 700; color: #1E0063; margin-top: 2.2mm; margin-bottom: 0.8mm; font-size: 10.5pt;">' + cleanHeading + '</div>';
       if (rest) {
-        lineOut += '<div style="margin-left: 5mm; margin-bottom: 0.8mm; color: #1B1530; font-size: 9.5pt;">' + formatMathSnippet_(rest) + '</div>';
+        lineOut += '<div style="margin-left: 5mm; margin-bottom: 0.8mm; color: #1B1530; font-size: 10.5pt;">' + formatMathSnippet_(rest) + '</div>';
       }
       renderedHtml.push(lineOut);
       continue;
@@ -2089,21 +2095,21 @@ function renderCalculationBlock_(text, title) {
 
     if (/^[•\-\*]\s*/.test(line)) {
       var bText = line.replace(/^[•\-\*]\s*/, "");
-      renderedHtml.push('<div style="margin-left: 5mm; margin-bottom: 0.8mm; color: #1B1530; font-size: 9.5pt;">• ' + formatMathSnippet_(bText) + '</div>');
+      renderedHtml.push('<div style="margin-left: 5mm; margin-bottom: 0.8mm; color: #1B1530; font-size: 10.5pt;">• ' + formatMathSnippet_(bText) + '</div>');
       continue;
     }
 
     var interpMatch = line.match(/^Interpretation:\s*(.*)/i);
     if (interpMatch) {
-      renderedHtml.push('<div style="margin-top: 2.5mm; font-weight: 500; color: #1E0063; font-size: 9.5pt; padding: 1.5mm 2.5mm; background: #F4EEFF; border-radius: 1.5mm; border-left: 0.8mm solid #7C30E0;"><span style="font-weight: 700; color: #7C30E0;">Interpretation: </span>' + escapeHtml_(interpMatch[1]) + '</div>');
+      renderedHtml.push('<div style="margin-top: 2.5mm; font-weight: 500; color: #1E0063; font-size: 10.5pt; padding: 1.5mm 2.5mm; background: #F4EEFF; border-radius: 1.5mm; border-left: 0.8mm solid #7C30E0;"><span style="font-weight: 700; color: #7C30E0;">Interpretation: </span>' + escapeHtml_(interpMatch[1]) + '</div>');
       continue;
     }
 
-    renderedHtml.push('<div style="margin-left: 5mm; margin-bottom: 0.8mm; color: #1B1530; font-size: 9.5pt; font-family: inherit;">' + formatMathSnippet_(line) + '</div>');
+    renderedHtml.push('<div style="margin-left: 5mm; margin-bottom: 0.8mm; color: #1B1530; font-size: 10.5pt; font-family: inherit;">' + formatMathSnippet_(line) + '</div>');
   }
 
   return '<div class="content-card keep-together" style="border-left: 1.2mm solid #7C30E0; text-align: left; padding: 3mm 4mm;">\n' +
-    '<div style="font-size: 9pt; font-weight: 700; color: #1E0063; text-transform: uppercase; margin-bottom: 2mm; letter-spacing: 0.4px;">' + escapeHtml_(title) + '</div>\n' +
+    '<div style="font-size: 10pt; font-weight: 700; color: #1E0063; text-transform: uppercase; margin-bottom: 2mm; letter-spacing: 0.4px;">' + escapeHtml_(title) + '</div>\n' +
     renderedHtml.join("\n") + "\n" +
   '</div>';
 }
@@ -2127,11 +2133,11 @@ function renderBstFlowchartBlock_(stepsText, title) {
   var headerTitle = title || "Staffing Process Flowchart";
   var items = steps.map(function(s, idx) {
     var arrow = (idx < steps.length - 1) ? '<div style="font-size: 13px; color: #7C30E0; font-weight: bold; margin: 1px 0;">↓</div>' : "";
-    return '<div style="background: #F4EEFF; border: 0.3mm solid #E6DDF7; border-radius: 2.5mm; padding: 5px 10px; margin: 2px 0; font-weight: 700; font-size: 9.5pt; color: #1E0063; display: inline-block; min-width: 240px; box-shadow: 0 1px 2px rgba(30, 0, 99, 0.05);">' + escapeHtml_(s) + '</div>' + arrow;
+    return '<div style="background: #F4EEFF; border: 0.3mm solid #E6DDF7; border-radius: 2.5mm; padding: 5px 10px; margin: 2px 0; font-weight: 700; font-size: 10.5pt; color: #1E0063; display: inline-block; min-width: 240px; box-shadow: 0 1px 2px rgba(30, 0, 99, 0.05);">' + escapeHtml_(s) + '</div>' + arrow;
   }).join("");
 
   return '<div class="content-card keep-together" style="text-align: center;">' +
-    '<div style="font-size: 9.5pt; font-weight: 700; color: #1E0063; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.4px;">' + escapeHtml_(headerTitle) + '</div>' +
+    '<div style="font-size: 10.5pt; font-weight: 700; color: #1E0063; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.4px;">' + escapeHtml_(headerTitle) + '</div>' +
     items +
   '</div>';
 }
@@ -2141,8 +2147,8 @@ function renderBstFlowchartBlock_(stepsText, title) {
  */
 function renderCaseStudyCardBlock_(title, body) {
   return '<div class="content-card keep-together" style="border-left: 1.2mm solid #7C30E0;">\n' +
-    '<div style="font-size: 9.5pt; font-weight: bold; color: #7C30E0; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(title || 'Case Scenario') + '</div>\n' +
-    '<div style="font-size: 10pt; line-height: 1.48; color: #1B1530; font-style: italic;">' + escapeHtml_(body) + '</div>\n' +
+    '<div style="font-size: 10.5pt; font-weight: bold; color: #7C30E0; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(title || 'Case Scenario') + '</div>\n' +
+    '<div style="font-size: 11pt; line-height: 1.48; color: #1B1530; font-style: italic;">' + escapeHtml_(body) + '</div>\n' +
   '</div>';
 }
 
@@ -2173,19 +2179,19 @@ function formatAnswerContentWithD2Hierarchy_(text) {
     if (/^(Working Notes|Step-by-step Calculation|Explanation of Steps|Chain of Effects|Sequential Steps|Interpretation|Business Case Scenario)\b/i.test(trimmed) && !/^\d+\./.test(trimmed)) {
       level2Counter = 0;
       inLevel1 = false;
-      out.push('<div style="font-weight: 700; margin-top: 3.5mm; margin-bottom: 2mm; color: #1E0063; font-size: 10pt; letter-spacing: 0.3px;">' + escapeHtml_(trimmed) + '</div>');
+      out.push('<div style="font-weight: 700; margin-top: 3.5mm; margin-bottom: 2mm; color: #1E0063; font-size: 11pt; letter-spacing: 0.3px;">' + escapeHtml_(trimmed) + '</div>');
       continue;
     }
 
     // CBSE marks breakdown lines (e.g. '• 1.0 Mark: ...' or '1.0 Mark: ...') - never renumber
     if (/^[•\-\s]*(\d+(\.\d+)?\s*Marks?:)/i.test(trimmed)) {
-      out.push('<div style="margin-left: 4mm; margin-bottom: 1.5mm; font-size: 9pt; color: #1E0063; line-height: 1.45;">' + escapeHtml_(trimmed) + '</div>');
+      out.push('<div style="margin-left: 4mm; margin-bottom: 1.5mm; font-size: 10pt; color: #1E0063; line-height: 1.45;">' + escapeHtml_(trimmed) + '</div>');
       continue;
     }
 
     // Legal / accounting citations like "Section 52(2)" - never renumber
     if (/^Section\s+\d+/i.test(trimmed)) {
-      out.push('<div style="margin-bottom: 2mm; font-size: 10pt; line-height: 1.48; color: #1B1530;">' + escapeHtml_(trimmed) + '</div>');
+      out.push('<div style="margin-bottom: 2mm; font-size: 11pt; line-height: 1.48; color: #1B1530;">' + escapeHtml_(trimmed) + '</div>');
       continue;
     }
 
@@ -2197,7 +2203,7 @@ function formatAnswerContentWithD2Hierarchy_(text) {
       level2Counter = 0;
       inLevel1 = true;
       var formatted1 = escapeHtml_(content1).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
-      out.push('<div class="d2-item d2-lvl-1" style="margin-left: 0mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 2mm; font-size: 10pt; line-height: 1.48; color: #1B1530;">' +
+      out.push('<div class="d2-item d2-lvl-1" style="margin-left: 0mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 2mm; font-size: 11pt; line-height: 1.48; color: #1B1530;">' +
         '<span style="font-weight: 700; color: #1E0063;">' + num + '.</span> ' + formatted1 + '</div>');
       continue;
     }
@@ -2211,7 +2217,7 @@ function formatAnswerContentWithD2Hierarchy_(text) {
       var content2 = mLvl2[2];
       level2Counter = letter.charCodeAt(0) - 65 + 1;
       var formatted2 = escapeHtml_(content2).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
-      out.push('<div class="d2-item d2-lvl-2" style="margin-left: 5mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 9.5pt; line-height: 1.45; color: #1B1530;">' +
+      out.push('<div class="d2-item d2-lvl-2" style="margin-left: 5mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 10.5pt; line-height: 1.45; color: #1B1530;">' +
         '<span style="font-weight: 700; color: #7C30E0;">' + letter + '.</span> ' + formatted2 + '</div>');
       continue;
     } else if (mBullet && inLevel1) {
@@ -2219,7 +2225,7 @@ function formatAnswerContentWithD2Hierarchy_(text) {
       level2Counter++;
       var contentB = mBullet[1];
       var formattedB = escapeHtml_(contentB).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
-      out.push('<div class="d2-item d2-lvl-2" style="margin-left: 5mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 9.5pt; line-height: 1.45; color: #1B1530;">' +
+      out.push('<div class="d2-item d2-lvl-2" style="margin-left: 5mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 10.5pt; line-height: 1.45; color: #1B1530;">' +
         '<span style="font-weight: 700; color: #7C30E0;">' + letterAuto + '.</span> ' + formattedB + '</div>');
       continue;
     }
@@ -2230,7 +2236,7 @@ function formatAnswerContentWithD2Hierarchy_(text) {
       var tag3 = mLvl3[1];
       var content3 = mLvl3[2];
       var formatted3 = escapeHtml_(content3).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
-      out.push('<div class="d2-item d2-lvl-3" style="margin-left: 10mm; padding-left: 7.5mm; text-indent: -7.5mm; margin-bottom: 1.5mm; font-size: 9.5pt; line-height: 1.45; color: #1B1530;">' +
+      out.push('<div class="d2-item d2-lvl-3" style="margin-left: 10mm; padding-left: 7.5mm; text-indent: -7.5mm; margin-bottom: 1.5mm; font-size: 10.5pt; line-height: 1.45; color: #1B1530;">' +
         '<span style="font-weight: 700; color: #7C30E0;">' + tag3 + '.</span> ' + formatted3 + '</div>');
       continue;
     }
@@ -2241,7 +2247,7 @@ function formatAnswerContentWithD2Hierarchy_(text) {
       var tag4 = mLvl4[1];
       var content4 = mLvl4[2];
       var formatted4 = escapeHtml_(content4).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
-      out.push('<div class="d2-item d2-lvl-4" style="margin-left: 15mm; padding-left: 7mm; text-indent: -7mm; margin-bottom: 1.5mm; font-size: 9pt; line-height: 1.45; color: #1B1530;">' +
+      out.push('<div class="d2-item d2-lvl-4" style="margin-left: 15mm; padding-left: 7mm; text-indent: -7mm; margin-bottom: 1.5mm; font-size: 10pt; line-height: 1.45; color: #1B1530;">' +
         '<span style="font-weight: 700; color: #F87800;">' + tag4 + '.</span> ' + formatted4 + '</div>');
       continue;
     }
@@ -2252,7 +2258,7 @@ function formatAnswerContentWithD2Hierarchy_(text) {
       var tag5 = mLvl5[1];
       var content5 = mLvl5[2];
       var formatted5 = escapeHtml_(content5).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
-      out.push('<div class="d2-item d2-lvl-5" style="margin-left: 20mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 9pt; line-height: 1.45; color: #1B1530;">' +
+      out.push('<div class="d2-item d2-lvl-5" style="margin-left: 20mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 10pt; line-height: 1.45; color: #1B1530;">' +
         '<span style="font-weight: 700; color: #1E0063;">' + tag5 + '.</span> ' + formatted5 + '</div>');
       continue;
     }
@@ -2263,17 +2269,17 @@ function formatAnswerContentWithD2Hierarchy_(text) {
       var tag6 = mLvl6[1];
       var content6 = mLvl6[2];
       var formatted6 = escapeHtml_(content6).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
-      out.push('<div class="d2-item d2-lvl-6" style="margin-left: 25mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 8.5pt; line-height: 1.45; color: #1B1530;">' +
+      out.push('<div class="d2-item d2-lvl-6" style="margin-left: 25mm; padding-left: 6mm; text-indent: -6mm; margin-bottom: 1.5mm; font-size: 9.5pt; line-height: 1.45; color: #1B1530;">' +
         '<span style="font-weight: 700; color: #7C30E0;">' + tag6 + '.</span> ' + formatted6 + '</div>');
       continue;
     }
 
     // Indented calculation or equation under active level
     if (leadingSpaces >= 2 && inLevel1) {
-      out.push('<div style="margin-left: 6mm; margin-bottom: 1.5mm; font-size: 9.5pt; line-height: 1.45; color: #334155;">' + escapeHtml_(trimmed) + '</div>');
+      out.push('<div style="margin-left: 6mm; margin-bottom: 1.5mm; font-size: 10.5pt; line-height: 1.45; color: #334155;">' + escapeHtml_(trimmed) + '</div>');
     } else {
       var fmtGeneric = escapeHtml_(trimmed).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
-      out.push('<div style="margin-bottom: 2mm; font-size: 10pt; line-height: 1.48; color: #1B1530;">' + fmtGeneric + '</div>');
+      out.push('<div style="margin-bottom: 2mm; font-size: 11pt; line-height: 1.48; color: #1B1530;">' + fmtGeneric + '</div>');
     }
   }
 
@@ -2299,10 +2305,10 @@ function renderGenericTextBlock_(text, blk) {
     out.push('<table style="width: 100%; border-collapse: collapse; margin-bottom: 2.5mm;">' +
       '<tr>' +
         '<td style="vertical-align: middle; text-align: left;">' +
-          '<span style="display: inline-block; width: 7.5mm; height: 7.5mm; border-radius: 2mm; background: #F1E8FF; color: #7C30E0; font-weight: 800; font-size: 10pt; text-align: center; line-height: 7.5mm;">Q1</span>' +
+          '<span style="display: inline-block; width: 7.5mm; height: 7.5mm; border-radius: 2mm; background: #F1E8FF; color: #7C30E0; font-weight: 800; font-size: 11pt; text-align: center; line-height: 7.5mm;">Q1</span>' +
         '</td>' +
         '<td style="vertical-align: middle; text-align: right;">' +
-          '<span style="display: inline-block; color: #F87800; font-weight: 700; border: 0.3mm solid #FFD2A8; border-radius: 3mm; padding: 0.5mm 3mm; font-size: 8.5pt;">' + marks + ' Marks</span>' +
+          '<span style="display: inline-block; color: #F87800; font-weight: 700; border: 0.3mm solid #FFD2A8; border-radius: 3mm; padding: 0.5mm 3mm; font-size: 9.5pt;">' + marks + ' Marks</span>' +
         '</td>' +
       '</tr>' +
     '</table>');
@@ -2313,11 +2319,11 @@ function renderGenericTextBlock_(text, blk) {
     if (!line.trim()) continue;
     var formatted = escapeHtml_(line).replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
     if (/^\s*([0-9]+\.|\-|\•)\s+/.test(line)) {
-      out.push('<div style="padding-left: 12px; margin-bottom: 4px; font-size: 10pt; line-height: 1.48; color: #0f172a;">' + formatted + '</div>');
+      out.push('<div style="padding-left: 12px; margin-bottom: 4px; font-size: 11pt; line-height: 1.48; color: #0f172a;">' + formatted + '</div>');
     } else if (line.indexOf('Adjustments:') === 0 || line.indexOf('Instructions:') === 0 || line.indexOf('Working Notes:') === 0) {
-      out.push('<div style="font-weight: bold; margin-top: 6px; margin-bottom: 4px; color: #1E0063; font-size: 10pt; letter-spacing: 0.3px;">' + formatted + '</div>');
+      out.push('<div style="font-weight: bold; margin-top: 6px; margin-bottom: 4px; color: #1E0063; font-size: 11pt; letter-spacing: 0.3px;">' + formatted + '</div>');
     } else {
-      out.push('<div style="margin-bottom: 6px; font-size: 10.5pt; line-height: 1.48; color: #0f172a;">' + formatted + '</div>');
+      out.push('<div style="margin-bottom: 6px; font-size: 11.5pt; line-height: 1.48; color: #0f172a;">' + formatted + '</div>');
     }
   }
 
