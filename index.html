@@ -2823,7 +2823,7 @@
     </div>
 
     <!-- TAB 4: FEE LEDGER & PASSBOOK (S5: Commerce Gyan Tuition Ledger + Passbook & SWOT) -->
-    <div id="tgTab-fees" class="tg-student-tab space-y-3.5" style="display: none;">
+    <div id="tgTab-fees" class="tg-student-tab space-y-3.5 pb-24" style="display: none;">
       <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3.5">
         <div class="flex items-start justify-between gap-2">
           <div>
@@ -5315,12 +5315,12 @@
 
       const feeRollSel = document.getElementById('feeFormRollSelect');
       if (feeRollSel) {
-        if (appState.rosterLoadError || (!appState.rosterLoaded && !appState.rosterLoading)) {
+        if (appState.rosterLoadError && (!appState.students || appState.students.length === 0)) {
           feeRollSel.innerHTML = '<option value="">⚠️ Error: Roster load failed</option>';
-        } else if (appState.rosterLoading && !appState.rosterLoaded) {
+        } else if (appState.rosterLoading && (!appState.students || appState.students.length === 0)) {
           feeRollSel.innerHTML = '<option value="">⏳ Syncing live roster...</option>';
         } else {
-          feeRollSel.innerHTML = '<option value="">-- Select Student --</option>' + appState.students.map(s => `<option value="${escHtml(s.roll)}">${escHtml(s.name)} (${escHtml(s.roll)})</option>`).join('');
+          feeRollSel.innerHTML = '<option value="">-- Select Student --</option>' + (appState.students || []).map(s => `<option value="${escHtml(s.roll)}">${escHtml(s.name)} (${escHtml(s.roll)})</option>`).join('');
         }
       }
 
@@ -9634,7 +9634,26 @@
           showToast('Please enter or select a valid Roll No.', 'rose');
           return;
         }
-        showToast(`Connecting to student view: ${targetRoll}...`, 'indigo');
+        const initData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
+        if (!initData) {
+          // Local/browser sandbox preview fallback: enter student mode directly without server lock
+          window.isViewAsStudent = true;
+          window.viewAsStudentRollNo = targetRoll;
+          const banner = document.getElementById('viewAsStudentBanner');
+          const badge = document.getElementById('viewAsStudentRollBadge');
+          if (banner) banner.classList.remove('hidden');
+          if (badge) badge.textContent = targetRoll;
+
+          const modal = document.getElementById('viewAsStudentModal');
+          if (modal) modal.classList.add('hidden');
+
+          if (typeof window.loadStudentBootstrap === 'function') {
+            window.loadStudentBootstrap(targetRoll);
+          }
+          window.switchAppMode('student');
+          showToast(`👁️ Viewing as Student (${targetRoll}) — Preview Mode`, 'amber');
+          return;
+        }
         window.cgCallGas('viewStudentAsTeacher', { rollNo: targetRoll })
           .then(res => {
             window.isViewAsStudent = true;
