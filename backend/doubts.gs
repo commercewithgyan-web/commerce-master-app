@@ -135,7 +135,7 @@ function checkGeminiRateLimit_() {
 
 function apiAskDoubt_(verifiedUser, payload) {
   var student = requirePaidStudent_(verifiedUser.id);
-  var studentName = student.Name || verifiedUser.first_name || 'Student';
+  var studentName = student.Student_Name || student.Name || (verifiedUser && verifiedUser.first_name) || 'Student';
   var questionText = (payload.question || '').trim();
   var mode = 'text';
 
@@ -247,7 +247,7 @@ function apiAskDoubt_(verifiedUser, payload) {
  */
 function apiAskVoiceDoubt_(verifiedUser, payload) {
   var student = requirePaidStudent_(verifiedUser.id);
-  var studentName = student.Name || verifiedUser.first_name || 'Student';
+  var studentName = student.Student_Name || student.Name || (verifiedUser && verifiedUser.first_name) || 'Student';
   var subject = payload.subject || 'Accountancy';
 
   var rateCheck = checkGeminiRateLimit_();

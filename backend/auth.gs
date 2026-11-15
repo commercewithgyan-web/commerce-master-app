@@ -312,6 +312,73 @@ function getOrRecordTelegramVisitor_(erp, user) {
 }
 
 /**
+ * Finds the Students_Master row for a Telegram user: direct Telegram_ID match first,
+ * then an ACTIVE Telegram_Bindings row. Returns null when there is no match.
+ * @param {Spreadsheet} erp Master ERP spreadsheet
+ * @param {string} telegramId
+ * @return {Object|null}
+ */
+function findStudentByTelegramId_(erp, telegramId) {
+  telegramId = String(telegramId || '');
+  if (!telegramId) return null;
+  var studentSheet = erp.getSheetByName('Students_Master');
+  var students = studentSheet ? sheetToObjects(studentSheet) : [];
+  var student = students.find(function(s) {
+    return String(s.Telegram_ID || s.Telegram_User_ID || '') === telegramId;
+  });
+
+  if (!student) {
+    try {
+      var bindingSheet = erp.getSheetByName('Telegram_Bindings');
+      if (bindingSheet) {
+        var bindings = sheetToObjects(bindingSheet);
+        var matchedBinding = bindings.find(function(b) {
+          return String(b.Telegram_User_ID || b.Telegram_ID || '') === telegramId &&
+                 String(b.Status || 'ACTIVE').toUpperCase() === 'ACTIVE';
+        });
+        if (matchedBinding && matchedBinding.Roll_No) {
+          student = students.find(function(s) {
+            return String(s.Roll_No) === String(matchedBinding.Roll_No);
+          });
+        }
+      }
+    } catch (_) {}
+  }
+  return student || null;
+}
+
+/**
+ * Roll number a write action may act on. Students always get their own roll
+ * (Students_Master via Telegram ID, or the trial guest roll) whatever the request says,
+ * so a request can never write under another student's roll and a missing roll never
+ * falls back to a real one.
+ * Admins must name the roll explicitly.
+ * @param {Object} verifiedUser Telegram user from verifyTelegramInitData_
+ * @param {Object} payload Request payload (rollNo / Roll_No optional for students)
+ * @return {string}
+ */
+function resolveCallerRollNo_(verifiedUser, payload) {
+  var requested = String((payload && (payload.rollNo || payload.Roll_No)) || '').trim();
+  if (verifiedUser && verifiedUser.is_admin) {
+    if (!requested) throw new Error('MANDATORY_FIELD_MISSING: rollNo is required');
+    return requested;
+  }
+  var telegramId = String((verifiedUser && verifiedUser.id) || '').trim();
+  if (!telegramId) throw new Error('HTTP 401: AUTH_FAILED (NO_VERIFIED_USER)');
+
+  var erp = SpreadsheetApp.openById(getActiveSheetIds().MASTER_ERP);
+  var student = findStudentByTelegramId_(erp, telegramId);
+  // Same guest roll that verifyAndRouteUser_ hands to trial users.
+  var ownRoll = String((student && student.Roll_No) || ('CG-GUEST-' + telegramId.slice(-4)));
+  // The client value is ignored, not rejected: the Mini App fills rollNo from a picker
+  // (index.html tgStudentSelect, default 'CG-1201'), so rejecting would break real students.
+  if (requested && requested !== ownRoll) {
+    Logger.log('[ROLL_NO_OVERRIDE] client sent a different roll; using the verified roll instead');
+  }
+  return ownRoll;
+}
+
+/**
  * Stage 1 Admin Dual-Role Gateway & User Router
  */
 function verifyAndRouteUser_(initDataRaw, previewRollNo) {
@@ -363,30 +430,7 @@ function verifyAndRouteUser_(initDataRaw, previewRollNo) {
   var erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
 
   // 3. Registered Coaching Students (Unlimited Access beyond 7 days)
-  var studentSheet = erp.getSheetByName('Students_Master');
-  var students = studentSheet ? sheetToObjects(studentSheet) : [];
-  var student = students.find(function(s) {
-    return String(s.Telegram_ID || s.Telegram_User_ID || '') === telegramId;
-  });
-
-  // Check Telegram_Bindings if not found directly in Students_Master
-  if (!student) {
-    try {
-      var bindingSheet = erp.getSheetByName('Telegram_Bindings');
-      if (bindingSheet) {
-        var bindings = sheetToObjects(bindingSheet);
-        var matchedBinding = bindings.find(function(b) {
-          return String(b.Telegram_User_ID || b.Telegram_ID || '') === telegramId &&
-                 String(b.Status || 'ACTIVE').toUpperCase() === 'ACTIVE';
-        });
-        if (matchedBinding && matchedBinding.Roll_No) {
-          student = students.find(function(s) {
-            return String(s.Roll_No) === String(matchedBinding.Roll_No);
-          });
-        }
-      }
-    } catch (_) {}
-  }
+  var student = findStudentByTelegramId_(erp, telegramId);
 
   var studentStatus = student ? String(student.Status || '').trim().toUpperCase() : '';
   if (student && (studentStatus === 'ACTIVE' || studentStatus === 'GRACE' || !studentStatus)) {

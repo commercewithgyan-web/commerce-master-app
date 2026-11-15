@@ -697,7 +697,8 @@ function apiSubmitAnswer_(verifiedUser, payload) {
 
   // Log to Student_MCQ_Attempts
   try {
-    var rollNo = student.StudentID || (student.Roll_No || 'CG-11-001');
+    var rollNo = student.StudentID || student.Roll_No;
+    if (!rollNo) throw new Error('STUDENT_NOT_FOUND: verified student has no roll number');
     var selectedOpt = String.fromCharCode(65 + Number(selectedIndex));
     appendRow_('SHEET_QB', 'Student_MCQ_Attempts', [
       timestamp,
