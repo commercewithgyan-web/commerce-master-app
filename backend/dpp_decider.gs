@@ -600,7 +600,7 @@ function validateBlocks_(blocks) {
 
 var DPP_TABLE_STYLE_ = 'width: 100%; border-collapse: collapse; font-size: 10.5pt; border: 1px solid #E6DDF7; table-layout: fixed; font-family: inherit;';
 var DPP_TH_STYLE_ = 'background: #F4EEFF; color: #1E0063; padding: 5px 7px; border-right: 1px solid #E6DDF7; border-bottom: 1px solid #E6DDF7; font-weight: 700; font-size: 10pt; vertical-align: bottom;';
-var DPP_TD_BASE_ = 'padding: 4.5px 7px; border-right: 1px solid #E6DDF7; color: #1B1530; font-size: 10.5pt; vertical-align: top; font-variant-numeric: tabular-nums;';
+var DPP_TD_BASE_ = 'padding: 3px 7px; border-right: 1px solid #E6DDF7; color: #1B1530; font-size: 10.5pt; vertical-align: top; font-variant-numeric: tabular-nums;';
 var DPP_TOTAL_ROW_ = 'border-top: 1px solid #1E0063; border-bottom: 3px double #1E0063; font-weight: 700;';
 
 function dppTableTitleHtml_(title) {

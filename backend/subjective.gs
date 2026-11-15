@@ -482,6 +482,21 @@ function cleanQuestionRecapText_(rawText) {
  * @param {Object} blk
  * @return {number}
  */
+/**
+ * Height of a Rubric / Traps box (9.5pt bullets, ~100 characters per printed line, 4.6 mm per line).
+ * Calibrated against Drive PDFs: title + padding + gap is about 11 mm.
+ * @param {string} text
+ * @return {number}
+ */
+function estBulletBoxMm_(text) {
+  var mm = 11;
+  String(text || '').split('\n').forEach(function(l) {
+    l = l.trim();
+    if (l) mm += Math.max(1, Math.ceil(l.length / 100)) * 4.6;
+  });
+  return mm;
+}
+
 function calcBlockEstMm_(blk) {
   if (!blk) return 15;
   switch (blk.type) {
@@ -518,7 +533,11 @@ function calcBlockEstMm_(blk) {
       // Long particulars / narrations wrap onto a second line at the 10.5pt table font.
       var wraps = lines.filter(function(l) { return Math.max.apply(null, l.split('|').map(function(c) { return c.trim().length; })) > 48; }).length;
       var titleMm = (blk.type === 'taccount' || blk.type === 'capital') && String(blk.title || '').length > 45 ? 5 : 0;
-      return 16 + (rowCount * 7.6) + (wraps * 4.6) + 10 + titleMm + (blk.type === 'taccount' ? 3 : 0);
+      // Calibrated on Drive PDFs with 3px cell padding: ~6.8 mm per row, ~22 mm for title, header and gap.
+      // Capital accounts with 3+ partners have narrow amount columns: "Deepak (₹)" wraps the header onto two lines.
+      var headCells = (lines[0] || '').split('|').map(function(c) { return c.trim(); });
+      var headWrapMm = (blk.type === 'capital' && headCells.length >= 8 && headCells.some(function(c) { return c.length > 9; })) ? 4.5 : 0;
+      return 22 + (rowCount * 6.8) + (wraps * 4.6) + titleMm + headWrapMm + (blk.type === 'taccount' ? 3 : 0);
     case 'graph':
       return 68;
     case 'formula':
@@ -1049,21 +1068,19 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
     var rubric = data.markingScheme || data.marksBreakdown || '';
     var traps = data.commonTraps || data.commonMistakes || '';
     if (rubric) {
-      var rLines = rubric.split('\n').filter(function(l) { return l.trim(); }).length;
       blocks.push({
         type: 'rubric',
         name: 'rubric',
         text: rubric,
-        estMm: 16 + (rLines * 6)
+        estMm: estBulletBoxMm_(rubric)
       });
     }
     if (traps) {
-      var tLines = traps.split('\n').filter(function(l) { return l.trim(); }).length;
       blocks.push({
         type: 'traps',
         name: 'traps',
         text: traps,
-        estMm: 16 + (tLines * 6)
+        estMm: estBulletBoxMm_(traps)
       });
     }
   }
@@ -1116,6 +1133,9 @@ function paginateBlocks_(blocks) {
     blk.estMm = est;
     var pbb = !!blk.pageBreakBefore;
     var maxForPage = isPage1 ? MAX_PAGE_1_MM : MAX_PAGE_N_MM;
+    // The closing Traps box may use the 3 mm safety slack: estimates run at or above real height
+    // (checked on Drive PDFs), and this avoids a page 2 that holds nothing but Traps.
+    if (blk.type === 'traps' && i === blocks.length - 1) maxForPage += 3;
 
     if ((pbb || (currentMm + est > maxForPage)) && currentPage.length > 0) {
       pages.push(currentPage);
@@ -1489,22 +1509,22 @@ function renderFooterBlockHtml_(blk) {
 }
 
 function renderRubricOnlyHtml_(text) {
-  return '<div class="content-card keep-together" style="background: #F4EEFF; border: 0.3mm solid #E6DDF7; border-left: 1.2mm solid #7C30E0; border-radius: 2.5mm; padding: 2.4mm 3.5mm; margin-bottom: 2.6mm;">' +
-    '<div style="font-size: 10pt; font-weight: 700; color: #1E0063; margin-bottom: 1.5mm;">' +
+  return '<div class="content-card keep-together" style="background: #F4EEFF; border: 0.3mm solid #E6DDF7; border-left: 1.2mm solid #7C30E0; border-radius: 2.5mm; padding: 1.8mm 3.2mm; margin-bottom: 2mm;">' +
+    '<div style="font-size: 10pt; font-weight: 700; color: #1E0063; margin-bottom: 0.8mm;">' +
       'CBSE Step-by-Step Marking Scheme & Rubric' +
     '</div>' +
-    '<div style="font-size: 10pt; color: #1E0063; line-height: 1.45;">' +
+    '<div style="font-size: 9.5pt; color: #1E0063; line-height: 1.35;">' +
       formatBulletListDps_(text) +
     '</div>' +
   '</div>';
 }
 
 function renderTrapsOnlyHtml_(text) {
-  return '<div class="content-card keep-together" style="background: #FFF4EA; border: 0.3mm solid #FFD2A8; border-left: 1.2mm solid #F87800; border-radius: 2.5mm; padding: 2.4mm 3.5mm; margin-bottom: 2.6mm;">' +
-    '<div style="font-size: 10pt; font-weight: 700; color: #C25E00; margin-bottom: 1.5mm;">' +
+  return '<div class="content-card keep-together" style="background: #FFF4EA; border: 0.3mm solid #FFD2A8; border-left: 1.2mm solid #F87800; border-radius: 2.5mm; padding: 1.8mm 3.2mm; margin-bottom: 2mm;">' +
+    '<div style="font-size: 10pt; font-weight: 700; color: #C25E00; margin-bottom: 0.8mm;">' +
       'Common Examiner Traps to Avoid' +
     '</div>' +
-    '<div style="font-size: 10pt; color: #C25E00; line-height: 1.45;">' +
+    '<div style="font-size: 9.5pt; color: #C25E00; line-height: 1.35;">' +
       formatBulletListDps_(text) +
     '</div>' +
   '</div>';
@@ -2345,7 +2365,7 @@ function formatBulletListDps_(text) {
     l = l.trim();
     if (!l) return '';
     // Strip emojis to guarantee clean PDF rendering without missing glyphs
-    l = l.replace(/[\u{1F300}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
+    l = l.replace(/[\u{1F300}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE0F}]/gu, '').trim();
     if (!l) return '';
     if (!l.startsWith('•') && !l.startsWith('-') && !/^\d+\./.test(l)) {
       l = '• ' + l;
