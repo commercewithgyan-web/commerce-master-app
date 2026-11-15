@@ -423,7 +423,7 @@ function analyzeAndStructureBlock_(rawText, subject, existingRenderSpec) {
     try {
       var spec = typeof existingRenderSpec === 'string' ? JSON.parse(existingRenderSpec) : existingRenderSpec;
       if (spec && Array.isArray(spec.blocks) && spec.blocks.length > 0) {
-        return spec.blocks;
+        return expandSpecBlocks_(spec.blocks);
       }
     } catch (_) {}
   }
@@ -494,11 +494,23 @@ function calcBlockEstMm_(blk) {
     case 'card':
       var bodyChars = (blk.body || blk.text || '').length;
       return 6 + Math.ceil(bodyChars / 85) * 4.5;
+    case 'preformatted':
+      var pLines = String(blk.text || '').split('\n').length;
+      return 8 + pLines * 4.3;
     case 'taccount':
     case 'capital':
     case 'table':
     case 'journal':
       var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
+      if (blk.kind === 'comparison' || blk.kind === 'generic') {
+        // Text-heavy cells wrap: estimate wrapped lines per row (~45 chars per line per cell).
+        var wrapped = 0;
+        lines.slice(1).forEach(function(l) {
+          var longest = Math.max.apply(null, l.split('|').map(function(c) { return c.trim().length; }).concat([1]));
+          wrapped += Math.max(1, Math.ceil(longest / 45));
+        });
+        return 20 + wrapped * 5.6;
+      }
       var rowCount = Math.max(1, lines.length > 1 ? lines.length - 1 : lines.length);
       return 16 + (rowCount * 6.8) + 10;
     case 'graph':
@@ -549,23 +561,13 @@ function generatePartnersCapitalColgroup_(n) {
  * @return {string}
  */
 function generateArbitraryColgroup_(cols, title) {
+  // Kept for backwards compatibility; widths now come from DPP_LAYOUT_PROFILES_ (dpp_decider.gs).
   var k = cols.length;
   if (k === 0) return '';
-  if (k === 4 && /balance sheet|revaluation|realisation|trading|p&l|cash|bank/i.test(title || '')) {
-    return '<colgroup><col style="width: 36%;"><col style="width: 14%;"><col style="width: 36%;"><col style="width: 14%;"></colgroup>';
-  }
-  if (k === 5 && /journal/i.test(title || '')) {
-    return '<colgroup><col style="width: 12%;"><col style="width: 48%;"><col style="width: 8%;"><col style="width: 16%;"><col style="width: 16%;"></colgroup>';
-  }
-
-  // Statistics / Arbitrary table (First label column: 22%; remaining K - 1 numeric columns: (78 / (K - 1)).toFixed(2)% each)
-  var firstColPct = 22;
-  var remPct = (k > 1) ? ((100 - firstColPct) / (k - 1)).toFixed(2) : 78;
-  var colsHtml = '<col style="width: ' + firstColPct + '%;">';
-  for (var i = 1; i < k; i++) {
-    colsHtml += '<col style="width: ' + remPct + '%;">';
-  }
-  return '<colgroup>' + colsHtml + '</colgroup>';
+  var kind = 'stats';
+  if (k === 4 && /balance sheet|revaluation|realisation|trading|p&l|cash|bank/i.test(title || '')) kind = 'balance_sheet';
+  else if (k === 5 && /journal/i.test(title || '')) kind = 'journal';
+  return colgroupFromWidths_(getProfileWidths_(kind, k));
 }
 
 function splitPipes_(line) {
@@ -581,6 +583,8 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
   if (!rawText) return [];
 
   var blocks = [];
+  // An explicit #GRAPH anywhere means the author placed the diagram: never auto-insert another.
+  blocks.hasExplicitGraph = /^\s*#GRAPH/m.test(rawText);
   var lines = rawText.split('\n');
   var currentBlockType = null;
   var currentMeta = '';
@@ -631,6 +635,7 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
       var tLines = bufText.split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
       blocks.push({
         type: 'taccount',
+        kind: 'ledger',
         title: currentMeta || 'Ledger Account',
         rowsText: bufText,
         estHeight: 16 + tLines.length * 6.5
@@ -647,17 +652,32 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
       var jLines = bufText.split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
       blocks.push({
         type: 'journal',
+        kind: 'journal',
+        title: currentMeta || '',
         rowsText: bufText,
         estHeight: 16 + jLines.length * 6.5
       });
+    } else if (currentBlockType === 'pre') {
+      blocks.push({ type: 'preformatted', title: currentMeta || '', text: bufText });
     } else if (currentBlockType === 'table') {
       var tblLines = bufText.split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
-      blocks.push({
+      // Explicit sub-kind tags (#TRIALBALANCE, #BALANCESHEET …) narrow the decider;
+      // plain #TABLE lets it choose among table kinds.
+      var allowedKinds = currentTableKinds || ['trial_balance', 'balance_sheet', 'bs_schedule3', 'computation', 'comparison', 'stats', 'generic', 'ledger', 'journal', 'capital'];
+      var tHeader = tblLines.length && tblLines[0].indexOf('|') !== -1 ? splitPipesToWidth_(tblLines[0], 0) : [];
+      var tDecision = decideTableKind_(tHeader, tblLines.slice(1), currentMeta, subject, allowedKinds);
+      var tBlk = {
         type: 'table',
+        kind: tDecision.kind,
         title: currentMeta,
         rowsText: bufText,
+        decision: tDecision,
         estHeight: (currentMeta ? 18 : 14) + tblLines.length * 6.5
-      });
+      };
+      if (tDecision.kind === 'journal') tBlk.type = 'journal';
+      else if (tDecision.kind === 'ledger') tBlk.type = 'taccount';
+      else if (tDecision.kind === 'capital') tBlk.type = 'capital';
+      blocks.push(tBlk);
     } else {
       classifyAndPushUnmarked_(bufText, subject, blocks);
     }
@@ -665,11 +685,36 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
     currentBlockType = null;
     currentMeta = '';
     currentBuffer = [];
+    currentTableKinds = null;
   }
+
+  // Typed table tags → which kinds the decider may pick.
+  var TYPED_TABLE_TAGS = {
+    TRIALBALANCE: ['trial_balance'],
+    BALANCESHEET: ['balance_sheet', 'bs_schedule3'],
+    COMPUTATION: ['computation'],
+    COMPARE: ['comparison'],
+    STATS: ['stats']
+  };
+  var currentTableKinds = null;
 
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i];
     var trimmed = line.trim();
+
+    var typedTag = trimmed.match(/^#(TRIALBALANCE|BALANCESHEET|COMPUTATION|COMPARE|STATS|PRE)\b[:\s]*(.*)$/i);
+    if (typedTag) {
+      flushBuffer();
+      var tagName = typedTag[1].toUpperCase();
+      currentBlockType = tagName === 'PRE' ? 'pre' : 'table';
+      currentMeta = typedTag[2].trim();
+      currentTableKinds = TYPED_TABLE_TAGS[tagName] || null;
+      continue;
+    }
+    if (/^#END(TRIALBALANCE|BALANCESHEET|COMPUTATION|COMPARE|STATS|PRE)$/i.test(trimmed)) {
+      flushBuffer();
+      continue;
+    }
 
     if (trimmed === '#PAGEBREAK') {
       flushBuffer();
@@ -743,6 +788,7 @@ function parseDslBlocks_(rawText, subject, isAnswerKey) {
     if (trimmed.indexOf('#JOURNAL') === 0) {
       flushBuffer();
       currentBlockType = 'journal';
+      currentMeta = trimmed.replace(/^#JOURNAL[:\s]*/i, '').trim();
       continue;
     }
     if (trimmed === '#ENDJOURNAL') {
@@ -803,44 +849,36 @@ function classifyAndPushUnmarked_(text, subject, blocks) {
   var lines = text.split("\n");
   var tableLines = lines.filter(function(l) { return l.indexOf("|") !== -1; });
 
-  if (tableLines.length >= 2) {
-    var headerLine = tableLines[0].toLowerCase();
-    if (headerLine.indexOf("date") !== -1 && headerLine.indexOf("particulars") !== -1 && (headerLine.indexOf("dr") !== -1 || headerLine.indexOf("debit") !== -1)) {
-      blocks.push({
-        type: "journal",
-        rowsText: text,
-        estHeight: 16 + tableLines.length * 6.5
-      });
-      return;
-    }
-
-    if (headerLine.indexOf("particulars") !== -1 && (headerLine.indexOf("alok") !== -1 || headerLine.indexOf("deepak") !== -1 || headerLine.indexOf("partner") !== -1 || headerLine.indexOf("rohit") !== -1 || (headerLine.match(/\([₹rs\.]+\)/g) || []).length >= 4)) {
-      blocks.push({
-        type: "capital",
-        partnersText: "Partners",
-        rowsText: text,
-        estHeight: 16 + tableLines.length * 6.5
-      });
-      return;
-    }
-
-    var cols = tableLines[0].split("|");
-    if (cols.length === 4 || (headerLine.match(/particulars/g) || []).length === 2) {
-      blocks.push({
-        type: "taccount",
-        title: "Ledger Account",
-        rowsText: text,
-        estHeight: 16 + tableLines.length * 6.5
-      });
-      return;
-    }
-
-    blocks.push({
-      type: "table",
-      rowsText: text,
-      estHeight: 14 + tableLines.length * 6.5
-    });
+  // 0. Hand-aligned (fixed-width) text: keep the author's spacing in monospace.
+  //    Guessing columns out of spaces is what broke TB / BS / Journal before.
+  if (looksFixedWidth_(text)) {
+    blocks.push(flagNeedsReview_({ type: "preformatted", text: text }, "hand-aligned text kept in monospace: " + String(lines[0] || '').trim().slice(0, 60)));
     return;
+  }
+
+  // 1. Pipe tables: the decider scores every kind (journal, ledger, capital,
+  //    trial balance, balance sheet, computation, comparison, statistics).
+  if (tableLines.length >= 2) {
+    var decided = buildDecidedTableBlock_(text, subject, '', null);
+    if (decided) {
+      if (decided.leadText) blocks.push({ type: "text", text: decided.leadText });
+      var d = decided.decision;
+      if (decided.shapeBad) {
+        blocks.push(flagNeedsReview_({ type: "preformatted", text: text }, "pipe rows do not match the header width"));
+        return;
+      }
+      var kind = d.kind;
+      if (d.confidence < 0.4) {
+        flagNeedsReview_(decided, "low decider confidence (" + d.confidence + ") for " + kind + "; rendered as plain table");
+        kind = "generic";
+      }
+      decided.kind = kind;
+      if (kind === "journal") decided.type = "journal";
+      else if (kind === "ledger") { decided.type = "taccount"; if (!decided.title) decided.title = "Ledger Account"; }
+      else if (kind === "capital") { decided.type = "capital"; decided.partnersText = "Partners"; }
+      blocks.push(decided);
+      return;
+    }
   }
 
   // 1. Step-by-step Calculation Auto-Judgment (PA2)
@@ -898,7 +936,7 @@ function classifyAndPushUnmarked_(text, subject, blocks) {
 
   // 5. Economics Graph Auto-Judgment (PA3 - Prevent duplicate graph if graph block already present)
   var textLower = text.toLowerCase();
-  var hasGraphAlready = false;
+  var hasGraphAlready = !!blocks.hasExplicitGraph;
   for (var bi = 0; bi < blocks.length; bi++) {
     if (blocks[bi].type === "graph") { hasGraphAlready = true; break; }
   }
@@ -941,6 +979,8 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
 
   // Build content blocks
   var blocks = [];
+  var validationReport = [];
+  var reviewReport = [];
   if (!isAns) {
     // Question PDF Layout (Publication Grade - Compact C1: badge & marks on top line of first card)
     var qBlocks = analyzeAndStructureBlock_(data.questionText || '', data.subject, data.renderSpec);
@@ -974,8 +1014,21 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
         else if (parsedJson && Array.isArray(parsedJson.blocks)) ansBlocks = parsedJson.blocks;
       } catch (_) {}
     }
+    if (ansBlocks && ansBlocks.length) {
+      ansBlocks = expandSpecBlocks_(ansBlocks);
+    }
     if (!ansBlocks || ansBlocks.length === 0) {
       ansBlocks = analyzeAndStructureBlock_(data.answerText || '', data.subject, data.renderSpec);
+    }
+
+    // Accounting consistency checks (Dr = Cr, totals, balance sheet tally).
+    // Problems are logged for the teacher; the PDF is still produced.
+    validationReport = validateBlocks_(ansBlocks);
+    reviewReport = ansBlocks.filter(function(b) { return b.needsReview; }).map(function(b) { return b.reviewReason; });
+    if (validationReport.length || reviewReport.length) {
+      try {
+        Logger.log('DPP CHECK ' + (data.qid || '') + ': ' + JSON.stringify({ validation: validationReport, needsReview: reviewReport }));
+      } catch (_) {}
     }
 
     for (var ab = 0; ab < ansBlocks.length; ab++) {
@@ -1031,7 +1084,9 @@ function generateMultiPageDailyPracticeSheetHtml_(data, isAnswerKey) {
   return {
     html: fullHtml,
     pageCount: totalPages,
-    pageMms: pageMms
+    pageMms: pageMms,
+    validation: validationReport,
+    needsReview: reviewReport
   };
 }
 
@@ -1092,7 +1147,10 @@ function buildMultiPageDocumentHtml_(pages, headerData) {
 
   var logoBase64 = typeof getDppLogoBase64_ === 'function' ? getDppLogoBase64_() : '';
   var photoBase64 = typeof getDppPhotoBase64_ === 'function' ? getDppPhotoBase64_() : '';
-  var watermarkBase64 = typeof getDppWatermarkBase64_ === 'function' ? getDppWatermarkBase64_() : '';
+  // Pre-faded watermark (fade baked into pixels) so visibility never depends on CSS opacity.
+  var watermarkIsFaded = typeof getDppWatermarkFadedBase64_ === 'function';
+  var watermarkBase64 = watermarkIsFaded ? getDppWatermarkFadedBase64_() : (typeof getDppWatermarkBase64_ === 'function' ? getDppWatermarkBase64_() : '');
+  var watermarkOpacity = watermarkIsFaded ? 1 : 0.06;
 
   var headerBgColor = isAns ? '#08060F' : '#1E0063';
   var headerGradient = isAns
@@ -1183,7 +1241,7 @@ function buildMultiPageDocumentHtml_(pages, headerData) {
       '</div>\n';
 
     var watermarkHtml = watermarkBase64
-      ? ('  <div class="watermark" style="position: absolute; left: 45mm; top: 88.5mm; width: 120mm; height: 120mm; opacity: 0.06; z-index: 0; pointer-events: none; text-align: center; line-height: 0;">\n' +
+      ? ('  <div class="watermark" style="position: absolute; left: 45mm; top: 88.5mm; width: 120mm; height: 120mm; opacity: ' + watermarkOpacity + '; z-index: 0; pointer-events: none; text-align: center; line-height: 0;">\n' +
          '    <img src="data:image/png;base64,' + watermarkBase64 + '" style="width: 120mm; height: 120mm; display: block; border: 0;" alt="" />\n' +
          '  </div>\n')
       : '';
@@ -1256,12 +1314,13 @@ function buildMultiPageDocumentHtml_(pages, headerData) {
     '    font-variant-numeric: tabular-nums;\n' +
     '    font-family: \'Segoe UI\', Roboto, sans-serif;\n' +
     '  }\n' +
+    // No white box behind content: answers print straight onto the page, so the
+    // watermark shows through and nothing looks pasted on.
     '  .content-card {\n' +
-    '    background: #ffffff;\n' +
-    '    border: 0.3mm solid #E6DDF7;\n' +
-    '    border-radius: 2.5mm;\n' +
-    '    padding: 2.4mm 3.5mm;\n' +
-    '    margin-bottom: 2.6mm;\n' +
+    '    background: transparent;\n' +
+    '    border: 0;\n' +
+    '    padding: 0.6mm 0;\n' +
+    '    margin-bottom: 3mm;\n' +
     '    break-inside: avoid;\n' +
     '    page-break-inside: avoid;\n' +
     '  }\n' +
@@ -1303,7 +1362,6 @@ function buildMultiPageDocumentHtml_(pages, headerData) {
     '    top: 88.5mm;\n' +
     '    width: 120mm;\n' +
     '    height: 120mm;\n' +
-    '    opacity: 0.05;\n' +
     '    z-index: 0;\n' +
     '    pointer-events: none;\n' +
     '  }\n' +
@@ -1361,6 +1419,8 @@ function renderBlockHtml_(blk) {
       return renderRubricOnlyHtml_(blk.text);
     case 'traps':
       return renderTrapsOnlyHtml_(blk.text);
+    case 'preformatted':
+      return renderPreformattedBlockHtml_(blk);
     case 'text':
     default:
       return renderGenericTextBlock_(blk.text || '', blk);
@@ -1473,91 +1533,101 @@ function renderQuestionFooterBlockHtml_(blk) {
 }
 
 function renderTAccountBlockHtml_(blk) {
-  var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
+  var lines = dppTableLines_(blk);
   if (lines.length === 0) return '';
 
-  var startIndex = 0;
-  var firstCols = splitPipes_(lines[0]);
-  if (/particular|dr|cr|₹|amount/i.test(firstCols[0] || '') || /particular|dr|cr|₹|amount/i.test(firstCols[1] || '')) {
-    startIndex = 1;
-  }
+  // Header: first row when it names columns; otherwise default 4-column ledger header.
+  var first = splitPipesToWidth_(lines[0], 0);
+  var hasHeader = /particular|date|amount|j\.?\s?f|₹/i.test(first.join(' ')) && !first.some(function(c) { return /^(to|by)\s/i.test(c); });
+  var header = hasHeader ? first : ['Particulars', 'Amount (₹)', 'Particulars', 'Amount (₹)'];
+  var n = header.length;
+  if (n % 2 !== 0) { header.push(''); n++; }
+  var half = n / 2;
+  var body = hasHeader ? lines.slice(1) : lines;
+  var widths = getProfileWidths_('ledger', n);
+  var isAmtCol = header.map(function(h, i) { return /amount|₹|\brs\b/i.test(h) || (half === 2 && (i === 1 || i === 3)); });
+  var isCenterCol = header.map(function(h) { return /^(date|j\.?\s?f\.?|l\.?\s?f\.?)$/i.test(h.trim()); });
 
-  var drItems = [];
-  var crItems = [];
-  var drTotal = null;
-  var crTotal = null;
-
-  for (var i = startIndex; i < lines.length; i++) {
-    var cols = splitPipes_(lines[i]);
-    if (cols.length >= 4) {
-      var isTotal = /total/i.test(cols[0]) || /total/i.test(cols[2]);
-      if (isTotal) {
-        drTotal = { desc: cols[0] || 'Total', amt: cols[1] || '' };
-        crTotal = { desc: cols[2] || 'Total', amt: cols[3] || '' };
-      } else {
-        var drDesc = (cols[0] || '').trim();
-        var drAmt = (cols[1] || '').trim();
-        var crDesc = (cols[2] || '').trim();
-        var crAmt = (cols[3] || '').trim();
-
-        if (drDesc || drAmt) drItems.push({ desc: drDesc, amt: drAmt });
-        if (crDesc || crAmt) crItems.push({ desc: crDesc, amt: crAmt });
-      }
+  // Rows are grouped into segments; each "Total" row closes one (e.g. year-wise ledgers, Trading then P&L).
+  var segments = [], cur = { dr: [], cr: [], drTotal: null, crTotal: null };
+  body.forEach(function(l) {
+    if (l.indexOf('|') === -1) return;
+    var raw = splitPipesToWidth_(l, n, true);
+    var c = raw.map(function(x) { return x.trim(); });
+    var left = c.slice(0, half), right = c.slice(half);
+    // Indentation = leading spaces the author typed. The very first cell has no pipe before it;
+    // every other cell drops the one conventional space after "|".
+    var unpipe = function(x) { return String(x).replace(/^ /, ''); };
+    var leftRaw = raw.slice(0, half).map(function(x, i) { return i === 0 ? x : unpipe(x); });
+    var rightRaw = raw.slice(half).map(unpipe);
+    var isTotal = /total/i.test(left.join(' ')) || /total/i.test(right.join(' '));
+    if (isTotal) {
+      cur.drTotal = left; cur.crTotal = right;
+      segments.push(cur);
+      cur = { dr: [], cr: [], drTotal: null, crTotal: null };
+      return;
     }
+    if (left.some(Boolean)) cur.dr.push({ cells: left, raw: leftRaw });
+    if (right.some(Boolean)) cur.cr.push({ cells: right, raw: rightRaw });
+  });
+  if (cur.dr.length || cur.cr.length) segments.push(cur);
+
+  function sideTds(side, isLast, bold) {
+    return side.cells.map(function(c, i) {
+      var colIdx = i;
+      var align = isCenterCol[colIdx] ? 'center' : (isAmtCol[colIdx] ? 'right' : 'left');
+      var style = DPP_TD_BASE_ + ' text-align: ' + align + ';';
+      if (isAmtCol[colIdx]) style += ' white-space: nowrap;';
+      if (isCenterCol[colIdx]) style += ' white-space: nowrap; font-size: 8.5pt; padding-left: 3px; padding-right: 3px;';
+      if (!isAmtCol[colIdx] && !isCenterCol[colIdx] && side.raw) {
+        var lead = (String(side.raw[i] || '').match(/^(\s*)/) || ['', ''])[1].length;
+        var lvl = Math.min(3, Math.floor(lead / 2));
+        if (lvl > 0) style += ' padding-left: ' + (2 + lvl * 4) + 'mm;';
+      }
+      if (isLast) style += ' border-right: 2px solid #7C30E0;';
+      if (bold) style += ' font-weight: 700;';
+      return '<td style="' + style + '">' + (c ? escapeHtml_(c) : '&nbsp;') + '</td>';
+    });
   }
 
-  // Equal-Row Padding Rule: Pad shorter side so Total aligns horizontally
-  var maxRows = Math.max(drItems.length, crItems.length);
+  var empty = { cells: header.slice(0, half).map(function() { return ''; }), raw: null };
   var trs = [];
+  segments.forEach(function(seg) {
+    // Equal-Row Padding Rule: pad the shorter side so totals align.
+    var max = Math.max(seg.dr.length, seg.cr.length);
+    for (var r = 0; r < max; r++) {
+      var L = seg.dr[r] || empty, R = seg.cr[r] || empty;
+      var lt = sideTds(L, false, false), rt = sideTds(R, false, false);
+      lt[half - 1] = lt[half - 1].replace('style="', 'style="border-right: 2px solid #7C30E0; ');
+      trs.push('<tr style="border-bottom: 1px solid #F0EAFB;">' + lt.join('') + rt.join('') + '</tr>');
+    }
+    if (seg.drTotal || seg.crTotal) {
+      var lT = sideTds({ cells: seg.drTotal || empty.cells, raw: null }, false, true);
+      var rT = sideTds({ cells: seg.crTotal || empty.cells, raw: null }, false, true);
+      lT[half - 1] = lT[half - 1].replace('style="', 'style="border-right: 2px solid #7C30E0; ');
+      trs.push('<tr style="' + DPP_TOTAL_ROW_ + '">' + lT.join('') + rT.join('') + '</tr>');
+    }
+  });
 
-  for (var r = 0; r < maxRows; r++) {
-    var left = drItems[r] || { desc: '&nbsp;', amt: '' };
-    var right = crItems[r] || { desc: '&nbsp;', amt: '' };
+  var ths = header.map(function(h, i) {
+    var align = isCenterCol[i] ? 'center' : (isAmtCol[i] ? 'right' : 'left');
+    var extra = (i === half - 1) ? ' border-right: 2px solid #7C30E0;' : '';
+    return '<th style="' + DPP_TH_STYLE_ + ' text-align: ' + align + ';' + extra + '">' + escapeHtml_(h) + '</th>';
+  }).join('');
 
-    trs.push('<tr style="border-bottom: 1px solid #E6DDF7;">' +
-      '<td style="padding: 5.5px 8px; border-right: 1px solid #E6DDF7; color: #0f172a;">' + (left.desc === '&nbsp;' ? '&nbsp;' : escapeHtml_(left.desc)) + '</td>' +
-      '<td style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #7C30E0; font-variant-numeric: tabular-nums; font-weight: 600; color: #0f172a;">' + escapeHtml_(left.amt) + '</td>' +
-      '<td style="padding: 5.5px 8px; border-right: 1px solid #E6DDF7; color: #0f172a;">' + (right.desc === '&nbsp;' ? '&nbsp;' : escapeHtml_(right.desc)) + '</td>' +
-      '<td style="padding: 5.5px 8px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: #0f172a;">' + escapeHtml_(right.amt) + '</td>' +
-    '</tr>');
-  }
-
-  // Double-underline Total row
-  if (drTotal || crTotal) {
-    var dt = drTotal || { desc: 'Total', amt: '' };
-    var ct = crTotal || { desc: 'Total', amt: '' };
-    trs.push('<tr style="border-top: 1px solid #E6DDF7; border-bottom: 3px double #1E0063; font-weight: bold; background: #f8fafc;">' +
-      '<td style="padding: 5.5px 8px; border-right: 1px solid #E6DDF7; color: #0f172a;">' + escapeHtml_(dt.desc) + '</td>' +
-      '<td style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #7C30E0; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(dt.amt) + '</td>' +
-      '<td style="padding: 5.5px 8px; border-right: 1px solid #E6DDF7; color: #0f172a;">' + escapeHtml_(ct.desc) + '</td>' +
-      '<td style="padding: 5.5px 8px; text-align: right; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(ct.amt) + '</td>' +
-    '</tr>');
-  }
-
-  var colgroupHtml = '<colgroup><col style="width: 36%;"><col style="width: 14%;"><col style="width: 36%;"><col style="width: 14%;"></colgroup>';
-
-  return '<div class="content-card keep-together">' +
-    '<div style="font-weight: 700; font-size: 9.5pt; color: #1E0063; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">' +
-      '<span>Dr.</span>' +
-      '<span style="text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title || 'Ledger Account') + '</span>' +
-      '<span>Cr.</span>' +
-    '</div>' +
-    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #E6DDF7; table-layout: fixed; font-family: inherit;">' +
-      colgroupHtml +
-      '<thead>' +
-        '<tr style="background: #F4EEFF; color: #1E0063; font-weight: 700; border-bottom: 1px solid #E6DDF7;">' +
-          '<th style="padding: 5.5px 8px; text-align: left; border-right: 1px solid #E6DDF7;">Particulars</th>' +
-          '<th style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #7C30E0;">Amount (₹)</th>' +
-          '<th style="padding: 5.5px 8px; text-align: left; border-right: 1px solid #E6DDF7;">Particulars</th>' +
-          '<th style="padding: 5.5px 8px; text-align: right;">Amount (₹)</th>' +
-        '</tr>' +
-      '</thead>' +
-      '<tbody>' +
-        trs.join('\n') +
-      '</tbody>' +
+  return '<div class="content-card keep-together" data-kind="ledger">' +
+    '<table style="width: 100%; border-collapse: collapse; margin-bottom: 3px;"><tr>' +
+      '<td style="width: 15%; font-weight: 700; font-size: 9.5pt; color: #1E0063; text-align: left;">Dr.</td>' +
+      '<td style="font-weight: 700; font-size: 9.5pt; color: #1E0063; text-align: center; text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title || 'Ledger Account') + '</td>' +
+      '<td style="width: 15%; font-weight: 700; font-size: 9.5pt; color: #1E0063; text-align: right;">Cr.</td>' +
+    '</tr></table>' +
+    '<table style="' + DPP_TABLE_STYLE_ + '">' + colgroupFromWidths_(widths) +
+      '<thead><tr>' + ths + '</tr></thead>' +
+      '<tbody>' + trs.join('\n') + '</tbody>' +
     '</table>' +
   '</div>';
 }
+
 
 /**
  * Renders Partners Capital Account with dynamic 50% | 50% colgroup and mandatory Equal-Row Padding Rule
@@ -1659,7 +1729,7 @@ function renderCapitalAccountBlockHtml_(blk) {
     var tds = rowCols.map(function(c, cIdx) {
       var isDivider = (cIdx + 1 === midColIndex);
       var divStyle = isDivider ? 'border-right: 2px solid #7C30E0;' : 'border-right: 1px solid #E6DDF7;';
-      var isAmt = (cIdx !== 0 && cIdx !== midColIndex) && /[\d,]+/.test(c);
+      var isAmt = (cIdx !== 0 && cIdx !== midColIndex) && /[\d,]+|^-$/.test(c);
       var align = isAmt ? 'right' : 'left';
       var textVal = (c === '&nbsp;') ? '&nbsp;' : escapeHtml_(c);
       return '<td style="padding: ' + cellPad + '; border-bottom: 1px solid #E6DDF7; ' + divStyle + ' text-align: ' + align + '; font-size: ' + cellFontSize + '; font-variant-numeric: tabular-nums; color: #0f172a; white-space: nowrap;">' + textVal + '</td>';
@@ -1676,7 +1746,7 @@ function renderCapitalAccountBlockHtml_(blk) {
     var totalTds = totalColsArr.map(function(c, cIdx) {
       var isDivider = (cIdx + 1 === midColIndex);
       var divStyle = isDivider ? 'border-right: 2px solid #7C30E0;' : 'border-right: 1px solid #E6DDF7;';
-      var isAmt = (cIdx !== 0 && cIdx !== midColIndex) && /[\d,]+/.test(c);
+      var isAmt = (cIdx !== 0 && cIdx !== midColIndex) && /[\d,]+|^-$/.test(c);
       var align = isAmt ? 'right' : 'left';
       return '<td style="padding: ' + cellPad + '; border-top: 1px solid #E6DDF7; border-bottom: 3px double #1E0063; ' + divStyle + ' text-align: ' + align + '; font-size: ' + cellFontSize + '; font-weight: bold; background: #f8fafc; font-variant-numeric: tabular-nums; color: #0f172a; white-space: nowrap;">' + escapeHtml_(c) + '</td>';
     }).join('');
@@ -1691,7 +1761,7 @@ function renderCapitalAccountBlockHtml_(blk) {
       '<span style="text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(heading) + ' (' + nPartners + ' Partners)</span>' +
       '<span>Cr.</span>' +
     '</div>' +
-    '<table style="width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #E6DDF7; table-layout: fixed; font-family: inherit;">' +
+    '<table style="width: 100%; border-collapse: collapse; border: 1px solid #E6DDF7; table-layout: fixed; font-family: inherit;">' +
       colgroupHtml +
       '<thead><tr>' + ths + '</tr></thead>' +
       '<tbody>' + trs.join('\n') + '</tbody>' +
@@ -1700,190 +1770,140 @@ function renderCapitalAccountBlockHtml_(blk) {
 }
 
 /**
- * Renders Journal Entries with exact 5-column layout
+ * Renders Journal Entries (CBSE format, widths from the 'journal' layout profile):
+ * Debit line flush left with "Dr." at the right edge of Particulars,
+ * "To …" credit lines indented, "(Being …)" narration italic under Particulars.
  */
 function renderJournalBlockHtml_(blk) {
-  var lines = String(blk.rowsText || '').trim().split('\n').filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
+  var lines = dppTableLines_(blk);
   if (lines.length === 0) return '';
+  var prof = DPP_LAYOUT_PROFILES_.journal;
 
-  var trs = [];
-  var isHeader = true;
+  var firstPipe = lines[0].indexOf('|') !== -1 ? splitPipesToWidth_(lines[0], 0) : [];
+  var hasHeader = firstPipe.length >= 3 && /particular|date|l\.?\s?f|debit|credit|\bdr\b|\bcr\b|amount|no\./i.test(firstPipe.join(' ')) && !firstPipe.some(function(c) { return parseAmount_(c) !== null; });
+  var header = hasHeader ? firstPipe : ['Date', 'Particulars', 'L.F.', 'Dr. (₹)', 'Cr. (₹)'];
+  var n = header.length;
+  var body = hasHeader ? lines.slice(1) : lines;
+  var widths = getProfileWidths_('journal', n);
+  var pIdx = 0;
+  header.forEach(function(h, i) { if (/particular/i.test(h)) pIdx = i; });
+  if (!/particular/i.test(header[pIdx])) pIdx = n >= 5 ? 1 : 0;
+  var drIdx = n - 2, crIdx = n - 1;
 
-  for (var i = 0; i < lines.length; i++) {
-    var rawLine = lines[i];
-    if (rawLine.indexOf('|') !== -1) {
-      var cols = splitPipes_(rawLine);
-      if (isHeader && /particular|date|l\.f|dr|cr|amount/i.test(rawLine)) {
-        isHeader = false;
-        var ths = cols.map(function(c) {
-          return '<th style="background: #F4EEFF; color: #0f172a; padding: 5.5px 8px; border-right: 1px solid #E6DDF7; font-weight: 700; text-align: center; font-size: 9.5pt;">' + escapeHtml_(c) + '</th>';
-        }).join('');
-        trs.push('<tr style="border-bottom: 1px solid #E6DDF7;">' + ths + '</tr>');
-        continue;
-      }
-
-      var isTotal = /total/i.test(rawLine);
-      var borderStyle = isTotal ? 'border-top: 1px solid #E6DDF7; border-bottom: 3px double #1E0063; font-weight: bold; background: #f8fafc;' : 'border-bottom: 1px solid #E6DDF7;';
-
-      var tds = cols.map(function(c, cIdx) {
-        var isAmt = (cIdx === 3 || cIdx === 4) && /[\d,]+/.test(c);
-        var align = isAmt ? 'right' : (cIdx === 0 || cIdx === 2 ? 'center' : 'left');
-        var indent = (cIdx === 1 && /^\s*to\b/i.test(c)) ? 'padding-left: 20px;' : '';
-        return '<td style="padding: 5.5px 8px; ' + borderStyle + ' text-align: ' + align + '; ' + indent + ' font-size: 9.5pt; font-variant-numeric: tabular-nums; color: #0f172a;">' + escapeHtml_(c) + '</td>';
-      }).join('');
-      trs.push('<tr>' + tds + '</tr>');
-    } else {
-      var isNarration = /^\s*\(Being/i.test(rawLine);
-      var fontStyle = isNarration ? 'font-style: italic; color: #475569; padding-left: 20px;' : 'font-weight: bold; color: #0f172a;';
-      trs.push('<tr><td colspan="10" style="padding: 4px 8px; ' + fontStyle + ' font-size: 9pt; border-left: 1px solid #cbd5e1; border-right: 1px solid #E6DDF7;">' + escapeHtml_(rawLine) + '</td></tr>');
-    }
+  function td(content, align, extra) {
+    return '<td style="' + DPP_TD_BASE_ + ' text-align: ' + align + ';' + (extra || '') + '">' + content + '</td>';
+  }
+  function emptyRowExcept(colIdx, html, extra) {
+    var out = [];
+    for (var i = 0; i < n; i++) out.push(i === colIdx ? td(html, 'left', extra) : td('', 'left'));
+    return out.join('');
   }
 
-  var colgroupHtml = '<colgroup><col style="width: 12%;"><col style="width: 48%;"><col style="width: 8%;"><col style="width: 16%;"><col style="width: 16%;"></colgroup>';
+  var trs = [];
+  body.forEach(function(raw) {
+    if (raw.indexOf('|') === -1) {
+      var t = raw.trim();
+      if (/^\(?being\b/i.test(t)) {
+        trs.push('<tr style="border-bottom: 1px solid #CFC3EA;">' + emptyRowExcept(pIdx, escapeHtml_(t), ' padding-left: ' + (2 + prof.narrationIndentMm) + 'mm; font-style: italic; color: #475569; font-size: 9pt;') + '</tr>');
+      } else {
+        trs.push('<tr><td colspan="' + n + '" style="' + DPP_TD_BASE_ + ' font-weight: 700; color: #1E0063;">' + escapeHtml_(t) + '</td></tr>');
+      }
+      return;
+    }
+    var c = splitPipesToWidth_(raw, n);
+    var isTotal = /^total$/i.test(c[pIdx]) || /^total$/i.test(c[0]);
+    var cells = c.map(function(val, i) {
+      if (i === pIdx) {
+        var p = val;
+        var isCredit = /^to\s/i.test(p);
+        var hasDr = /\bdr\.?\s*$/i.test(p);
+        var text = escapeHtml_(hasDr ? p.replace(/\s*\bdr\.?\s*$/i, '') : p);
+        var indent = 2 + (isCredit ? prof.toIndentMm : prof.drIndentMm);
+        var drTag = hasDr ? '<span style="float: right; font-weight: 600; color: #1E0063; padding-left: 2mm;">Dr.</span>' : '';
+        return td(drTag + text, 'left', ' padding-left: ' + indent + 'mm;' + (isTotal ? ' font-weight: 700;' : ''));
+      }
+      if (i === drIdx || i === crIdx) return td(escapeHtml_(val), 'right', ' white-space: nowrap;' + (isTotal ? ' font-weight: 700;' : ''));
+      return td(escapeHtml_(val), 'center', ' font-size: 9pt;');
+    }).join('');
+    trs.push('<tr' + (isTotal ? ' style="' + DPP_TOTAL_ROW_ + '"' : '') + '>' + cells + '</tr>');
+  });
 
-  return '<div class="content-card keep-together">' +
-    '<div style="font-weight: 700; font-size: 9.5pt; color: #1E0063; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px;">Journal Entries</div>' +
-    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: #ffffff; border: 1px solid #E6DDF7; table-layout: fixed; font-family: inherit;">' +
-      colgroupHtml +
+  var ths = header.map(function(h, i) {
+    var align = (i === drIdx || i === crIdx) ? 'right' : (i === pIdx ? 'left' : 'center');
+    return '<th style="' + DPP_TH_STYLE_ + ' text-align: ' + align + ';">' + escapeHtml_(h) + '</th>';
+  }).join('');
+
+  return '<div class="content-card keep-together" data-kind="journal">' +
+    dppTableTitleHtml_(blk.title || 'Journal Entries') +
+    '<table style="' + DPP_TABLE_STYLE_ + '">' + colgroupFromWidths_(widths) +
+      '<thead><tr>' + ths + '</tr></thead>' +
       '<tbody>' + trs.join('\n') + '</tbody>' +
     '</table>' +
   '</div>';
 }
 
 /**
- * Renders generic styled CBSE table (Balance Sheet, Trial Balance, Statistics) with Equal-Row Padding Rule for 2-sided tables
+ * Routes a table to the renderer of its decided kind. Horizontal Balance Sheet
+ * is drawn here; every other kind uses its own layout profile.
  */
 function renderTableBlockHtml_(blk) {
-  var lines = String(blk.rowsText || "").trim().split("\n").filter(function(l) { return l.trim() && !/^[\-\=]+$/.test(l); });
-  if (lines.length === 0) return "";
+  var lines = dppTableLines_(blk);
+  if (lines.length === 0) return '';
 
-  var headerCols = [];
-  var startIndex = 0;
-  if (lines.length > 0 && lines[0].indexOf("|") !== -1) {
-    var firstCols = splitPipes_(lines[0]);
-    if (/particular|date|debit|credit|amount|plus|minus|liabilities|assets|class|f|mid/i.test(lines[0])) {
-      headerCols = firstCols;
-      startIndex = 1;
+  var kind = blk.kind;
+  if (!kind) {
+    var hdr = lines[0].indexOf('|') !== -1 ? splitPipesToWidth_(lines[0], 0) : [];
+    kind = decideTableKind_(hdr, lines.slice(1), blk.title, '', null).kind;
+  }
+  if (kind === 'journal') return renderJournalBlockHtml_(blk);
+  if (kind === 'ledger') return renderTAccountBlockHtml_(blk);
+  if (kind === 'capital') return renderCapitalAccountBlockHtml_(blk);
+  if (kind !== 'balance_sheet') return renderProfiledTableHtml_(blk, kind);
+
+  // Horizontal Balance Sheet: Liabilities | Amount | Assets | Amount
+  var header = splitPipesToWidth_(lines[0], 4);
+  var leftItems = [], rightItems = [], leftTotal = null, rightTotal = null;
+  for (var i = 1; i < lines.length; i++) {
+    if (lines[i].indexOf('|') === -1) continue;
+    var raw = splitPipesToWidth_(lines[i], 4, true);
+    var cols = raw.map(function(x) { return x.trim(); });
+    if (/total/i.test(cols[0]) || /total/i.test(cols[2])) {
+      leftTotal = { desc: cols[0] || 'Total', amt: cols[1] };
+      rightTotal = { desc: cols[2] || 'Total', amt: cols[3] };
+      continue;
     }
+    if (cols[0] || cols[1]) leftItems.push({ desc: cols[0], amt: cols[1], lvl: dppIndentLevel_(raw[0]) });
+    if (cols[2] || cols[3]) rightItems.push({ desc: cols[2], amt: cols[3], lvl: Math.max(0, dppIndentLevel_(String(raw[2]).replace(/^ /, ''))) });
   }
 
-  // Detect 2-sided account or Balance Sheet (PA7)
-  var isBS = (headerCols.length === 4 && (/liabilit|particular|date|dr/i.test(headerCols[0]) || /asset|particular/i.test(headerCols[2]) || /balance sheet|revaluation|realisation|trading|p&l|cash|bank/i.test(blk.title || "")));
-
-  if (isBS) {
-    var leftItems = [];
-    var rightItems = [];
-    var leftTotal = null;
-    var rightTotal = null;
-
-    for (var i = startIndex; i < lines.length; i++) {
-      var raw = lines[i];
-      if (raw.indexOf("|") !== -1) {
-        var cols = splitPipes_(raw);
-        if (cols.length >= 4) {
-          var isTot = /total/i.test(cols[0]) || /total/i.test(cols[2]);
-          if (isTot) {
-            leftTotal = { desc: cols[0] || "Total", amt: cols[1] || "" };
-            rightTotal = { desc: cols[2] || "Total", amt: cols[3] || "" };
-          } else {
-            var lDesc = (cols[0] || "").trim();
-            var lAmt = (cols[1] || "").trim();
-            var rDesc = (cols[2] || "").trim();
-            var rAmt = (cols[3] || "").trim();
-            if (lDesc || lAmt) leftItems.push({ desc: lDesc, amt: lAmt });
-            if (rDesc || rAmt) rightItems.push({ desc: rDesc, amt: rAmt });
-          }
-        }
-      }
-    }
-
-    var maxRows = Math.max(leftItems.length, rightItems.length);
-    var trs = [];
-
-    // Header row: brand purple fill (PB2, T4)
-    var ths = headerCols.map(function(c, cIdx) {
-      var divStyle = (cIdx === 1) ? "border-right: 2px solid #7C30E0;" : "border-right: 1px solid #E6DDF7;";
-      var align = (cIdx === 1 || cIdx === 3) ? "right" : "left";
-      return '<th style="background: #F4EEFF; color: #1E0063; padding: 5.5px 8px; ' + divStyle + ' font-weight: 700; text-align: ' + align + '; font-size: 9.5pt;">' + escapeHtml_(c) + '</th>';
-    }).join("");
-    trs.push('<tr style="border-bottom: 1px solid #E6DDF7;">' + ths + '</tr>');
-
-    // Data rows: col 0 and col 2 (Assets) strictly LEFT aligned (PA7)
-    for (var r = 0; r < maxRows; r++) {
-      var left = leftItems[r] || { desc: "&nbsp;", amt: "" };
-      var right = rightItems[r] || { desc: "&nbsp;", amt: "" };
-      trs.push('<tr style="border-bottom: 1px solid #E6DDF7;">' +
-        '<td style="padding: 5.5px 8px; border-right: 1px solid #E6DDF7; text-align: left; color: #1B1530;">' + (left.desc === "&nbsp;" ? "&nbsp;" : escapeHtml_(left.desc)) + '</td>' +
-        '<td style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #7C30E0; font-variant-numeric: tabular-nums; font-weight: 600; color: #1B1530;">' + escapeHtml_(left.amt) + '</td>' +
-        '<td style="padding: 5.5px 8px; border-right: 1px solid #E6DDF7; text-align: left; color: #1B1530;">' + (right.desc === "&nbsp;" ? "&nbsp;" : escapeHtml_(right.desc)) + '</td>' +
-        '<td style="padding: 5.5px 8px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: #1B1530;">' + escapeHtml_(right.amt) + '</td>' +
-      '</tr>');
-    }
-
-    if (leftTotal || rightTotal) {
-      var lt = leftTotal || { desc: "Total", amt: "" };
-      var rt = rightTotal || { desc: "Total", amt: "" };
-      trs.push('<tr style="border-top: 1px solid #E6DDF7; border-bottom: 3px double #1E0063; font-weight: bold; background: #F4EEFF;">' +
-        '<td style="padding: 5.5px 8px; border-right: 1px solid #E6DDF7; text-align: left; color: #1E0063;">' + escapeHtml_(lt.desc) + '</td>' +
-        '<td style="padding: 5.5px 8px; text-align: right; border-right: 2px solid #7C30E0; font-variant-numeric: tabular-nums; color: #1E0063;">' + escapeHtml_(lt.amt) + '</td>' +
-        '<td style="padding: 5.5px 8px; border-right: 1px solid #E6DDF7; text-align: left; color: #1E0063;">' + escapeHtml_(rt.desc) + '</td>' +
-        '<td style="padding: 5.5px 8px; text-align: right; font-variant-numeric: tabular-nums; color: #1E0063;">' + escapeHtml_(rt.amt) + '</td>' +
-      '</tr>');
-    }
-
-    var colgroupHtml = '<colgroup><col style="width: 36%;"><col style="width: 14%;"><col style="width: 36%;"><col style="width: 14%;"></colgroup>';
-    var contdNotice = blk.isContinuation ? '<div style="font-size: 8pt; font-weight: bold; color: #64748b; margin-bottom: 3px;">(Table Continued from previous page)</div>' : "";
-    var titleHeader = blk.title ? '<div style="font-weight: 700; font-size: 9.5pt; color: #1E0063; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title) + '</div>' : "";
-
-    return '<div class="content-card keep-together">' +
-      titleHeader +
-      contdNotice +
-      '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: rgba(255, 255, 255, 0.92); border: 1px solid #E6DDF7; table-layout: fixed; font-family: inherit;">' +
-        colgroupHtml +
-        '<tbody>' + trs.join("\n") + '</tbody>' +
-      '</table>' +
-    '</div>';
+  function cellPair(it, divider, bold) {
+    var pad = 2 + ((it && it.lvl) ? it.lvl * 4 : 0);
+    return '<td style="' + DPP_TD_BASE_ + ' text-align: left; padding-left: ' + pad + 'mm;' + (bold ? ' font-weight: 700;' : '') + '">' + (it && it.desc ? escapeHtml_(it.desc) : '&nbsp;') + '</td>' +
+      '<td style="' + DPP_TD_BASE_ + ' text-align: right; white-space: nowrap;' + (divider ? ' border-right: 2px solid #7C30E0;' : '') + (bold ? ' font-weight: 700;' : '') + '">' + (it && it.amt ? escapeHtml_(it.amt) : '') + '</td>';
   }
 
-  // Arbitrary multi-column table (e.g. Statistics)
   var trs = [];
-  var isHeader = true;
-  for (var i = 0; i < lines.length; i++) {
-    var rawLine = lines[i];
-    if (rawLine.indexOf("|") !== -1) {
-      var cols = splitPipes_(rawLine);
-      if (isHeader && /particular|date|debit|credit|amount|plus|minus|class|f|mid/i.test(rawLine)) {
-        isHeader = false;
-        var ths = cols.map(function(c, cIdx) {
-          var isAmt = /amount|₹|rs|dr|cr|debit|credit|total|bal|f|mid/i.test(c);
-          var align = (cIdx === 0 || (cIdx === 2 && cols.length === 4) || !isAmt) ? "left" : "right";
-          return '<th style="background: #F4EEFF; color: #1E0063; padding: 5.5px 8px; border-right: 1px solid #E6DDF7; font-weight: 700; text-align: ' + align + '; font-size: 9.5pt;">' + escapeHtml_(c) + '</th>';
-        }).join("");
-        trs.push('<tr style="border-bottom: 1px solid #E6DDF7;">' + ths + '</tr>');
-        continue;
-      }
-
-      var isTotal = /total/i.test(rawLine);
-      var borderStyle = isTotal ? "border-top: 1px solid #E6DDF7; border-bottom: 3px double #1E0063; font-weight: bold; background: #F4EEFF;" : "border-bottom: 1px solid #E6DDF7;";
-
-      var tds = cols.map(function(c, cIdx) {
-        var headerName = headerCols[cIdx] || "";
-        var isAmt = (cIdx === 1 || (cIdx === 3 && cols.length === 4)) || /amount|₹|rs|dr|cr|debit|credit|total|bal|f|mid/i.test(headerName) || (/^[\d,.\-₹\s]+$/.test(c.trim()) && cIdx > 0);
-        var align = (cIdx === 0 || (cIdx === 2 && cols.length === 4) || /particular|asset|liabilit|desc|item|name|account/i.test(headerName)) ? "left" : (isAmt ? "right" : "left");
-        return '<td style="padding: 5.5px 8px; ' + borderStyle + ' border-right: 1px solid #E6DDF7; text-align: ' + align + '; font-size: 9.5pt; font-variant-numeric: tabular-nums; color: #1B1530;">' + escapeHtml_(c) + '</td>';
-      }).join("");
-      trs.push("<tr>" + tds + "</tr>");
-    }
+  var maxRows = Math.max(leftItems.length, rightItems.length);
+  for (var r = 0; r < maxRows; r++) {
+    trs.push('<tr style="border-bottom: 1px solid #F0EAFB;">' + cellPair(leftItems[r], true, false) + cellPair(rightItems[r], false, false) + '</tr>');
+  }
+  if (leftTotal || rightTotal) {
+    trs.push('<tr style="' + DPP_TOTAL_ROW_ + '">' + cellPair(leftTotal || { desc: 'Total' }, true, true) + cellPair(rightTotal || { desc: 'Total' }, false, true) + '</tr>');
   }
 
-  var colgroupHtml = generateArbitraryColgroup_(headerCols.length > 0 ? headerCols : (lines[0] ? splitPipes_(lines[0]) : []), blk.title);
-  var titleHeader = blk.title ? '<div style="font-weight: 700; font-size: 9.5pt; color: #1E0063; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px;">' + escapeHtml_(blk.title) + '</div>' : "";
+  var ths = header.map(function(c, cIdx) {
+    var align = (cIdx === 1 || cIdx === 3) ? 'right' : 'left';
+    var div = cIdx === 1 ? ' border-right: 2px solid #7C30E0;' : '';
+    return '<th style="' + DPP_TH_STYLE_ + ' text-align: ' + align + ';' + div + '">' + escapeHtml_(c) + '</th>';
+  }).join('');
+  var contdNotice = blk.isContinuation ? '<div style="font-size: 8pt; font-weight: bold; color: #64748b; margin-bottom: 3px;">(Table Continued from previous page)</div>' : '';
 
-  return '<div class="content-card keep-together">' +
-    titleHeader +
-    '<table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; background: rgba(255, 255, 255, 0.92); border: 1px solid #E6DDF7; table-layout: fixed; font-family: inherit;">' +
-      colgroupHtml +
-      '<tbody>' + trs.join("\n") + '</tbody>' +
+  return '<div class="content-card keep-together" data-kind="balance_sheet">' +
+    dppTableTitleHtml_(blk.title) +
+    contdNotice +
+    '<table style="' + DPP_TABLE_STYLE_ + '">' + colgroupFromWidths_(getProfileWidths_('balance_sheet', 4)) +
+      '<thead><tr>' + ths + '</tr></thead>' +
+      '<tbody>' + trs.join('\n') + '</tbody>' +
     '</table>' +
   '</div>';
 }
@@ -1897,7 +1917,7 @@ function renderEconomicsSvgBlock_(templateName, caption) {
 
   var svgContent = "";
   if (templateName === "cost_curves" || templateName === "ac_mc") {
-    svgContent = '<svg width="360" height="195" viewBox="0 0 360 195" style="background:#fff; font-family:-apple-system, sans-serif; margin:0 auto; display:block;">\n' +
+    svgContent = '<svg width="360" height="195" viewBox="0 0 360 195" style="background:transparent; font-family:-apple-system, sans-serif; margin:0 auto; display:block;">\n' +
       '<defs><marker id="arr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1E0063"/></marker></defs>\n' +
       '<line x1="60" y1="20" x2="60" y2="160" stroke="#1E0063" stroke-width="1.8" marker-end="url(#arr)" />\n' +
       '<line x1="60" y1="160" x2="330" y2="160" stroke="#1E0063" stroke-width="1.8" marker-end="url(#arr)" />\n' +
@@ -1911,12 +1931,57 @@ function renderEconomicsSvgBlock_(templateName, caption) {
       '<circle cx="170" cy="115" r="3.5" fill="#F87800" />\n' +
       '<text x="165" y="130" font-size="9" font-weight="bold" fill="#F87800">MC cuts AC at min</text>\n' +
     '</svg>';
+  } else if (templateName === "supply_shift") {
+    // D: (90,50)-(290,150); S0: (90,150)-(310,40) → E0 (190,100); S1: (115,162.5)-(335,52.5) → E1 (215,112.5)
+    svgContent = '<svg width="370" height="205" viewBox="0 0 370 205" style="background:transparent; font-family:-apple-system, sans-serif; margin:0 auto; display:block;">\n' +
+      '<defs><marker id="arr-axis-s" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1E0063"/></marker>' +
+      '<marker id="arr-orange-s" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#F87800"/></marker></defs>\n' +
+      '<line x1="65" y1="20" x2="65" y2="170" stroke="#1E0063" stroke-width="1.8" marker-end="url(#arr-axis-s)" />\n' +
+      '<line x1="65" y1="170" x2="350" y2="170" stroke="#1E0063" stroke-width="1.8" marker-end="url(#arr-axis-s)" />\n' +
+      '<text x="60" y="18" font-size="10.5" font-weight="bold" text-anchor="end" fill="#1E0063">Price (₹)</text>\n' +
+      '<text x="350" y="190" font-size="10.5" font-weight="bold" text-anchor="end" fill="#1E0063">Quantity (Units)</text>\n' +
+      '<text x="52" y="182" font-size="10.5" font-weight="bold" fill="#64748b">O</text>\n' +
+      '<line x1="65" y1="100" x2="190" y2="100" stroke="#64748b" stroke-width="1.2" stroke-dasharray="3,3" />\n' +
+      '<line x1="190" y1="100" x2="190" y2="170" stroke="#64748b" stroke-width="1.2" stroke-dasharray="3,3" />\n' +
+      '<text x="58" y="104" font-size="10" font-weight="bold" text-anchor="end" fill="#1E0063">P₀</text>\n' +
+      '<text x="190" y="184" font-size="10" font-weight="bold" text-anchor="middle" fill="#1E0063">Q₀</text>\n' +
+      '<line x1="65" y1="112.5" x2="215" y2="112.5" stroke="#F87800" stroke-width="1.2" stroke-dasharray="3,3" />\n' +
+      '<line x1="215" y1="112.5" x2="215" y2="170" stroke="#F87800" stroke-width="1.2" stroke-dasharray="3,3" />\n' +
+      '<text x="58" y="116.5" font-size="10" font-weight="bold" text-anchor="end" fill="#F87800">P₁</text>\n' +
+      '<text x="215" y="184" font-size="10" font-weight="bold" text-anchor="middle" fill="#F87800">Q₁</text>\n' +
+      '<line x1="90" y1="50" x2="290" y2="150" stroke="#1E0063" stroke-width="2.2" />\n' +
+      '<text x="295" y="154" font-size="11.5" font-weight="bold" fill="#1E0063">D</text>\n' +
+      '<line x1="90" y1="150" x2="310" y2="40" stroke="#64748b" stroke-width="1.8" stroke-dasharray="4,3" />\n' +
+      '<text x="314" y="38" font-size="11.5" font-weight="bold" fill="#64748b">S₀</text>\n' +
+      '<line x1="115" y1="162.5" x2="335" y2="52.5" stroke="#7C30E0" stroke-width="2.2" />\n' +
+      '<text x="339" y="50" font-size="11.5" font-weight="bold" fill="#7C30E0">S₁</text>\n' +
+      '<line x1="255" y1="70" x2="280" y2="70" stroke="#F87800" stroke-width="2" marker-end="url(#arr-orange-s)" />\n' +
+      '<circle cx="190" cy="100" r="3.5" fill="#1E0063" />\n' +
+      '<text x="176" y="95" font-size="10" font-weight="bold" fill="#1E0063">E₀</text>\n' +
+      '<circle cx="215" cy="112.5" r="3.5" fill="#F87800" />\n' +
+      '<text x="222" y="126" font-size="10" font-weight="bold" fill="#F87800">E₁</text>\n' +
+    '</svg>';
+  } else if (templateName === "ppc" || templateName === "ppf") {
+    // Concave PPC from (65,40) to (300,170); A inside (under-utilisation), B on curve, C outside (unattainable).
+    svgContent = '<svg width="370" height="205" viewBox="0 0 370 205" style="background:transparent; font-family:-apple-system, sans-serif; margin:0 auto; display:block;">\n' +
+      '<defs><marker id="arr-axis-p" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1E0063"/></marker></defs>\n' +
+      '<line x1="65" y1="20" x2="65" y2="170" stroke="#1E0063" stroke-width="1.8" marker-end="url(#arr-axis-p)" />\n' +
+      '<line x1="65" y1="170" x2="350" y2="170" stroke="#1E0063" stroke-width="1.8" marker-end="url(#arr-axis-p)" />\n' +
+      '<text x="60" y="18" font-size="10.5" font-weight="bold" text-anchor="end" fill="#1E0063">Good Y</text>\n' +
+      '<text x="350" y="190" font-size="10.5" font-weight="bold" text-anchor="end" fill="#1E0063">Good X</text>\n' +
+      '<text x="52" y="182" font-size="10.5" font-weight="bold" fill="#64748b">O</text>\n' +
+      '<path d="M 65 40 Q 265 45 300 170" stroke="#7C30E0" stroke-width="2.4" fill="none" />\n' +
+      '<text x="285" y="78" font-size="11" font-weight="bold" fill="#7C30E0">PPC</text>\n' +
+      '<circle cx="150" cy="120" r="3.5" fill="#64748b" /><text x="140" y="135" font-size="10" font-weight="bold" fill="#64748b">A</text>\n' +
+      '<circle cx="224" cy="75" r="3.5" fill="#1E0063" /><text x="208" y="70" font-size="10" font-weight="bold" fill="#1E0063">B</text>\n' +
+      '<circle cx="290" cy="45" r="3.5" fill="#F87800" /><text x="297" y="44" font-size="10" font-weight="bold" fill="#F87800">C</text>\n' +
+    '</svg>';
   } else {
     // Demand Shift: exact line intersection coordinates & markers (PA4)
     // S line: (90, 150) to (310, 40)
     // D0 line: (90, 50) to (290, 150) -> E0 = (190, 100)
     // D1 line: (115, 37.5) to (315, 137.5) -> E1 = (215, 87.5)
-    svgContent = '<svg width="370" height="205" viewBox="0 0 370 205" style="background:#fff; font-family:-apple-system, sans-serif; margin:0 auto; display:block;">\n' +
+    svgContent = '<svg width="370" height="205" viewBox="0 0 370 205" style="background:transparent; font-family:-apple-system, sans-serif; margin:0 auto; display:block;">\n' +
       '<defs>\n' +
       '  <marker id="arr-axis" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1E0063"/></marker>\n' +
       '  <marker id="arr-orange" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#F87800"/></marker>\n' +
@@ -2824,19 +2889,16 @@ function getCuratedSubjectiveVault_(classLevel) {
           '4. Bank interest credited ₹800 and bank charges debited ₹250 directly by bank, not entered in Cash Book.',
         marks: 4,
         modelAnswer:
-          'BANK RECONCILIATION STATEMENT as on 31st March 2026\n' +
-          '------------------------------------------------------------------------------------\n' +
-          'Particulars                                          Plus Item (₹)  Minus Item (₹)\n' +
-          '------------------------------------------------------------------------------------\n' +
-          'Debit balance as per Cash Book                               45,000\n' +
-          'Add: Cheques issued but not presented (18,000 - 11,000)       7,000\n' +
-          'Add: Bank Interest directly credited by bank                    800\n' +
-          'Less: Cheques deposited but not credited by bank                             4,500\n' +
-          'Less: Bank charges debited by bank                                             250\n' +
-          '------------------------------------------------------------------------------------\n' +
-          'Total                                                        52,800          4,750\n' +
-          'Credit (Favourable) Balance as per Pass Book (52,800 - 4,750)               48,050\n' +
-          '====================================================================================',
+          '#COMPUTATION:Bank Reconciliation Statement as on 31st March 2026\n' +
+          'Particulars | Plus Items (₹) | Minus Items (₹)\n' +
+          'Debit balance as per Cash Book | 45,000 |\n' +
+          'Add: Cheques issued but not presented (18,000 - 11,000) | 7,000 |\n' +
+          'Add: Bank Interest directly credited by bank | 800 |\n' +
+          'Less: Cheques deposited but not credited by bank | | 4,500\n' +
+          'Less: Bank charges debited by bank | | 250\n' +
+          'Total | 52,800 | 4,750\n' +
+          'Credit (Favourable) Balance as per Pass Book (52,800 - 4,750) | 48,050 |\n' +
+          '#ENDCOMPUTATION',
         rubric:
           '• 1 Mark: Correct treatment of cheques issued but not presented (+₹7,000)\n' +
           '• 1 Mark: Correct treatment of cheques deposited not credited (-₹4,500)\n' +
@@ -2853,7 +2915,7 @@ function getCuratedSubjectiveVault_(classLevel) {
         chapterName: 'Financial Statements with Adjustments',
         question:
           'From the following Trial Balance of Gyan Enterprise as on 31st March 2026, prepare Trading and Profit & Loss Account and Balance Sheet:\n' +
-          'Opening Stock: ₹30,000 | Purchases: ₹1,40,000 | Sales: ₹2,50,000 | Wages: ₹15,000 | Salaries: ₹24,000 | Debtors: ₹60,000 | Creditors: ₹35,000 | Capital: ₹1,00,000 | Machinery: ₹50,000 | Cash at Bank: ₹16,000.\n' +
+          'Opening Stock: ₹30,000 | Purchases: ₹1,40,000 | Sales: ₹2,50,000 | Wages: ₹15,000 | Salaries: ₹24,000 | Debtors: ₹60,000 | Creditors: ₹35,000 | Capital: ₹1,00,000 | Machinery: ₹50,000 | Cash at Bank: ₹66,000.\n' +
           'Adjustments:\n' +
           '1. Closing Stock valued at ₹42,000.\n' +
           '2. Outstanding Wages ₹3,000 and Prepaid Salaries ₹2,000.\n' +
@@ -2861,30 +2923,32 @@ function getCuratedSubjectiveVault_(classLevel) {
           '4. Create Provision for Doubtful Debts @ 5% on Debtors.',
         marks: 6,
         modelAnswer:
-          'TRADING AND PROFIT & LOSS ACCOUNT for the year ended 31st March 2026\n' +
-          '------------------------------------------------------------------------------------\n' +
-          'To Opening Stock                 30,000 | By Sales                          2,50,000\n' +
-          'To Purchases                   1,40,000 | By Closing Stock                    42,000\n' +
-          'To Wages (15,000 + 3,000 O/s)    18,000 |\n' +
-          'To Gross Profit c/d             1,04,000 |\n' +
-          'Total                           2,92,000 | Total                            2,92,000\n' +
-          '------------------------------------------------------------------------------------\n' +
-          'To Salaries (24,000 - 2,000 Ppd) 22,000 | By Gross Profit b/d               1,04,000\n' +
-          'To Dep. on Machinery (10% of 50k) 5,000 |\n' +
-          'To Prov. for Doubtful Debts (5%)  3,000 |\n' +
-          'To Net Profit c/d                74,000 |\n' +
-          'Total                           1,04,000 | Total                            1,04,000\n' +
-          '====================================================================================\n' +
-          'BALANCE SHEET as at 31st March 2026\n' +
-          'Liabilities                 Amount (₹) | Assets                          Amount (₹)\n' +
-          'Capital: 1,00,000                       | Machinery (50k - 5k Dep)            45,000\n' +
-          'Add: Net Profit: 74,000         1,74,000 | Closing Stock                       42,000\n' +
-          'Creditors                         35,000 | Debtors (60k - 3k PDD)              57,000\n' +
-          'Outstanding Wages                  3,000 | Prepaid Salaries                     2,000\n' +
-          '                                         | Cash at Bank                        16,000\n' +
-          '------------------------------------------------------------------------------------\n' +
-          'TOTAL LIABILITIES               2,12,000 | TOTAL ASSETS                      2,12,000\n' +
-          '====================================================================================',
+          '#TACCOUNT:Trading and Profit & Loss Account for the year ended 31st March 2026\n' +
+          'Particulars | Amount (₹) | Particulars | Amount (₹)\n' +
+          'To Opening Stock | 30,000 | By Sales | 2,50,000\n' +
+          'To Purchases | 1,40,000 | By Closing Stock | 42,000\n' +
+          'To Wages (15,000 + 3,000 O/s) | 18,000 | |\n' +
+          'To Gross Profit c/d | 1,04,000 | |\n' +
+          'Total | 2,92,000 | Total | 2,92,000\n' +
+          'To Salaries (24,000 - 2,000 Ppd) | 22,000 | By Gross Profit b/d | 1,04,000\n' +
+          'To Dep. on Machinery (10% of 50k) | 5,000 | |\n' +
+          'To Prov. for Doubtful Debts (5%) | 3,000 | |\n' +
+          'To Net Profit c/d | 74,000 | |\n' +
+          'Total | 1,04,000 | Total | 1,04,000\n' +
+          '#ENDTACCOUNT\n' +
+          '\n' +
+          '#BALANCESHEET:Balance Sheet as at 31st March 2026\n' +
+          'Liabilities | Amount (₹) | Assets | Amount (₹)\n' +
+          'Capital: 1,00,000 | | Machinery (50k - 5k Dep) | 45,000\n' +
+          '  Add: Net Profit: 74,000 | 1,74,000 | Closing Stock | 42,000\n' +
+          'Creditors | 35,000 | Debtors (60k - 3k PDD) | 57,000\n' +
+          'Outstanding Wages | 3,000 | Prepaid Salaries | 2,000\n' +
+          ' | | Cash at Bank | 66,000\n' +
+          'TOTAL LIABILITIES | 2,12,000 | TOTAL ASSETS | 2,12,000\n' +
+          '#ENDBALANCESHEET',
+        // Content fix (2026-11-15): Cash at Bank was ₹16,000, which left the Trial Balance
+        // short by ₹50,000 (Dr 3,35,000 vs Cr 3,85,000). ₹66,000 makes TB agree at ₹3,85,000
+        // and the Balance Sheet tally at ₹2,12,000; Trading and P&L figures are unchanged.
         rubric:
           '• 2.0 Marks: Accurate Trading A/c with correct Gross Profit of ₹1,04,000\n' +
           '• 2.0 Marks: Accurate Profit & Loss A/c with correct Net Profit of ₹74,000\n' +
@@ -2905,23 +2969,19 @@ function getCuratedSubjectiveVault_(classLevel) {
           'Prepare the Commercial Vehicle Account for the three financial years 2023-24, 2024-25, and 2025-26.',
         marks: 3,
         modelAnswer:
-          'COMMERCIAL VEHICLE ACCOUNT\n' +
-          '------------------------------------------------------------------------------------\n' +
-          'Date       Particulars              Amount (₹) | Date       Particulars              Amount (₹)\n' +
-          '------------------------------------------------------------------------------------\n' +
-          '01-Apr-23  To Bank A/c                6,00,000 | 31-Mar-24  By Depreciation A/c          60,000\n' +
-          '                                               | 31-Mar-24  By Balance c/d              5,40,000\n' +
-          'Total                                 6,00,000 | Total                                  6,00,000\n' +
-          '------------------------------------------------------------------------------------\n' +
-          '01-Apr-24  To Balance b/d             5,40,000 | 31-Mar-25  By Depreciation A/c          60,000\n' +
-          '                                               | 31-Mar-25  By Balance c/d              4,80,000\n' +
-          'Total                                 5,40,000 | Total                                  5,40,000\n' +
-          '------------------------------------------------------------------------------------\n' +
-          '01-Apr-25  To Balance b/d             4,80,000 | 01-Oct-25  By Dep. A/c (6 mos)          30,000\n' +
-          '                                               | 01-Oct-25  By Bank A/c (Sale)          4,20,000\n' +
-          '                                               | 01-Oct-25  By Profit & Loss (Loss)      30,000\n' +
-          'Total                                 4,80,000 | Total                                  4,80,000\n' +
-          '====================================================================================',
+          '#TACCOUNT:Commercial Vehicle Account\n' +
+          'Date | Particulars | Amount (₹) | Date | Particulars | Amount (₹)\n' +
+          '01-Apr-23 | To Bank A/c | 6,00,000 | 31-Mar-24 | By Depreciation A/c | 60,000\n' +
+          ' | | | 31-Mar-24 | By Balance c/d | 5,40,000\n' +
+          ' | Total | 6,00,000 | | Total | 6,00,000\n' +
+          '01-Apr-24 | To Balance b/d | 5,40,000 | 31-Mar-25 | By Depreciation A/c | 60,000\n' +
+          ' | | | 31-Mar-25 | By Balance c/d | 4,80,000\n' +
+          ' | Total | 5,40,000 | | Total | 5,40,000\n' +
+          '01-Apr-25 | To Balance b/d | 4,80,000 | 01-Oct-25 | By Dep. A/c (6 mos) | 30,000\n' +
+          ' | | | 01-Oct-25 | By Bank A/c (Sale) | 4,20,000\n' +
+          ' | | | 01-Oct-25 | By Profit & Loss (Loss) | 30,000\n' +
+          ' | Total | 4,80,000 | | Total | 4,80,000\n' +
+          '#ENDTACCOUNT',
         rubric:
           '• 1.0 Mark: Accurate depreciation for 2023-24 and 2024-25 (₹60,000 each)\n' +
           '• 1.0 Mark: Correct proportionate depreciation for 6 months in 2025-26 (₹30,000)\n' +
@@ -2944,31 +3004,33 @@ function getCuratedSubjectiveVault_(classLevel) {
           '5. An amount of ₹1,800 paid for repairs of machinery was debited to Machinery Account.',
         marks: 5,
         modelAnswer:
-          'JOURNAL PROPER (RECTIFYING ENTRIES)\n' +
-          '------------------------------------------------------------------------------------\n' +
-          'No. Particulars                                          L.F.  Debit (₹)   Credit (₹)\n' +
-          '------------------------------------------------------------------------------------\n' +
-          '1.  Sales A/c                                        Dr.           4,000\n' +
-          '      To Suspense A/c                                                          4,000\n' +
-          '    (Being overcasting of Sales Book rectified)\n' +
-          '2.  Furniture A/c                                    Dr.           9,000\n' +
-          '      To Purchases A/c                                                         9,000\n' +
-          '    (Being purchase of furniture wrongly debited to purchases rectified)\n' +
-          '3.  Sohan A/c                                        Dr.           5,500\n' +
-          '      To Mohan A/c                                                             5,500\n' +
-          '    (Being cash received from Mohan wrongly credited to Sohan rectified)\n' +
-          '4.  Returns Inward A/c                               Dr.           2,400\n' +
-          '    Suspense A/c                                     Dr.           2,400\n' +
-          '      To Returns Outward A/c (or dual entry)                                  4,800\n' +
-          '    (Being returns outward entered in returns inward rectified)\n' +
-          '5.  Repairs A/c                                      Dr.           1,800\n' +
-          '      To Machinery A/c                                                         1,800\n' +
-          '    (Being revenue repairs wrongly capitalized to machinery rectified)\n' +
-          '====================================================================================',
+          '#JOURNAL:Journal Proper (Rectifying Entries)\n' +
+          'No. | Particulars | L.F. | Debit (₹) | Credit (₹)\n' +
+          '1. | Sales A/c Dr. | | 4,000 |\n' +
+          ' | To Suspense A/c | | | 4,000\n' +
+          '(Being overcasting of Sales Book rectified)\n' +
+          '2. | Furniture A/c Dr. | | 9,000 |\n' +
+          ' | To Purchases A/c | | | 9,000\n' +
+          '(Being purchase of furniture wrongly debited to purchases rectified)\n' +
+          '3. | Sohan A/c Dr. | | 5,500 |\n' +
+          ' | To Mohan A/c | | | 5,500\n' +
+          '(Being cash received from Mohan wrongly credited to Sohan rectified)\n' +
+          '4. | Supplier\'s (Creditor\'s) A/c Dr. | | 4,800 |\n' +
+          ' | To Returns Inward A/c | | | 2,400\n' +
+          ' | To Returns Outward A/c | | | 2,400\n' +
+          '(Being goods returned to supplier wrongly entered in Returns Inward Book, now rectified)\n' +
+          '5. | Repairs A/c Dr. | | 1,800 |\n' +
+          ' | To Machinery A/c | | | 1,800\n' +
+          '(Being revenue repairs wrongly capitalized to machinery rectified)\n' +
+          '#ENDJOURNAL',
+        // Content fix (2026-11-15): entry 4 used Returns Inward Dr + Suspense Dr. The error is
+        // two-sided (Returns Inward debited and supplier credited by ₹2,400 instead of the reverse),
+        // so it is rectified by Supplier Dr ₹4,800 without Suspense.
         rubric:
           '• 1 Mark for each accurate rectifying entry with appropriate account heads and narrations',
         traps:
-          '⚠️ Suspense account is only used for ONE-SIDED errors (error 1). Error 2, 3, and 5 are two-sided.'
+          '⚠️ Suspense account is only used for ONE-SIDED errors (error 1). Errors 2, 3, 4 and 5 are two-sided.\n' +
+          '⚠️ Error 4: the supplier was credited instead of debited, so debit the supplier with DOUBLE the amount (₹4,800).'
       },
       {
         qid: 'C11_SUBJ_2M_ACCPRINC',
@@ -3007,25 +3069,21 @@ function getCuratedSubjectiveVault_(classLevel) {
         'Pass necessary journal entries for forfeiture and reissue of shares.',
       marks: 4,
       modelAnswer:
-        'JOURNAL OF GYAN LTD.\n' +
-        '------------------------------------------------------------------------------------\n' +
-        'Date       Particulars                                   L.F.   Debit (₹)  Credit (₹)\n' +
-        '------------------------------------------------------------------------------------\n' +
-        '           Equity Share Capital A/c (500 x 10)       Dr.           5,000\n' +
-        '             To Share First Call A/c (500 x 2)                                1,000\n' +
-        '             To Share Final Call A/c (500 x 3)                                1,500\n' +
-        '             To Share Forfeiture A/c (500 x 5)                                2,500\n' +
-        '           (Being 500 shares forfeited for non-payment of calls)\n' +
-        '------------------------------------------------------------------------------------\n' +
-        '           Bank A/c (300 x 8)                        Dr.           2,400\n' +
-        '           Share Forfeiture A/c (300 x 2)            Dr.             600\n' +
-        '             To Equity Share Capital A/c (300 x 10)                           3,000\n' +
-        '           (Being 300 forfeited shares reissued @ ₹8 per share fully paid-up)\n' +
-        '------------------------------------------------------------------------------------\n' +
-        '           Share Forfeiture A/c (300 x 3)            Dr.             900\n' +
-        '             To Capital Reserve A/c                                             900\n' +
-        '           (Being net gain on reissue of 300 shares transferred to Capital Reserve)\n' +
-        '====================================================================================',
+        '#JOURNAL:Journal of Gyan Ltd.\n' +
+        'Date | Particulars | L.F. | Debit (₹) | Credit (₹)\n' +
+        ' | Equity Share Capital A/c (500 x 10) Dr. | | 5,000 |\n' +
+        ' | To Share First Call A/c (500 x 2) | | | 1,000\n' +
+        ' | To Share Final Call A/c (500 x 3) | | | 1,500\n' +
+        ' | To Share Forfeiture A/c (500 x 5) | | | 2,500\n' +
+        '(Being 500 shares forfeited for non-payment of calls)\n' +
+        ' | Bank A/c (300 x 8) Dr. | | 2,400 |\n' +
+        ' | Share Forfeiture A/c (300 x 2) Dr. | | 600 |\n' +
+        ' | To Equity Share Capital A/c (300 x 10) | | | 3,000\n' +
+        '(Being 300 forfeited shares reissued @ ₹8 per share fully paid-up)\n' +
+        ' | Share Forfeiture A/c (300 x 3) Dr. | | 900 |\n' +
+        ' | To Capital Reserve A/c | | | 900\n' +
+        '(Being net gain on reissue of 300 shares transferred to Capital Reserve)\n' +
+        '#ENDJOURNAL',
       rubric:
         '• 1.5 Marks: Correct Forfeiture entry (Capital debited at called-up ₹10, correct forfeiture credit ₹2,500)\n' +
         '• 1.5 Marks: Correct Reissue entry (Bank debited ₹2,400, Forfeiture discount debited ₹600)\n' +
@@ -3050,26 +3108,23 @@ function getCuratedSubjectiveVault_(classLevel) {
         'Prepare Revaluation Account and Partners\' Capital Accounts.',
       marks: 6,
       modelAnswer:
-        'REVALUATION ACCOUNT\n' +
-        '------------------------------------------------------------------------------------\n' +
-        'Particulars                            Amount (₹) | Particulars           Amount (₹)\n' +
-        '------------------------------------------------------------------------------------\n' +
-        'To Provision for Doubtful Debts             4,000 | By Stock A/c (Appr.)       10,000\n' +
-        'To Machinery A/c (10% of 1,40,000)         14,000 | By Revaluation Loss c/d:\n' +
-        '                                                   |   Deepak (3/5) = 4,800\n' +
-        '                                                   |   Alok (2/5)   = 3,200     8,000\n' +
-        'Total                                      18,000 | Total                      18,000\n' +
-        '====================================================================================\n' +
-        'PARTNERS\' CAPITAL ACCOUNTS\n' +
-        '------------------------------------------------------------------------------------\n' +
-        'Particulars       Deepak (₹)   Alok (₹)  Rohit (₹) | Particulars       Deepak (₹)   Alok (₹)  Rohit (₹)\n' +
-        '------------------------------------------------------------------------------------\n' +
-        'To Revaluation Loss    4,800      3,200          - | By Balance b/d     1,80,000   1,20,000          -\n' +
-        'To Balance c/d       2,17,200   1,44,800   1,00,000 | By Gen. Reserve     24,000     16,000          -\n' +
-        '                                                   | By Prem. for GW     18,000     12,000          -\n' +
-        '                                                   | By Bank A/c              -          -   1,00,000\n' +
-        'Total                2,22,000   1,48,000   1,00,000 | Total              2,22,000   1,48,000   1,00,000\n' +
-        '====================================================================================',
+        '#TACCOUNT:Revaluation Account\n' +
+        'Particulars | Amount (₹) | Particulars | Amount (₹)\n' +
+        'To Provision for Doubtful Debts | 4,000 | By Stock A/c (Appr.) | 10,000\n' +
+        'To Machinery A/c (10% of 1,40,000) | 14,000 | By Revaluation Loss c/d: |\n' +
+        ' | |   Deepak (3/5) = 4,800 |\n' +
+        ' | |   Alok (2/5) = 3,200 | 8,000\n' +
+        'Total | 18,000 | Total | 18,000\n' +
+        '#ENDTACCOUNT\n' +
+        '\n' +
+        '#CAPITAL:Partners\' Capital Accounts\n' +
+        'Particulars | Deepak (₹) | Alok (₹) | Rohit (₹) | Particulars | Deepak (₹) | Alok (₹) | Rohit (₹)\n' +
+        'To Revaluation Loss | 4,800 | 3,200 | - | By Balance b/d | 1,80,000 | 1,20,000 | -\n' +
+        'To Balance c/d | 2,17,200 | 1,44,800 | 1,00,000 | By Gen. Reserve | 24,000 | 16,000 | -\n' +
+        '| | | | By Prem. for GW | 18,000 | 12,000 | -\n' +
+        '| | | | By Bank A/c | - | - | 1,00,000\n' +
+        'Total | 2,22,000 | 1,48,000 | 1,00,000 | Total | 2,22,000 | 1,48,000 | 1,00,000\n' +
+        '#ENDCAPITAL',
       rubric:
         '• 2.0 Marks: Accurate Revaluation A/c with correct loss of ₹8,000 divided in 3:2\n' +
         '• 1.5 Marks: Correct distribution of General Reserve (₹24k / ₹16k) and Premium for Goodwill (₹18k / ₹12k) in sacrificing ratio\n' +
@@ -3090,20 +3145,27 @@ function getCuratedSubjectiveVault_(classLevel) {
         'Prepare Profit and Loss Appropriation Account and Partners\' Capital Accounts assuming capitals are fluctuating.',
       marks: 6,
       modelAnswer:
-        'PROFIT AND LOSS APPROPRIATION ACCOUNT for the year ended 31-Mar-2026\n' +
-        '------------------------------------------------------------------------------------\n' +
-        'Particulars                            Amount (₹)   Particulars           Amount (₹)\n' +
-        '------------------------------------------------------------------------------------\n' +
-        'To Interest on Capital:                             By Net Profit b/d       2,40,000\n' +
-        '  A (6% on 5,00,000) = 30,000\n' +
-        '  B (6% on 3,00,000) = 18,000             48,000\n' +
-        'To Partner Salary (B)                     60,000\n' +
-        'To Divisible Profit transferred to:\n' +
-        '  A Capital A/c (3/5) = 79,200\n' +
-        '  B Capital A/c (2/5) = 52,800           1,32,000\n' +
-        '------------------------------------------------------------------------------------\n' +
-        'TOTAL                                   2,40,000   TOTAL                   2,40,000\n' +
-        '====================================================================================',
+        '#TACCOUNT:Profit and Loss Appropriation Account for the year ended 31-Mar-2026\n' +
+        'Particulars | Amount (₹) | Particulars | Amount (₹)\n' +
+        'To Interest on Capital: | | By Net Profit b/d | 2,40,000\n' +
+        '  A (6% on 5,00,000) = 30,000 | | |\n' +
+        '  B (6% on 3,00,000) = 18,000 | 48,000 | |\n' +
+        'To Partner Salary (B) | 60,000 | |\n' +
+        'To Divisible Profit transferred to: | | |\n' +
+        '  A Capital A/c (3/5) = 79,200 | | |\n' +
+        '  B Capital A/c (2/5) = 52,800 | 1,32,000 | |\n' +
+        'TOTAL | 2,40,000 | TOTAL | 2,40,000\n' +
+        '#ENDTACCOUNT\n' +
+        '\n' +
+        '#CAPITAL:Partners\' Capital Accounts (Fluctuating)\n' +
+        'Particulars | A (₹) | B (₹) | Particulars | A (₹) | B (₹)\n' +
+        'To Balance c/d | 6,09,200 | 4,30,800 | By Balance b/d | 5,00,000 | 3,00,000\n' +
+        '| | | By Interest on Capital | 30,000 | 18,000\n' +
+        '| | | By Salary | - | 60,000\n' +
+        '| | | By P&L Appropriation A/c | 79,200 | 52,800\n' +
+        'Total | 6,09,200 | 4,30,800 | Total | 6,09,200 | 4,30,800\n' +
+        '#ENDCAPITAL',
+      // Content fix (2026-11-15): added the fluctuating Capital Accounts the question and rubric ask for.
       rubric:
         '• 1.5 Marks: Correct calculation of Interest on Capital (A: ₹30,000, B: ₹18,000)\n' +
         '• 1.0 Mark: Salary to B correctly treated as Appropriation\n' +
@@ -3124,24 +3186,20 @@ function getCuratedSubjectiveVault_(classLevel) {
         'Pass necessary journal entries for the issue of debentures and for writing off the Loss on Issue of Debentures.',
       marks: 4,
       modelAnswer:
-        'JOURNAL OF GYAN ENGINEERING LTD.\n' +
-        '------------------------------------------------------------------------------------\n' +
-        'Date       Particulars                                   L.F.   Debit (₹)  Credit (₹)\n' +
-        '------------------------------------------------------------------------------------\n' +
-        '           Bank A/c (2,000 x 96)                     Dr.          1,92,000\n' +
-        '             To 9% Debenture Application & Allotment A/c                     1,92,000\n' +
-        '           (Being application money received on 2,000 debentures @ ₹96)\n' +
-        '------------------------------------------------------------------------------------\n' +
-        '           9% Debenture App. & Allotment A/c         Dr.          1,92,000\n' +
-        '           Loss on Issue of Debentures A/c (4% + 5%) Dr.            18,000\n' +
-        '             To 9% Debentures A/c (2,000 x 100)                              2,00,000\n' +
-        '             To Premium on Redemption of Debentures A/c (5%)                   10,000\n' +
-        '           (Being 2,000 debentures issued at 4% discount redeemable at 5% premium)\n' +
-        '------------------------------------------------------------------------------------\n' +
-        '           Securities Premium A/c                    Dr.            18,000\n' +
-        '             To Loss on Issue of Debentures A/c                               18,000\n' +
-        '           (Being total loss on issue written off from Securities Premium)\n' +
-        '====================================================================================',
+        '#JOURNAL:Journal of Gyan Engineering Ltd.\n' +
+        'Date | Particulars | L.F. | Debit (₹) | Credit (₹)\n' +
+        ' | Bank A/c (2,000 x 96) Dr. | | 1,92,000 |\n' +
+        ' | To 9% Debenture Application & Allotment A/c | | | 1,92,000\n' +
+        '(Being application money received on 2,000 debentures @ ₹96)\n' +
+        ' | 9% Debenture App. & Allotment A/c Dr. | | 1,92,000 |\n' +
+        ' | Loss on Issue of Debentures A/c (4% + 5%) Dr. | | 18,000 |\n' +
+        ' | To 9% Debentures A/c (2,000 x 100) | | | 2,00,000\n' +
+        ' | To Premium on Redemption of Debentures A/c (5%) | | | 10,000\n' +
+        '(Being 2,000 debentures issued at 4% discount redeemable at 5% premium)\n' +
+        ' | Securities Premium A/c Dr. | | 18,000 |\n' +
+        ' | To Loss on Issue of Debentures A/c | | | 18,000\n' +
+        '(Being total loss on issue written off from Securities Premium)\n' +
+        '#ENDJOURNAL',
       rubric:
         '• 1.0 Mark: Accurate entry for application money receipt (₹1,92,000)\n' +
         '• 2.0 Marks: Accurate allotment entry recognizing Loss on Issue (₹18,000) and Premium on Redemption (₹10,000)\n' +
@@ -3167,24 +3225,22 @@ function getCuratedSubjectiveVault_(classLevel) {
         '• Income tax paid during the year: ₹60,000',
       marks: 3,
       modelAnswer:
-        'CASH FLOW FROM OPERATING ACTIVITIES\n' +
-        '------------------------------------------------------------------------------------\n' +
-        'Particulars                                                           Amount (₹)\n' +
-        '------------------------------------------------------------------------------------\n' +
-        'Net Profit before Tax and Extraordinary Items                            4,50,000\n' +
-        'Adjustments for Non-Cash and Non-Operating Items:\n' +
-        '  Add: Depreciation on Plant & Machinery                                   55,000\n' +
-        '  Add: Goodwill amortised                                                  20,000\n' +
-        '  Less: Gain on sale of land (investing activity)                         (30,000)\n' +
-        'Operating Profit before Working Capital Changes                          4,95,000\n' +
-        'Adjustments for Working Capital Changes:\n' +
-        '  Less: Increase in Trade Receivables (Current Asset)                     (40,000)\n' +
-        '  Add: Decrease in Inventories (Current Asset)                             25,000\n' +
-        '  Add: Increase in Trade Payables (Current Liability)                      15,000\n' +
-        'Cash Generated from Operations                                           4,95,000\n' +
-        'Less: Income Tax Paid                                                     (60,000)\n' +
-        'Net Cash Flow from Operating Activities                                  4,35,000\n' +
-        '====================================================================================',
+        '#COMPUTATION:Cash Flow from Operating Activities\n' +
+        'Particulars | Details (₹) | Amount (₹)\n' +
+        'Net Profit before Tax and Extraordinary Items | | 4,50,000\n' +
+        'Adjustments for Non-Cash and Non-Operating Items: | |\n' +
+        '  Add: Depreciation on Plant & Machinery | 55,000 |\n' +
+        '  Add: Goodwill amortised | 20,000 |\n' +
+        '  Less: Gain on sale of land (investing activity) | (30,000) | 45,000\n' +
+        'Operating Profit before Working Capital Changes | | 4,95,000\n' +
+        'Adjustments for Working Capital Changes: | |\n' +
+        '  Less: Increase in Trade Receivables (Current Asset) | (40,000) |\n' +
+        '  Add: Decrease in Inventories (Current Asset) | 25,000 |\n' +
+        '  Add: Increase in Trade Payables (Current Liability) | 15,000 | Nil\n' +
+        'Cash Generated from Operations | | 4,95,000\n' +
+        'Less: Income Tax Paid | | (60,000)\n' +
+        'Net Cash Flow from Operating Activities | | 4,35,000\n' +
+        '#ENDCOMPUTATION',
       rubric:
         '• 1.0 Mark: Accurate Operating Profit before Working Capital changes (₹4,95,000)\n' +
         '• 1.0 Mark: Accurate adjustments for working capital items (Net change ₹0)\n' +
