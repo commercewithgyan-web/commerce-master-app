@@ -186,6 +186,7 @@ function apiAskDoubt_(verifiedUser, payload) {
     Logger.log('askDoubtGemini error: ' + geminiErr.message);
     return {
       ok: false,
+      studentName: studentName,
       error: 'AI abhi available nahi hai, teacher se poochein'
     };
   }

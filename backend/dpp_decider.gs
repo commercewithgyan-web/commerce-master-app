@@ -763,6 +763,7 @@ function testDppRenderGallery() {
         var name = stamp + '_' + v.qid + (isAns ? '_ANS' : '_Q');
         var pdf = Utilities.newBlob(r.html, 'text/html', name + '.html').getAs('application/pdf').setName(name + '.pdf');
         var file = folder.createFile(pdf);
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
         lines.push(name + '  pages=' + r.pageCount + (r.validation && r.validation.length ? '  CHECK=' + JSON.stringify(r.validation) : '') + '  ' + file.getUrl());
       });
     });
