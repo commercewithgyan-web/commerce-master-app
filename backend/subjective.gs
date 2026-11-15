@@ -2440,6 +2440,42 @@ function testGenerateAnswerPdf(classLevel) {
 }
 
 /**
+ * Master Test Runner: Generates DPP Question & Model Answer PDFs for Class 11 and Class 12
+ * @return {Object}
+ */
+function testRunDppBothClasses() {
+  Logger.log('🚀 Starting DPP Test Run for Class 11 & Class 12 with Model Answers...');
+  
+  var q11 = testGenerateQuestionPdf(11);
+  Logger.log('📄 [Class 11 Question PDF]: ' + (q11 ? q11.driveUrl : 'FAILED'));
+  
+  var a11 = testGenerateAnswerPdf(11);
+  Logger.log('📄 [Class 11 Model Answer PDF]: ' + (a11 ? a11.driveUrl : 'FAILED'));
+
+  var q12 = testGenerateQuestionPdf(12);
+  Logger.log('📄 [Class 12 Question PDF]: ' + (q12 ? q12.driveUrl : 'FAILED'));
+  
+  var a12 = testGenerateAnswerPdf(12);
+  Logger.log('📄 [Class 12 Model Answer PDF]: ' + (a12 ? a12.driveUrl : 'FAILED'));
+
+  var summary = {
+    ok: true,
+    class11: {
+      question: q11,
+      answer: a11
+    },
+    class12: {
+      question: q12,
+      answer: a12
+    },
+    timestamp: getKolkataTimestamp()
+  };
+
+  Logger.log('✅ DPP Test Run Complete: ' + JSON.stringify(summary));
+  return summary;
+}
+
+/**
  * Test 1: Accountancy Multi-Page Model Answer PDF (Reval, Capital, Balance Sheet, Notes)
  */
 function testGenerateAccountancyMultiPagePdf(classLevel) {
