@@ -742,3 +742,31 @@ function runDppVaultValidation() {
   Logger.log(JSON.stringify(report, null, 2));
   return report;
 }
+
+/**
+ * Visual check on the real Drive converter. Run from the Apps Script editor.
+ * Writes question + answer PDFs for every curated vault question into a PRIVATE
+ * Drive folder "DPP Render Check" (no sharing, no Telegram, no Sheet writes) and
+ * logs each file's link, page count and any accounting check that failed.
+ */
+function testDppRenderGallery() {
+  var it = DriveApp.getFoldersByName('DPP Render Check');
+  var folder = it.hasNext() ? it.next() : DriveApp.createFolder('DPP Render Check');
+  var stamp = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyyMMdd_HHmm');
+  var lines = [];
+  [11, 12].forEach(function(cls) {
+    getCuratedSubjectiveVault_(cls).forEach(function(v) {
+      var data = { classLevel: cls, subject: v.subject, chapter: v.chapterName, qid: v.qid, marks: v.marks,
+        questionText: v.question, answerText: v.modelAnswer, marksBreakdown: v.rubric, commonMistakes: v.traps };
+      [true, false].forEach(function(isAns) {
+        var r = generateMultiPageDailyPracticeSheetHtml_(JSON.parse(JSON.stringify(data)), isAns);
+        var name = stamp + '_' + v.qid + (isAns ? '_ANS' : '_Q');
+        var pdf = Utilities.newBlob(r.html, 'text/html', name + '.html').getAs('application/pdf').setName(name + '.pdf');
+        var file = folder.createFile(pdf);
+        lines.push(name + '  pages=' + r.pageCount + (r.validation && r.validation.length ? '  CHECK=' + JSON.stringify(r.validation) : '') + '  ' + file.getUrl());
+      });
+    });
+  });
+  Logger.log(lines.join('\n'));
+  return lines;
+}
