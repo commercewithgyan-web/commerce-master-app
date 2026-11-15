@@ -518,7 +518,7 @@ function doPost(e) {
         if (payload && payload.selectedIndex !== undefined && typeof apiSubmitAnswer_ === 'function') {
           result = handleApiRequest(requestData, verifiedUser);
         } else {
-          result = submitStudentQuizAttempt(payload);
+          result = submitStudentQuizAttempt(payload, verifiedUser);
         }
         break;
       case "completeRecoveryDrill":
@@ -526,7 +526,7 @@ function doPost(e) {
         break;
       case "saveStudentNotebookItem":
       case "addNote":
-        result = saveStudentNotebookItem(payload);
+        result = saveStudentNotebookItem(payload, verifiedUser);
         break;
       case "getPracticeQuestions":
         result = handleGetPracticeQuestions_(payload);
@@ -1693,7 +1693,8 @@ function getStudentMiniAppBootstrap(params) {
   const tgSS = SpreadsheetApp.openById(IDS.TELEGRAM);
 
 
-  const targetRollNo = (auth.isAdminProxy && auth.rollNo) ? auth.rollNo : (auth.isAdmin ? (auth.impersonateRollNo || 'CG-11-001') : ((auth.student && auth.student.Roll_No) || 'CG-11-001'));
+  const targetRollNo = (auth.isAdminProxy && auth.rollNo) ? auth.rollNo : (auth.isAdmin ? (auth.impersonateRollNo || 'CG-11-001') : ((auth.student && auth.student.Roll_No) || ''));
+  if (!targetRollNo) throw new Error('STUDENT_NOT_FOUND: verified student has no roll number');
   const students = sheetToObjects(erp.getSheetByName('Students_Master'));
   const student = students.find(s => String(s.Roll_No) === String(targetRollNo));
 
@@ -1874,7 +1875,7 @@ function getCommerceGyanAppUrl_() {
   return 'https://play.google.com/store/apps/details?id=co.classplus.comg';
 }
 
-function submitStudentQuizAttempt(payload) {
+function submitStudentQuizAttempt(payload, verifiedUser) {
   if (payload && payload.isViewAsStudent) {
     return { ok: false, error: 'Write operation rejected: View as Student session is strictly read-only (SYS-009).' };
   }
@@ -1894,6 +1895,9 @@ function submitStudentQuizAttempt(payload) {
     };
   }
 
+  // Resolved before the lock: students can only record attempts under their own roll.
+  const rollNo = resolveCallerRollNo_(verifiedUser, payload);
+
   return withWriteLock_(() => {
     const IDS = getActiveSheetIds();
     const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
@@ -1903,7 +1907,6 @@ function submitStudentQuizAttempt(payload) {
     const nowStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
     const dateStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');
 
-    const rollNo = payload.rollNo || payload.Roll_No || 'CG-11-001';
     const qId = payload.questionId || payload.qid || 'Q1';
     const isCorrect = Boolean(payload.isCorrect);
     const timeTakenSec = Number(payload.timeTakenSec || payload.timeTakenSeconds || 0);
@@ -2068,10 +2071,10 @@ function completeRecoveryDrill(payload) {
   }, 10000);
 }
 
-function saveStudentNotebookItem(payload) {
+function saveStudentNotebookItem(payload, verifiedUser) {
+  const rollNo = resolveCallerRollNo_(verifiedUser, payload);
   const IDS = getActiveSheetIds();
   const qbSS = SpreadsheetApp.openById(IDS.QUESTION_BANK);
-  const rollNo = payload.rollNo || payload.Roll_No || 'CG-11-001';
   const itemType = String(payload.itemType || 'NOTE').toUpperCase();
   const nowStr = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
   const qId = payload.questionId || payload.qid || '';
@@ -3566,7 +3569,8 @@ function handleApiRequest(req, userFromCaller) {
  */
 function reconcileNotebookRegistry_(verifiedUser, payload) {
   requireAdmin_(verifiedUser && verifiedUser.id);
-  var rollNo = (payload && (payload.rollNo || payload.Roll_No)) || 'CG-11-001';
+  var rollNo = String((payload && (payload.rollNo || payload.Roll_No)) || '').trim();
+  if (!rollNo) throw new Error('MANDATORY_FIELD_MISSING: rollNo is required for notebook reconciliation');
   var telegramId = String(verifiedUser && verifiedUser.id ? verifiedUser.id : '');
   var qbSS = openSpreadsheet_('SHEET_QB');
   var notes = [];
@@ -3940,7 +3944,8 @@ function saveCalendarEvent(payload) {
 function generatePrintableFeeReceipt(payload) {
   var receiptNo = payload.receiptNo || 'CG-REC-2026-001';
   var studentName = payload.studentName || 'Student';
-  var rollNo = payload.rollNo || payload.studentId || 'CG-11-001';
+  var rollNo = String(payload.rollNo || payload.studentId || '').trim();
+  if (!rollNo) throw new Error('MANDATORY_FIELD_MISSING: rollNo is required for a fee receipt');
   var amount = Number(payload.amount || 1500);
   var mode = payload.mode || 'UPI';
   var forMonth = payload.forMonth || 'November 2026';
