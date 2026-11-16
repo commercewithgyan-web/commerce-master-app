@@ -311,7 +311,7 @@ function apiSaveLessonPlan_(verifiedUser, payload) {
       if (String(ids[i][0]).trim() === lessonId) { target = i + 2; break; }
     }
     sheet.getRange(target, 1, 1, rowData.length).setValues([rowData]);
-    return { lessonId: lessonId, row: target, savedAt: rowData[6] };
+    return { lessonId: lessonId, row: target, savedAt: rowData[8], goodnotesUrl: rowData[6], videoUrl: rowData[7] };
   });
 }
 

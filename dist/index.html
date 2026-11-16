@@ -630,6 +630,12 @@
             <p class="text-xs sm:text-sm text-slate-300 mt-1">You have <strong class="text-white">4 batch lectures</strong> scheduled today across Class 11 &amp; 12, <strong class="text-amber-300" id="dashRecoveryCount">5 students</strong> queued for <code class="mono">REC-01</code> recovery drills, and the <strong class="text-emerald-300">7:00 PM DPP</strong> ready for dispatch.</p>
           </div>
           <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <button type="button" id="dashStartClassBtn" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold transition shadow flex items-center gap-1.5 cursor-pointer">
+              <span>▶️</span><span>Start Class</span>
+            </button>
+            <button type="button" id="dashOpenEndClassBtn" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold transition shadow flex items-center gap-1.5 cursor-pointer">
+              <span>🏁</span><span>End Class</span>
+            </button>
             <button type="button" id="dashGoInquiryBtn" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition shadow">
               🎯 Inquiry
             </button>
@@ -638,9 +644,6 @@
             </button>
             <button type="button" id="dashGoAttBtn" class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/15 transition">
               ✅ Mark Attendance
-            </button>
-            <button type="button" id="dashOpenEndClassBtn" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold transition shadow">
-              🏁 End Class
             </button>
             <button type="button" id="dashGoLessonBtn" class="px-3.5 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold transition shadow">
               + Open Lesson
@@ -2116,9 +2119,17 @@
             </div>
           </div>
           <div class="flex items-center gap-2 pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
-            <button type="button" onclick="document.querySelector('[data-opstab=\'class\']')?.click()" class="btn-accent-orange flex-1 min-h-[44px] text-[14px] font-bold flex items-center justify-center gap-1.5">
+            <button type="button" id="opsStartClassBtn" class="flex-1 min-h-[44px] rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[14px] flex items-center justify-center gap-1.5 active:scale-95 transition shadow-sm cursor-pointer">
+              <span class="material-symbols-outlined text-[18px]">play_circle</span>
+              <span>Start Class</span>
+            </button>
+            <button type="button" id="opsEndClassBtn" class="flex-1 min-h-[44px] rounded-full bg-rose-600 hover:bg-rose-500 text-white font-bold text-[14px] flex items-center justify-center gap-1.5 active:scale-95 transition shadow-sm cursor-pointer">
+              <span class="material-symbols-outlined text-[18px]">stop_circle</span>
+              <span>End Class</span>
+            </button>
+            <button type="button" onclick="document.querySelector('[data-opstab=\'class\']')?.click()" class="btn-accent-orange px-3 min-h-[44px] text-[14px] font-bold flex items-center justify-center gap-1.5 cursor-pointer">
               <span class="material-symbols-outlined text-[18px]">how_to_reg</span>
-              <span>Attendance lo</span>
+              <span>Haaziri</span>
             </button>
           </div>
         </article>
@@ -2191,7 +2202,9 @@
             <span class="text-[14px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Mobile 7-Step Pipeline</span>
             <h3 class="text-sm font-bold text-slate-900 dark:text-white">Walk-In &amp; Demo CRM</h3>
           </div>
-          <span class="text-[14px] font-bold px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Quick Entry: Studio</span>
+          <button type="button" id="opsNewInqJumpBtn" class="h-8 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1 shadow-sm transition cursor-pointer">
+            <span>+</span><span>New Walk-In</span>
+          </button>
         </div>
         <!-- Search & Filter Bar -->
         <div class="flex gap-2">
@@ -2658,7 +2671,7 @@
           <h3 class="text-base font-extrabold text-white">Daily MCQ &amp; Speed Challenge</h3>
           <p class="text-xs text-indigo-100/90 mt-1 leading-relaxed">Tonight's teacher-assigned board questions from the Question Bank. Correct answer auto-advances; wrong answer highlights the right option with full NCERT explanation!</p>
         </div>
-        <button id="stuOpenDailyMcqBtn" type="button" class="w-full h-12 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-sm font-extrabold shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+        <button id="stuOpenDailyMcqBtnHome" type="button" class="stu-open-daily-mcq-btn w-full h-12 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-sm font-extrabold shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
           <span>⚡</span><span>Start Daily MCQ / DPP</span>
         </button>
       </div>
@@ -2719,7 +2732,7 @@
               <span class="material-symbols-outlined text-[18px]">quiz</span>
               <span id="stuDppCountText" class="whitespace-nowrap">5 Questions</span>
             </div>
-            <button id="stuOpenDailyMcqBtn" type="button" class="w-full min-h-[46px] btn-accent-orange text-white rounded-full flex items-center justify-center text-[15px] font-bold tracking-wide transition-all whitespace-nowrap cursor-pointer">
+            <button id="stuOpenDailyMcqBtn" type="button" class="stu-open-daily-mcq-btn w-full min-h-[46px] btn-accent-orange text-white rounded-full flex items-center justify-center text-[15px] font-bold tracking-wide transition-all whitespace-nowrap cursor-pointer">
               Start Practice
             </button>
           </article>
@@ -3068,7 +3081,7 @@
           <span class="material-symbols-outlined text-[18px]">send</span>
           <span>Telegram par bhejo</span>
         </button>
-        <button id="btnSendFeeWhatsApp" type="button" onclick="window.open(buildWhatsAppTemplateLink(null, 'FEE_PAYMENT', { amount: 2500 }), '_blank'); document.getElementById('feePaymentProofModal')?.classList.add('hidden');" class="min-h-[44px] flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 font-bold text-[14px] border border-emerald-300 dark:border-emerald-700 transition-all">
+        <button id="btnSendFeeWhatsApp" type="button" onclick="window.open(buildWhatsAppTemplateLink('9835011201', 'FEE_PAYMENT', { amount: 2500, rollNo: document.getElementById('tgStudentSelect')?.value || 'CG-1201' }), '_blank'); document.getElementById('feePaymentProofModal')?.classList.add('hidden');" class="min-h-[44px] flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 font-bold text-[14px] border border-emerald-300 dark:border-emerald-700 transition-all">
           <span>💬 WhatsApp kholo</span>
         </button>
       </div>
@@ -3829,6 +3842,7 @@
       feeDefaultersOnly: false,
       activeNotesSubject: 'Accountancy',
       activeSwotRoll: 'CG-1201',
+      upiConfig: { UPI_ID: 'commercewithgyan@icici', UPI_PAYEE_NAME: 'Commerce Gyan' },
       cgAppUrl: 'https://play.google.com/store/apps/details?id=co.classplus.comg',
       feeSettings: {
         monthlyBase: 1200,
@@ -6094,6 +6108,38 @@
         }
         document.getElementById('endClassModal')?.classList.remove('hidden');
       };
+      const handleStartClassAction = async (targetSubj) => {
+        const nextTopic = getNextIncompleteSubtopic(targetSubj || (appState.globalSubject === 'ALL' ? '' : appState.globalSubject));
+        const subtopicTitle = nextTopic ? `${nextTopic.subject} · ${nextTopic.chapter}: ${nextTopic.topic}` : appState.activeSubtopicLock;
+        const ok = await window.cgConfirm({
+          badge: 'Start Class',
+          title: 'Start Live Class Lecture?',
+          body: `Lock active topic (${subtopicTitle}) in Syllabus & Timetable and prepare tonight's 7:00 PM DPP?`
+        });
+        if (!ok) return;
+
+        window.cgCallGas('setActiveSubtopic', {
+          subtopicId: nextTopic ? nextTopic.id : appState.activeSubtopicLock,
+          deliveryMode: 'Offline',
+          status: 'In Progress'
+        }).then(res => {
+          if (nextTopic) nextTopic.status = 'In Progress';
+          addAuditEvent(`Started class: locked ${res.activeSubtopic || subtopicTitle} in Syllabus.`);
+          showToast(`Class started! Locked ${res.activeSubtopic || subtopicTitle} in Syllabus & Timetable!`, 'emerald');
+          renderCurriculum();
+          renderTimetable();
+          renderDashboard();
+        }).catch(err => {
+          showToast(`Start Class failed: ${err.message}`, 'rose');
+        });
+      };
+
+      document.getElementById('dashStartClassBtn')?.addEventListener('click', () => handleStartClassAction());
+      document.getElementById('opsStartClassBtn')?.addEventListener('click', () => handleStartClassAction());
+      document.getElementById('opsEndClassBtn')?.addEventListener('click', openEndClassModal);
+      window.openEndClassModal = openEndClassModal;
+      window.handleStartClassAction = handleStartClassAction;
+
       document.getElementById('dashOpenEndClassBtn')?.addEventListener('click', openEndClassModal);
       document.getElementById('closeEndClassModalBtn')?.addEventListener('click', () => document.getElementById('endClassModal')?.classList.add('hidden'));
       document.getElementById('confirmEndClassAndDppBtn')?.addEventListener('click', async () => {
@@ -6639,7 +6685,24 @@
       document.getElementById('undoAllPresentBtn')?.addEventListener('click', handleUndoAllPresent);
       document.getElementById('attUndoBtn')?.addEventListener('click', handleUndoAllPresent);
       document.getElementById('commitAttendanceBtn')?.addEventListener('click', () => commitAttendanceToSheet(false));
-      document.getElementById('opsCommitAttBtn')?.addEventListener('click', () => commitAttendanceToSheet(false));
+      document.getElementById('opsCommitAttBtn')?.addEventListener('click', () => {
+        const records = appState.students.map(s => ({ rollNo: s.roll, status: s.att[6] || 'P' }));
+        const pCnt = records.filter(r => r.status === 'P').length;
+        const aCnt = records.filter(r => r.status === 'A').length;
+        const lCnt = records.filter(r => r.status === 'L').length;
+        const elP = document.getElementById('attModalCountP');
+        const elA = document.getElementById('attModalCountA');
+        const elL = document.getElementById('attModalCountL');
+        if (elP) elP.textContent = pCnt;
+        if (elA) elA.textContent = aCnt;
+        if (elL) elL.textContent = lCnt;
+        const modal = document.getElementById('attConfirmSheetModal');
+        if (modal) {
+          modal.classList.remove('hidden');
+        } else {
+          commitAttendanceToSheet(false);
+        }
+      });
 
       // Gradebook, Heatmap & DPP QB Filters
       document.getElementById('gradeScaleSelect')?.addEventListener('change', renderGradebook);
@@ -7574,18 +7637,22 @@
         });
       });
 
-      // Daily DPP Start Button listener
-      document.getElementById('stuOpenDailyMcqBtn')?.addEventListener('click', () => {
+      // Daily DPP Start Button listener (Supports both Home and Syllabus Practice buttons)
+      const handleOpenDailyMcq = () => {
         const rollNo = document.getElementById('tgStudentSelect')?.value || 'CG-1201';
         const stu = appState.students.find(s => s.roll === rollNo) || appState.students[0];
         const cls = (stu && stu.batch && stu.batch.includes('11')) ? '11' : '12';
+        const fallbackList = (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK['Accountancy']) || [];
         window.cgCallGas('getDailyQuestion', { classLevel: cls, subtopicId: appState.activeSubtopicLock })
           .then(qs => {
-            const list = Array.isArray(qs) && qs.length ? qs : PRACTICE_QUESTION_BANK['Accountancy'];
+            const list = Array.isArray(qs) && qs.length ? qs : fallbackList;
             window.launchMcqRunner({ title: 'Today\'s DPP', badge: 'Daily Practice', mode: 'daily', subject: 'Accountancy', questions: list });
           }).catch(() => {
-            window.launchMcqRunner({ title: 'Today\'s DPP', badge: 'Daily Practice', mode: 'daily', subject: 'Accountancy', questions: PRACTICE_QUESTION_BANK['Accountancy'] });
+            window.launchMcqRunner({ title: 'Today\'s DPP', badge: 'Daily Practice', mode: 'daily', subject: 'Accountancy', questions: fallbackList });
           });
+      };
+      document.querySelectorAll('.stu-open-daily-mcq-btn, #stuOpenDailyMcqBtn, #stuOpenDailyMcqBtnHome').forEach(btn => {
+        btn.addEventListener('click', handleOpenDailyMcq);
       });
 
       window.updateTodayPracticeUI = updateTodayPracticeUI;
