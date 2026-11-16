@@ -160,7 +160,7 @@ function extractInitData_(e, requestData, payload) {
 }
 
 function isPublicAction_(action) {
-  return action === 'ping' || action === 'health';
+  return action === 'ping' || action === 'health' || action === 'checkDppDispatchStatus';
 }
 
 function isAdminOnlyAction_(action) {
@@ -185,6 +185,75 @@ function isAdminOnlyAction_(action) {
   return adminActions.indexOf(action) !== -1;
 }
 
+function checkDppDispatchStatus_() {
+  const result = {
+    now: new Date().toISOString(),
+    todayStr: typeof getKolkataDate === 'function' ? getKolkataDate() : '',
+    isHoliday: false,
+    triggers: [],
+    triggerCount: 0,
+    has730Trigger: false,
+    has815Trigger: false,
+    channel11: null,
+    channel12: null,
+    botTokenConfigured: false,
+    activeSubtopic11: null,
+    activeSubtopic12: null,
+    recentPdfLogs: []
+  };
+
+  try {
+    result.isHoliday = typeof isTodayHoliday_ === 'function' ? isTodayHoliday_() : false;
+  } catch (e) {
+    result.holidayError = e.message;
+  }
+
+  try {
+    const trigs = ScriptApp.getProjectTriggers();
+    result.triggerCount = trigs.length;
+    result.triggers = trigs.map(t => t.getHandlerFunction());
+    result.has730Trigger = result.triggers.includes('sendSubjectiveQuestionPDF');
+    result.has815Trigger = result.triggers.includes('sendSubjectiveAnswerPDF');
+  } catch (e) {
+    result.triggersError = e.message;
+  }
+
+  try {
+    const props = PropertiesService.getScriptProperties();
+    result.botTokenConfigured = Boolean(props.getProperty('BOT_TOKEN'));
+    result.channel11 = props.getProperty('CHANNEL_ID_11') || '@commercewithgyan_class11';
+    result.channel12 = props.getProperty('CHANNEL_ID_12') || props.getProperty('CHANNEL_ID') || '@commercewithgyan_class12';
+  } catch (e) {
+    result.propsError = e.message;
+  }
+
+  try {
+    result.activeSubtopic11 = typeof getActiveSubtopic_ === 'function' ? getActiveSubtopic_(11) : null;
+    result.activeSubtopic12 = typeof getActiveSubtopic_ === 'function' ? getActiveSubtopic_(12) : null;
+  } catch (e) {
+    result.subtopicError = e.message;
+  }
+
+  try {
+    const ids = getActiveSheetIds();
+    const tgSS = SpreadsheetApp.openById(ids.TELEGRAM);
+    const pdfSheet = tgSS.getSheetByName('Subjective_PDF_Log');
+    if (pdfSheet && pdfSheet.getLastRow() > 1) {
+      const data = pdfSheet.getRange(Math.max(2, pdfSheet.getLastRow() - 4), 1, Math.min(5, pdfSheet.getLastRow() - 1), 6).getValues();
+      result.recentPdfLogs = data.map(r => ({ date: String(r[0]), status: String(r[2]), timestamp: String(r[3]), channel: String(r[4]), classLevel: String(r[5]) }));
+    }
+    const errSheet = tgSS.getSheetByName('Errors');
+    if (errSheet && errSheet.getLastRow() > 1) {
+      const errData = errSheet.getRange(Math.max(2, errSheet.getLastRow() - 9), 1, Math.min(10, errSheet.getLastRow() - 1), 5).getValues();
+      result.recentErrors = errData.map(r => ({ timestamp: String(r[0]), functionName: String(r[1]), error: String(r[2]), stack: String(r[3]), status: String(r[4]) }));
+    }
+  } catch (e) {
+    result.pdfLogError = e.message;
+  }
+
+  return result;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN ROUTERS (doGet & doPost)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -193,6 +262,12 @@ function doGet(e) {
   const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "getSystemHealth";
   try {
     if (isPublicAction_(action)) {
+      if (action === 'checkDppDispatchStatus') {
+        return jsonResponse({
+          ok: true,
+          data: checkDppDispatchStatus_()
+        });
+      }
       return jsonResponse({
         ok: true,
         data: {
@@ -355,6 +430,12 @@ function doPost(e) {
     const action = requestData.action || payload.action || (e.parameter && e.parameter.action) || "";
 
     if (isPublicAction_(action)) {
+      if (action === 'checkDppDispatchStatus') {
+        return jsonResponse({
+          ok: true,
+          data: checkDppDispatchStatus_()
+        });
+      }
       return jsonResponse({
         ok: true,
         data: {

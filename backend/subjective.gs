@@ -268,13 +268,26 @@ function createQuestionPdfFromTemplate_(data) {
   var cachedUrl = typeof findCachedRender_ === 'function' ? findCachedRender_(contentHash) : null;
   if (cachedUrl && !data.bypassCache) {
     Logger.log('⚡ Idempotency Hit: Reusing rendered Question PDF: ' + cachedUrl);
-    return {
-      driveUrl: cachedUrl,
-      pdfBlob: null,
-      qid: qid,
-      pageCount: 1,
-      cached: true
-    };
+    var cachedBlob = null;
+    try {
+      var fileIdMatch = cachedUrl.match(/[-\w]{25,}/);
+      if (fileIdMatch) {
+        cachedBlob = DriveApp.getFileById(fileIdMatch[0]).getBlob();
+        cachedBlob.setName('DPS_Question_Class' + classLevel + '_' + rawDate + '.pdf');
+      }
+    } catch (e) {
+      Logger.log('Notice in createQuestionPdfFromTemplate_ fetching cached blob: ' + e.message);
+    }
+    if (cachedBlob) {
+      return {
+        driveUrl: cachedUrl,
+        pdfBlob: cachedBlob,
+        qid: qid,
+        pageCount: 1,
+        cached: true
+      };
+    }
+    Logger.log('⚠️ Cached PDF file not accessible in Drive. Re-rendering fresh Question PDF...');
   }
 
   // 2. Compile Multi-Page HTML
@@ -331,13 +344,26 @@ function createAnswerPdfFromTemplate_(data) {
   var cachedUrl = typeof findCachedRender_ === 'function' ? findCachedRender_(contentHash) : null;
   if (cachedUrl && !data.bypassCache) {
     Logger.log('⚡ Idempotency Hit: Reusing rendered Model Answer PDF: ' + cachedUrl);
-    return {
-      driveUrl: cachedUrl,
-      pdfBlob: null,
-      qid: qid,
-      pageCount: 1,
-      cached: true
-    };
+    var cachedBlob = null;
+    try {
+      var fileIdMatch = cachedUrl.match(/[-\w]{25,}/);
+      if (fileIdMatch) {
+        cachedBlob = DriveApp.getFileById(fileIdMatch[0]).getBlob();
+        cachedBlob.setName('DPS_Answer_Class' + classLevel + '_' + rawDate + '.pdf');
+      }
+    } catch (e) {
+      Logger.log('Notice in createAnswerPdfFromTemplate_ fetching cached blob: ' + e.message);
+    }
+    if (cachedBlob) {
+      return {
+        driveUrl: cachedUrl,
+        pdfBlob: cachedBlob,
+        qid: qid,
+        pageCount: 1,
+        cached: true
+      };
+    }
+    Logger.log('⚠️ Cached PDF file not accessible in Drive. Re-rendering fresh Model Answer PDF...');
   }
 
   // 2. Compile Multi-Page HTML

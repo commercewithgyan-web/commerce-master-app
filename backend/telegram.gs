@@ -63,6 +63,9 @@ function sendTelegramMessage_(chatId, text, replyMarkup) {
  * @return {Object}
  */
 function sendTelegramDocument_(chatId, blob, filename, caption) {
+  if (!blob || typeof blob.getBytes !== 'function') {
+    throw new Error('sendTelegramDocument_ called with null or invalid blob for chatId: ' + chatId);
+  }
   var boundary = '-----CommerceGyanMultipart' + Utilities.getUuid();
   var blobBytes = blob.getBytes();
 

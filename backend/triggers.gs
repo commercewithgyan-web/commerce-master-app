@@ -208,7 +208,7 @@ function sendDailyNotifications() {
           '📱 Paid Batch: Check your 5-Layer Notebook in the Mini App for personal revision queue.',
           {
             inline_keyboard: [
-              [{ text: '📱 Open Mini App Studio', web_app: { url: miniAppUrl } }]
+              [{ text: '📱 Open Mini App Studio', url: miniAppUrl }]
             ]
           }
         );
