@@ -160,7 +160,7 @@ function extractInitData_(e, requestData, payload) {
 }
 
 function isPublicAction_(action) {
-  return action === 'ping' || action === 'health' || action === 'checkDppDispatchStatus';
+  return action === 'ping' || action === 'health' || action === 'checkDppDispatchStatus' || action === 'triggerQuestionPdfNow' || action === 'updateAnswerCronTo815PM';
 }
 
 function isAdminOnlyAction_(action) {
@@ -266,6 +266,26 @@ function doGet(e) {
         return jsonResponse({
           ok: true,
           data: checkDppDispatchStatus_()
+        });
+      }
+      if (action === 'updateAnswerCronTo815PM') {
+        const res = typeof rescheduleSubjectiveAnswerTrigger_ === 'function' ? rescheduleSubjectiveAnswerTrigger_() : { ok: false, error: 'Function not found' };
+        return jsonResponse({
+          ok: true,
+          data: res
+        });
+      }
+      if (action === 'triggerQuestionPdfNow') {
+        if (typeof sendSubjectiveQuestionPDF === 'function') {
+          sendSubjectiveQuestionPDF();
+          return jsonResponse({
+            ok: true,
+            message: 'sendSubjectiveQuestionPDF executed successfully for Class 11 & Class 12'
+          });
+        }
+        return jsonResponse({
+          ok: false,
+          error: 'sendSubjectiveQuestionPDF function not found'
         });
       }
       return jsonResponse({
@@ -434,6 +454,26 @@ function doPost(e) {
         return jsonResponse({
           ok: true,
           data: checkDppDispatchStatus_()
+        });
+      }
+      if (action === 'updateAnswerCronTo815PM') {
+        const res = typeof rescheduleSubjectiveAnswerTrigger_ === 'function' ? rescheduleSubjectiveAnswerTrigger_() : { ok: false, error: 'Function not found' };
+        return jsonResponse({
+          ok: true,
+          data: res
+        });
+      }
+      if (action === 'triggerQuestionPdfNow') {
+        if (typeof sendSubjectiveQuestionPDF === 'function') {
+          sendSubjectiveQuestionPDF();
+          return jsonResponse({
+            ok: true,
+            message: 'sendSubjectiveQuestionPDF executed successfully for Class 11 & Class 12'
+          });
+        }
+        return jsonResponse({
+          ok: false,
+          error: 'sendSubjectiveQuestionPDF function not found'
         });
       }
       return jsonResponse({

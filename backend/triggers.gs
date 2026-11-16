@@ -38,15 +38,15 @@ function setupTriggers() {
     .create();
   Logger.log('  ✅ [08:00 AM] sendDailyNotifications');
 
-  // 3. 08:15 AM — Model Answer PDF Channel Broadcast
+  // 3. 08:15 PM — Model Answer PDF Channel Broadcast (Same Evening)
   ScriptApp.newTrigger('sendSubjectiveAnswerPDF')
     .timeBased()
-    .atHour(8)
+    .atHour(20)
     .nearMinute(15)
     .everyDays(1)
     .inTimezone(TIMEZONE_KOLKATA)
     .create();
-  Logger.log('  ✅ [08:15 AM] sendSubjectiveAnswerPDF');
+  Logger.log('  ✅ [08:15 PM] sendSubjectiveAnswerPDF');
 
   // 4. 07:00 PM — 5-Stage Fee Overdue Reminders
   ScriptApp.newTrigger('sendFeeReminders')
@@ -158,6 +158,28 @@ function deleteAllTriggers() {
     ScriptApp.deleteTrigger(triggers[i]);
   }
   Logger.log('🗑️ Cleared all existing triggers.');
+}
+
+/**
+ * Updates the sendSubjectiveAnswerPDF trigger to 08:15 PM IST without modifying other triggers.
+ */
+function rescheduleSubjectiveAnswerTrigger_() {
+  var triggers = ScriptApp.getProjectTriggers();
+  var removed = 0;
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'sendSubjectiveAnswerPDF') {
+      ScriptApp.deleteTrigger(triggers[i]);
+      removed++;
+    }
+  }
+  ScriptApp.newTrigger('sendSubjectiveAnswerPDF')
+    .timeBased()
+    .atHour(20)
+    .nearMinute(15)
+    .everyDays(1)
+    .inTimezone(TIMEZONE_KOLKATA)
+    .create();
+  return { ok: true, removedCount: removed, targetTime: '20:15 IST' };
 }
 
 /**

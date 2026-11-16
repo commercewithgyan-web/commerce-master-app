@@ -2,7 +2,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  * COMMERCE MASTER APP v2.3 — SINGLE-PDF BROADCAST CYCLE (subjective.gs)
  * Telegram Channel Hub, Daily A4 Question PDF (07:30 PM IST),
- * Next-Morning Model Answer PDF with Step-Marking Rubric (08:15 AM IST).
+ * Same-Evening Model Answer PDF with Step-Marking Rubric (08:15 PM IST).
  * Zero 60-Student PDF Looping — Pure ~2-Second Fast Execution.
  * ═══════════════════════════════════════════════════════════════════════
  */
@@ -58,7 +58,7 @@ function sendSubjectiveQuestionPDF() {
         '• Chapter: *' + qData.chapterName + '*\n' +
         '• Marks Weightage: *' + (qData.marks || 6) + ' Marks*\n\n' +
         '✍️ *Instructions*: Solve this in your physical practice register.\n' +
-        'Model Answer with CBSE Step-Marking Rubric will be posted tomorrow at *08:15 AM IST*.\n\n' +
+        'Model Answer with CBSE Step-Marking Rubric will be posted tonight at *08:15 PM IST*.\n\n' +
         '📱 *Paid Batch*: Attempt tonight\'s 5-MCQ Ghost challenge in the Mini App!';
 
       sendTelegramDocument_(
@@ -99,17 +99,17 @@ function sendSubjectiveQuestionPDF() {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// 2. 08:15 AM MODEL ANSWER BROADCAST
+// 2. 08:15 PM MODEL ANSWER BROADCAST
 // ─────────────────────────────────────────────────────────────────────
 
 /**
- * 08:15 AM IST Cron: Generates exactly ONE official Model Answer PDF per class
+ * 08:15 PM IST Cron: Generates exactly ONE official Model Answer PDF per class
  * with CBSE step-by-step marking rubric, common pitfalls, and examiner traps.
  */
 function sendSubjectiveAnswerPDF() {
-  Logger.log('🌅 Running 08:15 AM Model Answer PDF Broadcast for Class 11 & Class 12...');
+  Logger.log('🌙 Running 08:15 PM Model Answer PDF Broadcast for Class 11 & Class 12...');
   if (typeof isTodayHoliday_ === 'function' && isTodayHoliday_()) {
-    Logger.log('🏖️ Today is marked as an Academic Holiday / Event in Academic_Calendar. Skipping 08:15 AM PDF broadcast.');
+    Logger.log('🏖️ Today is marked as an Academic Holiday / Event in Academic_Calendar. Skipping 08:15 PM PDF broadcast.');
     return;
   }
   var props = PropertiesService.getScriptProperties();
@@ -1214,7 +1214,7 @@ function buildMultiPageDocumentHtml_(pages, headerData) {
 
   var instructionsText = isAns
     ? 'Check your register answer and correct any mistakes in red pen.'
-    : 'Solve this question in your practice register. The model answer will be shared tomorrow at 08:15 AM IST.';
+    : 'Solve this question in your practice register. The model answer will be shared tonight at 08:15 PM IST.';
 
   var pagesHtml = pages.map(function(pageBlocks, pageIndex) {
     var pageNum = pageIndex + 1;
