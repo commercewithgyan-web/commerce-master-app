@@ -2484,6 +2484,20 @@ function dispatchDailyDPPAndSubjectivePDF(payload) {
     const dppPackage = [...selectedFresh, ...selectedCumulative];
 
 
+    // Dry Run Simulator: verify 70/30 pacing package without live sheet writes or Telegram post
+    if (payload.dryRun === true || payload.isSandbox === true || payload.preview === true) {
+      return {
+        ok: true,
+        dryRun: true,
+        dispatchedCount: dppPackage.length,
+        activeSubtopic: activeSubtopic,
+        freshCount: selectedFresh.length,
+        cumulativeCount: selectedCumulative.length,
+        questions: dppPackage.map(q => q.Question_ID || q.QuestionID || ''),
+        message: 'Dry Run Simulator: 70/30 pacing package verified without live Telegram broadcast.'
+      };
+    }
+
     const dailyQSheet = qbSS.getSheetByName('DailyQuestions');
     if (dailyQSheet) {
       dppPackage.forEach(q => {
@@ -2554,11 +2568,14 @@ function activateComebackTrial(payload) {
     const name = String(payload.name || payload.studentName || 'Comeback Scholar').trim();
     const classLevel = String(payload.classLevel || payload.class || '12').trim();
     const rawMobile = String(payload.mobile || payload.whatsapp || payload.phone || '').replace(/\D/g, '');
-    const mobile = rawMobile.slice(-10) || '9835000000';
+    const mobile = rawMobile.slice(-10);
+    if (!mobile || mobile.length !== 10) {
+      throw new Error('MANDATORY_FIELD_MISSING: Valid 10-digit mobile number is required for comeback trial');
+    }
     const tgUserId = String(payload.telegramUserId || payload.tgUserId || payload.telegramId || '').trim();
     const promoCode = String(payload.promoCode || 'CGFREE7').trim().toUpperCase();
 
-    const cleanRoll = 'CG-TRIAL-' + (mobile.slice(-4) || Math.floor(1000 + Math.random() * 9000));
+    const cleanRoll = 'CG-TRIAL-' + mobile.slice(-4);
     const enquiryId = 'ENQ-TRIAL-' + Utilities.formatDate(now, 'Asia/Kolkata', 'yyMMdd') + '-' + Math.floor(100 + Math.random() * 900);
 
     // 1. Log in INQUIRY_CRM

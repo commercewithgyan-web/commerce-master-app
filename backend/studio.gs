@@ -14,7 +14,7 @@
 var STUDIO_PLANNER_FALLBACK_ID = '1TzmB1Ehyb7JwdY0phx-LzB4t-Kq2Z-Tw1m8YPrguCa4';
 var STUDIO_PLANNER_TAB = 'Teacher_Master';
 var STUDIO_LESSON_TAB = 'Lesson_Plans';
-var STUDIO_LESSON_HEADERS = ['LessonID', 'Subject', 'Canonical_Topic_ID', 'Title', 'Unit', 'Body', 'UpdatedAt'];
+var STUDIO_LESSON_HEADERS = ['LessonID', 'Subject', 'Canonical_Topic_ID', 'Title', 'Unit', 'Body', 'GoodNotes_URL', 'Video_URL', 'UpdatedAt'];
 var STUDIO_TOPIC_ID_RE = /^C1[12]-[A-Z]{3}-B\d+-CH[A-Z0-9]+-T\d+-S\d+$/;
 var STUDIO_ALLOWED_STATUS = { 'Completed': true, 'Upcoming': true };
 
@@ -291,6 +291,8 @@ function apiSaveLessonPlan_(verifiedUser, payload) {
     String(payload.title || ''),
     String(payload.unit || ''),
     body,
+    String(payload.goodnotesUrl || payload.GoodNotes_URL || ''),
+    String(payload.videoUrl || payload.Video_URL || ''),
     getKolkataTimestamp()
   ];
 

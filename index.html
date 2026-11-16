@@ -1863,8 +1863,8 @@
             </div>
             <div class="flex items-center gap-2">
               <select id="a9ReceiptStudentSelect" class="text-xs font-bold border border-slate-300 rounded-xl px-3 py-2 bg-slate-50"></select>
-              <button id="btnPrintA9Receipt" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow">
-                🖨️ Print / Export SWOT Receipt
+              <button id="btnPrintA9Receipt" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow flex items-center gap-1.5 cursor-pointer">
+                <span>🧾</span><span>Preview &amp; Print Receipt</span>
               </button>
             </div>
           </div>
@@ -4465,7 +4465,8 @@
 
     // ==================== WHATSAPP HINGLISH TEMPLATE HELPER (FINAL-17) ====================
     function buildWhatsAppTemplateLink(phone, tplKey, data) {
-      const clean10 = String(phone || '9835011201').replace(/\D/g, '').slice(-10) || '9835011201';
+      const clean10 = String(phone || '').replace(/\D/g, '').slice(-10);
+      if (!clean10) return '#';
       const name = (data && (data.studentName || data.name)) || 'Student';
       const cls = (data && (data.classLevel || data.batch)) || '12';
       const roll = (data && (data.rollNo || data.roll)) || 'CG-1201';
@@ -4771,9 +4772,9 @@
 
       const crmContainer = document.getElementById('inquiryCardsContainer');
       const buildInqCardHtml = (inq) => {
-        const stuMob = inq.mobile || '9835011205';
+        const stuMob = inq.mobile || '';
         const parMob = inq.parentMobile || stuMob;
-        const waWelcome = buildLocalWaLink(stuMob, 'WELCOME', { studentName: inq.studentName, classLevel: inq.classLevel });
+        const waWelcome = stuMob ? buildLocalWaLink(stuMob, 'WELCOME', { studentName: inq.studentName, classLevel: inq.classLevel }) : '#';
         const waFollow = buildLocalWaLink(stuMob, 'FOLLOWUP', { studentName: inq.studentName, classLevel: inq.classLevel });
         const isAdmitted = String(inq.status).toUpperCase() === 'ADMITTED';
         const isNotJoined = String(inq.status).toUpperCase() === 'ENQUIRED_NOT_JOINED';
@@ -4832,8 +4833,8 @@
       }
 
       const buildOpsCrmCardHtml = (inq) => {
-        const stuMob = inq.mobile || '9835011205';
-        const waFollow = buildLocalWaLink(stuMob, 'FOLLOWUP', { studentName: inq.studentName, classLevel: inq.classLevel });
+        const stuMob = inq.mobile || '';
+        const waFollow = stuMob ? buildLocalWaLink(stuMob, 'FOLLOWUP', { studentName: inq.studentName, classLevel: inq.classLevel }) : '#';
         const isAdmitted = String(inq.status).toUpperCase() === 'ADMITTED';
         const isNotJoined = String(inq.status).toUpperCase() === 'ENQUIRED_NOT_JOINED';
         const demoCount = [inq.d1, inq.d2, inq.d3].filter(Boolean).length;
@@ -5795,8 +5796,8 @@
       const cfg = appState.feeSettings || { coinCap: 200 };
       const coinDiscount = Math.min(stu.coins, cfg.coinCap || 200);
       const netFee = Math.max(0, (stu.baseFee || 1200) - coinDiscount);
-      const parentMob = stu.parentPhone || stu.phone || '9835011201';
-      const waReceiptUrl = buildLocalWaLink(parentMob, 'JOIN_THANKS', { studentName: stu.name, rollNo: stu.roll, claimCode: stu.receiptHash || 'SHA256-VERIFIED' });
+      const parentMob = stu.parentPhone || stu.phone || '';
+      const waReceiptUrl = parentMob ? buildLocalWaLink(parentMob, 'JOIN_THANKS', { studentName: stu.name, rollNo: stu.roll, claimCode: stu.receiptHash || 'SHA256-VERIFIED' }) : '#';
       const sel = appState.selectedSwotFields || ['attendance', 'testPerf', 'dpp', 'practice', 'attentiveness', 'fees'];
       const clearedMonths = (stu.clearedMonths && stu.clearedMonths.length) ? stu.clearedMonths.join(', ') : 'None yet';
       const manualObs = (appState.swotManualNotes && appState.swotManualNotes[stu.roll]) || stu.note;
@@ -5877,7 +5878,7 @@
         pLogList.innerHTML = appState.parentCommLogs.map(item => {
           const st = appState.students.find(s => s.roll === item.rollNo);
           const sName = item.studentName || (st ? st.name : item.rollNo);
-          const mob = item.phone || (st && (st.parentPhone || st.phone)) || '9835011201';
+          const mob = item.phone || (st && (st.parentPhone || st.phone)) || '';
           return `
             <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-2">
               <div class="flex items-center justify-between gap-2">
@@ -5886,7 +5887,7 @@
               </div>
               <p class="text-slate-700 leading-relaxed">📝 <strong>Serious Concern:</strong> ${escHtml(item.note)}</p>
               <div class="flex items-center justify-between pt-1 border-t border-slate-200/70">
-                <a href="tel:+91${escHtml(mob)}" class="text-[14px] font-extrabold text-emerald-700 hover:underline">📞 Call Parent (+91 ${escHtml(mob)})</a>
+                ${mob ? `<a href="tel:+91${escHtml(mob)}" class="text-[14px] font-extrabold text-emerald-700 hover:underline">📞 Call Parent (+91 ${escHtml(mob)})</a>` : `<span class="text-[14px] text-slate-400 italic">No phone provided</span>`}
                 <button type="button" data-pcommroll="${escHtml(item.rollNo)}" class="open-parent-comm-btn text-[14px] font-bold text-indigo-600 hover:underline">+ Add Follow-up Note</button>
               </div>
             </div>
@@ -5910,7 +5911,7 @@
       if (defBox) {
         const defaulters = appState.students.filter(s => !s.feePaid || (s.daysLate > 5 && !s.lateWaived));
         defBox.innerHTML = defaulters.length ? defaulters.map(s => {
-          const mob = s.parentPhone || s.phone || '9835011201';
+          const mob = s.parentPhone || s.phone || '';
           const lateAmt = (!s.lateWaived && s.daysLate > 5) ? Math.round((s.baseFee || 1200) * 0.05) : 0;
           const netDue = (s.baseFee || 1200) + lateAmt - Math.min(s.coins || 0, 200);
           return `
@@ -5920,7 +5921,7 @@
                 <p class="text-[14px] text-slate-600">${escHtml(s.batch)} · Plan: ${escHtml(s.plan)} · Overdue: <strong>${s.daysLate || 6} days</strong> · Net Due: <strong class="text-rose-700">₹${netDue}</strong></p>
               </div>
               <div class="flex flex-wrap items-center gap-1.5 shrink-0">
-                <a href="tel:+91${escHtml(mob)}" class="px-2.5 py-1.5 rounded-lg bg-slate-900 text-white text-[14px] font-bold">📞 Call</a>
+                ${mob ? `<a href="tel:+91${escHtml(mob)}" class="px-2.5 py-1.5 rounded-lg bg-slate-900 text-white text-[14px] font-bold">📞 Call</a>` : `<span class="px-2 py-1 text-[14px] text-slate-400 italic">No phone</span>`}
                 <button type="button" data-payroll="${escHtml(s.roll)}" class="mark-fee-paid-btn px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white text-[14px] font-extrabold">Record Paid</button>
               </div>
             </div>
@@ -6139,7 +6140,11 @@
           topicId: matchedTopic ? matchedTopic.id : appState.activeSubtopicLock,
           goodnotesUrl: gnUrl,
           videoUrl: ytUrl
-        }).then(() => {
+        }).then(res => {
+          if (res && res.error) {
+            showToast(`Sync failed: ${res.error}`, 'rose');
+            return;
+          }
           addAuditEvent(`Ended class for ${subjCode} — GoodNotes & YouTube synced.`);
           showToast('Class links synced! Now dispatch 7:00 PM DPP below.', 'emerald');
         }).catch(err => {
@@ -6221,19 +6226,19 @@
         btn.addEventListener('click', async () => {
           const cmd = btn.dataset.botcmd;
           if (cmd === '/startclass') {
-            const ok = await window.cgConfirm({ badge: 'Bot Command', title: 'Run /startclass?', body: `Lock ${appState.activeSubtopicLock} and notify batch on Telegram?` });
+            const ok = await window.cgConfirm({ badge: 'Bot Command', title: 'Run /startclass?', body: `Lock ${appState.activeSubtopicLock} in Syllabus & Timetable for tonight's DPP?` });
             if (!ok) return;
             window.cgCallGas('setActiveSubtopic', { subtopicId: appState.activeSubtopicLock, deliveryMode: 'Offline', status: 'In Progress' })
-              .then(res => { addAuditEvent(`/startclass executed for ${res.activeSubtopic || appState.activeSubtopicLock}`); showToast(`Locked ${res.activeSubtopic || appState.activeSubtopicLock} via /startclass!`, 'emerald'); })
+              .then(res => { addAuditEvent(`/startclass executed for ${res.activeSubtopic || appState.activeSubtopicLock}`); showToast(`Locked ${res.activeSubtopic || appState.activeSubtopicLock} in Syllabus & Timetable!`, 'emerald'); })
               .catch(err => showToast(`/startclass failed: ${err.message}`, 'rose'));
           } else if (cmd === '/attendance') {
             switchTab('attendance');
             showToast('Opened 30-Second Attendance Grid', 'indigo');
           } else if (cmd === '/dpp7pm') {
-            const ok = await window.cgConfirm({ badge: 'Bot Command', title: 'Run /dpp7pm?', body: 'Dispatch tonight’s 7 PM Question Bank DPP to Class 12?' });
+            const ok = await window.cgConfirm({ badge: 'Bot Command', title: 'Run /dpp7pm?', body: 'Dispatch tonight’s 7 PM Question Bank DPP to Class 11 & Class 12 Channels?' });
             if (!ok) return;
-            window.cgCallGas('dispatchDailyDPPAndSubjectivePDF', { pdfType: 'QUESTION_DPP', channelId: '@commercewithgyan_class12' })
-              .then(res => { addAuditEvent(`/dpp7pm executed`); showToast(`Dispatched ${res.dispatchedCount || 10} DPP questions!`, 'emerald'); })
+            window.cgCallGas('dispatchDailyDPPAndSubjectivePDF', { pdfType: 'QUESTION_DPP' })
+              .then(res => { addAuditEvent(`/dpp7pm executed`); showToast(`Dispatched ${res.dispatchedCount || 10} DPP questions to both channels!`, 'emerald'); })
               .catch(err => showToast(`/dpp7pm failed: ${err.message}`, 'rose'));
           } else if (cmd === '/waive') {
             switchTab('erp_fees');
@@ -6282,12 +6287,16 @@
         const subject = document.getElementById('slotSubjectInput')?.value || 'ACC-12';
         const type = document.getElementById('slotReasonTypeSelect')?.value || 'Extra Class';
         const topic = document.getElementById('slotTopicInput')?.value.trim() || 'Board Revision Session';
+        const notes = document.getElementById('slotReasonNoteInput')?.value.trim() || '';
         const dateStr = document.getElementById('slotDateInput')?.value || new Date().toISOString().slice(0, 10);
-        appState.timetableSlots.push({ day, time, subject, topic, type });
-        appState.academicEvents.unshift({ id: 'EV-' + Date.now().toString().slice(-4), date: dateStr, title: `${subject}: ${topic}`, type, batch: subject.includes('11') ? 'Class 11' : 'Class 12' });
+        appState.timetableSlots.push({ day, time, subject, topic, type, notes });
+        appState.academicEvents.unshift({ id: 'EV-' + Date.now().toString().slice(-4), date: dateStr, title: `${subject}: ${topic}`, type, batch: subject.includes('11') ? 'Class 11' : 'Class 12', notes });
         document.getElementById('addSlotFormCard')?.classList.add('hidden');
         showToast(`Saving timetable slot for ${day}...`, 'indigo');
-        window.cgCallGas('saveWeeklyTimetable', { slots: appState.timetableSlots })
+        window.cgCallGas('saveWeeklyTimetable', {
+          day, time, subject, topic, type, notes, dateStr,
+          slots: appState.timetableSlots
+        })
           .then(() => {
             renderAll();
             showToast(`✓ Added ${subject} (${type}) on ${day} ${dateStr} & synced!`, 'emerald');
@@ -6492,9 +6501,15 @@
         if (rollIn) rollIn.value = stu.roll;
         if (titleEl) titleEl.textContent = `${stu.name} (${stu.roll}) — Contact Parent`;
         if (callLink) {
-          const mob = stu.parentPhone || stu.phone || '9835011201';
-          callLink.href = `tel:+91${mob}`;
-          callLink.innerHTML = `<span>📞</span><span>1. Contact Parent Now (+91 ${escHtml(mob)})</span>`;
+          const mob = stu.parentPhone || stu.phone || '';
+          if (mob) {
+            callLink.href = `tel:+91${mob}`;
+            callLink.innerHTML = `<span>📞</span><span>1. Contact Parent Now (+91 ${escHtml(mob)})</span>`;
+            callLink.style.display = '';
+          } else {
+            callLink.href = '#';
+            callLink.innerHTML = `<span>📞</span><span>No parent phone available</span>`;
+          }
         }
         if (noteIn) noteIn.value = '';
         document.getElementById('parentCommModalOverlay')?.classList.remove('hidden');
@@ -6728,7 +6743,11 @@
         if (typeof renderStudioSubtabsData === 'function') renderStudioSubtabsData();
       });
       document.getElementById('btnPrintA9Receipt')?.addEventListener('click', () => {
-        const roll = document.getElementById('a9ReceiptStudentSelect')?.value || (appState.students[0] && appState.students[0].roll) || 'CG-1201';
+        const roll = document.getElementById('a9ReceiptStudentSelect')?.value;
+        if (!roll) {
+          showToast('Please select a student from the dropdown first.', 'rose');
+          return;
+        }
         openSwotModal(roll);
       });
 
@@ -7617,11 +7636,14 @@
       const openParentCommModal = (roll) => {
         const stu = appState.students.find(s => s.roll === roll) || appState.students[0];
         if (!stu) return;
-        const parentMob = stu.parentPhone || stu.phone || '9835011201';
+        const parentMob = stu.parentPhone || stu.phone || '';
         document.getElementById('parentCommRollInput').value = stu.roll;
         document.getElementById('parentCommStudentTitle').textContent = `${stu.name} (${stu.roll}) — Parent Contact`;
         const link = document.getElementById('parentCommCallLink');
-        if (link) link.href = `tel:+91${parentMob}`;
+        if (link) {
+          link.href = parentMob ? `tel:+91${parentMob}` : '#';
+          link.innerHTML = parentMob ? `<span>📞</span><span>1. Contact Parent Now (+91 ${escHtml(parentMob)})</span>` : `<span>📞</span><span>No parent phone available</span>`;
+        }
         document.getElementById('parentCommNoteInput').value = '';
         document.getElementById('parentCommModalOverlay')?.classList.remove('hidden');
       };
@@ -8021,7 +8043,7 @@
         if (startClsBtn) {
           const subj = startClsBtn.dataset.startclass;
           window.cgCallGas('setActiveSubtopic', { subtopicId: appState.activeSubtopicLock, deliveryMode: 'Offline', status: 'In Progress' })
-            .then(() => showToast(`Dispatched /startclass for ${subj} & locked active topic!`, 'emerald'))
+            .then(() => showToast(`Locked active topic for ${subj} in Syllabus & Timetable!`, 'emerald'))
             .catch(err => showToast(`/startclass failed: ${err.message}`, 'rose'));
           return;
         }
@@ -8251,8 +8273,8 @@
               date: String(r.Timestamp || r.Date || '').slice(0, 10),
               studentName: r.Student_Name || r.studentName || 'Lead',
               parentName: r.Parent_Name || r.parentName || 'Guardian',
-              mobile: String(r.Contact_Number || r.mobile || '9835011205'),
-              parentMobile: String(r.Parent_Mobile || r.Contact_Number || '9835011205'),
+              mobile: String(r.Contact_Number || r.mobile || ''),
+              parentMobile: String(r.Parent_Mobile || r.Contact_Number || ''),
               classLevel: String(r.Class || '11'),
               board: String(r.Board || 'CBSE'),
               school: r.School_College || 'Begusarai',
@@ -8415,7 +8437,7 @@
         confirmAdmitBtn.addEventListener('click', async () => {
           const enquiryId = document.getElementById('wizEnquirySelect')?.value;
           const studentName = document.getElementById('wizStudentName')?.value.trim() || 'Student';
-          const parentMobile = document.getElementById('wizParentMobile')?.value.trim() || '9835011205';
+          const parentMobile = document.getElementById('wizParentMobile')?.value.trim() || '';
           const classLevel = document.getElementById('wizClassLevel')?.value || '12';
           const board = document.getElementById('wizBoard')?.value || 'CBSE';
           const planKey = document.getElementById('wizPlanKey')?.value || 'COMBO_MONTHLY';
@@ -8581,7 +8603,7 @@
             }
             const res = await window.cgCallGas('recordFeePayment', {
               rollNo, planKey, paidAmountINR, redeemedCoins, waiveLateFee: waiveLate, paymentMode,
-              contactNumber: (stu && (stu.parentPhone || stu.phone)) || '9835011201'
+              contactNumber: (stu && (stu.parentPhone || stu.phone)) || ''
             });
             if (stu) {
               stu.feePaid = true;
