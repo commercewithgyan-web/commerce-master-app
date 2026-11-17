@@ -375,8 +375,12 @@ function doGet(e) {
         result = sendStudentFeeReminder(payload);
         break;
       case "getDailyClassNotes":
+        result = getDailyClassNotes(payload ? payload.subject : null, payload ? payload.classLevel : null, verifiedUser);
+        break;
       case "uploadDailyClassNotes":
-        result = getDailyClassNotes(payload ? payload.subject : null, payload ? payload.classLevel : null);
+      case "saveDailyClassNote":
+        requireAdmin_(verifiedUser && verifiedUser.id);
+        result = saveDailyClassNote(payload);
         break;
       case "getStudentMiniAppBootstrap":
       case "getBootstrapData":
@@ -659,7 +663,7 @@ function doPost(e) {
         result = sendStudentFeeReminder(payload);
         break;
       case "getDailyClassNotes":
-        result = getDailyClassNotes(payload ? payload.subject : null, payload ? payload.classLevel : null);
+        result = getDailyClassNotes(payload ? payload.subject : null, payload ? payload.classLevel : null, verifiedUser);
         break;
       case "getHomeDashboard":
       case "getNotebook":
@@ -1088,132 +1092,82 @@ function sendStudentFeeReminder(payload) {
   }
 }
 
-function getDailyClassNotes(subject, classLevel) {
+function getDailyClassNotes(subject, classLevel, verifiedUser) {
+  // Class: students always get their OWN class (server side); admin may ask for one.
+  let cls = '';
+  if (verifiedUser && verifiedUser.id && !isAdmin_(verifiedUser.id)) {
+    cls = getVerifiedStudentClass_(verifiedUser);
+  } else {
+    cls = normalizeClassLevel_(classLevel);
+  }
   const IDS = getActiveSheetIds();
-  const tgSS = SpreadsheetApp.openById(IDS.TELEGRAM);
-  let notesSheet = tgSS.getSheetByName('Daily_Class_Notes');
+  let notesSheet = null;
+  try { notesSheet = SpreadsheetApp.openById(IDS.TELEGRAM).getSheetByName('Daily_Class_Notes'); } catch (_) {}
   if (!notesSheet) {
-    try {
-      const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
-      notesSheet = erp.getSheetByName('Daily_Class_Notes');
-    } catch (_) {}
+    try { notesSheet = SpreadsheetApp.openById(IDS.MASTER_ERP).getSheetByName('Daily_Class_Notes'); } catch (_) {}
   }
-
-  let rows = notesSheet ? sheetToObjects(notesSheet) : [];
-  const subjStr = String(subject || 'Accountancy').trim();
+  if (!notesSheet) return { ok: true, count: 0, notes: [], message: 'Abhi koi class note save nahi hua.' };
+  let rows = sheetToObjects(notesSheet).filter(r => {
+    const url = String(r.Class_Notes_URL || r.Goodnotes_PDF_URL || '').trim();
+    return /^https:\/\/(drive|docs)\.google\.com\//i.test(url);
+  });
+  if (cls) rows = rows.filter(r => normalizeClassLevel_(r.Class) === cls);
+  const subjStr = String(subject || '').trim().toUpperCase();
   if (subjStr) {
-    rows = rows.filter(r => String(r.Subject || '').toUpperCase() === subjStr.toUpperCase());
+    rows = rows.filter(r => {
+      const rs = String(r.Subject || '').toUpperCase();
+      return rs === subjStr || rs.indexOf(subjStr) !== -1 || subjStr.indexOf(rs) !== -1;
+    });
   }
-
-  if (rows.length === 0) {
-    const sUpper = subjStr.toUpperCase();
-    if (sUpper.includes('BUSI') || sUpper.includes('BST')) {
-      rows = [
-        {
-          Date: '12-Nov-2026',
-          Subject: 'Business Studies',
-          Class: classLevel || '12',
-          Topic: 'Ch 2: Principles of Management — Fayol’s 14 Principles & Scientific Techniques',
-          Goodnotes_PDF_URL: 'https://drive.google.com/file/d/1NqwXweqBib6chUCBY7fTStff5-8lR2_z/view',
-          DPP_PDF_URL: 'https://drive.google.com/file/d/1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs/view',
-          Teacher: 'Gyan Sir',
-          Attendance_Status: 'Held at Begusarai Center'
-        },
-        {
-          Date: '09-Nov-2026',
-          Subject: 'Business Studies',
-          Class: classLevel || '12',
-          Topic: 'Ch 1: Nature of Management — Multi-Dimensional Management & Coordination',
-          Goodnotes_PDF_URL: 'https://drive.google.com/file/d/1NqwXweqBib6chUCBY7fTStff5-8lR2_z/view',
-          DPP_PDF_URL: 'https://drive.google.com/file/d/1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs/view',
-          Teacher: 'Gyan Sir',
-          Attendance_Status: 'Held at Begusarai Center'
-        }
-      ];
-    } else if (sUpper.includes('ECON')) {
-      rows = [
-        {
-          Date: '12-Nov-2026',
-          Subject: 'Economics',
-          Class: classLevel || '12',
-          Topic: 'Macro Ch 3: Money & Banking — Credit Creation by Commercial Banks & LRR',
-          Goodnotes_PDF_URL: 'https://drive.google.com/file/d/1NqwXweqBib6chUCBY7fTStff5-8lR2_z/view',
-          DPP_PDF_URL: 'https://drive.google.com/file/d/1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs/view',
-          Teacher: 'Gyan Sir',
-          Attendance_Status: 'Held at Begusarai Center'
-        },
-        {
-          Date: '08-Nov-2026',
-          Subject: 'Economics',
-          Class: classLevel || '12',
-          Topic: 'Macro Ch 1: National Income — Circular Flow of Income & Value Added Method',
-          Goodnotes_PDF_URL: 'https://drive.google.com/file/d/1NqwXweqBib6chUCBY7fTStff5-8lR2_z/view',
-          DPP_PDF_URL: 'https://drive.google.com/file/d/1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs/view',
-          Teacher: 'Gyan Sir',
-          Attendance_Status: 'Held at Begusarai Center'
-        }
-      ];
-    } else if (sUpper.includes('STAT')) {
-      rows = [
-        {
-          Date: '11-Nov-2026',
-          Subject: 'Statistics',
-          Class: classLevel || '11',
-          Topic: 'Ch 4: Measures of Dispersion — Standard Deviation & Shortcut Method Formulae',
-          Goodnotes_PDF_URL: 'https://drive.google.com/file/d/1NqwXweqBib6chUCBY7fTStff5-8lR2_z/view',
-          DPP_PDF_URL: 'https://drive.google.com/file/d/1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs/view',
-          Teacher: 'Gyan Sir',
-          Attendance_Status: 'Held at Begusarai Center'
-        },
-        {
-          Date: '06-Nov-2026',
-          Subject: 'Statistics',
-          Class: classLevel || '11',
-          Topic: 'Ch 3: Measures of Central Tendency — Median & Mode in Continuous Grouped Series',
-          Goodnotes_PDF_URL: 'https://drive.google.com/file/d/1NqwXweqBib6chUCBY7fTStff5-8lR2_z/view',
-          DPP_PDF_URL: 'https://drive.google.com/file/d/1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs/view',
-          Teacher: 'Gyan Sir',
-          Attendance_Status: 'Held at Begusarai Center'
-        }
-      ];
-    } else {
-      rows = [
-        {
-          Date: '12-Nov-2026',
-          Subject: 'Accountancy',
-          Class: classLevel || '12',
-          Topic: 'Ch 3: Admission of a Partner — Revaluation & Hidden Goodwill',
-          Goodnotes_PDF_URL: 'https://drive.google.com/file/d/1NqwXweqBib6chUCBY7fTStff5-8lR2_z/view',
-          DPP_PDF_URL: 'https://drive.google.com/file/d/1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs/view',
-          Teacher: 'Gyan Sir',
-          Attendance_Status: 'Held at Begusarai Center'
-        },
-        {
-          Date: '10-Nov-2026',
-          Subject: 'Accountancy',
-          Class: classLevel || '12',
-          Topic: 'Ch 3: Admission of a Partner — Sacrificing Ratio & Capital Accounts',
-          Goodnotes_PDF_URL: 'https://drive.google.com/file/d/1NqwXweqBib6chUCBY7fTStff5-8lR2_z/view',
-          DPP_PDF_URL: 'https://drive.google.com/file/d/1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs/view',
-          Teacher: 'Gyan Sir',
-          Attendance_Status: 'Held at Begusarai Center'
-        },
-        {
-          Date: '07-Nov-2026',
-          Subject: 'Accountancy',
-          Class: classLevel || '12',
-          Topic: 'Ch 2: Goodwill Valuation — Super Profit & Capitalisation Method',
-          Goodnotes_PDF_URL: 'https://drive.google.com/file/d/1NqwXweqBib6chUCBY7fTStff5-8lR2_z/view',
-          DPP_PDF_URL: 'https://drive.google.com/file/d/1VI89cSIa0PcL2rHzEmiEgc1lgpmvWLgyIXZ7Pb5I2bs/view',
-          Teacher: 'Gyan Sir',
-          Attendance_Status: 'Held at Begusarai Center'
-        }
-      ];
-    }
-  }
-
+  rows = rows.map(r => ({
+    Date: String(r.Date instanceof Date ? Utilities.formatDate(r.Date, 'Asia/Kolkata', 'yyyy-MM-dd') : (r.Date || '')),
+    Class: normalizeClassLevel_(r.Class),
+    Subject: r.Subject || '',
+    Topic: r.Topic || '',
+    Class_Notes_URL: String(r.Class_Notes_URL || r.Goodnotes_PDF_URL || '').trim(),
+    Goodnotes_PDF_URL: String(r.Class_Notes_URL || r.Goodnotes_PDF_URL || '').trim(),
+    Teacher: r.Teacher || 'Gyan Sir'
+  })).reverse();
   return { ok: true, count: rows.length, notes: rows };
 }
+
+/**
+ * Admin-only: saves one day's "Download Class Notes" Drive link. Class + Subject + Drive/Docs URL required.
+ */
+function saveDailyClassNote(payload) {
+  return withWriteLock_(() => {
+    payload = payload || {};
+    const cls = normalizeClassLevel_(payload.classLevel || payload.class);
+    if (!cls) throw new Error('CLASS_MISSING: Class note ke saath Class (11 ya 12) zaroori hai.');
+    const subject = String(payload.subject || '').trim();
+    if (!subject) throw new Error('SUBJECT_MISSING: Class note ke saath Subject zaroori hai.');
+    const url = String(payload.classNotesUrl || payload.goodnotesUrl || payload.url || '').trim();
+    if (!/^https:\/\/(drive|docs)\.google\.com\//i.test(url)) {
+      throw new Error('URL_INVALID: Class notes ka link Google Drive ka (https://drive.google.com/...) hona chahiye.');
+    }
+    const IDS = getActiveSheetIds();
+    const ss = SpreadsheetApp.openById(IDS.TELEGRAM);
+    const HEAD = ['Date', 'Class', 'Subject', 'Topic', 'Class_Notes_URL', 'Teacher', 'Saved_At'];
+    let sh = ss.getSheetByName('Daily_Class_Notes');
+    if (!sh) {
+      sh = ss.insertSheet('Daily_Class_Notes');
+      sh.appendRow(HEAD);
+    }
+    const headers = sh.getRange(1, 1, 1, Math.max(1, sh.getLastColumn())).getValues()[0].map(h => String(h).trim());
+    const now = new Date();
+    const vals = {
+      Date: payload.date || Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd'),
+      Class: cls, Subject: subject, Topic: String(payload.topic || ''),
+      Class_Notes_URL: url, Goodnotes_PDF_URL: url,
+      Teacher: String(payload.teacher || 'Gyan Sir'),
+      Saved_At: Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss')
+    };
+    const row = headers.map(h => (vals[h] !== undefined ? vals[h] : ''));
+    sh.appendRow(row);
+    return { ok: true, message: 'Class notes link saved', date: vals.Date, classLevel: cls, subject: subject };
+  });
+}
+
 
 
 /**

@@ -756,7 +756,7 @@
 
               <!-- Quick Add Task -->
               <div class="flex gap-1.5">
-                <input id="newTaskInput" type="text" placeholder="Add task (e.g. Export GoodNotes PDF)..." class="flex-1 text-xs border border-slate-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <input id="newTaskInput" type="text" placeholder="Add task (e.g. Upload Class Notes PDF)..." class="flex-1 text-xs border border-slate-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 <select id="newTaskSubject" class="text-xs border border-slate-200 rounded-lg px-2 py-2 bg-slate-50 font-semibold">
                   <option value="ACC-12">ACC-12</option>
                   <option value="BST-12">BST-12</option>
@@ -994,7 +994,7 @@
             </div>
 
             <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[14px] text-slate-600">
-              <strong class="text-slate-800">GoodNotes &amp; Notion Sync:</strong> Saved lessons sync directly to the shared Sheet so Student Syllabus cards reflect Notion links, Question numbers, Learning Objective, and Board Importance.
+              <strong class="text-slate-800">Class Notes &amp; Notion Sync:</strong> Saved lessons sync directly to the shared Sheet so Student Syllabus cards reflect Notion links, Question numbers, Learning Objective, and Board Importance.
             </div>
           </div>
 
@@ -1090,7 +1090,7 @@
               <button type="button" data-insert="journal" class="editor-snippet-btn px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-indigo-50 text-xs font-semibold text-slate-700">+ Journal Entry Block</button>
               <button type="button" data-insert="trap" class="editor-snippet-btn px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-amber-50 text-xs font-semibold text-amber-800">+ Board Exam Trap Radar</button>
               <button type="button" data-insert="formula" class="editor-snippet-btn px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-emerald-50 text-xs font-semibold text-emerald-800">+ Formula / Ratio Box</button>
-              <button type="button" data-insert="goodnotes" class="editor-snippet-btn px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-purple-50 text-xs font-semibold text-purple-800">+ Attach GoodNotes PDF</button>
+              <button type="button" data-insert="goodnotes" class="editor-snippet-btn px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-purple-50 text-xs font-semibold text-purple-800">+ Attach Class Notes PDF</button>
             </div>
 
             <!-- Lesson Rich Content Textarea -->
@@ -1099,10 +1099,10 @@
               <textarea id="editorBodyInput" rows="8" class="w-full text-xs sm:text-sm leading-relaxed font-mono text-slate-800 border border-slate-200 rounded-xl p-3.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 custom-scroll"></textarea>
             </div>
 
-            <!-- Video & GoodNotes URLs -->
+            <!-- Video & Class Notes URLs -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label class="block text-[14px] font-bold uppercase text-slate-400 mb-1">GoodNotes PDF URL</label>
+                <label class="block text-[14px] font-bold uppercase text-slate-400 mb-1">Class Notes PDF URL (Drive)</label>
                 <input id="editorGoodnotesUrlInput" type="url" placeholder="https://drive.google.com/..." class="w-full text-xs font-mono border border-slate-200 rounded-xl px-3 py-2" />
               </div>
               <div>
@@ -1730,7 +1730,7 @@
               <select id="dppPdfTypeSelect" class="w-full text-xs border border-slate-700 rounded-xl px-2.5 py-2 bg-slate-800 text-white font-bold">
                 <option value="QUESTION_DPP">7:00 PM Question DPP</option>
                 <option value="MORNING_ANSWER_KEY">T+1 Morning Model Answer</option>
-                <option value="GOODNOTES_CHALKBOARD">GoodNotes Chalkboard PDF</option>
+                <option value="GOODNOTES_CHALKBOARD">Class Notes PDF</option>
               </select>
             </div>
             <div>
@@ -1749,7 +1749,7 @@
             </div>
           </div>
           <div>
-            <label class="block text-[14px] font-bold text-slate-400 mb-1">PDF URL / Identifier (optional GoodNotes or Drive URL)</label>
+            <label class="block text-[14px] font-bold text-slate-400 mb-1">PDF URL / Identifier (optional Class Notes Drive URL)</label>
             <input id="dppDriveUrlInput" type="text" value="DPP_Ch3_Goodwill_Class12.pdf" class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-800 text-white font-mono" />
           </div>
         </div>
@@ -2383,8 +2383,8 @@
         </div>
 
         <div class="space-y-1.5">
-          <label class="block text-[14px] font-bold text-slate-700 dark:text-slate-300">Attach GoodNotes Lecture PDF URL:</label>
-          <input id="opsDppPdfUrlInput" type="text" placeholder="https://drive.google.com/.../GoodNotes_Lecture.pdf" value="https://drive.google.com/uc?export=download&id=1cg_goodnotes_hidden_goodwill" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono" />
+          <label class="block text-[14px] font-bold text-slate-700 dark:text-slate-300">Attach Class Notes PDF URL (Drive):</label>
+          <input id="opsDppPdfUrlInput" type="text" placeholder="https://drive.google.com/.../Class_Notes.pdf" value="https://drive.google.com/uc?export=download&id=1cg_class_notes_sample" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono" />
         </div>
 
         <button id="opsBroadcastDppBtn" type="button" class="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow flex items-center justify-center gap-2 cursor-pointer">
@@ -2608,7 +2608,7 @@
           Ch 3: Hidden Goodwill in Admission of Partner
         </h3>
         <p id="tgAajTopicMeta" class="text-[14px] text-indigo-800/80 dark:text-indigo-300/80">
-          GoodNotes PDF + Daily MCQ / DPP synced with Syllabus Planner.
+          Download Class Notes + Daily MCQ / DPP synced with Syllabus Planner.
         </p>
       </div>
 
@@ -2685,13 +2685,13 @@
         <div id="stuWeeklyScheduleBox" class="space-y-1.5 text-xs"></div>
       </div>
 
-      <!-- Today's Batch Lectures & GoodNotes PDFs -->
+      <!-- Today's Batch Lectures & Class Notes PDFs -->
       <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
-        <h3 class="text-sm font-extrabold text-slate-900 dark:text-white">Today's Batch Lectures &amp; GoodNotes PDFs</h3>
+        <h3 class="text-sm font-extrabold text-slate-900 dark:text-white">Today's Batch Lectures &amp; Class Notes</h3>
         <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between gap-3">
           <div class="min-w-0">
             <p class="text-xs font-extrabold text-slate-900 dark:text-white">Ch 3: Admission of a Partner — Goodwill</p>
-            <p class="text-[14px] text-slate-500 dark:text-slate-400 mt-0.5">GoodNotes PDF + Cleared Months SWOT Receipt</p>
+            <p class="text-[14px] text-slate-500 dark:text-slate-400 mt-0.5">Class Notes PDF + Cleared Months SWOT Receipt</p>
           </div>
           <button id="tgOpenReceiptBtn" type="button" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shrink-0 shadow-sm cursor-pointer">
             SWOT Receipt
@@ -2817,9 +2817,9 @@
         <div class="flex items-start justify-between gap-2">
           <div>
             <span class="text-[14px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Classroom Chalkboard Archive</span>
-            <h3 class="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">Daily Class Notes &amp; DPPs</h3>
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">Download Class Notes</h3>
           </div>
-          <span class="px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-[14px] font-extrabold border border-indigo-200 dark:border-indigo-800/50 shrink-0">Goodnotes Live</span>
+          <span class="px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-[14px] font-extrabold border border-indigo-200 dark:border-indigo-800/50 shrink-0">Class Notes</span>
         </div>
         <p class="text-xs text-slate-500 dark:text-slate-400">Missed writing notes in class? Recover date-wise teacher chalkboard notes &amp; Daily DPP PDFs right here.</p>
 
@@ -3112,7 +3112,7 @@
     </div>
   </div>
 
-  <!-- Teacher End Class Modal (A3: Checklist + GoodNotes URL + Unlisted YouTube URL + Auto-start 7 PM DPP) -->
+  <!-- Teacher End Class Modal (A3: Checklist + Class Notes URL + Unlisted YouTube URL + Auto-start 7 PM DPP) -->
   <div id="endClassModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl max-w-md w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 max-h-[92vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -3129,7 +3129,7 @@
           <select id="endClassSubjectSelect" class="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800"></select>
         </div>
         <div>
-          <label class="block text-[14px] font-bold text-slate-700 dark:text-slate-300">GoodNotes Export PDF Link *</label>
+          <label class="block text-[14px] font-bold text-slate-700 dark:text-slate-300">Class Notes PDF Link (Google Drive) *</label>
           <input id="endClassGoodnotesInput" type="url" placeholder="https://drive.google.com/file/d/.../view" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 font-mono" />
         </div>
         <div>
@@ -3859,7 +3859,7 @@
       ],
       rec01Options: [
         { id: 'REC_DPP', label: 'Completed Missed 7 PM DPP Set', coins: 10 },
-        { id: 'REC_NOTES', label: 'Copied & Verified GoodNotes Class Notes', coins: 5 },
+        { id: 'REC_NOTES', label: 'Copied & Verified Class Notes', coins: 5 },
         { id: 'REC_VIDEO', label: 'Watched Full Backup Lecture Video', coins: 5 },
         { id: 'REC_VIVA', label: 'Cleared 2-Question Oral Viva with Gyan Sir', coins: 10 },
         { id: 'REC_NUM', label: 'Solved 3 Extra Board Numericals', coins: 10 },
@@ -3892,7 +3892,7 @@
           medium: 'Offline',
           objective: 'Compute Hidden Goodwill via net worth method and pass adjusting capital entry.',
           importance: 'High',
-          goodnotesUrl: 'https://drive.google.com/file/d/cg_hidden_goodwill_notes/view',
+          goodnotesUrl: '',
           videoUrl: 'https://youtu.be/dQw4w9WgXcQ',
           body: `1. LEARNING OBJECTIVES (CBSE & BSEB Board Alignment):\n- Calculate New Profit Sharing Ratio (NPSR) and Sacrificing Ratio.\n- Pass Journal Entries for Premium for Goodwill brought in cash vs in kind.\n- Spot and compute Hidden Goodwill using Net Worth vs Total Capital of the new firm.\n\n2. BOARD EXAM TRAP RADAR:\n- TRAP: When existing goodwill appears in the old Balance Sheet, write it off among OLD partners in OLD ratio (Debit Old Partners' Capital A/c, Credit Goodwill A/c).\n- New partner NEVER shares in existing book goodwill write-off.\n\n3. STEP-BY-STEP WORKING NOTE:\n- Step 1: Combined Capital required = New Partner's Capital × Reciprocal of New Share.\n- Step 2: Actual Combined Capital = Old Partner A + Old Partner B + New Partner C.\n- Step 3: Hidden Goodwill = Step 1 − Step 2.`
         },
@@ -3910,7 +3910,7 @@
           videoType: 'Public',
           objective: 'Distinguish Unity of Command vs Unity of Direction and Functional Foremanship.',
           importance: 'High',
-          goodnotesUrl: 'https://drive.google.com/file/d/cg_bst_fayol_notes/view',
+          goodnotesUrl: '',
           videoUrl: 'https://youtu.be/M7lc1UVf-VE',
           body: `1. NCERT KEYWORDS FOR CASE STUDIES:\n- Unity of Command: One boss for one subordinate (prevents dual subordination).\n- Unity of Direction: One head and one plan for a group of activities having the same objective.\n- Functional Foremanship (Taylor): Separation of planning (Route Clerk, Instruction Card Clerk, Time & Cost Clerk, Disciplinarian) and execution (Speed Boss, Gang Boss, Repair Boss, Inspector).\n\n2. BEGUSARAI REAL-WORLD HOOK:\n- Compare a local retail cloth showroom (Unity of Command) with a Barauni Refinery production line (Functional Foremanship).`
         },
@@ -3928,7 +3928,7 @@
           videoType: 'Unlisted',
           objective: 'Apply GDP_MP to NNP_FC conversions and identify excluded transfer items.',
           importance: 'High',
-          goodnotesUrl: 'https://drive.google.com/file/d/cg_mac_ni_notes/view',
+          goodnotesUrl: '',
           videoUrl: 'https://youtu.be/M7lc1UVf-VE',
           body: `1. CORE FORMULAS:\n- GDP_MP = Value of Output (Sales + ΔStock) − Intermediate Consumption.\n- NNP_FC (National Income) = GDP_MP − Depreciation − Net Indirect Taxes (Indirect Tax − Subsidies) + NFIA.\n\n2. EXAM TRAP:\n- Sale of second-hand goods is EXCLUDED, but brokerage/commission paid on second-hand goods IS INCLUDED in National Income.`
         },
@@ -3945,7 +3945,7 @@
           medium: 'CG_App',
           objective: 'Reconcile Overdraft as per Cash Book with Pass Book using Plus/Minus method.',
           importance: 'High',
-          goodnotesUrl: 'https://drive.google.com/file/d/cg_acc11_brs_notes/view',
+          goodnotesUrl: '',
           videoUrl: '',
           body: `1. GOLDEN SHORTCUT FOR BRS:\n- Starting with Cash Book (Dr. Favourable): Align Cash Book with Pass Book.\n- Starting with Overdraft (Cr. Cash Book or Dr. Pass Book): Reverse the +/- signs or use the Two-Column Plus/Minus Table.`
         },
@@ -3962,7 +3962,7 @@
           medium: 'Offline',
           objective: 'Derive tangency and convexity conditions for Ordinal Utility Equilibrium.',
           importance: 'Medium',
-          goodnotesUrl: 'https://drive.google.com/file/d/cg_mic11_ic_notes/view',
+          goodnotesUrl: '',
           videoUrl: '',
           body: `1. TWO CONDITIONS FOR EQUILIBRIUM:\n- Condition 1: Budget line must be tangent to Indifference Curve (MRS_xy = P_x / P_y).\n- Condition 2: Indifference Curve must be convex to the origin (diminishing MRS) at the point of tangency.`
         }
@@ -4036,19 +4036,13 @@
 
       // R-19: Persistent tasks loaded exclusively from Academic_Tasks in Sheets
       tasks: [
-        { id: 1, text: 'Export GoodNotes Chalkboard PDF for 12th Accountancy Ch 3', subject: 'ACC-12', action: 'endclass', done: false },
+        { id: 1, text: 'Upload Class Notes PDF for 12th Accountancy Ch 3', subject: 'ACC-12', action: 'endclass', done: false },
         { id: 2, text: 'Dispatch 7:00 PM Question Bank DPP to Batch', subject: 'ACC-12', action: 'dpp', done: false },
         { id: 3, text: 'Mark Batch Attendance & send Absent Video Alerts', subject: 'ACC-11', action: 'attendance', done: false },
         { id: 4, text: 'Upload Unlisted YouTube lecture link in End Class', subject: 'BST-12', action: 'endclass', done: true }
       ],
 
-      dailyClassNotes: [
-        { date: new Date().toISOString().slice(0, 10), subject: 'Accountancy', topic: 'Ch 3: Hidden Goodwill & Revaluation Reserve', dppTitle: 'DPP #42 · Hidden Goodwill (10 MCQs)', goodnotesUrl: 'https://drive.google.com/file/d/cg_hidden_goodwill_notes/view' },
-        { date: new Date(Date.now() - 86400000).toISOString().slice(0, 10), subject: 'Accountancy', topic: 'Ch 2: Super Profit & Capitalisation of Goodwill', dppTitle: 'DPP #41 · Goodwill Valuation (10 MCQs)', goodnotesUrl: 'https://drive.google.com/file/d/cg_goodwill_ch2_notes/view' },
-        { date: new Date().toISOString().slice(0, 10), subject: 'Business Studies', topic: 'Ch 2: Fayol 14 Principles vs Taylor Functional Foremanship', dppTitle: 'DPP #38 · Case Study Keywords', goodnotesUrl: 'https://drive.google.com/file/d/cg_bst_fayol_notes/view' },
-        { date: new Date().toISOString().slice(0, 10), subject: 'Economics', topic: 'Ch 1: GDP_MP to NNP_FC Conversion Precautions', dppTitle: 'DPP #29 · National Income Numericals', goodnotesUrl: 'https://drive.google.com/file/d/cg_mac_ni_notes/view' },
-        { date: new Date(Date.now() - 86400000).toISOString().slice(0, 10), subject: 'Statistics', topic: 'Ch 5: Median via Less-Than & More-Than Ogives', dppTitle: 'DPP #19 · Ogives & Arithmetic Mean', goodnotesUrl: 'https://drive.google.com/file/d/cg_stats_ogive_notes/view' }
-      ],
+      dailyClassNotes: [],
 
       mcqAttempts: [
         { roll: 'CG-1203', subject: 'Accountancy', chapter: 'Ch 3: Admission of Partner', topic: 'Hidden Goodwill', correct: false, mode: 'daily', ts: new Date().toISOString() },
@@ -5501,15 +5495,28 @@
         <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 space-y-2">
           <div class="flex items-center justify-between">
             <span class="font-mono text-[14px] font-bold text-indigo-600 dark:text-indigo-400">📅 ${escHtml(r.date)}</span>
-            <span class="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[14px] font-bold">Chalkboard + DPP</span>
+            <span class="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[14px] font-bold">Class Notes</span>
           </div>
           <p class="font-extrabold text-slate-900 dark:text-white text-xs">${escHtml(r.topic)}</p>
           <div class="flex flex-wrap gap-2 pt-1">
-            <span class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[14px] font-semibold">📝 ${escHtml(r.dppTitle)}</span>
-            <a href="${escHtml(r.goodnotesUrl)}" target="_blank" rel="noopener" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[14px] font-bold">📄 GoodNotes Class Notes PDF ↗</a>
+            <a href="${escHtml(r.goodnotesUrl)}" target="_blank" rel="noopener" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[14px] font-bold">📄 Download Class Notes PDF ↗</a>
           </div>
         </div>
       `).join('') : `<p class="text-slate-500 p-3 text-center">No Daily Class Notes posted yet for ${escHtml(subj)}.</p>`;
+    }
+
+    async function loadDailyClassNotes() {
+      try {
+        const subj = appState.activeNotesSubject || 'Accountancy';
+        const res = await window.cgCallGas('getDailyClassNotes', { subject: subj });
+        if (res && Array.isArray(res.notes)) {
+          appState.dailyClassNotes = res.notes.map(n => ({
+            date: n.Date, subject: n.Subject, topic: n.Topic || '',
+            goodnotesUrl: n.Class_Notes_URL || n.Goodnotes_PDF_URL || ''
+          })).filter(n => n.goodnotesUrl);
+          renderDailyClassNotes();
+        }
+      } catch (e) { console.warn('getDailyClassNotes failed', e); }
     }
 
     function renderStudentRadar(stu) {
@@ -5763,6 +5770,7 @@
       }
 
       renderDailyClassNotes();
+      if (!appState._notesLoaded) { appState._notesLoaded = true; loadDailyClassNotes(); }
       renderStudentRadar(stu);
 
       const topicText = appState.activeSubtopicLock || 'C12-ACC-B1-CH03-T02-S01';
@@ -6147,13 +6155,17 @@
         const gnUrl = (document.getElementById('endClassGoodnotesInput')?.value || '').trim();
         const ytUrl = (document.getElementById('endClassYoutubeInput')?.value || '').trim();
         if (!gnUrl || !ytUrl) {
-          showToast('Enter both GoodNotes PDF URL and YouTube Video URL before ending class', 'amber');
+          showToast('Enter both Class Notes PDF URL and YouTube Video URL before ending class', 'amber');
+          return;
+        }
+        if (!/^https:\/\/(drive|docs)\.google\.com\//i.test(gnUrl)) {
+          showToast('Class Notes link must be a Google Drive link (https://drive.google.com/...)', 'amber');
           return;
         }
         const ok = await window.cgConfirm({
           badge: 'End Class Sync',
           title: `Sync ${subjCode} Notes & Video?`,
-          body: `This attaches the GoodNotes PDF & YouTube video to today's topic and opens the 7:00 PM DPP dispatch.`
+          body: `This attaches the Class Notes PDF & YouTube video to today's topic and opens the 7:00 PM DPP dispatch.`
         });
         if (!ok) return;
 
@@ -6172,13 +6184,6 @@
         }
         const subjMap = { ACC: 'Accountancy', BST: 'Business Studies', MAC: 'Economics', MIC: 'Economics', IED: 'Economics', STA: 'Statistics' };
         const noteSubj = subjMap[subjCode.split('-')[0]] || 'Accountancy';
-        appState.dailyClassNotes.unshift({
-          date: new Date().toISOString().slice(0, 10),
-          subject: noteSubj,
-          topic: matchedTopic ? `${matchedTopic.chapter}: ${matchedTopic.topic}` : `${subjCode} Today's Lecture`,
-          dppTitle: `7:00 PM DPP · ${subjCode}`,
-          goodnotesUrl: gnUrl
-        });
 
         window.cgCallGas('saveLessonPlan', {
           lessonId: matchedLesson ? matchedLesson.id : 'ENDCLASS',
@@ -6193,13 +6198,21 @@
           }
           // Save the recording per class + subject so students of that class only see it.
           const endClassLevel = subjCode.split('-')[1] || '';
+          window.cgCallGas('saveDailyClassNote', {
+            classLevel: endClassLevel,
+            subject: noteSubj,
+            topic: matchedTopic ? `${matchedTopic.chapter}: ${matchedTopic.topic}` : '',
+            classNotesUrl: gnUrl
+          }).then(r => {
+            if (r && r.error) showToast(`Class Notes save failed: ${r.error}`, 'amber');
+          }).catch(err => showToast(`Class Notes save failed: ${err.message}`, 'amber'));
           window.cgCallGas('saveClassRecordingLink', {
             classLevel: endClassLevel,
             subject: noteSubj,
             topic: matchedTopic ? `${matchedTopic.chapter}: ${matchedTopic.topic}` : '',
             youtubeUrl: ytUrl
           }).catch(err => showToast(`Recording link save failed: ${err.message}`, 'amber'));
-          addAuditEvent(`Ended class for ${subjCode} — GoodNotes & YouTube synced.`);
+          addAuditEvent(`Ended class for ${subjCode} — Class Notes & YouTube synced.`);
           showToast('Class links synced! Now dispatch 7:00 PM DPP below.', 'emerald');
         }).catch(err => {
           showToast(`Sync failed: ${err.message}`, 'rose');
@@ -6472,7 +6485,7 @@
             journal: `\n\n[JOURNAL ENTRY FORMAT]\nDate | Particulars | L.F. | Debit (₹) | Credit (₹)\n------------------------------------------------------\n     | Revaluation A/c ... Dr. |  | 15,000 | \n     |   To Partner's Capital A/c |  |        | 15,000`,
             trap: `\n\n⚠️ [BOARD EXAM TRAP ALERT]: Always check whether interest rate carries "p.a." before applying time proportion!`,
             formula: `\n\n📐 [KEY RATIO / FORMULA]: Sacrificing Ratio = Old Share − New Share`,
-            goodnotes: `\n\n📎 [ATTACHED]: GoodNotes_Live_Board_Watermarked_${Date.now().toString().slice(-4)}.pdf`
+            goodnotes: `\n\n📎 [ATTACHED]: Class_Notes_${Date.now().toString().slice(-4)}.pdf`
           };
           const el = document.getElementById('editorBodyInput');
           if (el) el.value += (snippets[type] || '');
@@ -7851,6 +7864,7 @@
         if (notesTab) {
           appState.activeNotesSubject = notesTab.dataset.notessubj;
           renderDailyClassNotes();
+          loadDailyClassNotes();
           return;
         }
 
@@ -9047,7 +9061,7 @@
         const ok = await window.cgConfirm({
           badge: isDryRun ? 'Dry-Run Test' : 'Live Broadcast',
           title: isDryRun ? 'Run Mobile DPP Dry-Run?' : `Broadcast 7 PM DPP to ${channelId}?`,
-          body: `Active Topic: ${appState.activeSubtopicLock}\n${isDryRun ? 'Test mode only — no public Telegram post.' : 'Publishes tonight’s 7 PM DPP + GoodNotes PDF.'}`
+          body: `Active Topic: ${appState.activeSubtopicLock}\n${isDryRun ? 'Test mode only — no public Telegram post.' : 'Publishes tonight’s 7 PM DPP + Class Notes link.'}`
         });
         if (!ok) return;
         window.cgCallGas('dispatchDailyDPPAndSubjectivePDF', {
@@ -9197,7 +9211,7 @@
                     deliveryHtml = `<a href="${escHtml(appState.cgAppUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[14px] font-bold">📲 Open in CG App ↗</a>`;
                   } else {
                     deliveryHtml = st.goodnotesUrl
-                      ? `<a href="${escHtml(st.goodnotesUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[14px] font-bold">📄 Offline GoodNotes PDF ↗</a>`
+                      ? `<a href="${escHtml(st.goodnotesUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[14px] font-bold">📄 Download Class Notes ↗</a>`
                       : `<button type="button" onclick="switchStudentTab('notes')" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[14px] font-bold cursor-pointer">📓 Offline Class Notes</button>`;
                   }
                   if (st.notionUrl) {
