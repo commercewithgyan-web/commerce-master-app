@@ -2361,16 +2361,19 @@ function updateAttendanceStreak_(erp, rollNo, status, dateStr) {
     const nowStr = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
     let foundRow = -1;
     let currentStreak = 0;
+    let lastDate = '';
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][0]).trim() === String(rollNo).trim()) {
         foundRow = i + 1;
         currentStreak = Number(data[i][1]) || 0;
+        lastDate = data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], 'Asia/Kolkata', 'yyyy-MM-dd') : String(data[i][2]).slice(0, 10);
         break;
       }
     }
     let newStreak = currentStreak;
     if (status === 'P') {
-      newStreak = currentStreak + 1;
+      // Same-day re-save must not count the day twice
+      newStreak = (lastDate === dateStr) ? Math.max(currentStreak, 1) : currentStreak + 1;
     } else if (status === 'A') {
       newStreak = 0; // Unexcused absence breaks streak
     } // For 'E' (Excused) and 'L' (Late), streak is preserved
@@ -2452,7 +2455,7 @@ function markBatchAttendance(payload) {
       }
 
       // 3. Late / Absent Recovery Task Assignment (REC-01) - Excused ('E') is exempted
-      if ((st === 'L' || st === 'A') && revQueueSheet) {
+      if ((st === 'L' || st === 'A') && revQueueSheet && !(prev && (prev.status === 'L' || prev.status === 'A'))) {
         revQueueSheet.appendRow([r.rollNo, topicKey, dateStr, dateStr, 0, 'REC-01_PENDING']);
         rec01List.push(r.rollNo);
       }
