@@ -1301,7 +1301,7 @@ function getBatchRoster(batchFilter) {
       String(s.Class || '').toUpperCase() === bf.replace('CLASS ', '')
     );
   }
-  const attSheet = erp.getSheetByName('00_ATTENDANCE_DASHBOARD');
+  const attSheet = erp.getSheetByName('Attendance_Logs');
   const attendance = attSheet ? sheetToObjects(attSheet) : [];
   const coinSheet = erp.getSheetByName('Coin_Ledger');
   const coins = coinSheet ? sheetToObjects(coinSheet) : [];
@@ -1872,11 +1872,11 @@ function getStudentMiniAppBootstrap(params) {
   // Check Attendance for Recovery Drill (REC-01)
   let needsRecovery = false;
   try {
-    const attSheet = erp.getSheetByName('00_ATTENDANCE_DASHBOARD');
+    const attSheet = erp.getSheetByName('Attendance_Logs');
     if (attSheet) {
       const attRows = sheetToObjects(attSheet);
       const todayStr = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
-      const attRecord = attRows.find(a => String(a.Roll_No) === String(targetRollNo) && String(a.Date) === todayStr);
+      const attRecord = attRows.find(a => String(a.Roll_No) === String(targetRollNo) && (a.Date instanceof Date ? Utilities.formatDate(a.Date, 'Asia/Kolkata', 'yyyy-MM-dd') : String(a.Date).slice(0, 10)) === todayStr);
       if (attRecord && (String(attRecord.Status) === 'L' || String(attRecord.Status) === 'A')) {
         needsRecovery = true;
       }
@@ -2380,6 +2380,7 @@ function updateAttendanceStreak_(erp, rollNo, status, dateStr) {
     } else {
       stateSheet.appendRow([rollNo, newStreak, dateStr, nowStr]);
     }
+    return newStreak;
   } catch (err) {
     Logger.log('Warning updating Attendance_State streak: ' + err.message);
   }
@@ -2392,7 +2393,6 @@ function markBatchAttendance(payload) {
     const qbSS = SpreadsheetApp.openById(IDS.QUESTION_BANK);
 
 
-    const attSheet = erp.getSheetByName('00_ATTENDANCE_DASHBOARD');
     const attLogsSheet = erp.getSheetByName('Attendance_Logs');
     const coinSheet = erp.getSheetByName('Coin_Ledger');
     const revQueueSheet = qbSS.getSheetByName('Revision_Queue');
@@ -2409,26 +2409,47 @@ function markBatchAttendance(payload) {
     const rec01List = [];
 
 
+    // Class per roll (dashboard filters on Attendance_Logs!O = Class)
+    const classByRoll = {};
+    try {
+      const smSheet = erp.getSheetByName('Students_Master');
+      if (smSheet) sheetToObjects(smSheet).forEach(o => { if (o.Roll_No) classByRoll[String(o.Roll_No).trim()] = String(o.Class || '').replace(/[^0-9]/g, ''); });
+    } catch (e) { Logger.log('markBatchAttendance class lookup: ' + e.message); }
+    const batchClass = (String(batchId).match(/C(11|12)/) || [])[1] || '';
+
+    // Existing rows for same date+batch+roll -> update in place (no duplicate rows, no double coins)
+    const existing = {};
+    if (attLogsSheet && attLogsSheet.getLastRow() > 1) {
+      attLogsSheet.getRange(2, 1, attLogsSheet.getLastRow() - 1, 5).getValues().forEach((row, i) => {
+        const d = row[0] instanceof Date ? Utilities.formatDate(row[0], 'Asia/Kolkata', 'yyyy-MM-dd') : String(row[0]).slice(0, 10);
+        if (d) existing[d + '|' + row[1] + '|' + row[2]] = { row: i + 2, status: String(row[4]).toUpperCase() };
+      });
+    }
+
     records.forEach(r => {
       const st = String(r.status || 'P').toUpperCase();
       if (counts[st] !== undefined) counts[st]++;
 
-
-      // 1. Append to Attendance Dashboard / Logs
-      if (attSheet) {
-        attSheet.appendRow([r.rollNo, r.studentName || '', batchId, dateStr, st, topicKey]);
-      }
+      // 1+2. Streak first (so the log row carries Streak_After), then ONE row per student per day
+      const prev = existing[dateStr + '|' + batchId + '|' + r.rollNo];
+      const streakAfter = updateAttendanceStreak_(erp, r.rollNo, st, dateStr);
+      const coinsAwarded = (st === 'P') ? 2 : 0;
+      const cls = classByRoll[String(r.rollNo).trim()] || batchClass;
+      // Attendance_Logs header (15): Date, Batch_ID, Roll_No, Student_Name, Status, Coins_Awarded, Coin_Locked, Streak_After,
+      //   Late_Timestamp, Minutes_Late, Excused, Recovery_Task_ID, Marked_At, Topic_Key, Class
       if (attLogsSheet) {
-        attLogsSheet.appendRow([r.rollNo, r.studentName || '', batchId, dateStr, st, topicKey]);
+        const lateTs = (st === 'L') ? Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss') : '';
+        const markedAt = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
+        const rowVals = [dateStr, batchId, r.rollNo, r.studentName || '', st, coinsAwarded, '', streakAfter, lateTs, r.minutesLate || '',
+                         st === 'E' ? 'Y' : '', (st === 'L' || st === 'A') ? 'REC-01' : '', markedAt, topicKey, cls];
+        if (prev) attLogsSheet.getRange(prev.row, 1, 1, 15).setValues([rowVals]);
+        else attLogsSheet.appendRow(rowVals);
       }
-
-
-      // 2. Attendance Present Coin Credit
-      if (st === 'P' && coinSheet) {
-        const txId = 'CTX-' + Utilities.formatDate(now, 'Asia/Kolkata', 'yyMMddHHmmss');
+      if (st === 'P' && coinSheet && !(prev && prev.status === 'P')) {
+        // Coin_Ledger header: Tx_ID, Roll_No, Amount, Transaction_Type, Reason, Date
+        const txId = 'CTX-' + Utilities.formatDate(now, 'Asia/Kolkata', 'yyMMddHHmmss') + '-' + r.rollNo;
         coinSheet.appendRow([txId, r.rollNo, 2, 'CREDIT', `Attendance Present (${dateStr})`, dateStr]);
       }
-
 
       // 3. Late / Absent Recovery Task Assignment (REC-01) - Excused ('E') is exempted
       if ((st === 'L' || st === 'A') && revQueueSheet) {
@@ -2436,8 +2457,6 @@ function markBatchAttendance(payload) {
         rec01List.push(r.rollNo);
       }
 
-      // 4. Update Attendance_State Streak (R-31 / L-10)
-      updateAttendanceStreak_(erp, r.rollNo, st, dateStr);
     });
 
 
@@ -3494,7 +3513,7 @@ function recordFeePayment(payload, verifiedUser) {
 
   let attendancePct = 95;
   try {
-    const attSheet = erp.getSheetByName("00_ATTENDANCE_DASHBOARD");
+    const attSheet = erp.getSheetByName("Attendance_Logs");
     if (attSheet) {
       const attRows = sheetToObjects(attSheet).filter(a => String(a.Roll_No) === String(txData.rollNo));
       if (attRows.length > 0) {
@@ -3898,7 +3917,7 @@ function getBatchAnalytics() {
   const qbSS = SpreadsheetApp.openById(IDS.QUESTION_BANK);
 
   const students = sheetToObjects(erp.getSheetByName('Students_Master'));
-  const attSheet = erp.getSheetByName('00_ATTENDANCE_DASHBOARD');
+  const attSheet = erp.getSheetByName('Attendance_Logs');
   const attRecords = attSheet ? sheetToObjects(attSheet) : [];
   const ansSheet = qbSS.getSheetByName('StudentAnswers');
   const answers = ansSheet ? sheetToObjects(ansSheet) : [];
