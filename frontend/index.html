@@ -6154,11 +6154,11 @@
         const subjCode = document.getElementById('endClassSubjectSelect')?.value || 'ACC-12';
         const gnUrl = (document.getElementById('endClassGoodnotesInput')?.value || '').trim();
         const ytUrl = (document.getElementById('endClassYoutubeInput')?.value || '').trim();
-        if (!gnUrl || !ytUrl) {
-          showToast('Enter both Class Notes PDF URL and YouTube Video URL before ending class', 'amber');
+        if (!gnUrl && !ytUrl) {
+          showToast('Enter a Class Notes Drive link and/or a YouTube link before ending class', 'amber');
           return;
         }
-        if (!/^https:\/\/(drive|docs)\.google\.com\//i.test(gnUrl)) {
+        if (gnUrl && !/^https:\/\/(drive|docs)\.google\.com\//i.test(gnUrl)) {
           showToast('Class Notes link must be a Google Drive link (https://drive.google.com/...)', 'amber');
           return;
         }
@@ -6198,20 +6198,28 @@
           }
           // Save the recording per class + subject so students of that class only see it.
           const endClassLevel = subjCode.split('-')[1] || '';
-          window.cgCallGas('saveDailyClassNote', {
-            classLevel: endClassLevel,
-            subject: noteSubj,
-            topic: matchedTopic ? `${matchedTopic.chapter}: ${matchedTopic.topic}` : '',
-            classNotesUrl: gnUrl
-          }).then(r => {
-            if (r && r.error) showToast(`Class Notes save failed: ${r.error}`, 'amber');
-          }).catch(err => showToast(`Class Notes save failed: ${err.message}`, 'amber'));
-          window.cgCallGas('saveClassRecordingLink', {
-            classLevel: endClassLevel,
-            subject: noteSubj,
-            topic: matchedTopic ? `${matchedTopic.chapter}: ${matchedTopic.topic}` : '',
-            youtubeUrl: ytUrl
-          }).catch(err => showToast(`Recording link save failed: ${err.message}`, 'amber'));
+          const endClassTopic = matchedTopic ? `${matchedTopic.chapter}: ${matchedTopic.topic}` : '';
+          if (gnUrl) {
+            // Preferred: server files the note into Class Notes/Class XX/<Subject>/<YYYY-MM>, shares it (link viewer), then saves the row.
+            // Fallback (e.g. no access to the file): save the pasted link as-is.
+            const noteArgs = { classLevel: endClassLevel, subject: noteSubj, topic: endClassTopic };
+            window.cgCallGas('registerClassNoteFile', { ...noteArgs, url: gnUrl }).then(r => {
+              if (r && r.error) throw new Error(r.error);
+            }).catch(err => {
+              showToast(`Auto-filing failed (${err.message}); saving the link as-is`, 'amber');
+              return window.cgCallGas('saveDailyClassNote', { ...noteArgs, classNotesUrl: gnUrl }).then(r => {
+                if (r && r.error) showToast(`Class Notes save failed: ${r.error}`, 'amber');
+              }).catch(e2 => showToast(`Class Notes save failed: ${e2.message}`, 'amber'));
+            });
+          }
+          if (ytUrl) {
+            window.cgCallGas('saveClassRecordingLink', {
+              classLevel: endClassLevel,
+              subject: noteSubj,
+              topic: endClassTopic,
+              youtubeUrl: ytUrl
+            }).catch(err => showToast(`Recording link save failed: ${err.message}`, 'amber'));
+          }
           addAuditEvent(`Ended class for ${subjCode} — Class Notes & YouTube synced.`);
           showToast('Class links synced! Now dispatch 7:00 PM DPP below.', 'emerald');
         }).catch(err => {

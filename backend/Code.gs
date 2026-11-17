@@ -172,7 +172,7 @@ function isAdminOnlyAction_(action) {
     'calculateAdmissionQuote', 'createInquiry', 'updateDemoStatus', 'logPromise',
     'convertToAdmission', 'bindStudentClaimCode', 'revokeLateFee',
     'recordCenterExpenseAndReconcileDrawer', 'dispatchDailyDPPAndSubjectivePDF',
-    'buildWhatsAppTemplateLink', 'getAcademicCalendar', 'saveCalendarEvent',
+    'buildWhatsAppTemplateLink', 'getAcademicCalendar', 'saveCalendarEvent', 'saveClassRecordingLink',
     'generatePrintableFeeReceipt', 'getAuditLog', 'archiveGraduatedStudents',
     'cancelBatchLecture', 'setEnvMode', 'runAllTests', 'runTelegramAuthTests',
     'runFounderSubjectiveDryRunTests', 'testGenerateAccountancyMultiPagePdf',
@@ -180,7 +180,7 @@ function isAdminOnlyAction_(action) {
     'testGenerateBstFlowchartPdf', 'testGenerateSubjectiveQuestionPdf',
     'testGenerateSubjectiveAnswerPdf', 'checkBalanceSheetIntegrity',
     'getMonthlyPL', 'getBalanceSheet', 'getCashDrawer', 'reconcileNotebookRegistry',
-    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask', 'getWeeklyTimetable', 'saveWeeklyTimetable', 'saveTimetableSlot', 'deleteTimetableSlot', 'cancelBatchAndNotify', 'logLessonProgress', 'saveCurriculumTopic', 'uploadDailyClassNotes', 'addLeadToSheet', 'advanceLeadStage', 'enrolTrialToDirectory', 'updateStudentProfile', 'saveAttendanceBatch', 'undoAttendanceBatch', 'sendDefaulterNotices', 'sendFeeReminderTelegram', 'publishDppQuiz', 'cancelAndRescheduleClass', 'saveAcademicEvent', 'toggleHolidayDate', 'saveTeacherTasks', 'saveSwotConfig', 'getPaymentIntimations', 'viewStudentAsTeacher', 'exitViewStudentAsTeacher'
+    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask', 'getWeeklyTimetable', 'saveWeeklyTimetable', 'saveTimetableSlot', 'deleteTimetableSlot', 'cancelBatchAndNotify', 'logLessonProgress', 'saveCurriculumTopic', 'uploadDailyClassNotes', 'registerClassNoteFile', 'addLeadToSheet', 'advanceLeadStage', 'enrolTrialToDirectory', 'updateStudentProfile', 'saveAttendanceBatch', 'undoAttendanceBatch', 'sendDefaulterNotices', 'sendFeeReminderTelegram', 'publishDppQuiz', 'cancelAndRescheduleClass', 'saveAcademicEvent', 'toggleHolidayDate', 'saveTeacherTasks', 'saveSwotConfig', 'getPaymentIntimations', 'viewStudentAsTeacher', 'exitViewStudentAsTeacher'
   ];
   return adminActions.indexOf(action) !== -1;
 }
@@ -382,6 +382,10 @@ function doGet(e) {
         requireAdmin_(verifiedUser && verifiedUser.id);
         result = saveDailyClassNote(payload);
         break;
+      case "registerClassNoteFile":
+        requireAdmin_(verifiedUser && verifiedUser.id);
+        result = registerClassNoteFile(payload);
+        break;
       case "getStudentMiniAppBootstrap":
       case "getBootstrapData":
         result = getStudentMiniAppBootstrap(e.parameter);
@@ -489,6 +493,24 @@ function doPost(e) {
           timestamp: new Date().toISOString()
         }
       });
+    }
+
+    // Mac mini YouTube uploader webhook: secret-gated (Script Property RECORDING_WEBHOOK_SECRET), no Telegram auth.
+    if (action === "recordingWebhook") {
+      const expected = PropertiesService.getScriptProperties().getProperty('RECORDING_WEBHOOK_SECRET');
+      const given = String(payload.secret || '');
+      if (!expected || given.length !== expected.length || given !== expected) {
+        return jsonResponse({ ok: false, error: 'HTTP 403: FORBIDDEN (BAD_WEBHOOK_SECRET)' });
+      }
+      const yt = String(payload.youtubeUrl || '');
+      if (!/^https:\/\/(youtu\.be\/|www\.youtube\.com\/watch\?v=)[\w-]{6,}/.test(yt)) {
+        return jsonResponse({ ok: false, error: 'INVALID_YOUTUBE_URL' });
+      }
+      const r = saveClassRecordingLink({
+        classLevel: payload.classLevel, subject: payload.subject,
+        topic: payload.topic || '', youtubeUrl: yt, date: payload.date
+      });
+      return jsonResponse({ ok: true, data: r });
     }
 
     const initData = extractInitData_(e, requestData, payload);
@@ -1129,6 +1151,51 @@ function getDailyClassNotes(subject, classLevel, verifiedUser) {
     Teacher: r.Teacher || 'Gyan Sir'
   })).reverse();
   return { ok: true, count: rows.length, notes: rows };
+}
+
+// Drive root "Class Notes" (My Drive > Class Notes > Class 11|12 > <Subject>). Override via Script Property CLASS_NOTES_ROOT_ID.
+const CLASS_NOTES_ROOT_ID_DEFAULT_ = '1z_H1U2edG5WO59iTmVJbR5725YZhHTTt';
+
+function getOrCreateChildFolder_(parent, name) {
+  const it = parent.getFoldersByName(name);
+  return it.hasNext() ? it.next() : parent.createFolder(name);
+}
+
+function extractDriveFileId_(urlOrId) {
+  const s = String(urlOrId || '').trim();
+  const m = s.match(/\/d\/([A-Za-z0-9_-]{20,})/) || s.match(/[?&]id=([A-Za-z0-9_-]{20,})/);
+  if (m) return m[1];
+  return /^[A-Za-z0-9_-]{20,}$/.test(s) ? s : '';
+}
+
+/**
+ * Admin-only: moves a notes file into Class Notes/Class XX/<Subject>/<YYYY-MM>,
+ * sets "Anyone with the link: Viewer", then saves the Daily_Class_Notes row.
+ * payload: { fileId | url, classLevel, subject, topic?, date? }
+ */
+function registerClassNoteFile(payload) {
+  payload = payload || {};
+  const cls = normalizeClassLevel_(payload.classLevel || payload.class);
+  if (!cls) throw new Error('CLASS_MISSING: Class (11 ya 12) zaroori hai.');
+  const subject = String(payload.subject || '').trim();
+  if (!subject) throw new Error('SUBJECT_MISSING: Subject zaroori hai.');
+  const fileId = extractDriveFileId_(payload.fileId || payload.url || payload.classNotesUrl);
+  if (!fileId) throw new Error('URL_INVALID: Drive file ka link/ID nahi mila.');
+  const rootId = PropertiesService.getScriptProperties().getProperty('CLASS_NOTES_ROOT_ID') || CLASS_NOTES_ROOT_ID_DEFAULT_;
+  const dateStr = payload.date || Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
+  const file = DriveApp.getFileById(fileId);
+  const root = DriveApp.getFolderById(rootId);
+  const folder = getOrCreateChildFolder_(
+    getOrCreateChildFolder_(getOrCreateChildFolder_(root, 'Class ' + cls), subject),
+    dateStr.substring(0, 7));
+  file.moveTo(folder);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  const url = file.getUrl();
+  const saved = saveDailyClassNote({
+    classLevel: cls, subject: subject, topic: payload.topic || '',
+    classNotesUrl: url, date: dateStr, teacher: payload.teacher
+  });
+  return { ok: true, url: url, folder: folder.getName(), saved: saved };
 }
 
 /**
@@ -4920,5 +4987,18 @@ function isViewAsStudentActive_(callerId) {
     return Boolean(val);
   } catch (e) {
     return false;
+  }
+}
+
+/** One-time: run from the Apps Script editor. Creates RECORDING_WEBHOOK_SECRET if missing and logs it once for the owner to put in the Mac mini config.json. */
+function initRecordingWebhookSecret() {
+  const props = PropertiesService.getScriptProperties();
+  let s = props.getProperty('RECORDING_WEBHOOK_SECRET');
+  if (!s) {
+    s = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
+    props.setProperty('RECORDING_WEBHOOK_SECRET', s);
+    Logger.log('CREATED RECORDING_WEBHOOK_SECRET=' + s);
+  } else {
+    Logger.log('ALREADY SET (not shown)');
   }
 }
