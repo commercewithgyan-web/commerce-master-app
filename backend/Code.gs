@@ -4497,17 +4497,19 @@ function toggleAcademicHoliday(payload) {
     if (notified) {
       try {
         let notifSheet = erp.getSheetByName('Student_Notifications');
-        if (notifSheet) {
-          notifSheet.appendRow([
-            'NOTIF-HOL-' + Date.now(),
-            'ALL',
-            dateStr,
-            'HOLIDAY_NOTICE',
-            `Notice: ${dateStr} is observed as a holiday (${reason}). Classes & 7 PM DPP are shifted forward.`,
-            '',
-            'BROADCAST'
-          ]);
+        if (!notifSheet) {
+          notifSheet = erp.insertSheet('Student_Notifications');
+          notifSheet.appendRow(['Notification_ID', 'Target', 'Date', 'Type', 'Message', 'Link', 'Status']);
         }
+        notifSheet.appendRow([
+          'NOTIF-HOL-' + Date.now(),
+          'ALL',
+          dateStr,
+          'HOLIDAY_NOTICE',
+          `Notice: ${dateStr} is observed as a holiday (${reason}). Classes & 7 PM DPP are shifted forward.`,
+          '',
+          'BROADCAST'
+        ]);
       } catch (_) {}
     }
 
