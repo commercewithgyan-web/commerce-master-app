@@ -338,7 +338,7 @@ function handleTextMessage_(msg) {
 
   // Default friendly guidance
   var props = PropertiesService.getScriptProperties();
-  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://gyandeepkumar.github.io/commerce-master-app';
+  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/frontend/index.html';
 
   sendTelegramMessage_(chatId,
     '👋 *Hello from Commerce Gyan!*\n\n' +
@@ -476,7 +476,7 @@ function handleAdminGrantGraceCommand_(chatId, text) {
  */
 function handleStartCommand_(chatId, fromUser) {
   var props = PropertiesService.getScriptProperties();
-  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://gyandeepkumar.github.io/commerce-master-app';
+  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/frontend/index.html';
   var name = fromUser ? (fromUser.first_name || 'Student') : 'Student';
 
   var welcomeMsg =
@@ -527,7 +527,7 @@ function handleFeeCommand_(chatId) {
 function handlePhotoMessage_(msg) {
   var chatId = msg.chat.id;
   var props = PropertiesService.getScriptProperties();
-  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://gyandeepkumar.github.io/commerce-master-app';
+  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/frontend/index.html';
 
   sendTelegramMessage_(chatId,
     '📸 *Register Photo Received!*\n\n' +

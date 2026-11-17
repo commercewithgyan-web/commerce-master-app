@@ -278,14 +278,14 @@ async function redeemCoinsForPayment() {
 
   if (!coinsToUse || coinsToUse <= 0) {
     if (window.TG_APP && TG_APP.hapticError) TG_APP.hapticError();
-    alert('Kripya valid CG Coins enter karein (e.g. 10, 50, 100).');
+    alert('Please enter a valid CG Coins amount (e.g. 10, 50, 100).');
     return;
   }
 
   var maxCoins = (window.lastFeeData && window.lastFeeData.coinBalance) || 150;
   if (coinsToUse > maxCoins) {
     if (window.TG_APP && TG_APP.hapticError) TG_APP.hapticError();
-    alert('Aapke paas sirf ' + maxCoins + ' CG Coins available hain.');
+    alert('You have only ' + maxCoins + ' CG Coins available.');
     return;
   }
 

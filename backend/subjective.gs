@@ -50,7 +50,7 @@ function sendSubjectiveQuestionPDF() {
       });
 
       // Deliver single PDF to class channel via multipart Blob upload (Law C-5)
-      var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://gyandeepkumar.github.io/commerce-master-app';
+      var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/frontend/index.html';
       var caption =
         '📚 *OFFICIAL CBSE PRACTICE PROBLEM — CLASS ' + classLevel + '*\n' +
         '━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
@@ -2819,13 +2819,17 @@ function testGenerateBstFlowchartPdf(classLevel) {
  * Scans Subjective_PDF_Log to collect all previously dispatched Question IDs
  * @return {Object.<string, boolean>}
  */
-function getDispatchedSubjectiveQids_() {
+function getDispatchedSubjectiveQids_(classLevel) {
   var used = {};
+  var cls = normalizeClassLevel_(classLevel); // '' = all classes (old behaviour)
   try {
     var logSheet = getSheet_('SHEET_TG', 'Subjective_PDF_Log');
     if (logSheet && logSheet.getLastRow() > 1) {
       var data = logSheet.getDataRange().getValues();
       for (var r = 1; r < data.length; r++) {
+        // A question used for Class 12 must stay available for Class 11 (and the other way round).
+        var rowCls = normalizeClassLevel_(data[r][5]);
+        if (cls && rowCls && rowCls !== cls) continue;
         var rowQid = String(data[r][6] || '').trim();
         if (rowQid) used[rowQid] = true;
         var payload = data[r][7];
@@ -2856,7 +2860,7 @@ function getApprovedSubjectiveQuestion_(classLevel, subtopic, targetMarks) {
   classLevel = Number(classLevel) || 12;
   subtopic = subtopic || {};
   targetMarks = Number(targetMarks) || 0;
-  var usedQids = getDispatchedSubjectiveQids_();
+  var usedQids = getDispatchedSubjectiveQids_(classLevel);
 
   // 1. Try to query SHEET_QB!Theory_Bank then SHEET_QB!QuestionBank
   var bankTabs = ['Theory_Bank', 'QuestionBank'];

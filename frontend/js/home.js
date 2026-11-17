@@ -119,7 +119,7 @@ function renderHomeDashboard(data) {
   // Claim Code Card Visibility (v3.0)
   var claimCard = document.getElementById('claimCodeCard') || document.getElementById('tgClaimCodeCard');
   if (claimCard) {
-    claimCard.style.display = (data.claimStatus === 'UNCLAIMED' || data.isClaimed === false) ? 'block' : 'none';
+    claimCard.style.display = 'none'; // Binding is teacher-only (server rejects students)
   }
 
   // Recovery Drill Card Visibility (v3.0)

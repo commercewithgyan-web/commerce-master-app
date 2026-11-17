@@ -111,8 +111,8 @@ async function fetchAndRenderPracticeQuestions() {
   try {
     const res = await callBackendApi('getPracticeQuestions', {
       subject: currentSubject,
-      difficulty: currentDifficulty,
-      classLevel: "12"
+      difficulty: currentDifficulty
+      // Class is decided by the server from the student's own record - never sent from here.
     });
 
     if (res && res.ok && res.questions && res.questions.length > 0) {

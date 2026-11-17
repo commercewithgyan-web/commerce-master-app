@@ -111,7 +111,7 @@ function apiSubmitMysteryVerdict_(verifiedUser, payload) {
 function handleMysteryCommand_(chatId) {
   sendChatAction_(chatId, 'typing');
   var props = PropertiesService.getScriptProperties();
-  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://gyandeepkumar.github.io/commerce-master-app';
+  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/frontend/index.html';
 
   var text =
     '📋 *CASE STUDY LAB: CBSE COMPETENCY PRACTICE*\n' +

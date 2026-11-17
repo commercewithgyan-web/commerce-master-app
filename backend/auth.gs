@@ -445,6 +445,16 @@ function verifyAndRouteUser_(initDataRaw, previewRollNo) {
     };
   }
 
+  // 3b. Dropped / Inactive / Graduated students lose access at once (no fresh trial)
+  if (student && (studentStatus === 'DROPPED' || studentStatus === 'INACTIVE' || studentStatus === 'GRADUATED')) {
+    return {
+      ok: false,
+      error: 'ACCESS_DENIED',
+      telegramId: telegramId,
+      message: 'Your student account is marked as ' + studentStatus + '. Please contact Gyan Sir.'
+    };
+  }
+
   // 4. Unregistered / Former / Dropped Students -> Seamless 7-Day Auto-Access Lifecycle
   var visitor = getOrRecordTelegramVisitor_(erp, user);
 
@@ -455,7 +465,7 @@ function verifyAndRouteUser_(initDataRaw, previewRollNo) {
       isTrialExpired: true,
       telegramId: telegramId,
       heading: '7-Day Free Access Complete',
-      message: 'आशा है आपको Commerce Gyan App के फ़ीचर्स पसंद आए होंगे! अगर आप इस सिस्टम को आगे भी यूज़ करना चाहते हैं और अपनी पढ़ाई जारी रखना चाहते हैं, तो अभी Commerce Gyan (Gyan Sir) से संपर्क करें।',
+      message: 'We hope you enjoyed the Commerce Gyan App! If you want to keep using this system and continue your studies, please contact Commerce Gyan (Gyan Sir) now.',
       contactPhone: '9835011205',
       contactWhatsApp: 'https://wa.me/919835011205?text=' + encodeURIComponent('Namaste Gyan Sir, mere Commerce Gyan App ke 7 days complete ho gaye hain. Mujhe coaching batch me continue karna hai.')
     };
@@ -501,14 +511,7 @@ function requirePaidStudent_(telegramId) {
     throw new Error('HTTP 401: AUTH_FAILED: Unauthenticated user');
   }
 
-  // Check CacheService for fast student resolution
-  var cache = CacheService.getScriptCache();
-  var cachedStudent = cache.get('STUDENT_' + cleanId);
-  if (cachedStudent) {
-    try {
-      return JSON.parse(cachedStudent);
-    } catch (e) {}
-  }
+  // No cache: a DROPPED/INACTIVE status must cut access on the very next request.
 
   var student = findRow_('SHEET_FEE', 'Students', 'TelegramID', cleanId);
   if (!student) {
@@ -516,6 +519,11 @@ function requirePaidStudent_(telegramId) {
     try {
       var IDS = getActiveSheetIds();
       var erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+      var masterRow = findStudentByTelegramId_(erp, cleanId);
+      var masterStatus = masterRow ? String(masterRow.Status || '').trim().toUpperCase() : '';
+      if (masterStatus === 'DROPPED' || masterStatus === 'INACTIVE' || masterStatus === 'GRADUATED') {
+        throw new Error('ACCESS_DENIED: Your student account is marked as ' + masterStatus + '. Contact Gyan Sir.');
+      }
       var vSheet = erp.getSheetByName('Telegram_Visitors');
       if (vSheet) {
         var vRows = sheetToObjects(vSheet);
@@ -550,10 +558,6 @@ function requirePaidStudent_(telegramId) {
 
     throw new Error('ACCESS_DENIED: Student record not found for Telegram ID: ' + cleanId);
   }
-
-  try {
-    cache.put('STUDENT_' + cleanId, JSON.stringify(student), 600);
-  } catch (cErr) {}
 
   var status = String(student.Status || '').trim().toUpperCase();
 

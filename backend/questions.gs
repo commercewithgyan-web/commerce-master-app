@@ -88,34 +88,50 @@ const MASTER_VAULT_START_COL = 27; // Column AA
 const MASTER_VAULT_NUM_COLS = 20;  // Columns AA..AT
 const MASTER_VAULT_READ_COLS = 21; // AA..AU (AU = QA_Audit_Status gatekeeper, read-only)
 
+/**
+ * Turns "12", 12, "Class 12", "XII", "12th" into '11' or '12'. Anything else -> '' (never guesses).
+ */
+function normalizeClassLevel_(raw) {
+  var s = String(raw == null ? '' : raw).toUpperCase();
+  if (/\bXII\b|(^|\D)12(\D|$)/.test(s)) return '12';
+  if (/\bXI\b|(^|\D)11(\D|$)/.test(s)) return '11';
+  return '';
+}
+
+/**
+ * The ONLY trusted source of a student's class: SHEET_FEE > Students > Class (server side).
+ * The class a browser sends is never used. Blank/invalid Class -> clear Hindi-friendly error.
+ */
+function getVerifiedStudentClass_(verifiedUser) {
+  var student = requirePaidStudent_(verifiedUser.id);
+  var cls = normalizeClassLevel_(student.Class);
+  if (!cls) {
+    throw new Error('CLASS_MISSING: Students sheet me aapki Class (11 ya 12) likhi nahi hai. Gyan Sir se contact kijiye.');
+  }
+  return cls;
+}
+
+/**
+ * Returns the Master Vault tab for (subject, class). A class NEVER gets the other class's tab.
+ * Class 11: ACC, BST, STAT, ECO_MICRO.  Class 12: ACC, BST, ECO_IED, ECO_MACRO.
+ * Returns '' when that class has no such subject (caller must handle).
+ */
 function getMasterRepoSheetName_(subject, classLevel) {
-  var cls = String(classLevel || '12');
-  var isClass11 = cls.indexOf('11') !== -1;
+  var cls = normalizeClassLevel_(classLevel);
+  if (!cls) return '';
   var subj = String(subject || '').toLowerCase();
+  var tabs = cls === '11'
+    ? { bst: '11_BST', acc: '11_ACC', stat: '11_STAT', micro: '11_ECO_MICRO', macro: '', ied: '' }
+    : { bst: '12_BST', acc: '12_ACC', stat: '', micro: '', macro: '12_ECO_MACRO', ied: '12_ECO_IED' };
 
-  if (subj.indexOf('business') !== -1 || subj.indexOf('bst') !== -1) {
-    return isClass11 ? '11_BST' : '12_BST';
-  }
-  if (subj.indexOf('account') !== -1 || subj.indexOf('acc') !== -1) {
-    return isClass11 ? '11_ACC' : '12_ACC';
-  }
-  if (subj.indexOf('stat') !== -1) {
-    return '11_STAT';
-  }
-  if (subj.indexOf('indian') !== -1 || subj.indexOf('ied') !== -1 || subj.indexOf('development') !== -1) {
-    return '12_ECO_IED';
-  }
-  if (subj.indexOf('micro') !== -1) {
-    return '11_ECO_MICRO';
-  }
-  if (subj.indexOf('macro') !== -1) {
-    return '12_ECO_MACRO';
-  }
-  if (subj.indexOf('eco') !== -1) {
-    return isClass11 ? '11_ECO_MICRO' : '12_ECO_MACRO';
-  }
-
-  return isClass11 ? '11_ACC' : '12_ACC';
+  if (subj.indexOf('business') !== -1 || subj.indexOf('bst') !== -1) return tabs.bst;
+  if (subj.indexOf('account') !== -1 || subj.indexOf('acc') !== -1) return tabs.acc;
+  if (subj.indexOf('stat') !== -1) return tabs.stat;
+  if (subj.indexOf('indian') !== -1 || subj.indexOf('ied') !== -1 || subj.indexOf('development') !== -1) return tabs.ied;
+  if (subj.indexOf('micro') !== -1) return tabs.micro;
+  if (subj.indexOf('macro') !== -1) return tabs.macro;
+  if (subj.indexOf('eco') !== -1) return cls === '11' ? tabs.micro : tabs.macro;
+  return tabs.acc;
 }
 
 function getMasterVaultQuestionsByTab_(targetSheetName, includeAllStatuses) {
@@ -230,12 +246,20 @@ function getMasterVaultQuestionsByTab_(targetSheetName, includeAllStatuses) {
   return parsedQuestions;
 }
 
-function handleGetPracticeQuestions_(data) {
+function handleGetPracticeQuestions_(data, verifiedUser) {
   var subject = (data && data.subject) || 'Accountancy';
   var diff = String((data && data.difficulty) || 'ALL').toUpperCase();
-  var classLevel = (data && data.classLevel) || '12';
+  // Class comes from the server (student.Class). Only a teacher/admin may preview another class.
+  var classLevel;
+  if (verifiedUser && verifiedUser.id && !isAdmin_(verifiedUser.id)) {
+    classLevel = getVerifiedStudentClass_(verifiedUser);
+  } else {
+    classLevel = normalizeClassLevel_(data && data.classLevel);
+    if (!classLevel) throw new Error('CLASS_MISSING: Class (11 ya 12) batao.');
+  }
   var chapterFilter = data && (data.chapter || data.chapterName);
   var targetSheetName = getMasterRepoSheetName_(subject, classLevel);
+  if (!targetSheetName) return [];
 
   var vaultRows = getMasterVaultQuestionsByTab_(targetSheetName, false);
   var questions = [];
@@ -287,6 +311,10 @@ function handleGetPracticeQuestions_(data) {
 function assembleDailyQuestions_(classLevel, subject) {
   var active = getActiveSubtopic_(classLevel);
   var targetSheetName = getMasterRepoSheetName_(subject || active.subject, classLevel);
+  if (!targetSheetName) {
+    Logger.log('NO_VAULT_TAB class ' + classLevel + ' subject ' + (subject || active.subject));
+    return [];
+  }
 
   var vaultMcqs = getMasterVaultQuestionsByTab_(targetSheetName, false).filter(function(q) {
     return q.QuestionType.toUpperCase().indexOf('MCQ') !== -1 ||
@@ -311,8 +339,8 @@ function assembleDailyQuestions_(classLevel, subject) {
 }
 
 function fillDailyQuestions(classLevel, subject) {
-  classLevel = classLevel || 12;
-  subject = subject || 'Accountancy';
+  classLevel = normalizeClassLevel_(classLevel) || '12';
+  subject = subject || getActiveSubtopic_(classLevel).subject;
   var questions = assembleDailyQuestions_(classLevel, subject);
   if (questions.length === 0) return 'No questions found';
 
@@ -359,7 +387,8 @@ function generateQuestionWithGemini_(classLevel, subject, chapter, topic, diffic
     'You are a senior CBSE Commerce content author for Commerce Gyan. Generate 1 high-quality Multiple Choice Question (MCQ) for CBSE Class ' + classLevel + ' ' + subject + '.\n' +
     'Chapter: ' + chapter + '\n' +
     'Subtopic: ' + topic + '\n' +
-    'Difficulty level: ' + difficulty + '\n\n' +
+    'Difficulty level: ' + difficulty + '\n' +
+    'Language: write EVERYTHING in English only (medium of instruction is always English).\n\n' +
     'Return JSON STRICTLY matching this schema with no markdown code fences:\n' +
     '{\n' +
     '  "question": "Question text here",\n' +
@@ -405,6 +434,7 @@ function generateQuestionWithGemini_(classLevel, subject, chapter, topic, diffic
   if (!resData) throw new Error('Gemini failed to generate question after 3 attempts');
 
   var targetTab = getMasterRepoSheetName_(subject, classLevel);
+  if (!targetTab) throw new Error('Class ' + classLevel + ' me "' + subject + '" subject nahi hai - Vault tab nahi mila.');
   var qid = targetTab.replace('_', '') + '-AI-' + Math.floor(1000 + Math.random() * 9000);
 
   try {
@@ -545,8 +575,8 @@ function updateMasterVaultStatusByQid_(qid, newStatus) {
 }
 
 function apiGetDailyQuestion_(verifiedUser, payload) {
-  var student = requirePaidStudent_(verifiedUser.id);
-  var classLevel = (payload && payload.classLevel) || student.Class || 12;
+  // Class is ALWAYS the student's own class from the Students sheet - never payload.classLevel.
+  var classLevel = getVerifiedStudentClass_(verifiedUser);
   var todayStr = getKolkataDate();
 
   var cache = CacheService.getScriptCache();
@@ -568,7 +598,7 @@ function apiGetDailyQuestion_(verifiedUser, payload) {
   }
 
   if (!todayQuestions || todayQuestions.length === 0) {
-    var rawAssembled = assembleDailyQuestions_(classLevel, (payload && payload.subject) || 'Accountancy');
+    var rawAssembled = assembleDailyQuestions_(classLevel, getActiveSubtopic_(classLevel).subject);
     todayQuestions = rawAssembled.map(function(q) {
       return {
         QID: q.QID,
@@ -665,7 +695,7 @@ function apiSubmitAnswer_(verifiedUser, payload) {
   var optionMap = payload.optionMap;
   var timeTakenSeconds = payload.timeTakenSeconds || 0;
 
-  var q = findQuestionAcrossVaults_(qid);
+  var q = findQuestionAcrossVaults_(qid, getVerifiedStudentClass_(verifiedUser));
   if (!q) throw new Error('Question QID ' + qid + ' not found');
 
   var correctKey = q.CorrectIndex;
@@ -759,8 +789,9 @@ function apiSubmitAnswer_(verifiedUser, payload) {
   };
 }
 
-function findQuestionAcrossVaults_(qid) {
+function findQuestionAcrossVaults_(qid, classLevel) {
   var qidStr = String(qid || '').trim();
+  var cls = normalizeClassLevel_(classLevel); // '' = unknown (teacher tools only)
   var prefixMap = {
     '11ACC': '11_ACC',
     '11BST': '11_BST',
@@ -774,6 +805,8 @@ function findQuestionAcrossVaults_(qid) {
 
   var prefix = qidStr.split('-')[0].toUpperCase();
   if (prefixMap[prefix]) {
+    // A class-12 student can never look up a class-11 question (and the other way round).
+    if (cls && prefixMap[prefix].indexOf(cls) !== 0) return null;
     var tabQuestions = getMasterVaultQuestionsByTab_(prefixMap[prefix], true);
     for (var i = 0; i < tabQuestions.length; i++) {
       if (tabQuestions[i].QID === qidStr) return tabQuestions[i];
@@ -782,6 +815,7 @@ function findQuestionAcrossVaults_(qid) {
 
   var allTabs = ['11_ACC', '11_BST', '11_ECO_MICRO', '11_STAT', '12_ACC', '12_BST', '12_ECO_MACRO', '12_ECO_IED'];
   for (var t = 0; t < allTabs.length; t++) {
+    if (cls && allTabs[t].indexOf(cls) !== 0) continue;
     var qs = getMasterVaultQuestionsByTab_(allTabs[t], true);
     for (var j = 0; j < qs.length; j++) {
       if (qs[j].QID === qidStr) return qs[j];
@@ -790,7 +824,9 @@ function findQuestionAcrossVaults_(qid) {
 
   try {
     var qbData = getSheetData_('SHEET_QB', 'QuestionBank');
-    return qbData.find(function(row) { return row.QID === qidStr; }) || null;
+    return qbData.find(function(row) {
+      return row.QID === qidStr && (!cls || normalizeClassLevel_(row.Class) === cls);
+    }) || null;
   } catch (e) {
     return null;
   }

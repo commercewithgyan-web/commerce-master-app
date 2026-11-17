@@ -333,7 +333,7 @@ function renderUniversalRedPenReport(data, studentName) {
       '<div style="margin-bottom: 10px;">' +
         '<span class="word-count-chip">📝 ' + escapeHtml(wordChipText) + '</span>' +
       '</div>' +
-      (didRightHtml ? '<div style="margin-bottom: 12px;"><div style="font-size: 12px; font-weight: 700; color: #34D399; margin-bottom: 6px; text-transform: uppercase;">Key Strengths (तुमने क्या सही लिखा):</div>' + didRightHtml + '</div>' : '') +
+      (didRightHtml ? '<div style="margin-bottom: 12px;"><div style="font-size: 12px; font-weight: 700; color: #34D399; margin-bottom: 6px; text-transform: uppercase;">Key Strengths (what you wrote correctly):</div>' + didRightHtml + '</div>' : '') +
       (vpResultsHtml ? '<div><div style="font-size: 12px; font-weight: 700; color: #38BDF8; margin-bottom: 6px; text-transform: uppercase;">CBSE Value Points Breakdown:</div>' + vpResultsHtml + '</div>' : '') +
     '</div>';
 
@@ -404,7 +404,7 @@ function renderUniversalRedPenReport(data, studentName) {
   var card3Html =
     '<div class="eval-step-card">' +
       '<div class="step-header step-3-header">' +
-        '<span>✍️ Step 3: "Aise Nahi, Aise Likho" (Sentence Upgrades)</span>' +
+        '<span>✍️ Step 3: "Not This, Write This" (Sentence Upgrades)</span>' +
       '</div>' +
       upgradesHtml +
     '</div>';

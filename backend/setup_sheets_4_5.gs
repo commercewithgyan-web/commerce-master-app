@@ -64,12 +64,12 @@ function setupTab_PDFLog_(ss) {
 /** Tab 4.3: Subjective_PDF_Log — Single-PDF broadcast cycle tracking */
 function setupTab_SubjectivePDFLog_(ss) {
   var sheet = createOrGetSheet_(ss, 'Subjective_PDF_Log');
-  var headers = ['Date', 'QuestionPDF_URL', 'AnswerPDF_URL', 'SentAt', 'ChannelID'];
+  var headers = ['Date', 'QuestionPDF_URL', 'AnswerPDF_URL', 'SentAt', 'ChannelID', 'Class', 'QID', 'Payload'];
 
   formatHeaders_(sheet, headers, TG_HEADER_COLOR);
 
   setColumnWidths_(sheet, {
-    1: 110, 2: 250, 3: 250, 4: 140, 5: 140
+    1: 110, 2: 250, 3: 250, 4: 140, 5: 140, 6: 60, 7: 160, 8: 200
   });
 
   setDateFormat_(sheet, [1], 'dd-MMM-yyyy');

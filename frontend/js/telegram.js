@@ -147,7 +147,7 @@ window.showAuthFailed = function(customMsg) {
     '<div class="auth-failed-card">',
     '  <div class="auth-failed-logo">CG</div>',
     '  <h2 class="auth-failed-title">Telegram Login Required</h2>',
-    '  <p class="auth-failed-desc">' + (customMsg || 'Yeh app sirf Telegram (@CommerceGyanDostbot) ke andar kaam karta hai. Kripya Telegram bot kholkar Mini App launch karein.') + '</p>',
+    '  <p class="auth-failed-desc">' + (customMsg || 'This app works only inside Telegram (@CommerceGyanDostbot). Please open the bot and launch the Mini App.') + '</p>',
     '  <a href="https://t.me/CommerceGyanDostbot" class="auth-failed-btn">',
     '    <span>🚀</span><span>Open in Telegram</span>',
     '  </a>',

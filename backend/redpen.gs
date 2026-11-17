@@ -156,7 +156,7 @@ function attachOfficialScheme_(ctx, qidHint) {
   if (!/^1[12][A-Z]+-CH\d+-\d+$/.test(qid)) return ctx;
 
   var q = null;
-  try { q = findQuestionAcrossVaults_(qid); } catch (e) { Logger.log('RedPen vault lookup note: ' + e); }
+  try { q = findQuestionAcrossVaults_(qid, qid.substring(0, 2)); } catch (e) { Logger.log('RedPen vault lookup note: ' + e); }
   if (!q || !q.Rubric) return ctx;
   if (String(q.ApprovalStatus || '').toLowerCase() !== 'approved') return ctx;
 
@@ -622,7 +622,7 @@ function saveRedPenImageToDrive_(base64Data, studentId) {
  */
 function handleRedPenCommand_(chatId) {
   var props = PropertiesService.getScriptProperties();
-  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://gyandeepkumar.github.io/commerce-master-app';
+  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/frontend/index.html';
 
   sendTelegramMessage_(chatId,
     '📸 *RED-PEN SNAPSHOT: UNIVERSAL CBSE COPY EVALUATOR*\n' +

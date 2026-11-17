@@ -187,7 +187,7 @@ function apiAskDoubt_(verifiedUser, payload) {
     return {
       ok: false,
       studentName: studentName,
-      error: 'AI abhi available nahi hai, teacher se poochein'
+      error: 'AI is not available right now. Please ask your teacher.'
     };
   }
 

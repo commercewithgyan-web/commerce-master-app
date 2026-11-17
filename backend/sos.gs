@@ -66,7 +66,7 @@ function handleSosCommand_(chatId) {
     '*You\'ve got this!* — Gyan Sir';
 
   var props = PropertiesService.getScriptProperties();
-  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://gyandeepkumar.github.io/commerce-master-app';
+  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/frontend/index.html';
 
   sendTelegramMessage_(chatId, msgText, {
     inline_keyboard: [

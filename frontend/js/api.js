@@ -142,7 +142,7 @@ var API_CLIENT = {
       console.error('API call failed (' + action + '):', err);
 
       if (err.name === 'AbortError' || String(err).includes('aborted') || String(err).includes('longer than 60 seconds')) {
-        throw new Error('सर्वर ने 60 सेकंड से ज्यादा समय लिया। कृपया नेटवर्क स्पीड चेक करें और दोबारा प्रयास करें।');
+        throw new Error('The server took more than 60 seconds. Please check your network speed and try again.');
       }
 
       // Offline answer queuing

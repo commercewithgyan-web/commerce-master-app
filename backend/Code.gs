@@ -361,10 +361,10 @@ function doGet(e) {
         result = getFinancialSummary();
         break;
       case "getPracticeQuestions":
-        result = handleGetPracticeQuestions_(e.parameter);
+        result = handleGetPracticeQuestions_(e.parameter, verifiedUser);
         break;
       case "getClassRecordingLink":
-        result = getClassRecordingLink(e.parameter);
+        result = getClassRecordingLink(e.parameter, verifiedUser);
         break;
       case "getAppConfig":
         result = { ok: true, commerceGyanAppUrl: getCommerceGyanAppUrl_() };
@@ -650,7 +650,7 @@ function doPost(e) {
         result = saveStudentNotebookItem(payload, verifiedUser);
         break;
       case "getPracticeQuestions":
-        result = handleGetPracticeQuestions_(payload);
+        result = handleGetPracticeQuestions_(payload, verifiedUser);
         break;
       case "getAppConfig":
         result = { ok: true, commerceGyanAppUrl: getCommerceGyanAppUrl_() };
@@ -733,7 +733,7 @@ function doPost(e) {
         result = toggleAcademicTask(payload);
         break;
       case "getClassRecordingLink":
-        result = getClassRecordingLink(payload);
+        result = getClassRecordingLink(payload, verifiedUser);
         break;
       case "saveClassRecordingLink":
         result = saveClassRecordingLink(payload);
@@ -2293,6 +2293,7 @@ function setActiveSubtopic(payload) {
     }
 
 
+    let lockedClass = '';
     // 2. Update Syllabus Master
     const sylSheet = (sylSS.getSheetByName('Master_Syllabus') || sylSS.getSheetByName('01_Master_Syllabus'));
     if (sylSheet) {
@@ -2305,6 +2306,9 @@ function setActiveSubtopic(payload) {
       const videoTypeCol = headers.indexOf('Video_Type');
       const notionCol = headers.indexOf('Notion_Link') >= 0 ? headers.indexOf('Notion_Link') : headers.indexOf('Notion_Page_URL');
       const qTaughtCol = headers.indexOf('Question_Numbers_Taught');
+      const classCol = headers.indexOf('Class');
+      const subjectCol = headers.indexOf('Subject');
+      const chapterCol = headers.indexOf('ChapterNo');
 
       for (let i = 1; i < sylData.length; i++) {
         if (String(sylData[i][topicCol >= 0 ? topicCol : 0]) === subtopicId) {
@@ -2314,6 +2318,16 @@ function setActiveSubtopic(payload) {
           if (videoTypeCol >= 0 && payload.videoType) sylSheet.getRange(i + 1, videoTypeCol + 1).setValue(payload.videoType);
           if (notionCol >= 0 && payload.notionLink) sylSheet.getRange(i + 1, notionCol + 1).setValue(payload.notionLink);
           if (qTaughtCol >= 0 && payload.questionsTaught) sylSheet.getRange(i + 1, qTaughtCol + 1).setValue(payload.questionsTaught);
+          // The class comes from the syllabus row itself (never guessed), so Class 11 and 12 stay separate.
+          lockedClass = normalizeClassLevel_(classCol >= 0 ? sylData[i][classCol] : '');
+          if (lockedClass && subjectCol >= 0 && chapterCol >= 0) {
+            try {
+              setActiveSubtopic_(lockedClass, String(sylData[i][subjectCol]), String(sylData[i][chapterCol]), subtopicId);
+              CacheService.getScriptCache().remove('DAILY_PKG_' + dateStr + '_' + lockedClass);
+            } catch (e) { Logger.log('ACTIVE_SUBTOPIC per-class write failed: ' + e.message); }
+          } else {
+            Logger.log('setActiveSubtopic: Class missing for ' + subtopicId + ' in Master_Syllabus - per-class topic NOT set.');
+          }
           break;
         }
       }
@@ -2323,6 +2337,7 @@ function setActiveSubtopic(payload) {
     return {
       ok: true,
       activeSubtopic: subtopicId,
+      classLevel: lockedClass,
       deliveryMode: deliveryMode,
       updatedAt: nowStr
     };
@@ -3621,7 +3636,7 @@ function handleApiRequest(req, userFromCaller) {
       dataResult = (typeof apiSubmitAnswer_ === 'function') ? apiSubmitAnswer_(verifiedUser, payload) : { ok: true };
       break;
     case 'getPracticeQuestions':
-      dataResult = (typeof handleGetPracticeQuestions_ === 'function') ? handleGetPracticeQuestions_(payload) : [];
+      dataResult = (typeof handleGetPracticeQuestions_ === 'function') ? handleGetPracticeQuestions_(payload, verifiedUser) : [];
       break;
     case 'askDoubt':
       dataResult = (typeof apiAskDoubt_ === 'function') ? apiAskDoubt_(verifiedUser, payload) : { answer: '' };
@@ -4300,29 +4315,32 @@ function saveWeeklyTimetable(payload) {
  * A3: Reads class recording link uploaded automatically by owner's Mac mini
  * from Google Drive / Daily_Class_Recordings tab in MASTER_ERP.
  */
-function getClassRecordingLink(payload) {
+function getClassRecordingLink(payload, verifiedUser) {
   payload = payload || {};
   const IDS = getActiveSheetIds();
   const erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
-  let recSheet = erp.getSheetByName("Daily_Class_Recordings");
-  if (!recSheet) {
-    recSheet = erp.insertSheet("Daily_Class_Recordings");
-    recSheet.appendRow(["Date", "Class", "Subject", "Topic", "YouTube_Unlisted_URL", "Drive_File_ID", "Updated_At"]);
+  const recSheet = erp.getSheetByName("Daily_Class_Recordings");
+  if (!recSheet) return { ok: true, found: false, message: "Abhi koi recording save nahi hui." };
+  // Class always from the server for students; only teacher/admin may ask for another class.
+  let classLvl;
+  if (verifiedUser && verifiedUser.id && !isAdmin_(verifiedUser.id)) {
+    classLvl = getVerifiedStudentClass_(verifiedUser);
+  } else {
+    classLvl = normalizeClassLevel_(payload.classLevel || payload.class);
+    if (!classLvl) throw new Error('CLASS_MISSING: Class (11 ya 12) batao.');
   }
   const dateStr = payload.date || Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd");
-  const classLvl = String(payload.classLevel || payload.class || "12");
-  const subj = String(payload.subject || "").toUpperCase();
+  const subj = String(payload.subject || "").toUpperCase().trim();
   const rows = sheetToObjects(recSheet);
-  const match = rows.find(r => {
-    const dMatch = String(r.Date || "").trim() === dateStr;
-    const cMatch = !classLvl || String(r.Class || "").includes(classLvl);
-    const sMatch = !subj || String(r.Subject || "").toUpperCase().includes(subj);
-    return dMatch && (cMatch || sMatch);
-  });
+  // Strict: class AND date AND (subject if asked). Latest saved row wins.
+  const match = rows.reverse().find(r =>
+    String(r.Date || "").trim() === dateStr &&
+    normalizeClassLevel_(r.Class) === classLvl &&
+    (!subj || String(r.Subject || "").toUpperCase().includes(subj)));
   if (match && match.YouTube_Unlisted_URL) {
     return { ok: true, found: true, youtubeUrl: match.YouTube_Unlisted_URL, topic: match.Topic || "", date: dateStr };
   }
-  return { ok: true, found: false, message: "No recording uploaded yet for this date/class (Mac mini automated queue)" };
+  return { ok: true, found: false, message: "Is date/class ki recording abhi upload nahi hui." };
 }
 
 function saveClassRecordingLink(payload) {
@@ -4338,10 +4356,13 @@ function saveClassRecordingLink(payload) {
     const now = new Date();
     const dateStr = payload.date || Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd");
     const nowStr = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
+    const classLvl = normalizeClassLevel_(payload.classLevel);
+    if (!classLvl) throw new Error('CLASS_MISSING: Recording ke saath Class (11 ya 12) zaroori hai.');
+    if (!String(payload.subject || '').trim()) throw new Error('SUBJECT_MISSING: Recording ke saath Subject zaroori hai.');
     const row = [
       dateStr,
-      String(payload.classLevel || "12"),
-      String(payload.subject || "Accountancy"),
+      classLvl,
+      String(payload.subject).trim(),
       String(payload.topic || ""),
       String(payload.youtubeUrl || payload.YouTube_Unlisted_URL || ""),
       String(payload.driveFileId || ""),
@@ -4678,7 +4699,7 @@ function getGradeWeights() {
   } catch (err) {
     Logger.log('Warning reading grade weights: ' + err.message);
   }
-  return { ok: true, configured: false, weights: null, message: "weights set nahi hain" };
+  return { ok: true, configured: false, weights: null, message: "Weights are not set" };
 }
 
 
