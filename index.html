@@ -6146,8 +6146,12 @@
         const subjCode = document.getElementById('endClassSubjectSelect')?.value || 'ACC-12';
         const gnUrl = (document.getElementById('endClassGoodnotesInput')?.value || '').trim();
         const ytUrl = (document.getElementById('endClassYoutubeInput')?.value || '').trim();
-        if (!gnUrl || !ytUrl) {
-          showToast('Enter both GoodNotes PDF URL and YouTube Video URL before ending class', 'amber');
+        if (!gnUrl && !ytUrl) {
+          showToast('Enter a Class Notes Drive link and/or a YouTube link before ending class', 'amber');
+          return;
+        }
+        if (gnUrl && !/^https:\/\/(drive|docs)\.google\.com\//i.test(gnUrl)) {
+          showToast('Class Notes link must be a Google Drive link (https://drive.google.com/...)', 'amber');
           return;
         }
         const ok = await window.cgConfirm({
@@ -6190,6 +6194,21 @@
           if (res && res.error) {
             showToast(`Sync failed: ${res.error}`, 'rose');
             return;
+          }
+          const endClassLevel = subjCode.split('-')[1] || '';
+          const endClassTopic = matchedTopic ? `${matchedTopic.chapter}: ${matchedTopic.topic}` : '';
+          if (gnUrl) {
+            const noteArgs = { classLevel: endClassLevel, subject: noteSubj, topic: endClassTopic };
+            window.cgCallGas('registerClassNoteFile', { ...noteArgs, url: gnUrl }).then(r => {
+              if (r && r.error) throw new Error(r.error);
+            }).catch(err => {
+              showToast(`Auto-filing failed (${err.message}); saving the link as-is`, 'amber');
+              return window.cgCallGas('saveDailyClassNote', { ...noteArgs, classNotesUrl: gnUrl }).catch(e2 => showToast(`Class Notes save failed: ${e2.message}`, 'amber'));
+            });
+          }
+          if (ytUrl) {
+            window.cgCallGas('saveClassRecordingLink', { classLevel: endClassLevel, subject: noteSubj, topic: endClassTopic, youtubeUrl: ytUrl })
+              .catch(err => showToast(`Recording link save failed: ${err.message}`, 'amber'));
           }
           addAuditEvent(`Ended class for ${subjCode} — GoodNotes & YouTube synced.`);
           showToast('Class links synced! Now dispatch 7:00 PM DPP below.', 'emerald');
