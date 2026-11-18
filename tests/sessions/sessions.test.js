@@ -166,6 +166,16 @@ if (loaded) {
   check('002 still gets Accountancy', /Accountancy/.test(d7b.text));
   n0 = sends.length; ctx.sendMissedClassReminders_();
   check('max 3 per class: no more after D7', sends.length === n0);
+  // Task 4: recording link attaches to the newest Ended+Pending session of that class/subject
+  const rows4 = TABLES.Class_Sessions.rows;
+  rows4.push(['ATT-1','2026-11-18','11','Accountancy','ACC-11-1','','','Ended','Completed','Pending','']);
+  rows4.push(['ATT-2','2026-11-18','11','Accountancy','ACC-11-1','','','Ended','Completed','Skipped','']);
+  rows4.push(['ATT-3','2026-11-18','12','Accountancy','ACC-12-1','','','Ended','Completed','Pending','']);
+  check('attach returns count 1', ctx.csAttachRecording_('Class 11', 'Accountancy', 'https://youtu.be/x') === 1);
+  const rA = rows4.find(r => r[0] === 'ATT-1'), rB = rows4.find(r => r[0] === 'ATT-2'), rC = rows4.find(r => r[0] === 'ATT-3');
+  check('attach filled class 11 pending only', rA[10] === 'https://youtu.be/x' && rB[10] === '' && rC[10] === '', JSON.stringify([rA[10], rB[10], rC[10]]));
+  check('attach not overwritten twice', ctx.csAttachRecording_('11', 'Accountancy', 'https://youtu.be/y') === 0 && rA[10] === 'https://youtu.be/x');
+  check('attach unknown class ignored', ctx.csAttachRecording_('', 'Accountancy', 'u') === 0);
 }
 console.log(failures ? failures + ' FAILED, ' + passes + ' passed' : 'ALL PASS (' + passes + ')');
 process.exit(failures ? 1 : 0);

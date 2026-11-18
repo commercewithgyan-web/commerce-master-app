@@ -537,7 +537,19 @@ function doPost(e) {
         classLevel: payload.classLevel, subject: payload.subject,
         topic: payload.topic || '', youtubeUrl: yt, date: payload.date
       });
+      try { csAttachRecording_(payload.classLevel, payload.subject, yt); } catch (attErr) { console.error('csAttachRecording_: ' + attErr); }
       return jsonResponse({ ok: true, data: r });
+    }
+
+    // Mac mini OBS agent poll: same secret, read-only (returns Live session class/subject only).
+    if (action === "liveSessionWebhook") {
+      const expected2 = PropertiesService.getScriptProperties().getProperty('RECORDING_WEBHOOK_SECRET');
+      const given2 = String(payload.secret || '');
+      if (!expected2 || given2.length !== expected2.length || given2 !== expected2) {
+        return jsonResponse({ ok: false, error: 'HTTP 403: FORBIDDEN (BAD_WEBHOOK_SECRET)' });
+      }
+      const ls = getLiveSession();
+      return jsonResponse({ ok: true, data: { live: ls.live, class: ls.class, subject: ls.subject } });
     }
 
     const initData = extractInitData_(e, requestData, payload);

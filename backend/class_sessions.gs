@@ -372,3 +372,25 @@ function sendMissedClassReminders_() {
   });
   return { ok: true, sent: sent };
 }
+
+/** Uploader webhook hook: fill Youtube_URL on the newest Ended session of this class+subject
+ *  whose Notes_Mode is 'Pending' and which has no link yet. Returns rows updated (0 or 1). */
+function csAttachRecording_(classRaw, subject, url) {
+  const cls = normalizeClassLevel_(classRaw || '');
+  const subj = String(subject || '').trim();
+  if (!cls || !subj || !url) return 0;
+  const sh = csGetSheet_();
+  return withWriteLock_(function () {
+    const data = sh.getDataRange().getValues();
+    for (let i = data.length - 1; i >= 1; i--) {
+      const r = data[i];
+      if (String(r[7]) === 'Ended' && String(r[9]) === 'Pending' && !String(r[10] || '') &&
+          String(r[2]) === cls && String(r[3]) === subj) {
+        sh.getRange(i + 1, 11).setValue(url);
+        csAudit_('CLASS_SESSION_RECORDING_ATTACHED', String(r[0]), subj);
+        return 1;
+      }
+    }
+    return 0;
+  });
+}
