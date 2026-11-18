@@ -332,3 +332,206 @@ function runTelegramAuthAndVisitorTests() {
 
   return { passed: passed, failed: failed, success: (failed === 0) };
 }
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════
+ * STAGING VERIFICATION RUNNER FOR TASK 4 & 5
+ * 1. Script Properties check (GEMINI_KEY/GEMINI_API_KEY, GEMINI_MODEL)
+ * 2. Class 11 Syllabus Isolation on Staging
+ * 3. Red Pen Submission for Class 11 Student (CG-11-001)
+ * 4. Ask AI Mentor (askDoubt) for Student and Teacher
+ * ═══════════════════════════════════════════════════════════════════════
+ */
+function testVerifyClass11AndDoubtStaging() {
+  Logger.log('═══ STARTING STAGING CLASS 11 & ASK DOUBT VERIFICATION ═══');
+  var props = PropertiesService.getScriptProperties();
+
+  // ── 1. SCRIPT PROPERTIES CHECK (TASK 4) ──
+  var geminiKey = props.getProperty('GEMINI_KEY') || props.getProperty('GEMINI_API_KEY');
+  var hasGeminiKey = !!(geminiKey && geminiKey.trim().length > 10);
+  var geminiModel = props.getProperty('GEMINI_MODEL');
+
+  // Discover available models from Gemini API
+  if (hasGeminiKey) {
+    try {
+      var mUrl = 'https://generativelanguage.googleapis.com/v1beta/models?key=' + geminiKey;
+      var mRes = UrlFetchApp.fetch(mUrl, { muteHttpExceptions: true });
+      if (mRes.getResponseCode() === 200) {
+        var mJson = JSON.parse(mRes.getContentText());
+        var mNames = (mJson.models || []).map(function(m) { return m.name.replace('models/', ''); });
+        Logger.log('Available models for key: ' + JSON.stringify(mNames));
+        var validFlash = mNames.find(function(n) { return (n === 'gemini-3.8-flash' || n === 'gemini-3.5-flash' || n === 'gemini-flash-latest'); }) || 'gemini-3.8-flash';
+        Logger.log('Recommended active flash model: ' + validFlash);
+        props.setProperty('GEMINI_MODEL', validFlash);
+        geminiModel = validFlash;
+      } else {
+        Logger.log('List models response ' + mRes.getResponseCode() + ': ' + mRes.getContentText().slice(0, 160));
+      }
+    } catch (mErr) {
+      Logger.log('List models exception: ' + mErr.message);
+    }
+  }
+
+  Logger.log('Task 4: GEMINI_KEY/GEMINI_API_KEY present: ' + hasGeminiKey);
+  Logger.log('Task 4: GEMINI_MODEL: ' + geminiModel);
+
+  // ── 2. SWITCH TO STAGING FOR TESTING ──
+  var prevEnv = getActiveEnvMode();
+  setEnvMode('STAGING');
+  var activeMode = getActiveEnvMode();
+  Logger.log('Active Environment Mode: ' + activeMode);
+
+  var IDS = getActiveSheetIds();
+  var erp = SpreadsheetApp.openById(IDS.MASTER_ERP);
+  var qbSS = SpreadsheetApp.openById(IDS.QUESTION_BANK);
+
+  // ── 3. SYLLABUS ISOLATION (TASK 5A) ──
+  var accTree = getSyllabusTree('CBSE', '11', 'Accountancy');
+  var bstTree = getSyllabusTree('CBSE', '11', 'Business Studies');
+  var ecoTree = getSyllabusTree('CBSE', '11', 'Economics');
+  var staTree = getSyllabusTree('CBSE', '11', 'Statistics');
+
+  var allTrees = [accTree, bstTree, ecoTree, staTree];
+  var anyClass12InSyllabus = false;
+  allTrees.forEach(function(tree) {
+    if (tree && tree.items) {
+      tree.items.forEach(function(it) {
+        var cls = String(it.Class || it.classLevel || '');
+        if (cls.indexOf('12') !== -1) {
+          anyClass12InSyllabus = true;
+          Logger.log('LEAK DETECTED: ' + JSON.stringify(it));
+        }
+      });
+    }
+  });
+
+  Logger.log('Task 5A: Class 11 Syllabus Isolation:');
+  Logger.log('  Accountancy count: ' + (accTree.count || 0));
+  Logger.log('  Business Studies count: ' + (bstTree.count || 0));
+  Logger.log('  Economics count: ' + (ecoTree.count || 0));
+  Logger.log('  Statistics count: ' + (staTree.count || 0));
+  Logger.log('  Any Class 12 entries leaked: ' + anyClass12InSyllabus);
+
+  // ── 4. RED PEN MODAL SUBMISSION FOR CG-11-001 (TASK 5B) ──
+  var redPenResult = submitRedPenSubmission({
+    rollNo: 'CG-11-001',
+    studentId: 'CG-11-001',
+    subjectCode: 'ACC-11',
+    note: 'Staging verification test copy for Class 11 Journal',
+    fileName: 'journal_entry_ch3.jpg'
+  });
+  Logger.log('Task 5B: Red Pen Submission: ' + JSON.stringify(redPenResult));
+
+  // Verify row landed in Student_Red_Pen
+  var rpSheet = qbSS.getSheetByName('Student_Red_Pen');
+  var rpValues = rpSheet ? rpSheet.getDataRange().getValues() : [];
+  var lastRpRow = rpValues.length > 1 ? rpValues[rpValues.length - 1] : null;
+  var rpRowMatches = lastRpRow && lastRpRow[1] === 'CG-11-001' && lastRpRow[2] === 'ACC-11';
+  Logger.log('Task 5B: Red Pen Sheet row matches CG-11-001 / ACC-11: ' + rpRowMatches);
+
+  // ── 5. ASK AI MENTOR FOR STUDENT AND TEACHER (TASK 5C) ──
+  // Find CG-11-001 student record
+  var stuMaster = erp.getSheetByName('Students_Master');
+  var stuRows = stuMaster ? sheetToObjects(stuMaster) : [];
+  var student11 = stuRows.find(function(s) { return String(s.Roll_No) === 'CG-11-001'; }) || {
+    Roll_No: 'CG-11-001',
+    Student_Name: 'Aarav Sharma',
+    Telegram_ID: '552858970',
+    Status: 'ACTIVE',
+    Class: 11
+  };
+
+  var studentTgId = String(student11.Telegram_ID || student11.Telegram_User_ID || '552858970');
+  var studentName = student11.Student_Name || student11.Name || 'Aarav Sharma';
+
+  // Seed cache for requirePaidStudent_
+  CacheService.getScriptCache().put('STUDENT_' + studentTgId, JSON.stringify({
+    Roll_No: 'CG-11-001',
+    Student_Name: studentName,
+    Name: studentName,
+    Status: 'ACTIVE',
+    TelegramID: studentTgId,
+    Class: 11,
+    Paid: 'YES'
+  }), 600);
+
+  // 5A: Ask doubt as Real Student
+  var studentDoubtRes = null;
+  var studentDoubtError = null;
+  try {
+    studentDoubtRes = apiAskDoubt_({
+      id: studentTgId,
+      first_name: studentName,
+      is_admin: false
+    }, {
+      question: 'What is the Business Entity Concept in Accountancy?',
+      subject: 'Accountancy'
+    });
+  } catch (sErr) {
+    studentDoubtError = sErr.message;
+  }
+  Logger.log('Task 5C (Student Doubt): ok=' + (studentDoubtRes && studentDoubtRes.ok) + ', studentName=' + (studentDoubtRes && studentDoubtRes.studentName) + ', err=' + studentDoubtError);
+  if (studentDoubtRes && studentDoubtRes.lenses) {
+    Logger.log('Student Story lens preview: ' + String(studentDoubtRes.lenses.STORY || '').slice(0, 100) + '...');
+  }
+
+  // 5B: Ask doubt as Teacher (Admin)
+  var teacherDoubtRes = null;
+  var teacherDoubtError = null;
+  try {
+    teacherDoubtRes = apiAskDoubt_({
+      id: '552858970',
+      first_name: 'Gyan Sir',
+      is_admin: true
+    }, {
+      question: 'Explain Opportunity Cost with an everyday student example.',
+      subject: 'Economics'
+    });
+  } catch (tErr) {
+    teacherDoubtError = tErr.message;
+  }
+  Logger.log('Task 5C (Teacher Doubt): ok=' + (teacherDoubtRes && teacherDoubtRes.ok) + ', studentName=' + (teacherDoubtRes && teacherDoubtRes.studentName) + ', err=' + teacherDoubtError);
+  if (teacherDoubtRes && teacherDoubtRes.lenses) {
+    Logger.log('Teacher Story lens preview: ' + String(teacherDoubtRes.lenses.STORY || '').slice(0, 100) + '...');
+  }
+
+  // Restore env mode
+  setEnvMode(prevEnv);
+
+  var summary = {
+    task4_geminiKeySet: hasGeminiKey,
+    task4_geminiModel: geminiModel,
+    task5_envMode: activeMode,
+    task5_syllabusIsolation: {
+      accountancy: accTree.count || 0,
+      businessStudies: bstTree.count || 0,
+      economics: ecoTree.count || 0,
+      statistics: staTree.count || 0,
+      leakClass12Detected: anyClass12InSyllabus,
+      isolationSuccess: !anyClass12InSyllabus && (accTree.count > 0 || bstTree.count > 0 || ecoTree.count > 0 || staTree.count > 0)
+    },
+    task5_redPen: {
+      submitOk: redPenResult && redPenResult.ok,
+      rollNo: redPenResult && redPenResult.rollNo,
+      subject: redPenResult && redPenResult.subject,
+      status: redPenResult && redPenResult.status,
+      sheetRowMatches: rpRowMatches
+    },
+    task5_studentDoubt: {
+      ok: studentDoubtRes && studentDoubtRes.ok,
+      studentName: studentDoubtRes && studentDoubtRes.studentName,
+      hasGeminiResponse: !!(studentDoubtRes && (studentDoubtRes.answer || (studentDoubtRes.lenses && studentDoubtRes.lenses.STORY))),
+      error: studentDoubtError
+    },
+    task5_teacherDoubt: {
+      ok: teacherDoubtRes && teacherDoubtRes.ok,
+      studentName: teacherDoubtRes && teacherDoubtRes.studentName,
+      hasGeminiResponse: !!(teacherDoubtRes && (teacherDoubtRes.answer || (teacherDoubtRes.lenses && teacherDoubtRes.lenses.STORY))),
+      error: teacherDoubtError
+    }
+  };
+
+  Logger.log('═══ VERIFICATION RESULT SUMMARY ═══\n' + JSON.stringify(summary, null, 2));
+  return summary;
+}
+
