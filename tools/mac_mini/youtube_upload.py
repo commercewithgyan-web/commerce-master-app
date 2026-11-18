@@ -7,14 +7,15 @@ finished .mp4 as Unlisted, then moves it to ~/Movies/Uploaded.
 Secrets (never in this file or in git), all under ~/Library/Application Support/CommerceGyan/:
   client_secret.json  - OAuth client downloaded from Google Cloud (YouTube Data API v3)
   token.json          - refresh token, created on the first run (browser consent by the owner)
-  config.json         - {"webhook_url": "...", "webhook_secret": "...", "class": "12", "subject": "Accountancy"}
+  config.json         - {"webhook_url": "...", "webhook_secret": "...", "class": "12", "subject": "Accountancy"}  (class/subject = fallback only)
+Class and subject are read from the file name first (e.g. 12_Accountancy_....mp4, 11-BST-....mp4).
 The link is POSTed to webhook_url. That Apps Script endpoint is NOT built yet; until it is,
 the link is only appended to ~/Movies/Uploaded/links.txt.
 
 Setup: pip3 install google-api-python-client google-auth-oauthlib
 Run:   python3 youtube_upload.py            (loops every 60 s)
 """
-import json, shutil, time, urllib.request
+import json, re, shutil, time, urllib.request
 from datetime import date
 from pathlib import Path
 
@@ -54,7 +55,27 @@ def upload(yt, path):
     return "https://youtu.be/" + resp["id"]
 
 
-def report(url):
+SUBJECTS = {  # filename keyword (lowercase) -> exact subject name used in the Sheets/Drive folders
+    "accountancy": "Accountancy", "accounts": "Accountancy", "account": "Accountancy",
+    "business": "Business Studies", "bst": "Business Studies",
+    "economics": "Economics", "eco": "Economics",
+    "statistics": "Statistics", "stats": "Statistics", "stat": "Statistics",
+}
+
+
+def detect(path, cfg):
+    """Class (11/12) and subject from the file name, e.g. '12_Accountancy_2026-11-18.mp4'.
+    Anything not found in the name falls back to config.json."""
+    name = path.stem.lower()
+    name = re.sub(r"\d{4}[-_.]\d{2}[-_.]\d{2}|\d{1,2}[-_.:]\d{2}([-_.:]\d{2})?", " ", name)  # drop dates/times (OBS default names)
+    m = re.search(r"(?<!\d)(11|12)(?!\d)|class[ _-]?(11|12)|(11|12)(?:th)", name)
+    cls = next((g for g in m.groups() if g), None) if m else None
+    words = re.findall(r"[a-z]+", name)
+    subj = next((SUBJECTS[w] for w in words if w in SUBJECTS), None)
+    return cls or cfg.get("class"), subj or cfg.get("subject")
+
+
+def report(url, path):
     DONE.mkdir(parents=True, exist_ok=True)
     with open(DONE / "links.txt", "a") as f:
         f.write(f"{date.today()} {url}\n")
@@ -64,8 +85,9 @@ def report(url):
     cfg = json.loads(cfg_p.read_text())
     if not cfg.get("webhook_url"):
         return
-    data = json.dumps({"action": "recordingWebhook", "secret": cfg.get("webhook_secret"), "classLevel": cfg.get("class"),
-                       "subject": cfg.get("subject"), "youtubeUrl": url}).encode()
+    cls, subj = detect(path, cfg)
+    data = json.dumps({"action": "recordingWebhook", "secret": cfg.get("webhook_secret"), "classLevel": cls,
+                       "subject": subj, "youtubeUrl": url}).encode()
     urllib.request.urlopen(urllib.request.Request(cfg["webhook_url"], data, {"Content-Type": "application/json"}), timeout=30)
 
 
@@ -83,7 +105,7 @@ def main():
                 continue
             try:
                 url = upload(yt, p)
-                report(url)
+                report(url, p)
                 shutil.move(str(p), str(DONE / p.name))
                 print("uploaded", p.name, url, flush=True)
             except Exception as e:
