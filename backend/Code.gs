@@ -537,7 +537,7 @@ function doPost(e) {
         classLevel: payload.classLevel, subject: payload.subject,
         topic: payload.topic || '', youtubeUrl: yt, date: payload.date
       });
-      try { csAttachRecording_(payload.classLevel, payload.subject, yt); } catch (attErr) { console.error('csAttachRecording_: ' + attErr); }
+      try { csAttachRecording_(payload.classLevel, payload.subject, yt, payload.date); } catch (attErr) { console.error('csAttachRecording_: ' + attErr); }
       return jsonResponse({ ok: true, data: r });
     }
 

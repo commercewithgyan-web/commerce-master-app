@@ -121,8 +121,8 @@ function getLiveSession() {
   return { live: sessions.length > 0, sessionId: first.sessionId || '', class: first.class || '', subject: first.subject || '', topicId: first.topicId || '', startedAt: first.startedAt || '', sessions: sessions };
 }
 
-/** Daily 23:59 trigger: sessions still Live from an earlier day become Abandoned; topic status untouched. */
-function closeStaleSessions_() {
+/** Daily ~00:05 trigger: sessions still Live from an earlier day become Abandoned; topic status untouched. */
+function closeStaleSessions() {
   const sh = csGetSheet_();
   const today = csToday_();
   return withWriteLock_(function () {
@@ -140,23 +140,30 @@ function closeStaleSessions_() {
 }
 
 /** Run once from the Apps Script editor. Idempotent. */
-function installSessionTriggers_() {
-  const have = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'closeStaleSessions_'; });
-  if (!have) ScriptApp.newTrigger('closeStaleSessions_').timeBased().everyDays(1).atHour(23).nearMinute(59).inTimezone(csTz_()).create();
-  const haveRem = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'sendMissedClassReminders_'; });
-  if (!haveRem) ScriptApp.newTrigger('sendMissedClassReminders_').timeBased().everyDays(1).atHour(10).inTimezone(csTz_()).create();
+function installSessionTriggers() {
+  const have = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'closeStaleSessions'; });
+  if (!have) ScriptApp.newTrigger('closeStaleSessions').timeBased().everyDays(1).atHour(0).nearMinute(5).inTimezone(csTz_()).create();
+  const haveRem = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'sendMissedClassReminders'; });
+  if (!haveRem) ScriptApp.newTrigger('sendMissedClassReminders').timeBased().everyDays(1).atHour(10).inTimezone(csTz_()).create();
   return { ok: true, installed: !have, remindersInstalled: !haveRem };
 }
 
 /** Next topic to teach for a class+subject: last Partly (In Progress) topic, else first not-completed after the last Completed. */
 function getNextTopicForClass(payload) {
-  const cls = normalizeClassLevel_((payload && payload.class) || '');
-  const subject = String((payload && payload.subject) || '').trim().toLowerCase();
+  let cls = normalizeClassLevel_((payload && payload.class) || '');
+  let subject = String((payload && payload.subject) || '').trim().toLowerCase();
   const none = { topicId: '', state: 'None' };
-  if (!cls || !subject) return none;
   const ss = SpreadsheetApp.openById(getActiveSheetIds().SYLLABUS);
   const sh = ss.getSheetByName('Master_Syllabus') || ss.getSheetByName('01_Master_Syllabus');
   if (!sh) return none;
+  if (payload && payload.topicId) {
+    const want = String(payload.topicId).trim();
+    const row = sheetToObjects(sh).filter(function (r) { return String(r.Canonical_Topic_ID || r.Topic_ID || '').trim() === want; })[0];
+    if (!row) return none;
+    cls = normalizeClassLevel_(row.Class || '');
+    subject = String(row.Subject || '').trim().toLowerCase();
+  }
+  if (!cls || !subject) return none;
   const rows = sheetToObjects(sh).filter(function (r) {
     return normalizeClassLevel_(r.Class || '') === cls && String(r.Subject || '').trim().toLowerCase() === subject;
   });
@@ -313,26 +320,35 @@ function sendClassMissedNotices(payload) {
     if (st === 'A' || st === 'L') targets[String(a.Roll_No).trim()] = st;
   });
   const sh = csNoticeSheet_();
-  const map = csNoticeMap_(sh);
   Object.keys(targets).forEach(function (roll) {
-    const key = csNoticeKey_(roll, date, sess.Subject);
-    if (map[key] && map[key].D0) return;
     const stu = students.filter(function (s) { return String(s.Roll_No).trim() === roll; })[0];
     const chat = stu ? csTgIdOf_(stu) : '';
     if (!chat) return;
+    // claim D0 under the lock so a double tap / retry cannot double-send
+    const claimed = withWriteLock_(function () {
+      const map = csNoticeMap_(sh);
+      const rec = map[csNoticeKey_(roll, date, sess.Subject)];
+      if (rec && rec.D0) return false;
+      csNoticeSet_(sh, map, roll, date, cls, sess.Subject, { D0: 'SENDING' });
+      return true;
+    });
+    if (!claimed) return;
     const text = targets[roll] === 'A'
       ? 'आपने आज की ' + sess.Subject + ' की क्लास मिस की: ' + topic + '. Recording Commerce Gyan app में आने पर यहीं दिखेगी'
       : 'You were late today in ' + sess.Subject + ': ' + topic + '. Kindly view your complete class.';
-    if (sendTelegramMessage_(chat, text, markup)) {
-      csNoticeSet_(sh, map, roll, date, cls, sess.Subject, { D0: csNow_() });
-      sent++;
-    }
+    let ok = false;
+    try { ok = !!sendTelegramMessage_(chat, text, markup); } catch (e) { console.error('missed notice ' + roll + ': ' + e); }
+    withWriteLock_(function () {
+      const map = csNoticeMap_(sh);
+      csNoticeSet_(sh, map, roll, date, cls, sess.Subject, { D0: ok ? csNow_() : '' });
+    });
+    if (ok) sent++;
   });
   csAudit_('SEND_MISSED_NOTICES', String(sess.Session_ID), 'sent=' + sent);
   return { ok: true, sent: sent };
 }
 
-function sendMissedClassReminders_() {
+function sendMissedClassReminders() {
   const today = csToday_();
   const sh = csNoticeSheet_();
   const map = csNoticeMap_(sh);
@@ -361,7 +377,9 @@ function sendMissedClassReminders_() {
       return '• ' + csMissedLine_(it.n.subject, s ? (topics[String(s.Topic_ID).trim()] || '') : '', it.n.date);
     });
     const text = 'याद दिलाना: ये क्लास अभी तक नहीं देखीं (Commerce Gyan app → Missed Classes):\n' + lines.join('\n');
-    if (sendTelegramMessage_(chat, text, markup)) {
+    let okSend = false;
+    try { okSend = !!sendTelegramMessage_(chat, text, markup); } catch (e) { console.error('reminder ' + roll + ': ' + e); }
+    if (okSend) {
       sent++;
       perRoll[roll].forEach(function (it) {
         const f = { D3: csNow_() };
@@ -375,9 +393,10 @@ function sendMissedClassReminders_() {
 
 /** Uploader webhook hook: fill Youtube_URL on the newest Ended session of this class+subject
  *  whose Notes_Mode is 'Pending' and which has no link yet. Returns rows updated (0 or 1). */
-function csAttachRecording_(classRaw, subject, url) {
+function csAttachRecording_(classRaw, subject, url, date) {
   const cls = normalizeClassLevel_(classRaw || '');
-  const subj = String(subject || '').trim();
+  const subj = String(subject || '').trim().toLowerCase();
+  const wantDate = date ? csDateStr_(date) : '';
   if (!cls || !subj || !url) return 0;
   const sh = csGetSheet_();
   return withWriteLock_(function () {
@@ -385,7 +404,8 @@ function csAttachRecording_(classRaw, subject, url) {
     for (let i = data.length - 1; i >= 1; i--) {
       const r = data[i];
       if (String(r[7]) === 'Ended' && String(r[9]) === 'Pending' && !String(r[10] || '') &&
-          String(r[2]) === cls && String(r[3]) === subj) {
+          String(r[2]) === cls && String(r[3]).trim().toLowerCase() === subj &&
+          (!wantDate || csDateStr_(r[1]) === wantDate)) {
         sh.getRange(i + 1, 11).setValue(url);
         csAudit_('CLASS_SESSION_RECORDING_ATTACHED', String(r[0]), subj);
         return 1;

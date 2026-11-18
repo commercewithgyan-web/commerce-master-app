@@ -80,7 +80,7 @@ if (loaded) {
   const s4 = ctx.startClassSession({ subtopicId: 'ACC-11-1' });
   const n = calls.length;
   today = '2026-11-19';
-  const closed = ctx.closeStaleSessions_();
+  const closed = ctx.closeStaleSessions();
   check('stale closed as Abandoned', closed === 1 && TABLES.Class_Sessions.rows[TABLES.Class_Sessions.rows.length - 1][7] === 'Abandoned');
   check('abandoned does not touch topic', calls.length === n);
   check('no live after close', ctx.getLiveSession().live === false);
@@ -149,22 +149,22 @@ if (loaded) {
   check('second session D0 to 001', sends.length === 3 && sends[2].chatId === '1001');
   // D3
   today = '2026-11-13';
-  let n0 = sends.length; ctx.sendMissedClassReminders_();
+  let n0 = sends.length; ctx.sendMissedClassReminders();
   check('D3: 001 and 002 one msg each (only 11-10 aged 3)', sends.length === n0 + 2, String(sends.length - n0));
-  n0 = sends.length; ctx.sendMissedClassReminders_();
+  n0 = sends.length; ctx.sendMissedClassReminders();
   check('reminders idempotent same day', sends.length === n0);
   // watched stops further messages
   check('markMissedWatched ok', ctx.markMissedWatched({ date: '2026-11-10', subject: 'Accountancy' }, { id: 1001 }).ok);
   check('watched reflected', ctx.getMissedClasses({}, { id: 1001 })[0].watched === true);
   // D7
   today = '2026-11-18';
-  n0 = sends.length; ctx.sendMissedClassReminders_();
+  n0 = sends.length; ctx.sendMissedClassReminders();
   const d7 = sends.slice(n0);
   check('D7 combined: one msg per student', d7.length === 2 && d7.filter(x => x.chatId === '1001').length === 1, JSON.stringify(d7.map(x => x.chatId)));
   const d7a = d7.find(x => x.chatId === '1001'), d7b = d7.find(x => x.chatId === '1002');
   check('watched class dropped from reminder', !/Accountancy/.test(d7a.text) && /Economics/.test(d7a.text), d7a.text);
   check('002 still gets Accountancy', /Accountancy/.test(d7b.text));
-  n0 = sends.length; ctx.sendMissedClassReminders_();
+  n0 = sends.length; ctx.sendMissedClassReminders();
   check('max 3 per class: no more after D7', sends.length === n0);
   // Task 4: recording link attaches to the newest Ended+Pending session of that class/subject
   const rows4 = TABLES.Class_Sessions.rows;
@@ -176,6 +176,69 @@ if (loaded) {
   check('attach filled class 11 pending only', rA[10] === 'https://youtu.be/x' && rB[10] === '' && rC[10] === '', JSON.stringify([rA[10], rB[10], rC[10]]));
   check('attach not overwritten twice', ctx.csAttachRecording_('11', 'Accountancy', 'https://youtu.be/y') === 0 && rA[10] === 'https://youtu.be/x');
   check('attach unknown class ignored', ctx.csAttachRecording_('', 'Accountancy', 'u') === 0);
+
+  // ===== Final-review fix pass =====
+  // (1)+(6) public trigger handler names, stale-close runs after midnight
+  const trig = [];
+  ctx.ScriptApp = { getProjectTriggers: () => [], newTrigger: h => { const t = { h, hour: null }; trig.push(t); const b = { timeBased: () => b, everyDays: () => b, atHour: n => { t.hour = n; return b; }, nearMinute: () => b, inTimezone: () => b, create: () => t }; return b; } };
+  ctx.installSessionTriggers();
+  const tStale = trig.find(t => t.h === 'closeStaleSessions'), tRem = trig.find(t => t.h === 'sendMissedClassReminders');
+  check('fix6: stale trigger uses public name', !!tStale, JSON.stringify(trig.map(t => t.h)));
+  check('fix6: reminder trigger uses public name', !!tRem);
+  check('fix6: no trailing-underscore handler', trig.every(t => !/_$/.test(t.h)));
+  check('fix1: stale-close runs just after midnight (hour 0)', !!tStale && tStale.hour === 0, String(tStale && tStale.hour));
+  TABLES.Class_Sessions.rows.push(['STALE-Y', '2026-11-17', '11', 'BST', 'B-3', 't', '', 'Live', '', '', '']);
+  today = '2026-11-18';
+  ctx.closeStaleSessions();
+  check('fix1: yesterday Live closed after midnight', TABLES.Class_Sessions.rows.find(r => r[0] === 'STALE-Y')[7] === 'Abandoned');
+
+  // (2) one blocked student must not stop the rest
+  AT.push(['2026-11-19', 'C11_AFT', 'CG-11-001', 'A', 'A', '11']);
+  AT.push(['2026-11-19', 'C11_AFT', 'CG-11-002', 'B', 'L', '11']);
+  TABLES.Class_Sessions.rows.push(['SES-N', '2026-11-19', '11', 'Accountancy', 'ACC-11-1', 't', 't', 'Ended', 'Completed', 'Skipped', '']);
+  const realSend = ctx.sendTelegramMessage_;
+  ctx.sendTelegramMessage_ = (chat, text, markup) => { if (String(chat) === '1001') throw new Error('Forbidden: bot was blocked'); return realSend(chat, text, markup); };
+  let rN; let threw = false;
+  try { rN = ctx.sendClassMissedNotices({ sessionId: 'SES-N' }); } catch (e) { threw = true; }
+  check('fix2: blocked student does not abort D0', !threw && rN && rN.ok && rN.sent === 1, threw ? 'threw' : JSON.stringify(rN));
+  ctx.sendTelegramMessage_ = realSend;
+  const rN2 = ctx.sendClassMissedNotices({ sessionId: 'SES-N' });
+  check('fix2: failed send is retryable (D0 not stuck)', rN2.sent === 1, JSON.stringify(rN2));
+  today = '2026-11-22';
+  ctx.sendTelegramMessage_ = (chat, text, markup) => { if (String(chat) === '1001') throw new Error('Forbidden'); return realSend(chat, text, markup); };
+  const nR = sends.length; threw = false;
+  try { ctx.sendMissedClassReminders(); } catch (e) { threw = true; }
+  check('fix2: blocked student does not abort reminders', !threw && sends.length > nR, threw ? 'threw' : String(sends.length - nR));
+  ctx.sendTelegramMessage_ = realSend;
+
+  // (3) double-tap: a second call arriving while the first is mid-send must send nothing
+  AT.push(['2026-11-20', 'C11_AFT', 'CG-11-001', 'A', 'A', '11']);
+  TABLES.Class_Sessions.rows.push(['SES-R', '2026-11-20', '11', 'Accountancy', 'ACC-11-1', 't', 't', 'Ended', 'Completed', 'Skipped', '']);
+  let inner = null, depth = 0;
+  ctx.sendTelegramMessage_ = (chat, text, markup) => { if (depth === 0) { depth++; inner = ctx.sendClassMissedNotices({ sessionId: 'SES-R' }); } return realSend(chat, text, markup); };
+  const outer = ctx.sendClassMissedNotices({ sessionId: 'SES-R' });
+  ctx.sendTelegramMessage_ = realSend;
+  check('fix3: concurrent second tap sends 0', inner && inner.sent === 0 && outer.sent === 1, JSON.stringify([inner, outer]));
+
+  // (5) getNextTopicForClass resolves class+subject from topicId
+  const SYL = TABLES.Master_Syllabus.rows; SYL.length = 1;
+  SYL.push(['ACC-11-1', 'Class 11', 'Accountancy', '1', 'Intro', 'Completed']);
+  SYL.push(['ACC-11-2', 'Class 11', 'Accountancy', '2', 'Next', 'Not Started']);
+  SYL.push(['ACC-12-1', 'Class 12', 'Accountancy', '1', 'Partnership', 'Not Started']);
+  let rT = ctx.getNextTopicForClass({ topicId: 'ACC-11-1' });
+  check('fix5: topicId resolves class/subject', rT.topicId === 'ACC-11-2' && rT.state === 'Next', JSON.stringify(rT));
+  rT = ctx.getNextTopicForClass({ topicId: 'ACC-12-1' });
+  check('fix5: class 12 kept separate by topicId', rT.topicId === 'ACC-12-1', JSON.stringify(rT));
+  rT = ctx.getNextTopicForClass({ topicId: 'NOPE-1' });
+  check('fix5: unknown topicId -> None', rT.topicId === '' && rT.state === 'None', JSON.stringify(rT));
+
+  // (11) attach: date check + case-insensitive subject
+  const r11 = TABLES.Class_Sessions.rows;
+  r11.push(['ATT-4', '2026-11-15', '11', 'Economics', 'E-3', '', '', 'Ended', 'Completed', 'Pending', '']);
+  r11.push(['ATT-5', '2026-11-16', '11', 'Economics', 'E-3', '', '', 'Ended', 'Completed', 'Pending', '']);
+  check('fix11: date picks the matching session, case-insensitive subject', ctx.csAttachRecording_('Class 11', 'economics', 'https://youtu.be/e', '2026-11-15') === 1
+    && r11.find(r => r[0] === 'ATT-4')[10] === 'https://youtu.be/e' && r11.find(r => r[0] === 'ATT-5')[10] === '');
+  check('fix11: wrong date attaches nothing', ctx.csAttachRecording_('Class 11', 'Economics', 'u', '2026-11-01') === 0);
 }
 console.log(failures ? failures + ' FAILED, ' + passes + ' passed' : 'ALL PASS (' + passes + ')');
 process.exit(failures ? 1 : 0);

@@ -6157,7 +6157,7 @@
         // Task 5: server picks last Partly topic, else the next one; earlier Completed topics stay hidden.
         try {
           if (nextTopic && nextTopic.subject) {
-            const pick = await window.cgCallGas('getNextTopicForClass', { class: nextTopic.classLevel || (String(nextTopic.subject).includes('12') ? '12' : '11'), subject: nextTopic.subject });
+            const pick = await window.cgCallGas('getNextTopicForClass', { topicId: nextTopic.id });
             if (pick && pick.topicId) {
               const m = appState.curriculumTopics.find(c => String(c.id) === String(pick.topicId));
               if (m) nextTopic = m;
@@ -6268,10 +6268,10 @@
           topicId: matchedTopic ? matchedTopic.id : appState.activeSubtopicLock,
           goodnotesUrl: gnUrl,
           videoUrl: ytUrl
-        }).then(res => {
+        }).catch(err => ({ error: err.message })).then(res => {
+          // endClassSession below must run even if the lesson-plan save failed.
           if (res && res.error) {
-            showToast(`Sync failed: ${res.error}`, 'rose');
-            return;
+            showToast(`Lesson plan sync failed: ${res.error} (class still ending)`, 'amber');
           }
           const endClassLevel = subjCode.split('-')[1] || '';
           const endClassTopic = matchedTopic ? `${matchedTopic.chapter}: ${matchedTopic.topic}` : '';
@@ -6290,7 +6290,7 @@
           }
           // End the tracked session: backend sets the topic status (Completed only if outcome=Completed). Sends NO message.
           const live = (appState.liveSessions || []);
-          const sess = live.find(x => String(x.class) === String(endClassLevel) && String(x.subject).toLowerCase() === String(noteSubj).toLowerCase()) || (live.length === 1 ? live[0] : null);
+          const sess = live.find(x => String(x.class) === String(endClassLevel) && String(x.subject).toLowerCase() === String(noteSubj).toLowerCase());
           if (!sess) {
             showToast('कोई Live class session नहीं मिला — पहले Start Class करें. Topic status नहीं बदला.', 'rose');
           } else {
