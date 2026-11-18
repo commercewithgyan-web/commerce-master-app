@@ -3136,6 +3136,10 @@
           <label class="block text-[14px] font-bold text-slate-700 dark:text-slate-300">YouTube Unlisted / Public Video URL *</label>
           <input id="endClassYoutubeInput" type="url" placeholder="https://youtu.be/..." class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 font-mono" />
         </div>
+        <label class="flex items-center gap-2 text-[14px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+          <input id="endClassSkipLinks" type="checkbox" class="h-4 w-4 rounded" />
+          <span>आज notes / video नहीं है (skip करें)</span>
+        </label>
         <button id="confirmEndClassAndDppBtn" type="button" class="w-full h-11 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold shadow flex items-center justify-center gap-1.5">
           <span>🏁</span><span>Save Links &amp; Open 7 PM DPP Dispatch</span>
         </button>
@@ -6167,8 +6171,9 @@
         const subjCode = document.getElementById('endClassSubjectSelect')?.value || 'ACC-12';
         const gnUrl = (document.getElementById('endClassGoodnotesInput')?.value || '').trim();
         const ytUrl = (document.getElementById('endClassYoutubeInput')?.value || '').trim();
-        if (!gnUrl && !ytUrl) {
-          showToast('Enter a Class Notes Drive link and/or a YouTube link before ending class', 'amber');
+        const skipLinks = !!document.getElementById('endClassSkipLinks')?.checked;
+        if (!gnUrl && !ytUrl && !skipLinks) {
+          showToast('Enter a Class Notes Drive link and/or a YouTube link, or tick the skip box, before ending class', 'amber');
           return;
         }
         if (gnUrl && !/^https:\/\/(drive|docs)\.google\.com\//i.test(gnUrl)) {
@@ -6197,7 +6202,7 @@
         }
         const subjMap = { ACC: 'Accountancy', BST: 'Business Studies', MAC: 'Economics', MIC: 'Economics', IED: 'Economics', STA: 'Statistics' };
         const noteSubj = subjMap[subjCode.split('-')[0]] || 'Accountancy';
-        appState.dailyClassNotes.unshift({
+        if (gnUrl) appState.dailyClassNotes.unshift({
           date: new Date().toISOString().slice(0, 10),
           subject: noteSubj,
           topic: matchedTopic ? `${matchedTopic.chapter}: ${matchedTopic.topic}` : `${subjCode} Today's Lecture`,
@@ -6231,8 +6236,8 @@
             window.cgCallGas('saveClassRecordingLink', { classLevel: endClassLevel, subject: noteSubj, topic: endClassTopic, youtubeUrl: ytUrl })
               .catch(err => showToast(`Recording link save failed: ${err.message}`, 'amber'));
           }
-          addAuditEvent(`Ended class for ${subjCode} — GoodNotes & YouTube synced.`);
-          showToast('Class links synced! Now dispatch 7:00 PM DPP below.', 'emerald');
+          addAuditEvent(gnUrl || ytUrl ? `Ended class for ${subjCode} — GoodNotes & YouTube synced.` : `Ended class for ${subjCode} — no notes/video today (skipped).`);
+          showToast(gnUrl || ytUrl ? 'Class links synced! Now dispatch 7:00 PM DPP below.' : 'Class ended without notes/video. Now dispatch 7:00 PM DPP below.', 'emerald');
         }).catch(err => {
           showToast(`Sync failed: ${err.message}`, 'rose');
         }).finally(() => {
