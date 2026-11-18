@@ -143,7 +143,9 @@ function closeStaleSessions_() {
 function installSessionTriggers_() {
   const have = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'closeStaleSessions_'; });
   if (!have) ScriptApp.newTrigger('closeStaleSessions_').timeBased().everyDays(1).atHour(23).nearMinute(59).inTimezone(csTz_()).create();
-  return { ok: true, installed: !have };
+  const haveRem = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'sendMissedClassReminders_'; });
+  if (!haveRem) ScriptApp.newTrigger('sendMissedClassReminders_').timeBased().everyDays(1).atHour(10).inTimezone(csTz_()).create();
+  return { ok: true, installed: !have, remindersInstalled: !haveRem };
 }
 
 /** Next topic to teach for a class+subject: last Partly (In Progress) topic, else first not-completed after the last Completed. */
@@ -171,4 +173,202 @@ function getNextTopicForClass(payload) {
     if (st(rows[i]) !== 'completed') return { topicId: id(rows[i]), state: 'Next' };
   }
   return none;
+}
+
+
+// ---------- Task 6: missed classes (student list + confirmed notices) ----------
+var CS_NOTICE_HEADERS_ = ['Roll_No', 'Date', 'Class', 'Subject', 'Notified_D0', 'Notified_D3', 'Notified_D7', 'Watched'];
+
+function csMiniAppUrl_() {
+  var u = '';
+  try { u = PropertiesService.getScriptProperties().getProperty('MINI_APP_URL') || ''; } catch (e) { u = ''; }
+  return u || 'https://commercewithgyan-web.github.io/commerce-master-app/index.html';
+}
+function csNoticeSheet_() {
+  const ss = SpreadsheetApp.openById(getActiveSheetIds().MASTER_ERP);
+  let sh = ss.getSheetByName('Missed_Class_Notices');
+  if (!sh) sh = ss.insertSheet('Missed_Class_Notices');
+  if (sh.getLastRow() === 0) sh.appendRow(CS_NOTICE_HEADERS_);
+  return sh;
+}
+function csNoticeKey_(roll, date, subject) { return String(roll).trim() + '|' + csDateStr_(date) + '|' + String(subject).trim().toLowerCase(); }
+// map key -> {row (1-based), D0, D3, D7, Watched}
+function csNoticeMap_(sh) {
+  const d = sh.getDataRange().getValues(), map = {};
+  for (let i = 1; i < d.length; i++) {
+    const r = d[i];
+    map[csNoticeKey_(r[0], r[1], r[3])] = { row: i + 1, roll: r[0], date: csDateStr_(r[1]), cls: r[2], subject: r[3], D0: r[4], D3: r[5], D7: r[6], Watched: r[7] };
+  }
+  return map;
+}
+function csNoticeSet_(sh, map, roll, date, cls, subject, fields) {
+  const key = csNoticeKey_(roll, date, subject);
+  const cols = { D0: 5, D3: 6, D7: 7, Watched: 8 };
+  let rec = map[key];
+  if (!rec) {
+    sh.appendRow([roll, csDateStr_(date), cls, subject, '', '', '', '']);
+    rec = map[key] = { row: sh.getLastRow(), roll: roll, date: csDateStr_(date), cls: cls, subject: subject, D0: '', D3: '', D7: '', Watched: '' };
+  }
+  Object.keys(fields).forEach(function (k) { sh.getRange(rec.row, cols[k]).setValue(fields[k]); rec[k] = fields[k]; });
+  return rec;
+}
+function csTgIdOf_(r) {
+  const keys = ['Telegram_ID', 'TelegramID', 'TelegramId', 'telegramId', 'Telegram_Chat_ID'];
+  for (let i = 0; i < keys.length; i++) { if (r[keys[i]] !== undefined && String(r[keys[i]]).trim() !== '') return String(r[keys[i]]).trim(); }
+  return '';
+}
+function csStudents_() {
+  const ss = SpreadsheetApp.openById(getActiveSheetIds().MASTER_ERP);
+  const sh = ss.getSheetByName('Students_Master');
+  return sh ? sheetToObjects(sh) : [];
+}
+function csTopicNames_() {
+  const ss = SpreadsheetApp.openById(getActiveSheetIds().SYLLABUS);
+  const sh = ss.getSheetByName('Master_Syllabus') || ss.getSheetByName('01_Master_Syllabus');
+  const m = {};
+  if (!sh) return m;
+  sheetToObjects(sh).forEach(function (r) { m[String(r.Canonical_Topic_ID || r.Topic_ID || '').trim()] = String(r.Topic_Name || '').trim(); });
+  return m;
+}
+function csDayAge_(dateStr, todayStr) {
+  const a = String(dateStr).split('-'), b = String(todayStr).split('-');
+  return Math.round((Date.UTC(+b[0], +b[1] - 1, +b[2]) - Date.UTC(+a[0], +a[1] - 1, +a[2])) / 86400000);
+}
+function csSessionsDone_() {
+  return sheetToObjects(csGetSheet_()).filter(function (s) { return String(s.Status) !== 'Live' && String(s.Session_ID || '') !== ''; });
+}
+
+function getMissedClasses(payload, verifiedUser) {
+  payload = payload || {}; verifiedUser = verifiedUser || {};
+  const students = csStudents_();
+  let roll = '';
+  if (verifiedUser.is_admin && payload.studentId) roll = String(payload.studentId).trim();
+  else {
+    const me = students.filter(function (s) { return csTgIdOf_(s) === String(verifiedUser.id); })[0];
+    if (me) roll = String(me.Roll_No).trim();
+  }
+  if (!roll) return { error: 'Student not found' };
+  const ss = SpreadsheetApp.openById(getActiveSheetIds().MASTER_ERP);
+  const att = sheetToObjects(ss.getSheetByName('Attendance_Logs')).filter(function (r) {
+    const st = String(r.Status || '').trim().toUpperCase();
+    return String(r.Roll_No).trim() === roll && (st === 'A' || st === 'L');
+  });
+  const sessions = csSessionsDone_();
+  const topics = csTopicNames_();
+  const recSh = ss.getSheetByName('Daily_Class_Recordings');
+  const recs = recSh ? sheetToObjects(recSh) : [];
+  const notes = csNoticeMap_(csNoticeSheet_());
+  const out = [], seen = {};
+  att.forEach(function (a) {
+    const date = csDateStr_(a.Date), cls = normalizeClassLevel_(a.Class || a.Batch_ID || '');
+    const st = String(a.Status).trim().toUpperCase();
+    sessions.forEach(function (s) {
+      if (csDateStr_(s.Date) !== date || normalizeClassLevel_(s.Class) !== cls) return;
+      const k = date + '|' + String(s.Subject).toLowerCase();
+      if (seen[k]) return;
+      seen[k] = 1;
+      const hasRec = recs.some(function (r) {
+        return csDateStr_(r.Date) === date && normalizeClassLevel_(r.Class) === cls && String(r.Subject).trim().toLowerCase() === String(s.Subject).trim().toLowerCase();
+      });
+      const n = notes[csNoticeKey_(roll, date, s.Subject)];
+      const topic = topics[String(s.Topic_ID).trim()] || '';
+      out.push({ date: date, class: cls, subject: String(s.Subject), topic: topic, subtopic: topic, status: st, recordingAvailable: hasRec, watched: !!(n && n.Watched) });
+    });
+  });
+  out.sort(function (x, y) { return x.subject < y.subject ? -1 : x.subject > y.subject ? 1 : (x.date < y.date ? -1 : x.date > y.date ? 1 : 0); });
+  return out;
+}
+
+function markMissedWatched(payload, verifiedUser) {
+  payload = payload || {}; verifiedUser = verifiedUser || {};
+  if (!payload.date || !payload.subject) return { error: 'date and subject required' };
+  const me = csStudents_().filter(function (s) { return csTgIdOf_(s) === String(verifiedUser.id); })[0];
+  const roll = me ? String(me.Roll_No).trim() : (verifiedUser.is_admin && payload.studentId ? String(payload.studentId).trim() : '');
+  if (!roll) return { error: 'Student not found' };
+  return withWriteLock_(function () {
+    const sh = csNoticeSheet_();
+    csNoticeSet_(sh, csNoticeMap_(sh), roll, payload.date, '', payload.subject, { Watched: 'Y' });
+    return { ok: true };
+  });
+}
+
+function csMissedLine_(subject, topic, date) { return date + ' — ' + subject + (topic ? ': ' + topic : ''); }
+
+function sendClassMissedNotices(payload) {
+  payload = payload || {};
+  const sess = csSessionsDone_().filter(function (s) { return String(s.Session_ID) === String(payload.sessionId); })[0];
+  if (!sess) return { error: 'Session not found or still Live' };
+  const date = csDateStr_(sess.Date), cls = normalizeClassLevel_(sess.Class);
+  const topic = csTopicNames_()[String(sess.Topic_ID).trim()] || '';
+  const ss = SpreadsheetApp.openById(getActiveSheetIds().MASTER_ERP);
+  const att = sheetToObjects(ss.getSheetByName('Attendance_Logs'));
+  const students = csStudents_();
+  const url = csMiniAppUrl_() + '#missed';
+  const markup = { inline_keyboard: [[{ text: 'Missed Classes देखें', web_app: { url: url } }]] };
+  let sent = 0;
+  const targets = {};
+  att.forEach(function (a) {
+    if (csDateStr_(a.Date) !== date || normalizeClassLevel_(a.Class || a.Batch_ID || '') !== cls) return;
+    const st = String(a.Status || '').trim().toUpperCase();
+    if (st === 'A' || st === 'L') targets[String(a.Roll_No).trim()] = st;
+  });
+  const sh = csNoticeSheet_();
+  const map = csNoticeMap_(sh);
+  Object.keys(targets).forEach(function (roll) {
+    const key = csNoticeKey_(roll, date, sess.Subject);
+    if (map[key] && map[key].D0) return;
+    const stu = students.filter(function (s) { return String(s.Roll_No).trim() === roll; })[0];
+    const chat = stu ? csTgIdOf_(stu) : '';
+    if (!chat) return;
+    const text = targets[roll] === 'A'
+      ? 'आपने आज की ' + sess.Subject + ' की क्लास मिस की: ' + topic + '. Recording Commerce Gyan app में आने पर यहीं दिखेगी'
+      : 'You were late today in ' + sess.Subject + ': ' + topic + '. Kindly view your complete class.';
+    if (sendTelegramMessage_(chat, text, markup)) {
+      csNoticeSet_(sh, map, roll, date, cls, sess.Subject, { D0: csNow_() });
+      sent++;
+    }
+  });
+  csAudit_('SEND_MISSED_NOTICES', String(sess.Session_ID), 'sent=' + sent);
+  return { ok: true, sent: sent };
+}
+
+function sendMissedClassReminders_() {
+  const today = csToday_();
+  const sh = csNoticeSheet_();
+  const map = csNoticeMap_(sh);
+  const students = csStudents_();
+  const topics = csTopicNames_();
+  const sessions = csSessionsDone_();
+  const perRoll = {};
+  Object.keys(map).forEach(function (k) {
+    const n = map[k];
+    if (!n.D0 || n.Watched) return;
+    const age = csDayAge_(n.date, today);
+    let due = '';
+    if (age >= 7 && !n.D7) due = 'D7';
+    else if (age >= 3 && age < 7 && !n.D3) due = 'D3';
+    if (!due) return;
+    (perRoll[n.roll] = perRoll[n.roll] || []).push({ n: n, due: due });
+  });
+  const markup = { inline_keyboard: [[{ text: 'Missed Classes देखें', web_app: { url: csMiniAppUrl_() + '#missed' } }]] };
+  let sent = 0;
+  Object.keys(perRoll).forEach(function (roll) {
+    const stu = students.filter(function (s) { return String(s.Roll_No).trim() === roll; })[0];
+    const chat = stu ? csTgIdOf_(stu) : '';
+    if (!chat) return;
+    const lines = perRoll[roll].map(function (it) {
+      const s = sessions.filter(function (x) { return csDateStr_(x.Date) === it.n.date && String(x.Subject).trim().toLowerCase() === String(it.n.subject).trim().toLowerCase(); })[0];
+      return '• ' + csMissedLine_(it.n.subject, s ? (topics[String(s.Topic_ID).trim()] || '') : '', it.n.date);
+    });
+    const text = 'याद दिलाना: ये क्लास अभी तक नहीं देखीं (Commerce Gyan app → Missed Classes):\n' + lines.join('\n');
+    if (sendTelegramMessage_(chat, text, markup)) {
+      sent++;
+      perRoll[roll].forEach(function (it) {
+        const f = { D3: csNow_() };
+        if (it.due === 'D7') f.D7 = csNow_();
+        csNoticeSet_(sh, map, it.n.roll, it.n.date, it.n.cls, it.n.subject, f);
+      });
+    }
+  });
+  return { ok: true, sent: sent };
 }

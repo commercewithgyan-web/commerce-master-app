@@ -30,7 +30,7 @@ const TABLES = {
   ])
 };
 const ss = { getSheetByName: n => TABLES[n] || null, insertSheet: n => (TABLES[n] = fakeSheet([])) };
-const calls = [], audits = [];
+const calls = [], audits = [], sends = [];
 let today = '2026-11-18';
 const ctx = {
   Logger: { log() {} },
@@ -42,7 +42,9 @@ const ctx = {
   setActiveSubtopic: p => { calls.push(p); return { ok: true }; },
   recordAuditLog_: (...a) => audits.push(a),
   sheetToObjects: sh => { const d = sh.getDataRange().getValues(); const h = d[0]; return d.slice(1).map(r => Object.fromEntries(h.map((k, i) => [k, r[i]]))); },
-  ScriptApp: {}, new_Date: null
+  ScriptApp: {}, new_Date: null,
+  PropertiesService: { getScriptProperties: () => ({ getProperty: () => '' }) },
+  sendTelegramMessage_: (chatId, text, markup) => { sends.push({ chatId: String(chatId), text, markup }); return true; }
 };
 vm.createContext(ctx);
 let loaded = true;
@@ -100,6 +102,70 @@ if (loaded) {
   check('empty none', r.topicId === '' && r.state === 'None', JSON.stringify(r));
   r = ctx.getNextTopicForClass({ class: '12', subject: 'BST' });
   check('class 12 separate', r.topicId === 'B-9', JSON.stringify(r));
+
+  // Task 6: missed classes + notices
+  const CSH = TABLES.Class_Sessions.rows; CSH.length = 1;
+  CSH.push(['SES-A', '2026-11-10', '11', 'Accountancy', 'ACC-11-1', 't', 't', 'Ended', 'Completed', 'Skipped', '']);
+  CSH.push(['SES-B', '2026-11-11', '11', 'Economics', 'E-3', 't', 't', 'Abandoned', '', 'Pending', '']);
+  CSH.push(['SES-C', '2026-11-12', '11', 'BST', 'B-3', 't', '', 'Live', '', '', '']);
+  SY.length = 1; add('ACC-11-1', 'Class 11', 'Accountancy', 'Completed'); add('E-3', 'Class 11', 'Economics', 'In Progress'); add('B-3', 'Class 11', 'BST', 'Not Started');
+  const AT = TABLES.Attendance_Logs.rows; AT.length = 1;
+  AT.push(['2026-11-10', 'C11_AFT', 'CG-11-001', 'A', 'A', '11']);
+  AT.push(['2026-11-10', 'C11_AFT', 'CG-11-002', 'B', 'L', '11']);
+  AT.push(['2026-11-10', 'C11_AFT', 'CG-11-003', 'C', 'P', '11']);
+  AT.push(['2026-11-11', 'C11_AFT', 'CG-11-001', 'A', 'A', '11']);
+  AT.push(['2026-11-12', 'C11_AFT', 'CG-11-001', 'A', 'A', '11']);
+  AT.push(['2026-11-10', 'C12_AFT', 'CG-12-001', 'D', 'A', '12']);
+  TABLES.Students_Master = fakeSheet([['Roll_No', 'Student_Name', 'Telegram_ID'], ['CG-11-001', 'A', '1001'], ['CG-11-002', 'B', '1002'], ['CG-11-003', 'C', '1003']]);
+  TABLES.Daily_Class_Recordings = fakeSheet([['Date', 'Class', 'Subject', 'Topic', 'YouTube_Unlisted_URL', 'Drive_File_ID', 'Updated_At']]);
+  today = '2026-11-12';
+  check('no send before confirm', sends.length === 0);
+  let m = ctx.getMissedClasses({}, { id: 1001 });
+  check('missed: 2 rows (live excluded), by subject then date', Array.isArray(m) && m.length === 2 && m[0].subject === 'Accountancy' && m[1].subject === 'Economics', JSON.stringify(m));
+  check('missed: topic name + not available + not watched', m[0].topic === 'ACC-11-1' && m[0].recordingAvailable === false && m[0].watched === false && m[0].date === '2026-11-10', JSON.stringify(m[0]));
+  check('skipped notes still listed', m[0].subject === 'Accountancy');
+  m = ctx.getMissedClasses({}, { id: 1002 });
+  check('late student included', m.length === 1 && m[0].status === 'L', JSON.stringify(m));
+  m = ctx.getMissedClasses({ studentId: 'CG-11-001' }, { id: 1002 });
+  check('non-admin cannot read another student', m.length === 1 && m[0].status === 'L', JSON.stringify(m));
+  m = ctx.getMissedClasses({ studentId: 'CG-11-001' }, { id: 999, is_admin: true });
+  check('admin can view-as', m.length === 2, JSON.stringify(m));
+  check('unknown telegram id errors', ctx.getMissedClasses({}, { id: 5 }).error);
+  TABLES.Daily_Class_Recordings.rows.push(['2026-11-10', 'Class 11', 'Accountancy', 't', 'https://y', 'd', 'x']);
+  m = ctx.getMissedClasses({}, { id: 1001 });
+  check('recording row flips recordingAvailable', m[0].recordingAvailable === true && m[1].recordingAvailable === false, JSON.stringify(m));
+  // D0 notices
+  const nA = ctx.sendClassMissedNotices({ sessionId: 'SES-A' });
+  check('D0 sent to absent+late', nA.ok && nA.sent === 2 && sends.length === 2, JSON.stringify(nA));
+  const sA = sends.find(x => x.chatId === '1001'), sL = sends.find(x => x.chatId === '1002');
+  check('absent text', /Accountancy/.test(sA.text) && /मिस/.test(sA.text), sA.text);
+  check('late text', /late/i.test(sL.text) && /Accountancy/.test(sL.text), sL.text);
+  check('no video link in text', !/https?:/.test(sA.text + sL.text));
+  check('mini app button #missed', sA.markup.inline_keyboard[0][0].web_app.url.slice(-7) === '#missed', JSON.stringify(sA.markup));
+  check('D0 idempotent', ctx.sendClassMissedNotices({ sessionId: 'SES-A' }).sent === 0 && sends.length === 2);
+  check('notice for live session rejected', ctx.sendClassMissedNotices({ sessionId: 'SES-C' }).error);
+  check('notice unknown session rejected', ctx.sendClassMissedNotices({ sessionId: 'NOPE' }).error);
+  ctx.sendClassMissedNotices({ sessionId: 'SES-B' });
+  check('second session D0 to 001', sends.length === 3 && sends[2].chatId === '1001');
+  // D3
+  today = '2026-11-13';
+  let n0 = sends.length; ctx.sendMissedClassReminders_();
+  check('D3: 001 and 002 one msg each (only 11-10 aged 3)', sends.length === n0 + 2, String(sends.length - n0));
+  n0 = sends.length; ctx.sendMissedClassReminders_();
+  check('reminders idempotent same day', sends.length === n0);
+  // watched stops further messages
+  check('markMissedWatched ok', ctx.markMissedWatched({ date: '2026-11-10', subject: 'Accountancy' }, { id: 1001 }).ok);
+  check('watched reflected', ctx.getMissedClasses({}, { id: 1001 })[0].watched === true);
+  // D7
+  today = '2026-11-18';
+  n0 = sends.length; ctx.sendMissedClassReminders_();
+  const d7 = sends.slice(n0);
+  check('D7 combined: one msg per student', d7.length === 2 && d7.filter(x => x.chatId === '1001').length === 1, JSON.stringify(d7.map(x => x.chatId)));
+  const d7a = d7.find(x => x.chatId === '1001'), d7b = d7.find(x => x.chatId === '1002');
+  check('watched class dropped from reminder', !/Accountancy/.test(d7a.text) && /Economics/.test(d7a.text), d7a.text);
+  check('002 still gets Accountancy', /Accountancy/.test(d7b.text));
+  n0 = sends.length; ctx.sendMissedClassReminders_();
+  check('max 3 per class: no more after D7', sends.length === n0);
 }
 console.log(failures ? failures + ' FAILED, ' + passes + ' passed' : 'ALL PASS (' + passes + ')');
 process.exit(failures ? 1 : 0);
