@@ -1024,9 +1024,9 @@ function getSyllabusTree(board, classLevel, subject) {
   const normCls = (v) => (typeof normalizeClassLevel_ === 'function') ? normalizeClassLevel_(v) : ((String(v || '').match(/\b(11|12)\b/) || [])[1] || String(v || '').trim());
   const wantCls = classLevel ? normCls(classLevel) : '';
   const filtered = rows.filter(r =>
-    (!board || String(r.Board).toUpperCase() === String(board).toUpperCase()) &&
+    (!board || !r.Board || String(r.Board).toUpperCase() === String(board).toUpperCase()) &&
     (!wantCls || normCls(r.Class) === wantCls) &&
-    (!subject || String(r.Subject).toUpperCase() === String(subject).toUpperCase())
+    (!subject || String(r.Subject).toUpperCase() === String(subject).toUpperCase() || (String(subject).toUpperCase() === 'ECONOMICS' && String(r.Subject).toUpperCase().indexOf('ECO') !== -1))
   );
   return { ok: true, count: filtered.length, items: filtered };
 }
@@ -3781,6 +3781,36 @@ function listInstalledTriggers() {
  * @param {Object} req
  * @return {Object}
  */
+/**
+ * View as Student: while an ADMIN has an active VIEW_AS_STU_<adminId> marker, student-scoped
+ * actions run as that student (roll comes from the server marker, never from the client).
+ * Admin-only / view-as control actions keep the admin identity.
+ */
+function applyViewAsStudentIdentity_(verifiedUser, action, payload) {
+  try {
+    if (!verifiedUser || !verifiedUser.id) return verifiedUser;
+    if (action === 'viewStudentAsTeacher' || action === 'exitViewStudentAsTeacher') return verifiedUser;
+    if (!(payload && payload.isViewAsStudent)) return verifiedUser;
+    if (!isAdmin_(verifiedUser.id)) return verifiedUser;
+    if (isAdminOnlyAction_(action)) return verifiedUser;
+    var roll = CacheService.getScriptCache().get('VIEW_AS_STU_' + String(verifiedUser.id));
+    if (!roll) return verifiedUser;
+    var stu = getStudentRecordByRoll_(roll);
+    if (!stu) return verifiedUser;
+    var realId = String(stu.Telegram_ID || stu.Telegram_User_ID || '').trim();
+    return {
+      id: realId || ('VA:' + String(roll).trim()),
+      first_name: stu.Student_Name || stu.Name || 'Student',
+      is_admin: false,
+      _viewAsAdminId: String(verifiedUser.id),
+      _viewAsRoll: String(roll).trim()
+    };
+  } catch (e) {
+    Logger.log('applyViewAsStudentIdentity_: ' + e.message);
+    return verifiedUser;
+  }
+}
+
 function handleApiRequest(req, userFromCaller) {
   var action = req.action;
   if (!action) {
@@ -3807,6 +3837,8 @@ function handleApiRequest(req, userFromCaller) {
       }
     }
   }
+
+  verifiedUser = applyViewAsStudentIdentity_(verifiedUser, action, payload);
 
   var dataResult;
   switch (action) {
@@ -5147,7 +5179,7 @@ function viewStudentAsTeacher(payload, verifiedUser) {
   return {
     ok: true,
     isViewAsStudent: true,
-    readOnly: true,
+    
     targetRollNo: targetRollNo,
     studentData: bootstrap
   };

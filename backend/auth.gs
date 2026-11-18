@@ -323,6 +323,11 @@ function findStudentByTelegramId_(erp, telegramId) {
   if (!telegramId) return null;
   var studentSheet = erp.getSheetByName('Students_Master');
   var students = studentSheet ? sheetToObjects(studentSheet) : [];
+  // View-as-Student synthetic id (server-made only, see applyViewAsStudentIdentity_): resolve by roll.
+  if (telegramId.indexOf('VA:') === 0) {
+    var vaRoll = telegramId.slice(3);
+    return students.find(function(s) { return String(s.Roll_No || '').trim() === vaRoll; }) || null;
+  }
   var student = students.find(function(s) {
     return String(s.Telegram_ID || s.Telegram_User_ID || '') === telegramId;
   });
@@ -512,6 +517,18 @@ function requirePaidStudent_(telegramId) {
   }
 
   // No cache: a DROPPED/INACTIVE status must cut access on the very next request.
+
+  // View-as-Student synthetic id: build the student from Students_Master by roll (admin proxy only).
+  if (cleanId.indexOf('VA:') === 0) {
+    var vaStu = findStudentByTelegramId_(SpreadsheetApp.openById(getActiveSheetIds().MASTER_ERP), cleanId);
+    if (!vaStu) throw new Error('ACCESS_DENIED: Student not found for View as Student: ' + cleanId.slice(3));
+    return {
+      studentId: vaStu.StudentID || vaStu.Roll_No, StudentID: vaStu.StudentID || vaStu.Roll_No,
+      Roll_No: vaStu.Roll_No, name: vaStu.Student_Name || vaStu.Name, Name: vaStu.Student_Name || vaStu.Name,
+      classLevel: String(vaStu.Class || ''), Class: vaStu.Class, paid: true, Paid: 'YES',
+      Status: vaStu.Status || 'ACTIVE', status: vaStu.Status || 'ACTIVE', TelegramID: cleanId, isViewAs: true
+    };
+  }
 
   var student = findRow_('SHEET_FEE', 'Students', 'TelegramID', cleanId);
   if (!student) {
