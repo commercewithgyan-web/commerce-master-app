@@ -319,7 +319,7 @@ function doGet(e) {
 
     // Point 5 (SYS-009): Server-side cache-governed read-only guard for View as Student
     const callerIdForGuard = (verifiedUser && verifiedUser.id) || '';
-    if (callerIdForGuard && isViewAsStudentActive_(callerIdForGuard)) {
+    if (!VIEW_AS_STUDENT_ALLOW_WRITES && callerIdForGuard && isViewAsStudentActive_(callerIdForGuard)) {
       const studentWriteActions = [
         'submitStudentQuizAttempt', 'submitAnswer', 'submitRedPenSubmission',
         'submitRedPenCopy', 'submitRedPenMistake', 'recordPaymentIntimation',
@@ -588,7 +588,7 @@ function doPost(e) {
 
     // Point 5 (SYS-009): Server-side cache-governed read-only guard for View as Student
     const callerIdForGuard = (verifiedUser && verifiedUser.id) || '';
-    if (callerIdForGuard && isViewAsStudentActive_(callerIdForGuard)) {
+    if (!VIEW_AS_STUDENT_ALLOW_WRITES && callerIdForGuard && isViewAsStudentActive_(callerIdForGuard)) {
       const studentWriteActions = [
         'submitStudentQuizAttempt', 'submitAnswer', 'submitRedPenSubmission',
         'submitRedPenCopy', 'submitRedPenMistake', 'recordPaymentIntimation',
@@ -649,7 +649,7 @@ function doPost(e) {
         result = logVideoWatch(payload, verifiedUser);
         break;
       case "recordPaymentIntimation":
-        if (payload && payload.isViewAsStudent) {
+        if (!VIEW_AS_STUDENT_ALLOW_WRITES && payload && payload.isViewAsStudent) {
           result = { ok: false, error: 'Write operation rejected: View as Student session is strictly read-only (SYS-009).' };
         } else {
           result = recordPaymentIntimation(payload, verifiedUser);
@@ -1007,6 +1007,9 @@ function getDashboardSummary() {
     recentFees: feeLedger.slice(-10)
   };
 }
+
+// Owner decision 18 Nov 2026: admin in View-as-Student has full write access. Set false to restore SYS-009 read-only guard.
+var VIEW_AS_STUDENT_ALLOW_WRITES = true;
 
 function getSyllabusTree(board, classLevel, subject) {
   const IDS = getActiveSheetIds();
@@ -2167,7 +2170,7 @@ function getCommerceGyanAppUrl_() {
 }
 
 function submitStudentQuizAttempt(payload, verifiedUser) {
-  if (payload && payload.isViewAsStudent) {
+  if (!VIEW_AS_STUDENT_ALLOW_WRITES && payload && payload.isViewAsStudent) {
     return { ok: false, error: 'Write operation rejected: View as Student session is strictly read-only (SYS-009).' };
   }
   if (!payload || payload.dryRun === true || payload.isSandbox === true || payload.preview === true) {
@@ -4769,7 +4772,7 @@ function saveSwotConfig(payload) {
  * @return {Object}
  */
 function submitRedPenSubmission(payload) {
-  if (payload && payload.isViewAsStudent) {
+  if (!VIEW_AS_STUDENT_ALLOW_WRITES && payload && payload.isViewAsStudent) {
     return { ok: false, error: 'Write operation rejected: View as Student session is strictly read-only (SYS-009).' };
   }
   payload = payload || {};

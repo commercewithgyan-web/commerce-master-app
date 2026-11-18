@@ -4154,9 +4154,10 @@
       const initData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
       const isSandboxPreview = !initData;
       // SYS-009: Server & client-side read-only guard for View as Student proxy
+      const CG_VIEW_AS_ALLOW_WRITES = true; // owner decision 18 Nov 2026
       if (window.isViewAsStudent) {
         const studentWriteActions = ['submitStudentQuizAttempt', 'submitRedPenSubmission', 'recordPaymentIntimation', 'logVideoWatch', 'askDoubt', 'askDoubtGemini', 'askVoiceDoubt'];
-        if (studentWriteActions.indexOf(resolvedAction) !== -1) {
+        if (!CG_VIEW_AS_ALLOW_WRITES && studentWriteActions.indexOf(resolvedAction) !== -1) {
           showToast('Write operation rejected: View as Student session is strictly read-only (SYS-009).', 'rose');
           return Promise.reject(new Error('Write operation rejected: View as Student session is strictly read-only (SYS-009).'));
         }
