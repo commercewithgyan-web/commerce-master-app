@@ -3136,10 +3136,22 @@
           <label class="block text-[14px] font-bold text-slate-700 dark:text-slate-300">YouTube Unlisted / Public Video URL *</label>
           <input id="endClassYoutubeInput" type="url" placeholder="https://youtu.be/..." class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 font-mono" />
         </div>
-        <label class="flex items-center gap-2 text-[14px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
-          <input id="endClassSkipLinks" type="checkbox" class="h-4 w-4 rounded" />
-          <span>आज notes / video नहीं है (skip करें)</span>
-        </label>
+        <div>
+          <label class="block text-[14px] font-bold text-slate-700 dark:text-slate-300">आज की class का result</label>
+          <select id="endClassOutcomeSelect" class="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800">
+            <option value="Completed">✅ Completed (topic पूरा)</option>
+            <option value="Partly">🟡 Partly done (कल भी यही topic)</option>
+            <option value="NotTaught">⚪ Not taught</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[14px] font-bold text-slate-700 dark:text-slate-300">Notes / Video</label>
+          <select id="endClassNotesMode" class="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800">
+            <option value="Attached">Attach now (links ऊपर भरें)</option>
+            <option value="Pending">Upload later (बाद में अपने आप / खुद)</option>
+            <option value="Skipped">Skip (आज notes / video नहीं)</option>
+          </select>
+        </div>
         <button id="confirmEndClassAndDppBtn" type="button" class="w-full h-11 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold shadow flex items-center justify-center gap-1.5">
           <span>🏁</span><span>Save Links &amp; Open 7 PM DPP Dispatch</span>
         </button>
@@ -6131,7 +6143,8 @@
         if (sel) {
           sel.innerHTML = EIGHT_SUBJECTS.map(s => `<option value="${s.code}">${s.name} (${s.code})</option>`).join('');
         }
-        const skipCb = document.getElementById('endClassSkipLinks'); if (skipCb) skipCb.checked = false;
+        const nm = document.getElementById('endClassNotesMode'); if (nm) nm.value = 'Pending';
+        const oc = document.getElementById('endClassOutcomeSelect'); if (oc) oc.value = 'Completed';
         document.getElementById('endClassModal')?.classList.remove('hidden');
       };
       const handleStartClassAction = async (targetSubj) => {
@@ -6144,14 +6157,15 @@
         });
         if (!ok) return;
 
-        window.cgCallGas('setActiveSubtopic', {
+        window.cgCallGas('startClassSession', {
           subtopicId: nextTopic ? nextTopic.id : appState.activeSubtopicLock,
-          deliveryMode: 'Offline',
-          status: 'In Progress'
+          deliveryMode: 'Offline'
         }).then(res => {
+          if (res && res.error) throw new Error(res.error);
           if (nextTopic) nextTopic.status = 'In Progress';
-          addAuditEvent(`Started class: locked ${res.activeSubtopic || subtopicTitle} in Syllabus.`);
-          showToast(`Class started! Locked ${res.activeSubtopic || subtopicTitle} in Syllabus & Timetable!`, 'emerald');
+          addAuditEvent(`Started class: ${subtopicTitle} (session ${res.sessionId}).`);
+          showToast(`Class started — ${res.subject || ''} Class ${res.class || ''}. किसी को message नहीं गया.`, 'emerald');
+          refreshLiveBadge();
           renderCurriculum();
           renderTimetable();
           renderDashboard();
@@ -6159,6 +6173,26 @@
           showToast(`Start Class failed: ${err.message}`, 'rose');
         });
       };
+
+      // Live badge: shows while any class session is Live (teacher view).
+      const refreshLiveBadge = () => {
+        window.cgCallGas('getLiveSession', {}).then(r => {
+          appState.liveSessions = (r && r.sessions) || [];
+          let el = document.getElementById('liveClassBadge');
+          if (!el) {
+            el = document.createElement('div');
+            el.id = 'liveClassBadge';
+            el.className = 'fixed top-2 right-2 z-40 px-3 py-1 rounded-full bg-rose-600 text-white text-[12px] font-extrabold shadow hidden';
+            document.body.appendChild(el);
+          }
+          if (appState.liveSessions.length) {
+            el.textContent = '🔴 Live: ' + appState.liveSessions.map(x => `${x.subject} ${x.class}`).join(', ');
+            el.classList.remove('hidden');
+          } else el.classList.add('hidden');
+        }).catch(() => {});
+      };
+      window.refreshLiveBadge = refreshLiveBadge;
+      refreshLiveBadge();
 
       document.getElementById('dashStartClassBtn')?.addEventListener('click', () => handleStartClassAction());
       document.getElementById('opsStartClassBtn')?.addEventListener('click', () => handleStartClassAction());
@@ -6172,9 +6206,11 @@
         const subjCode = document.getElementById('endClassSubjectSelect')?.value || 'ACC-12';
         const gnUrl = (document.getElementById('endClassGoodnotesInput')?.value || '').trim();
         const ytUrl = (document.getElementById('endClassYoutubeInput')?.value || '').trim();
-        const skipLinks = !!document.getElementById('endClassSkipLinks')?.checked;
+        const outcome = document.getElementById('endClassOutcomeSelect')?.value || 'Completed';
+        const notesMode = document.getElementById('endClassNotesMode')?.value || 'Pending';
+        const skipLinks = notesMode !== 'Attached';
         if (!gnUrl && !ytUrl && !skipLinks) {
-          showToast('Enter a Class Notes Drive link and/or a YouTube link, or tick the skip box, before ending class', 'amber');
+          showToast('Attach now चुना है: Class Notes Drive link और/या YouTube link भरें, या "Upload later" / "Skip" चुनें', 'amber');
           return;
         }
         if (gnUrl && !/^https:\/\/(drive|docs)\.google\.com\//i.test(gnUrl)) {
@@ -6237,11 +6273,31 @@
             window.cgCallGas('saveClassRecordingLink', { classLevel: endClassLevel, subject: noteSubj, topic: endClassTopic, youtubeUrl: ytUrl })
               .catch(err => showToast(`Recording link save failed: ${err.message}`, 'amber'));
           }
-          // End Class marks the day's topic Completed in the Syllabus (shared by teacher + student views).
-          if (matchedTopic && matchedTopic.id) {
-            window.cgCallGas('setActiveSubtopic', { subtopicId: matchedTopic.id, deliveryMode: 'Offline', status: 'Completed' })
-              .then(() => { matchedTopic.status = 'Completed'; renderCurriculum(); renderTimetable(); renderDashboard(); })
-              .catch(err => showToast(`Topic not marked Completed: ${err.message}`, 'amber'));
+          // End the tracked session: backend sets the topic status (Completed only if outcome=Completed). Sends NO message.
+          const live = (appState.liveSessions || []);
+          const sess = live.find(x => String(x.class) === String(endClassLevel) && String(x.subject).toLowerCase() === String(noteSubj).toLowerCase()) || (live.length === 1 ? live[0] : null);
+          if (!sess) {
+            showToast('कोई Live class session नहीं मिला — पहले Start Class करें. Topic status नहीं बदला.', 'rose');
+          } else {
+            window.cgCallGas('endClassSession', { sessionId: sess.sessionId, outcome, notesMode }).then(async er => {
+              if (er && er.error) throw new Error(er.error);
+              if (matchedTopic) matchedTopic.status = outcome === 'Completed' ? 'Completed' : 'In Progress';
+              renderCurriculum(); renderTimetable(); renderDashboard();
+              if (window.refreshLiveBadge) window.refreshLiveBadge();
+              const ns = er.noticeSummary || { absent: 0, late: 0 };
+              if (ns.absent + ns.late > 0) {
+                const yes = await window.cgConfirm({
+                  badge: 'Missed Class Notice',
+                  title: `${ns.absent} absent, ${ns.late} late — message भेजें?`,
+                  body: 'Absent बच्चों को "क्लास मिस की" और Late बच्चों को "पूरी क्लास देखें" message जाएगा. कोई video link नहीं जाएगा.'
+                });
+                if (yes) {
+                  const nr = await window.cgCallGas('sendClassMissedNotices', { sessionId: sess.sessionId });
+                  if (nr && nr.error) showToast(`Notices failed: ${nr.error}`, 'rose');
+                  else showToast(`Messages भेजे: ${nr.sent || 0}`, 'emerald');
+                }
+              }
+            }).catch(err => showToast(`End Class failed: ${err.message}`, 'rose'));
           }
           addAuditEvent(gnUrl || ytUrl ? `Ended class for ${subjCode} — GoodNotes & YouTube synced.` : `Ended class for ${subjCode} — no notes/video today (skipped).`);
           showToast(gnUrl || ytUrl ? 'Class links synced! Now dispatch 7:00 PM DPP below.' : 'Class ended without notes/video. Now dispatch 7:00 PM DPP below.', 'emerald');
