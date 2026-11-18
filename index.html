@@ -6131,6 +6131,7 @@
         if (sel) {
           sel.innerHTML = EIGHT_SUBJECTS.map(s => `<option value="${s.code}">${s.name} (${s.code})</option>`).join('');
         }
+        const skipCb = document.getElementById('endClassSkipLinks'); if (skipCb) skipCb.checked = false;
         document.getElementById('endClassModal')?.classList.remove('hidden');
       };
       const handleStartClassAction = async (targetSubj) => {
@@ -6183,7 +6184,7 @@
         const ok = await window.cgConfirm({
           badge: 'End Class Sync',
           title: `Sync ${subjCode} Notes & Video?`,
-          body: `This attaches the GoodNotes PDF & YouTube video to today's topic and opens the 7:00 PM DPP dispatch.`
+          body: skipLinks ? `Class will end without notes/video today and open the 7:00 PM DPP dispatch.` : `This attaches the class notes & YouTube video to today's topic and opens the 7:00 PM DPP dispatch.`
         });
         if (!ok) return;
 

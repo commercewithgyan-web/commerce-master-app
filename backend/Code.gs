@@ -3623,8 +3623,10 @@ function recordFeePayment(payload, verifiedUser) {
     if (attSheet) {
       const attRows = sheetToObjects(attSheet).filter(a => String(a.Roll_No) === String(txData.rollNo));
       if (attRows.length > 0) {
-        const presentCount = attRows.filter(a => String(a.Status) === "P").length;
-        attendancePct = Math.round((presentCount / attRows.length) * 100);
+        // Excused ('E') days are exempt: excluded from the denominator. Late ('L') counts as attended.
+        const counted = attRows.filter(a => String(a.Status) !== "E");
+        const presentCount = counted.filter(a => { const st = String(a.Status); return st === "P" || st === "L"; }).length;
+        if (counted.length > 0) attendancePct = Math.round((presentCount / counted.length) * 100);
       }
     }
   } catch (_) {}
