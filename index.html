@@ -6148,7 +6148,18 @@
         document.getElementById('endClassModal')?.classList.remove('hidden');
       };
       const handleStartClassAction = async (targetSubj) => {
-        const nextTopic = getNextIncompleteSubtopic(targetSubj || (appState.globalSubject === 'ALL' ? '' : appState.globalSubject));
+        const subjSel = targetSubj || (appState.globalSubject === 'ALL' ? '' : appState.globalSubject);
+        let nextTopic = getNextIncompleteSubtopic(subjSel);
+        // Task 5: server picks last Partly topic, else the next one; earlier Completed topics stay hidden.
+        try {
+          if (nextTopic && nextTopic.subject) {
+            const pick = await window.cgCallGas('getNextTopicForClass', { class: nextTopic.classLevel || (String(nextTopic.subject).includes('12') ? '12' : '11'), subject: nextTopic.subject });
+            if (pick && pick.topicId) {
+              const m = appState.curriculumTopics.find(c => String(c.id) === String(pick.topicId));
+              if (m) nextTopic = m;
+            }
+          }
+        } catch (e) { /* fall back to local pick */ }
         const subtopicTitle = nextTopic ? `${nextTopic.subject} · ${nextTopic.chapter}: ${nextTopic.topic}` : appState.activeSubtopicLock;
         const ok = await window.cgConfirm({
           badge: 'Start Class',

@@ -145,3 +145,30 @@ function installSessionTriggers_() {
   if (!have) ScriptApp.newTrigger('closeStaleSessions_').timeBased().everyDays(1).atHour(23).nearMinute(59).inTimezone(csTz_()).create();
   return { ok: true, installed: !have };
 }
+
+/** Next topic to teach for a class+subject: last Partly (In Progress) topic, else first not-completed after the last Completed. */
+function getNextTopicForClass(payload) {
+  const cls = normalizeClassLevel_((payload && payload.class) || '');
+  const subject = String((payload && payload.subject) || '').trim().toLowerCase();
+  const none = { topicId: '', state: 'None' };
+  if (!cls || !subject) return none;
+  const ss = SpreadsheetApp.openById(getActiveSheetIds().SYLLABUS);
+  const sh = ss.getSheetByName('Master_Syllabus') || ss.getSheetByName('01_Master_Syllabus');
+  if (!sh) return none;
+  const rows = sheetToObjects(sh).filter(function (r) {
+    return normalizeClassLevel_(r.Class || '') === cls && String(r.Subject || '').trim().toLowerCase() === subject;
+  });
+  if (!rows.length) return none;
+  const st = function (r) { return String(r.Status || '').trim().toLowerCase(); };
+  let lastPartly = -1, lastDone = -1;
+  rows.forEach(function (r, i) {
+    if (st(r) === 'in progress' || st(r) === 'partly') lastPartly = i;
+    if (st(r) === 'completed') lastDone = i;
+  });
+  const id = function (r) { return String(r.Canonical_Topic_ID || r.Topic_ID || ''); };
+  if (lastPartly >= 0) return { topicId: id(rows[lastPartly]), state: 'Partly' };
+  for (let i = lastDone + 1; i < rows.length; i++) {
+    if (st(rows[i]) !== 'completed') return { topicId: id(rows[i]), state: 'Next' };
+  }
+  return none;
+}

@@ -82,6 +82,24 @@ if (loaded) {
   check('stale closed as Abandoned', closed === 1 && TABLES.Class_Sessions.rows[TABLES.Class_Sessions.rows.length - 1][7] === 'Abandoned');
   check('abandoned does not touch topic', calls.length === n);
   check('no live after close', ctx.getLiveSession().live === false);
+
+  // Task 5: next topic carry-over
+  const SY = TABLES.Master_Syllabus.rows;
+  const H = SY[0]; SY.length = 1;
+  const add = (id, cls, subj, st) => SY.push([id, cls, subj, '1', id, st]);
+  add('E-1', 'Class 11', 'Economics', 'Completed'); add('E-2', 'Class 11', 'Economics', 'Completed');
+  add('E-3', 'Class 11', 'Economics', 'In Progress'); add('E-4', 'Class 11', 'Economics', 'Not Started');
+  let r = ctx.getNextTopicForClass({ class: '11', subject: 'Economics' });
+  check('partly wins', r.topicId === 'E-3' && r.state === 'Partly', JSON.stringify(r));
+  SY.length = 1;
+  add('B-1', 'Class 11', 'BST', 'Completed'); add('B-2', 'Class 11', 'BST', 'Completed'); add('B-3', 'Class 11', 'BST', 'Not Started'); add('B-4', 'Class 11', 'BST', 'Not Started');
+  add('B-9', 'Class 12', 'BST', 'Not Started');
+  r = ctx.getNextTopicForClass({ class: '11', subject: 'BST' });
+  check('first not started', r.topicId === 'B-3' && r.state === 'Next', JSON.stringify(r));
+  r = ctx.getNextTopicForClass({ class: '11', subject: 'Nothing' });
+  check('empty none', r.topicId === '' && r.state === 'None', JSON.stringify(r));
+  r = ctx.getNextTopicForClass({ class: '12', subject: 'BST' });
+  check('class 12 separate', r.topicId === 'B-9', JSON.stringify(r));
 }
 console.log(failures ? failures + ' FAILED, ' + passes + ' passed' : 'ALL PASS (' + passes + ')');
 process.exit(failures ? 1 : 0);
