@@ -6194,7 +6194,7 @@
         });
         saveTasksState();
 
-        const matchedTopic = appState.curriculumTopics.find(c => c.subject === subjCode && c.status !== 'Completed') || appState.curriculumTopics[0];
+        const matchedTopic = appState.curriculumTopics.find(c => c.subject === subjCode && c.status === 'In Progress') || appState.curriculumTopics.find(c => c.subject === subjCode && c.status !== 'Completed') || appState.curriculumTopics[0];
         if (matchedTopic) matchedTopic.videoUrl = ytUrl;
         const matchedLesson = appState.lessons.find(l => l.subject === subjCode) || appState.lessons[0];
         if (matchedLesson) {
@@ -6236,6 +6236,12 @@
           if (ytUrl) {
             window.cgCallGas('saveClassRecordingLink', { classLevel: endClassLevel, subject: noteSubj, topic: endClassTopic, youtubeUrl: ytUrl })
               .catch(err => showToast(`Recording link save failed: ${err.message}`, 'amber'));
+          }
+          // End Class marks the day's topic Completed in the Syllabus (shared by teacher + student views).
+          if (matchedTopic && matchedTopic.id) {
+            window.cgCallGas('setActiveSubtopic', { subtopicId: matchedTopic.id, deliveryMode: 'Offline', status: 'Completed' })
+              .then(() => { matchedTopic.status = 'Completed'; renderCurriculum(); renderTimetable(); renderDashboard(); })
+              .catch(err => showToast(`Topic not marked Completed: ${err.message}`, 'amber'));
           }
           addAuditEvent(gnUrl || ytUrl ? `Ended class for ${subjCode} — GoodNotes & YouTube synced.` : `Ended class for ${subjCode} — no notes/video today (skipped).`);
           showToast(gnUrl || ytUrl ? 'Class links synced! Now dispatch 7:00 PM DPP below.' : 'Class ended without notes/video. Now dispatch 7:00 PM DPP below.', 'emerald');
