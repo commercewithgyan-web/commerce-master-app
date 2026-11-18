@@ -764,6 +764,15 @@ function doPost(e) {
       case "saveClassRecordingLink":
         result = saveClassRecordingLink(payload);
         break;
+      case "uploadDailyClassNotes":
+      case "saveDailyClassNote":
+        requireAdmin_(verifiedUser && verifiedUser.id);
+        result = saveDailyClassNote(payload);
+        break;
+      case "registerClassNoteFile":
+        requireAdmin_(verifiedUser && verifiedUser.id);
+        result = registerClassNoteFile(payload);
+        break;
       case "getAcademicCalendar":
         result = getAcademicCalendar();
         break;
