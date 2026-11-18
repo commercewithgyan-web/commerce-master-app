@@ -3491,10 +3491,14 @@
       </div>
       <div class="space-y-2.5">
         <select id="redPenSubjectSelect" class="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800">
-          <option value="ACC-12">12th Accountancy</option>
-          <option value="ACC-11">11th Accountancy</option>
-          <option value="BST-12">12th Business Studies</option>
-          <option value="MAC-12">12th Macroeconomics</option>
+          <option value="ACC-11" data-cls="11">11th Accountancy</option>
+          <option value="BST-11" data-cls="11">11th Business Studies</option>
+          <option value="MIC-11" data-cls="11">11th Microeconomics</option>
+          <option value="STA-11" data-cls="11">11th Statistics</option>
+          <option value="ACC-12" data-cls="12">12th Accountancy</option>
+          <option value="BST-12" data-cls="12">12th Business Studies</option>
+          <option value="MAC-12" data-cls="12">12th Macroeconomics</option>
+          <option value="IED-12" data-cls="12">12th Indian Eco Dev</option>
         </select>
         <input id="redPenPhotoInput" type="file" accept="image/*" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800" />
         <input id="redPenNoteInput" type="text" placeholder="Question / Page note (e.g. Ch 3 Q12 Working Note)" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800" />
@@ -9211,7 +9215,21 @@
         'Accountancy': ['ACC-11', 'ACC-12'],
         'Business Studies': ['BST-11', 'BST-12'],
         'Economics': ['MIC-11', 'MAC-12', 'IED-12'],
-        'Statistics': ['STA-11', 'IED-12']
+        'Statistics': ['STA-11']
+      };
+
+      const resolveActiveStudentClass = () => {
+        const sessStu = window.cgCurrentSession && window.cgCurrentSession.student;
+        const sessCls = sessStu && (sessStu.classLevel || sessStu.Class);
+        if (sessCls && /\b(11|12)\b/.test(String(sessCls))) return String(sessCls).match(/\b(11|12)\b/)[1];
+        const rollNo = window.viewAsStudentRollNo || document.getElementById('tgStudentSelect')?.value || (sessStu && (sessStu.Roll_No || sessStu.roll)) || '';
+        const stu = appState.students.find(s => s.roll === rollNo);
+        const stuClsField = stu && (stu.classLevel || stu.Class);
+        if (stuClsField && /\b(11|12)\b/.test(String(stuClsField))) return String(stuClsField).match(/\b(11|12)\b/)[1];
+        if (stu && stu.batch && /\b(11|12)\b/.test(String(stu.batch))) return String(stu.batch).match(/\b(11|12)\b/)[1];
+        const rollCls = String(rollNo).match(/-?(11|12)-/);
+        if (rollCls) return rollCls[1];
+        return '12';
       };
 
       const extractYouTubeEmbedUrl = (url) => {
@@ -9223,10 +9241,8 @@
       const openStuPracticeSubject = (subj) => {
         const treeBox = document.getElementById('stuSyllabusTreeContainer');
         const pracBox = document.getElementById('stuPracticeQuestionsBox');
-        const rollNo = document.getElementById('tgStudentSelect')?.value || 'CG-1201';
-        const stu = appState.students.find(s => s.roll === rollNo) || appState.students[0];
-        const stuCls = (stu && stu.batch && stu.batch.includes('11')) ? '11' : '12';
-        const codes = STU_SUBJECT_CODE_MAP[subj] || ['ACC-12'];
+        const stuCls = resolveActiveStudentClass();
+        const codes = (STU_SUBJECT_CODE_MAP[subj] || ['ACC-' + stuCls]).filter(c => c.endsWith('-' + stuCls));
 
         document.querySelectorAll('.stu-practice-subj-btn').forEach(b => {
           const isAct = b.dataset.practicesubj === subj;
@@ -9248,15 +9264,17 @@
         const rCh = document.getElementById('stuRoadmapChCount');
         const rTop = document.getElementById('stuRoadmapTopCount');
         const rSub = document.getElementById('stuRoadmapSubCount');
-        if (rTitle) rTitle.textContent = `${subj} CBSE Roadmap`;
+        if (rTitle) rTitle.textContent = `${subj} (Class ${stuCls}) CBSE Roadmap`;
         if (rPct) rPct.textContent = `${rMeta.pct}% Completed`;
         if (rBar) rBar.style.width = `${rMeta.pct}%`;
         if (rCh) rCh.textContent = String(rMeta.ch);
         if (rTop) rTop.textContent = String(rMeta.top);
         if (rSub) rSub.textContent = String(rMeta.sub);
 
-        let topics = appState.curriculumTopics.filter(t => codes.includes(t.subject) && (!t.classLevel || String(t.classLevel) === stuCls));
-        if (!topics.length) topics = appState.curriculumTopics.filter(t => codes.includes(t.subject));
+        const topics = appState.curriculumTopics.filter(t => {
+          const rowCls = String(t.classLevel || ((String(t.subject || '').match(/-(11|12)\b/) || [])[1]) || ((String(t.id || '').match(/^C(11|12)-/) || [])[1]) || '');
+          return codes.includes(t.subject) && rowCls === stuCls;
+        });
 
         const chaptersMap = {};
         topics.forEach(t => {
@@ -9534,6 +9552,19 @@
       document.getElementById('openRedPenFromProgressBtn')?.addEventListener('click', () => {
         const modal = document.getElementById('stuRedPenModal');
         const resBox = document.getElementById('redPenResultBox');
+        const sel = document.getElementById('redPenSubjectSelect');
+        if (sel) {
+          const stuCls = resolveActiveStudentClass();
+          let firstMatch = '';
+          Array.from(sel.options).forEach(opt => {
+            const oCls = opt.dataset.cls || (opt.value.includes('-11') ? '11' : '12');
+            const show = oCls === stuCls;
+            opt.hidden = !show;
+            opt.disabled = !show;
+            if (show && !firstMatch) firstMatch = opt.value;
+          });
+          if (firstMatch) sel.value = firstMatch;
+        }
         if (resBox) resBox.classList.add('hidden');
         if (modal) modal.classList.remove('hidden');
       });
@@ -9546,31 +9577,51 @@
         const btn = document.getElementById('submitRedPenPhotoBtn');
         const fileEl = document.getElementById('redPenPhotoInput');
         const note = (document.getElementById('redPenNoteInput')?.value || '').trim();
-        const subjectCode = document.getElementById('redPenSubjectSelect')?.value || 'ACC-12';
+        const stuCls = resolveActiveStudentClass();
+        const subjectCode = document.getElementById('redPenSubjectSelect')?.value || ('ACC-' + stuCls);
         const resBox = document.getElementById('redPenResultBox');
-        const rollNo = document.getElementById('tgStudentSelect')?.value || appState.students[0].roll;
+        const rollNo = window.viewAsStudentRollNo || document.getElementById('tgStudentSelect')?.value || appState.students[0].roll;
         const file = fileEl && fileEl.files && fileEl.files[0];
         if (!file && !note) {
           showToast('Please attach a register photo or enter a question/page note.', 'amber');
           return;
         }
         if (btn) { btn.disabled = true; btn.textContent = 'Uploading for Checking…'; }
-        const readImage = () => new Promise((resolve) => {
+        const readAndCompressImage = () => new Promise((resolve) => {
           if (!file) { resolve(''); return; }
           const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result || ''));
+          reader.onload = () => {
+            const dataUrl = String(reader.result || '');
+            if (!dataUrl.startsWith('data:image/') || file.size < 450 * 1024) { resolve(dataUrl); return; }
+            const img = new Image();
+            img.onload = () => {
+              const maxDim = 1400;
+              let w = img.width, h = img.height;
+              if (w > maxDim || h > maxDim) {
+                if (w >= h) { h = Math.round(h * maxDim / w); w = maxDim; } else { w = Math.round(w * maxDim / h); h = maxDim; }
+              }
+              const canvas = document.createElement('canvas');
+              canvas.width = w; canvas.height = h;
+              const ctx2d = canvas.getContext('2d');
+              ctx2d.drawImage(img, 0, 0, w, h);
+              resolve(canvas.toDataURL('image/jpeg', 0.78));
+            };
+            img.onerror = () => resolve(dataUrl);
+            img.src = dataUrl;
+          };
           reader.onerror = () => resolve('');
           reader.readAsDataURL(file);
         });
         try {
-          const imageBase64 = await readImage();
+          const imageBase64 = await readAndCompressImage();
           const res = await window.cgCallGas('submitRedPenSubmission', {
             rollNo, subjectCode, note: note || 'Register Photo Check',
             fileName: file ? file.name : '', imageBase64
           });
           if (resBox) {
             resBox.className = 'p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100 text-xs space-y-1';
-            resBox.innerHTML = `<p class="font-extrabold">✓ Submitted for Red-Pen Checking (${escHtml(subjectCode)})</p><p>${escHtml((res && res.feedback) || 'Sent to Gyan Sir Red-Pen Queue. Feedback will appear in your SWOT report.')}</p>`;
+            const driveLinkHtml = (res && res.driveUrl) ? `<p><a href="${escHtml(res.driveUrl)}" target="_blank" rel="noopener" class="underline font-bold">Saved Photo Link ↗</a></p>` : '';
+            resBox.innerHTML = `<p class="font-extrabold">✓ Submitted for Red-Pen Checking (${escHtml(subjectCode)})</p><p>${escHtml((res && res.feedback) || 'Sent to Gyan Sir Red-Pen Queue. Feedback will appear in your SWOT report.')}</p>${driveLinkHtml}`;
             resBox.classList.remove('hidden');
           }
           showToast('Red-Pen submission sent to Gyan Sir!', 'emerald');
@@ -9596,7 +9647,9 @@
             showToast('Type your Commerce concept doubt first!', 'amber');
             return;
           }
-          const rollNo = document.getElementById('tgStudentSelect')?.value || appState.students[0].roll;
+          const rollNo = window.viewAsStudentRollNo || document.getElementById('tgStudentSelect')?.value || appState.students[0].roll;
+          const activePill = document.querySelector('.stu-doubt-subj-pill.bg-indigo-600');
+          const subject = (activePill && activePill.dataset.doubtsubj) || 'Accountancy';
           if (inputEl) inputEl.value = '';
           if (stream) {
             const uBubble = document.createElement('div');
@@ -9612,16 +9665,17 @@
             stream.scrollTop = stream.scrollHeight;
           }
           stuAskDoubtBtn.disabled = true;
-          window.cgCallGas('askDoubt', { question: q, rollNo })
+          window.cgCallGas('askDoubt', { question: q, rollNo, subject })
             .then(res => {
               const ans = res && (res.answer || res.reply);
-              if (!ans) throw new Error('Empty response');
+              if (!ans) throw new Error((res && res.error) || 'Empty response');
               replyBubble.textContent = ans;
               showToast('Gemini AI Doubt Answered!', 'emerald');
-            }).catch(() => {
+            }).catch(err => {
               replyBubble.className = 'p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 mr-4 font-semibold';
-              replyBubble.textContent = 'AI abhi available nahi hai, teacher se poochein';
-              showToast('AI abhi available nahi hai, teacher se poochein', 'amber');
+              const msg = (err && err.message && /read-only|ACCESS_DENIED|rate/i.test(err.message)) ? err.message : 'AI abhi available nahi hai, teacher se poochein';
+              replyBubble.textContent = msg;
+              showToast(msg, 'amber');
             }).finally(() => {
               stuAskDoubtBtn.disabled = false;
               if (stream) stream.scrollTop = stream.scrollHeight;
@@ -10168,8 +10222,10 @@
     return api('getCurriculum').then(function (rows) {
       if (!Array.isArray(rows) || !rows.length) return;
       appState.curriculumTopics = rows.map(function (r) {
+        var clsMatch = String(r.subject || '').match(/-(11|12)\b/) || String(r.id || '').match(/^C(11|12)-/);
         return {
           id: esc(r.id),
+          classLevel: r.classLevel ? String(r.classLevel) : (clsMatch ? clsMatch[1] : ''),
           subject: esc(r.subject),
           chapter: esc(r.chapter),
           topic: esc(r.topic),

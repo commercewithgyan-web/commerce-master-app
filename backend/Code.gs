@@ -448,6 +448,17 @@ function doGet(e) {
       case "testGenerateSubjectiveAnswerPdf":
         result = { ok: true, data: testGenerateAnswerPdf(e && e.parameter ? e.parameter.classLevel : 12) };
         break;
+      case "submitRedPenSubmission":
+        result = submitRedPenSubmission(e && e.parameter ? e.parameter : {});
+        break;
+      case "askDoubt":
+      case "askDoubtGemini":
+      case "askVoiceDoubt":
+      case "runRedPenAnalysis":
+      case "submitRedPenCopy":
+      case "getCurriculum":
+        result = handleApiRequest({ action: action, initData: initData, payload: (e && e.parameter) ? e.parameter : {} }, verifiedUser);
+        break;
       default:
         result = { ok: false, error: "Unknown GET action: " + action };
     }
@@ -1007,9 +1018,11 @@ function getSyllabusTree(board, classLevel, subject) {
       r.Delivery_Medium = (dm === 'CG App' || dm === 'CG_App') ? 'CG_App' : ((dm.indexOf('YouTube') !== -1) ? 'YouTube' : dm);
     }
   });
+  const normCls = (v) => (typeof normalizeClassLevel_ === 'function') ? normalizeClassLevel_(v) : ((String(v || '').match(/\b(11|12)\b/) || [])[1] || String(v || '').trim());
+  const wantCls = classLevel ? normCls(classLevel) : '';
   const filtered = rows.filter(r =>
     (!board || String(r.Board).toUpperCase() === String(board).toUpperCase()) &&
-    (!classLevel || String(r.Class) === String(classLevel)) &&
+    (!wantCls || normCls(r.Class) === wantCls) &&
     (!subject || String(r.Subject).toUpperCase() === String(subject).toUpperCase())
   );
   return { ok: true, count: filtered.length, items: filtered };
@@ -3820,6 +3833,7 @@ function handleApiRequest(req, userFromCaller) {
       dataResult = (typeof handleGetPracticeQuestions_ === 'function') ? handleGetPracticeQuestions_(payload, verifiedUser) : [];
       break;
     case 'askDoubt':
+    case 'askDoubtGemini':
       dataResult = (typeof apiAskDoubt_ === 'function') ? apiAskDoubt_(verifiedUser, payload) : { answer: '' };
       break;
     case 'triggerExamPanicSOS':
@@ -4758,36 +4772,79 @@ function submitRedPenSubmission(payload) {
   if (payload && payload.isViewAsStudent) {
     return { ok: false, error: 'Write operation rejected: View as Student session is strictly read-only (SYS-009).' };
   }
+  payload = payload || {};
+  const rollNo = String(payload.rollNo || payload.studentId || 'STUDENT').trim();
+  const subject = String(payload.subjectCode || 'ACCOUNTS').trim();
+  const note = String(payload.note || 'Register Photo Check').trim();
+  const fileName = String(payload.fileName || '').trim();
+  const imageBase64 = String(payload.imageBase64 || '').trim();
+
+  let driveUrl = '';
+  let aiEvaluation = null;
+  let statusStr = 'PENDING_REVIEW';
+  let feedbackMsg = 'Sent to Gyan Sir Red-Pen Queue. Feedback will appear in your SWOT report.';
+
+  if (imageBase64) {
+    if (typeof saveRedPenImageToDrive_ === 'function') {
+      try {
+        const savedUrl = saveRedPenImageToDrive_(imageBase64, rollNo);
+        if (savedUrl && savedUrl !== 'DRIVE_SAVE_FAILED') driveUrl = savedUrl;
+      } catch (driveErr) {
+        Logger.log('submitRedPenSubmission Drive note: ' + driveErr.message);
+      }
+    }
+    if (typeof handleRunRedPenAnalysis === 'function') {
+      try {
+        const aiRes = handleRunRedPenAnalysis({
+          imageBase64: imageBase64,
+          telegramId: rollNo,
+          studentName: rollNo,
+          subjectCode: subject,
+          qid: payload.qid || ''
+        });
+        if (aiRes && aiRes.ok && aiRes.isValid && aiRes.data) {
+          aiEvaluation = aiRes.data;
+          statusStr = 'EVALUATED';
+          const earned = aiRes.data.computed ? aiRes.data.computed.marks_earned : '';
+          const maxM = aiRes.data.meta ? aiRes.data.meta.max_marks : '';
+          const verdict = (aiRes.data.step1_earned && aiRes.data.step1_earned.verdict_hi) || '';
+          feedbackMsg = (earned !== '' && maxM !== '' ? ('Score: ' + earned + '/' + maxM + ' Marks. ') : '') + verdict;
+        } else if (aiRes && aiRes.rejectionReason) {
+          feedbackMsg = aiRes.rejectionReason;
+        }
+      } catch (aiErr) {
+        Logger.log('submitRedPenSubmission AI fallback to queue: ' + aiErr.message);
+      }
+    }
+  }
+
   return withWriteLock_(() => {
-    payload = payload || {};
     const IDS = getActiveSheetIds();
     const qbSS = SpreadsheetApp.openById(IDS.QUESTION_BANK);
     let redPenSheet = qbSS.getSheetByName('Student_Red_Pen');
     if (!redPenSheet) {
       redPenSheet = qbSS.insertSheet('Student_Red_Pen');
-      redPenSheet.appendRow(['Timestamp', 'Roll_No', 'Subject', 'Note', 'File_Name', 'Status', 'Feedback']);
+      redPenSheet.appendRow(['Timestamp', 'Roll_No', 'Subject', 'Note', 'File_Name', 'Status', 'Feedback', 'Drive_URL']);
     }
     const nowStr = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
-    const rollNo = String(payload.rollNo || payload.studentId || 'STUDENT').trim();
-    const subject = String(payload.subjectCode || 'ACCOUNTS').trim();
-    const note = String(payload.note || 'Register Photo Check').trim();
-    const fileName = String(payload.fileName || '').trim();
-
     redPenSheet.appendRow([
       nowStr,
       rollNo,
       subject,
       note,
       fileName,
-      'PENDING_REVIEW',
-      'Sent to Gyan Sir Red-Pen Queue. Feedback will appear in your SWOT report.'
+      statusStr,
+      feedbackMsg,
+      driveUrl
     ]);
-
     return {
       ok: true,
       rollNo: rollNo,
       subject: subject,
-      feedback: 'Sent to Gyan Sir Red-Pen Queue. Feedback will appear in your SWOT report.',
+      driveUrl: driveUrl,
+      status: statusStr,
+      feedback: feedbackMsg,
+      aiEvaluation: aiEvaluation,
       timestamp: nowStr
     };
   });

@@ -31,14 +31,14 @@ function callGeminiGenerateContent_(payload) {
 
   // Priority order: latest active model, recommended models, legacy fallbacks
   var candidateModels = [
-    "gemini-1.5-flash",
+    "gemini-2.5-flash",
     "gemini-2.0-flash",
-    "gemini-1.5-pro"
+    "gemini-2.0-flash-lite"
   ];
 
-  // If a custom model is configured in Script Properties, prepend it (only if valid)
+  // If a custom model is configured in Script Properties, prepend it
   var customModel = props.getProperty("GEMINI_MODEL");
-  if (customModel && customModel !== 'gemini-2.5-flash' && customModel !== 'gemini-3.0-flash' && candidateModels.indexOf(customModel) === -1) {
+  if (customModel && candidateModels.indexOf(customModel) === -1) {
     candidateModels.unshift(customModel);
   }
 

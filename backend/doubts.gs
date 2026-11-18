@@ -133,8 +133,38 @@ function checkGeminiRateLimit_() {
   return { rateLimited: false };
 }
 
+function resolveDoubtCaller_(verifiedUser) {
+  var uid = verifiedUser && verifiedUser.id ? String(verifiedUser.id).trim() : '';
+  if (!uid || uid === 'GUEST_STUDENT') {
+    throw new Error('HTTP 401: AUTH_FAILED: Unauthenticated user');
+  }
+  if (verifiedUser.is_admin || (typeof isAdmin_ === 'function' && isAdmin_(uid))) {
+    return {
+      Student_Name: verifiedUser.first_name || 'Gyan Sir',
+      Name: verifiedUser.first_name || 'Gyan Sir',
+      isAdmin: true
+    };
+  }
+  try {
+    return requirePaidStudent_(uid);
+  } catch (feeErr) {
+    if (String(feeErr.message || '').indexOf('Student record not found') !== -1 && typeof findStudentByTelegramId_ === 'function') {
+      var erp = SpreadsheetApp.openById(getActiveSheetIds().MASTER_ERP);
+      var masterStu = findStudentByTelegramId_(erp, uid);
+      if (masterStu) {
+        var st = String(masterStu.Status || '').trim().toUpperCase();
+        if (st === 'DROPPED' || st === 'INACTIVE' || st === 'GRADUATED') {
+          throw new Error('ACCESS_DENIED: Your student account is marked as ' + st + '. Contact Gyan Sir.');
+        }
+        return masterStu;
+      }
+    }
+    throw feeErr;
+  }
+}
+
 function apiAskDoubt_(verifiedUser, payload) {
-  var student = requirePaidStudent_(verifiedUser.id);
+  var student = resolveDoubtCaller_(verifiedUser);
   var studentName = student.Student_Name || student.Name || (verifiedUser && verifiedUser.first_name) || 'Student';
   var questionText = (payload.question || '').trim();
   var mode = 'text';

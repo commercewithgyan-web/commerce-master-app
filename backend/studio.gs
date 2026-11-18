@@ -149,8 +149,12 @@ function apiGetCurriculum_(verifiedUser) {
     if (!id) continue;
     var rawMedium = String(r[c['Mode of Class']] || 'Offline').trim();
     var medium = (rawMedium === 'CG App' || rawMedium === 'CG_App') ? 'CG_App' : ((rawMedium.indexOf('YouTube') !== -1) ? 'YouTube' : 'Offline');
+    var clsNum = (typeof normalizeClassLevel_ === 'function')
+      ? normalizeClassLevel_(r[c['Class']])
+      : String(r[c['Class']] || '').replace(/\D/g, '');
     rows.push({
       id: id,
+      classLevel: clsNum,
       subject: studioSubjectCode_(r[c['Class']], r[c['Subject']]),
       chapter: String(r[c['Chapter Name']] || '').trim(),
       topic: String(r[c['Topic Name']] || '').trim(),
