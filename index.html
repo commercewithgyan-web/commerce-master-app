@@ -404,7 +404,7 @@
   <div id="viewAsStudentBanner" class="hidden fixed top-0 left-0 right-0 z-50 bg-amber-500 text-slate-950 px-4 py-2.5 flex items-center justify-between text-xs font-bold shadow-lg">
     <div class="flex items-center gap-2">
       <span class="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping"></span>
-      <span>Student view: Roll <span id="viewAsStudentRollBadge" class="font-mono underline font-extrabold">CG-00-000</span> · <button id="btnExitViewAsStudent" type="button" onclick="window.exitViewStudentAsTeacher()" class="underline font-extrabold hover:text-white transition cursor-pointer">Band karo</button></span>
+      <span>Student view: Roll <span id="viewAsStudentRollBadge" class="font-mono underline font-extrabold">CG-00-000</span> · <button id="btnExitViewAsStudent" type="button" onclick="window.exitViewStudentAsTeacher()" class="underline font-extrabold hover:text-white transition cursor-pointer">Band karo</button> · <button id="btnAdminEditStudent" type="button" onclick="window.openAdminStudentEdit()" class="underline font-extrabold hover:text-white transition cursor-pointer">✏️ Edit data</button></span>
     </div>
   </div>
 
@@ -9812,6 +9812,37 @@
           .catch(err => {
             showToast(`Failed to view as student: ${err.message || err}`, 'rose');
           });
+      };
+
+      // ==================== ADMIN: VIEW + EDIT STUDENT DATA ====================
+      window.openAdminStudentEdit = function(rollArg) {
+        const roll = String(rollArg || window.viewAsStudentRollNo || '').trim();
+        if (!roll) { showToast('Pehle student chuniye (Roll No).', 'rose'); return; }
+        window.cgCallGas('getStudentRecord', { rollNo: roll }).then(res => {
+          const st = (res && res.student) || {};
+          const fields = (res && res.editable) || [];
+          const old = document.getElementById('adminStudentEditModal'); if (old) old.remove();
+          const esc = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+          const rows = fields.map(f => `<label class="block text-xs text-slate-300 mb-2">${f.replace(/_/g,' ')}<input data-f="${f}" value="${esc(st[f])}" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1.5 text-sm text-white"></label>`).join('');
+          const m = document.createElement('div');
+          m.id = 'adminStudentEditModal';
+          m.className = 'fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4';
+          m.innerHTML = `<div class="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-4"><div class="font-bold text-white mb-1">✏️ Edit student: ${esc(st.Student_Name)} (${esc(roll)})</div><div class="text-[11px] text-amber-300 mb-3">Admin edit — har badlaav audit log me jayega.</div>${rows}<div class="flex gap-2 justify-end mt-3"><button type="button" id="adminEditCancel" class="px-3 py-1.5 rounded bg-slate-700 text-white text-sm">Cancel</button><button type="button" id="adminEditSave" class="px-3 py-1.5 rounded bg-indigo-600 text-white text-sm font-bold">Save</button></div></div>`;
+          document.body.appendChild(m);
+          m.querySelector('#adminEditCancel').onclick = () => m.remove();
+          m.querySelector('#adminEditSave').onclick = () => {
+            const changes = {};
+            m.querySelectorAll('input[data-f]').forEach(i => { const f = i.dataset.f; if (String(i.value).trim() !== String(st[f] == null ? '' : st[f])) changes[f] = i.value.trim(); });
+            const names = Object.keys(changes);
+            if (!names.length) { showToast('Kuch change nahi hua.', 'indigo'); return; }
+            if (!confirm('Ye badlaav save karein?\n\n' + names.map(k => k + ': ' + (st[k] || '(khaali)') + ' → ' + changes[k]).join('\n'))) return;
+            window.cgCallGas('updateStudentRecord', { rollNo: roll, changes: changes }).then(r => {
+              showToast('✓ Student data update hua (' + ((r && r.changed) || names.length) + ' field).', 'emerald');
+              m.remove();
+              if (typeof window.loadStudentBootstrap === 'function') window.loadStudentBootstrap(roll);
+            }).catch(e => showToast('Save fail: ' + (e.message || e), 'rose'));
+          };
+        }).catch(e => showToast('Student record load fail: ' + (e.message || e), 'rose'));
       };
 
       window.exitViewStudentAsTeacher = function() {

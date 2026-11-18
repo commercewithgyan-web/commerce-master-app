@@ -180,7 +180,7 @@ function isAdminOnlyAction_(action) {
     'testGenerateBstFlowchartPdf', 'testGenerateSubjectiveQuestionPdf',
     'testGenerateSubjectiveAnswerPdf', 'checkBalanceSheetIntegrity',
     'getMonthlyPL', 'getBalanceSheet', 'getCashDrawer', 'reconcileNotebookRegistry',
-    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask', 'getWeeklyTimetable', 'saveWeeklyTimetable', 'saveTimetableSlot', 'deleteTimetableSlot', 'cancelBatchAndNotify', 'logLessonProgress', 'saveCurriculumTopic', 'uploadDailyClassNotes', 'registerClassNoteFile', 'addLeadToSheet', 'advanceLeadStage', 'enrolTrialToDirectory', 'updateStudentProfile', 'saveAttendanceBatch', 'undoAttendanceBatch', 'sendDefaulterNotices', 'sendFeeReminderTelegram', 'publishDppQuiz', 'cancelAndRescheduleClass', 'saveAcademicEvent', 'toggleHolidayDate', 'saveTeacherTasks', 'saveSwotConfig', 'getPaymentIntimations', 'viewStudentAsTeacher', 'exitViewStudentAsTeacher'
+    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask', 'getWeeklyTimetable', 'saveWeeklyTimetable', 'saveTimetableSlot', 'deleteTimetableSlot', 'cancelBatchAndNotify', 'logLessonProgress', 'saveCurriculumTopic', 'uploadDailyClassNotes', 'registerClassNoteFile', 'addLeadToSheet', 'advanceLeadStage', 'enrolTrialToDirectory', 'updateStudentProfile', 'saveAttendanceBatch', 'undoAttendanceBatch', 'sendDefaulterNotices', 'sendFeeReminderTelegram', 'publishDppQuiz', 'cancelAndRescheduleClass', 'saveAcademicEvent', 'toggleHolidayDate', 'saveTeacherTasks', 'saveSwotConfig', 'getPaymentIntimations', 'viewStudentAsTeacher', 'exitViewStudentAsTeacher', 'getStudentRecord', 'updateStudentRecord'
   ];
   return adminActions.indexOf(action) !== -1;
 }
@@ -376,6 +376,12 @@ function doGet(e) {
         break;
       case "getDailyClassNotes":
         result = getDailyClassNotes(payload ? payload.subject : null, payload ? payload.classLevel : null, verifiedUser);
+        break;
+      case "getStudentRecord":
+        result = getStudentRecord(payload, verifiedUser);
+        break;
+      case "updateStudentRecord":
+        result = updateStudentRecord(payload, verifiedUser);
         break;
       case "uploadDailyClassNotes":
       case "saveDailyClassNote":
@@ -686,6 +692,12 @@ function doPost(e) {
         break;
       case "getDailyClassNotes":
         result = getDailyClassNotes(payload ? payload.subject : null, payload ? payload.classLevel : null, verifiedUser);
+        break;
+      case "getStudentRecord":
+        result = getStudentRecord(payload, verifiedUser);
+        break;
+      case "updateStudentRecord":
+        result = updateStudentRecord(payload, verifiedUser);
         break;
       case "getHomeDashboard":
       case "getNotebook":
@@ -1123,6 +1135,58 @@ function sendStudentFeeReminder(payload) {
   }
 }
 
+function getStudentRecordByRoll_(rollNo) {
+  const erp = SpreadsheetApp.openById(getActiveSheetIds().MASTER_ERP);
+  const sh = erp.getSheetByName('Students_Master');
+  if (!sh) return null;
+  const want = String(rollNo || '').trim();
+  return sheetToObjects(sh).find(r => String(r.Roll_No || '').trim() === want) || null;
+}
+
+const STUDENT_EDITABLE_FIELDS_ = ['Student_Name','Class','Batch_ID','Status','Parent_Mobile','Fee_Status','Board','Student_WhatsApp','Parent_Name','Parent_Email','Local_Area','School_College','Gender','DOB'];
+
+/** Admin only: full Students_Master row + which fields are editable. */
+function getStudentRecord(payload, verifiedUser) {
+  if (!verifiedUser || !isAdmin_(verifiedUser.id)) return { ok: false, error: 'Unauthorized: Admin only.' };
+  const rec = getStudentRecordByRoll_(payload && payload.rollNo);
+  if (!rec) return { ok: false, error: 'Student not found: ' + String((payload && payload.rollNo) || '') };
+  const out = {};
+  Object.keys(rec).forEach(k => { out[k] = rec[k] instanceof Date ? Utilities.formatDate(rec[k], 'Asia/Kolkata', 'yyyy-MM-dd') : rec[k]; });
+  return { ok: true, student: out, editable: STUDENT_EDITABLE_FIELDS_ };
+}
+
+/** Admin only: update whitelisted Students_Master fields for one student, with audit log (old -> new). */
+function updateStudentRecord(payload, verifiedUser) {
+  if (!verifiedUser || !isAdmin_(verifiedUser.id)) return { ok: false, error: 'Unauthorized: Admin only.' };
+  payload = payload || {};
+  const rollNo = String(payload.rollNo || '').trim();
+  const changes = payload.changes || {};
+  if (!rollNo) return { ok: false, error: 'Missing Roll_No.' };
+  const keys = Object.keys(changes).filter(k => STUDENT_EDITABLE_FIELDS_.indexOf(k) !== -1);
+  if (!keys.length) return { ok: false, error: 'No editable fields supplied.' };
+  if (keys.indexOf('Class') !== -1 && !normalizeClassLevel_(changes.Class)) return { ok: false, error: 'Class must be 11 or 12.' };
+  return withWriteLock_(() => {
+    const sh = SpreadsheetApp.openById(getActiveSheetIds().MASTER_ERP).getSheetByName('Students_Master');
+    const data = sh.getDataRange().getValues();
+    const hdr = data[0].map(h => String(h).trim());
+    const rc = hdr.indexOf('Roll_No');
+    let row = -1;
+    for (let i = 1; i < data.length; i++) { if (String(data[i][rc]).trim() === rollNo) { row = i + 1; break; } }
+    if (row < 0) return { ok: false, error: 'Student not found: ' + rollNo };
+    const diff = {};
+    keys.forEach(k => {
+      const c = hdr.indexOf(k);
+      if (c < 0) return;
+      const oldV = String(data[row - 1][c] == null ? '' : data[row - 1][c]);
+      const newV = String(changes[k] == null ? '' : changes[k]).trim();
+      if (oldV !== newV) { sh.getRange(row, c + 1).setValue(newV); diff[k] = [oldV, newV]; }
+    });
+    if (!Object.keys(diff).length) return { ok: true, changed: 0, message: 'Kuch change nahi hua.' };
+    recordAuditLog_(verifiedUser.id, 'ADMIN', 'ADMIN_EDIT_STUDENT', rollNo, diff);
+    return { ok: true, changed: Object.keys(diff).length, diff: diff };
+  });
+}
+
 function getDailyClassNotes(subject, classLevel, verifiedUser) {
   // Class: students always get their OWN class (server side); admin may ask for one.
   let cls = '';
@@ -1130,6 +1194,15 @@ function getDailyClassNotes(subject, classLevel, verifiedUser) {
     cls = getVerifiedStudentClass_(verifiedUser);
   } else {
     cls = normalizeClassLevel_(classLevel);
+    // Admin in an active View-as-Student session sees exactly that student's class.
+    try {
+      const vaRoll = verifiedUser && verifiedUser.id ? CacheService.getScriptCache().get('VIEW_AS_STU_' + String(verifiedUser.id)) : '';
+      if (vaRoll) {
+        const vs = getStudentRecordByRoll_(vaRoll);
+        const vc = vs ? normalizeClassLevel_(vs.Class) : '';
+        if (vc) cls = vc;
+      }
+    } catch (_) {}
   }
   const IDS = getActiveSheetIds();
   let notesSheet = null;
