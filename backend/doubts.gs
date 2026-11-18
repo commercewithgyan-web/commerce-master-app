@@ -23,7 +23,7 @@
  */
 function askDoubtGemini(studentName, subject, question, lens) {
   var props = PropertiesService.getScriptProperties();
-  var geminiKey = props.getProperty('GEMINI_KEY');
+  var geminiKey = props.getProperty('GEMINI_KEY') || props.getProperty('GEMINI_API_KEY');
   if (!geminiKey) throw new Error('GEMINI_KEY is missing');
 
   var targetSubject = subject || 'Accountancy';
@@ -71,8 +71,18 @@ function askDoubtGemini(studentName, subject, question, lens) {
 
   var json = callGeminiGenerateContent_(payload);
   if (json.candidates && json.candidates[0].content && json.candidates[0].content.parts) {
-    var raw = json.candidates[0].content.parts[0].text;
-    var parsed = JSON.parse(raw);
+    var raw = String(json.candidates[0].content.parts[0].text || '').trim();
+    var cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+    var parsed;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch (parseErr) {
+      var fb = cleaned.indexOf('{'), lb = cleaned.lastIndexOf('}');
+      if (fb !== -1 && lb > fb) {
+        try { parsed = JSON.parse(cleaned.slice(fb, lb + 1)); } catch (_) {}
+      }
+      if (!parsed) parsed = { story: raw, answer: raw };
+    }
 
     var storyText = parsed.story || (parsed.lenses ? parsed.lenses.STORY : '') || parsed.answer || '';
     var notesText = parsed.exam_notes || (parsed.lenses ? parsed.lenses.EXAM_NOTES : '') || '';
@@ -222,25 +232,29 @@ function apiAskDoubt_(verifiedUser, payload) {
   }
 
   // Duplicate check: prevent duplicate doubt insertion within 60 seconds
-  var cache = CacheService.getScriptCache();
-  var cleanQ = (questionText || '').toLowerCase().trim();
-  var dupKey = 'DOUBT_LOG_' + verifiedUser.id + '_' + Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, cleanQ)).slice(0, 16);
-  if (!cache.get(dupKey)) {
-    cache.put(dupKey, '1', 60);
-    appendRow_('SHEET_QB', 'Doubts', [
-      getKolkataTimestamp(),
-      String(verifiedUser.id),
-      studentName,
-      questionText,
-      result.answer || (result.lenses ? result.lenses.STORY : ''),
-      mode,
-      payload.duration || 0,
-      subject,
-      lens,
-      'Answered'
-    ]);
-  } else {
-    Logger.log('Duplicate doubt suppressed within 60s for student ' + verifiedUser.id);
+  try {
+    var cache = CacheService.getScriptCache();
+    var cleanQ = (questionText || '').toLowerCase().trim();
+    var dupKey = 'DOUBT_LOG_' + verifiedUser.id + '_' + Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, cleanQ)).slice(0, 16);
+    if (!cache.get(dupKey)) {
+      cache.put(dupKey, '1', 60);
+      appendRow_('SHEET_QB', 'Doubts', [
+        getKolkataTimestamp(),
+        String(verifiedUser.id),
+        studentName,
+        questionText,
+        result.answer || (result.lenses ? result.lenses.STORY : ''),
+        mode,
+        payload.duration || 0,
+        subject,
+        lens,
+        'Answered'
+      ]);
+    } else {
+      Logger.log('Duplicate doubt suppressed within 60s for student ' + verifiedUser.id);
+    }
+  } catch (logErr) {
+    Logger.log('Doubts sheet log note: ' + logErr.message);
   }
 
   return {
@@ -468,7 +482,7 @@ function handleVoiceDoubt_(msg) {
  */
 function transcribeAndGroundAudio_(base64Audio, mimeType, studentName, subject) {
   var props = PropertiesService.getScriptProperties();
-  var geminiKey = props.getProperty('GEMINI_KEY');
+  var geminiKey = props.getProperty('GEMINI_KEY') || props.getProperty('GEMINI_API_KEY');
   if (!geminiKey) throw new Error('GEMINI_KEY is missing');
 
   var prompt =

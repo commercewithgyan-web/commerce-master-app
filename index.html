@@ -9220,10 +9220,10 @@
       };
 
       const resolveActiveStudentClass = () => {
-        const sessStu = window.cgCurrentSession && window.cgCurrentSession.student;
-        const sessCls = sessStu && (sessStu.classLevel || sessStu.Class);
-        if (sessCls && /\b(11|12)\b/.test(String(sessCls))) return String(sessCls).match(/\b(11|12)\b/)[1];
-        const rollNo = window.viewAsStudentRollNo || document.getElementById('tgStudentSelect')?.value || (sessStu && (sessStu.Roll_No || sessStu.roll)) || '';
+        const activeStu = window.cgActiveStudent || (window.cgCurrentSession && window.cgCurrentSession.student);
+        const actCls = activeStu && (activeStu.classLevel || activeStu.Class);
+        if (actCls && /\b(11|12)\b/.test(String(actCls))) return String(actCls).match(/\b(11|12)\b/)[1];
+        const rollNo = window.viewAsStudentRollNo || document.getElementById('tgStudentSelect')?.value || (activeStu && (activeStu.Roll_No || activeStu.roll)) || '';
         const stu = appState.students.find(s => s.roll === rollNo);
         const stuClsField = stu && (stu.classLevel || stu.Class);
         if (stuClsField && /\b(11|12)\b/.test(String(stuClsField))) return String(stuClsField).match(/\b(11|12)\b/)[1];
@@ -9232,6 +9232,7 @@
         if (rollCls) return rollCls[1];
         return '12';
       };
+      window.resolveActiveStudentClass = resolveActiveStudentClass;
 
       const extractYouTubeEmbedUrl = (url) => {
         if (!url) return '';
@@ -9427,6 +9428,7 @@
         }
       };
 
+      window.openStuPracticeSubject = openStuPracticeSubject;
       document.querySelectorAll('.stu-practice-subj-btn').forEach(btn => {
         btn.addEventListener('click', () => openStuPracticeSubject(btn.dataset.practicesubj));
       });
@@ -10481,6 +10483,73 @@
 
   function applyStudentBootstrap(b, rollNo) {
     if (!b) return;
+    if (b.student) {
+      window.cgActiveStudent = b.student;
+      var bCls = String(b.student.classLevel || b.student.Class || '').match(/\b(11|12)\b/);
+      var stuCls = bCls ? bCls[1] : ((String(rollNo || b.student.Roll_No || '').match(/-?(11|12)-/) || [])[1] || '12');
+      if (typeof appState !== 'undefined' && Array.isArray(appState.students)) {
+        var rKey = b.student.Roll_No || rollNo;
+        var foundStu = appState.students.find(function (st) { return st.roll === rKey; });
+        if (foundStu) {
+          foundStu.classLevel = stuCls;
+          foundStu.batch = 'Class ' + stuCls + ' · ' + (b.student.Board || b.student.board || 'CBSE');
+        } else if (rKey) {
+          appState.students.unshift({
+            roll: rKey,
+            name: b.student.Student_Name || b.student.Name || 'Student',
+            classLevel: stuCls,
+            batch: 'Class ' + stuCls + ' · ' + (b.student.Board || b.student.board || 'CBSE'),
+            subjects: ['Accountancy', 'Business Studies', 'Economics'],
+            status: 'Enrolled',
+            coins: Number(b.totalCoins || 0),
+            att: ['P', 'P', 'P', 'P', 'P', 'P', 'P']
+          });
+        }
+        var sel = $('tgStudentSelect');
+        if (sel && rKey) { sel.value = rKey; }
+      }
+      var ecoCard = document.querySelector('.stu-practice-subj-btn[data-practicesubj="Economics"] p:first-child');
+      if (ecoCard) ecoCard.textContent = stuCls === '11' ? '📈 Economics (Micro)' : '📈 Economics (Macro/IED)';
+      if (typeof window.openStuPracticeSubject === 'function') {
+        var activeSubjBtn = document.querySelector('.stu-practice-subj-btn.border-indigo-500');
+        window.openStuPracticeSubject((activeSubjBtn && activeSubjBtn.dataset.practicesubj) || 'Accountancy');
+      }
+      if (typeof api === 'function' && !window['_cgSylLoaded_' + stuCls]) {
+        window['_cgSylLoaded_' + stuCls] = true;
+        api('getSyllabusTree', { classLevel: stuCls }).then(function (treeRes) {
+          var items = (treeRes && treeRes.items) || [];
+          if (!items.length || typeof appState === 'undefined') return;
+          var mapCode = function (subjName) {
+            var s = String(subjName || '').toLowerCase();
+            if (s.indexOf('business') !== -1) return 'BST-' + stuCls;
+            if (s.indexOf('micro') !== -1) return 'MIC-' + stuCls;
+            if (s.indexOf('macro') !== -1) return 'MAC-' + stuCls;
+            if (s.indexOf('stat') !== -1) return 'STA-' + stuCls;
+            if (s.indexOf('indian') !== -1) return 'IED-' + stuCls;
+            if (s.indexOf('eco') !== -1) return stuCls === '11' ? 'MIC-11' : 'MAC-12';
+            return 'ACC-' + stuCls;
+          };
+          var mapped = items.map(function (r) {
+            return {
+              id: String(r.Canonical_Topic_ID || r.Topic_ID || ''),
+              classLevel: stuCls,
+              subject: mapCode(r.Subject),
+              chapter: String(r.ChapterName || r.Chapter || ('Ch ' + (r.ChapterNo || ''))).trim(),
+              topic: String(r.Topic_Name || r.Topic || r.Subtopic || '').trim(),
+              status: String(r.Status || 'Planned').trim(),
+              medium: r.Delivery_Medium || 'Offline',
+              videoUrl: r.YouTube_URL || r.Video_URL || ''
+            };
+          });
+          var otherCls = (appState.curriculumTopics || []).filter(function (t) { return String(t.classLevel) !== stuCls; });
+          appState.curriculumTopics = otherCls.concat(mapped);
+          if (typeof window.openStuPracticeSubject === 'function') {
+            var curBtn = document.querySelector('.stu-practice-subj-btn.border-indigo-500');
+            window.openStuPracticeSubject((curBtn && curBtn.dataset.practicesubj) || 'Accountancy');
+          }
+        }).catch(function () {});
+      }
+    }
 
     // 1. Claim status
     var isUnclaimed = b.claimStatus === 'UNCLAIMED' || b.isClaimed === false;
