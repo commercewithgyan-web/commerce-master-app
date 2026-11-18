@@ -180,7 +180,7 @@ function isAdminOnlyAction_(action) {
     'testGenerateBstFlowchartPdf', 'testGenerateSubjectiveQuestionPdf',
     'testGenerateSubjectiveAnswerPdf', 'checkBalanceSheetIntegrity',
     'getMonthlyPL', 'getBalanceSheet', 'getCashDrawer', 'reconcileNotebookRegistry',
-    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask', 'getWeeklyTimetable', 'saveWeeklyTimetable', 'saveTimetableSlot', 'deleteTimetableSlot', 'cancelBatchAndNotify', 'logLessonProgress', 'saveCurriculumTopic', 'uploadDailyClassNotes', 'registerClassNoteFile', 'addLeadToSheet', 'advanceLeadStage', 'enrolTrialToDirectory', 'updateStudentProfile', 'saveAttendanceBatch', 'undoAttendanceBatch', 'sendDefaulterNotices', 'sendFeeReminderTelegram', 'publishDppQuiz', 'cancelAndRescheduleClass', 'saveAcademicEvent', 'toggleHolidayDate', 'saveTeacherTasks', 'saveSwotConfig', 'getPaymentIntimations', 'viewStudentAsTeacher', 'exitViewStudentAsTeacher', 'getStudentRecord', 'updateStudentRecord'
+    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask', 'getWeeklyTimetable', 'saveWeeklyTimetable', 'saveTimetableSlot', 'deleteTimetableSlot', 'cancelBatchAndNotify', 'logLessonProgress', 'saveCurriculumTopic', 'uploadDailyClassNotes', 'registerClassNoteFile', 'addLeadToSheet', 'advanceLeadStage', 'enrolTrialToDirectory', 'updateStudentProfile', 'saveAttendanceBatch', 'undoAttendanceBatch', 'sendDefaulterNotices', 'sendFeeReminderTelegram', 'publishDppQuiz', 'cancelAndRescheduleClass', 'saveAcademicEvent', 'toggleHolidayDate', 'saveTeacherTasks', 'saveSwotConfig', 'getPaymentIntimations', 'viewStudentAsTeacher', 'exitViewStudentAsTeacher', 'getStudentRecord', 'updateStudentRecord', 'startClassSession', 'endClassSession', 'getLiveSession'
   ];
   return adminActions.indexOf(action) !== -1;
 }
@@ -382,6 +382,15 @@ function doGet(e) {
         break;
       case "updateStudentRecord":
         result = updateStudentRecord(payload, verifiedUser);
+        break;
+      case "startClassSession":
+        result = startClassSession(payload);
+        break;
+      case "endClassSession":
+        result = endClassSession(payload);
+        break;
+      case "getLiveSession":
+        result = getLiveSession();
         break;
       case "uploadDailyClassNotes":
       case "saveDailyClassNote":
@@ -698,6 +707,15 @@ function doPost(e) {
         break;
       case "updateStudentRecord":
         result = updateStudentRecord(payload, verifiedUser);
+        break;
+      case "startClassSession":
+        result = startClassSession(payload);
+        break;
+      case "endClassSession":
+        result = endClassSession(payload);
+        break;
+      case "getLiveSession":
+        result = getLiveSession();
         break;
       case "getHomeDashboard":
       case "getNotebook":
