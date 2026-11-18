@@ -5486,6 +5486,26 @@
       }
     }
 
+    // Load real Daily_Class_Notes for the student (backend forces the student's own class)
+    function loadRealClassNotes() {
+      if (!window.cgCallGas || appState._notesLoading) return;
+      if (appState._notesLoadedAt && Date.now() - appState._notesLoadedAt < 60000) return;
+      appState._notesLoading = true;
+      window.cgCallGas('getDailyClassNotes', {}).then(res => {
+        const list = (res && res.notes) || [];
+        appState.dailyClassNotes = list.map(n => ({
+          date: String(n.Date || '').slice(0, 10),
+          subject: n.Subject || '',
+          topic: n.Topic || '',
+          dppTitle: '',
+          goodnotesUrl: n.Class_Notes_URL || n.Goodnotes_PDF_URL || ''
+        })).filter(n => n.goodnotesUrl);
+        appState._notesLoadedAt = Date.now();
+        renderDailyClassNotes();
+      }).catch(() => { /* keep existing list on failure */ })
+        .finally(() => { appState._notesLoading = false; });
+    }
+
     // ==================== RENDER: STUDENT DAILY NOTES (S6) & 80-80 RADAR (B2) ====================
     function renderDailyClassNotes() {
       const container = document.getElementById('stuDailyClassNotesList');
@@ -5505,7 +5525,7 @@
           </div>
           <p class="font-extrabold text-slate-900 dark:text-white text-xs">${escHtml(r.topic)}</p>
           <div class="flex flex-wrap gap-2 pt-1">
-            <span class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[14px] font-semibold">📝 ${escHtml(r.dppTitle)}</span>
+            ${r.dppTitle ? `<span class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[14px] font-semibold">📝 ${escHtml(r.dppTitle)}</span>` : ''}
             <a href="${escHtml(r.goodnotesUrl)}" target="_blank" rel="noopener" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[14px] font-bold">📄 Download Class Notes PDF ↗</a>
           </div>
         </div>
@@ -5763,6 +5783,7 @@
       }
 
       renderDailyClassNotes();
+      loadRealClassNotes();
       renderStudentRadar(stu);
 
       const topicText = appState.activeSubtopicLock || 'C12-ACC-B1-CH03-T02-S01';
