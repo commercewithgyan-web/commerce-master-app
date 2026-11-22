@@ -2522,7 +2522,7 @@
       </section>
 
       <!-- CARD 4: Notice Card (Sitting fully above bottom bar) -->
-      <section class="glass-card p-4 relative border-l-4 border-l-[#F87800] mb-8">
+      <section id="stuNoticeCard" class="glass-card p-4 relative border-l-4 border-l-[#F87800] mb-8 hidden">
         <div class="flex items-center justify-between mb-1.5">
           <div class="flex items-center gap-1.5">
             <span class="w-2.5 h-2.5 rounded-full bg-[#F87800]"></span>
@@ -2530,12 +2530,10 @@
           </div>
           <span class="text-[14px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
             <span class="material-symbols-outlined text-[16px]">history</span>
-            <span>Aaj ka update</span>
+            <span id="stuNoticeWhen">Aaj ka update</span>
           </span>
         </div>
-        <p class="text-[14px] text-[#1E0063] dark:text-[#F3ECFF] leading-snug font-medium">
-          Sunday Accounts Mock Test subah <span class="font-bold text-primary dark:text-purple-300">10:00 AM</span> Hall 2 mein hoga. Calculator compulsory hai!
-        </p>
+        <p id="stuNoticeText" class="text-[14px] text-[#1E0063] dark:text-[#F3ECFF] leading-snug font-medium"></p>
         <div class="mt-2.5 flex items-center justify-between text-slate-500 dark:text-slate-400 text-[14px] pt-2 border-t border-slate-200 dark:border-slate-700">
           <span class="flex items-center gap-1 font-medium">
             <span class="material-symbols-outlined text-[16px] text-primary">campaign</span>
@@ -5746,6 +5744,21 @@
             <span class="font-mono font-bold text-primary shrink-0">${escHtml(stuFmtTime(sl.time))}</span>
           </div>`).join('') : '<p class="text-[14px] text-slate-500 p-3">Aaj koi class schedule nahi hai.</p>';
       }
+      (function () {
+        const card = document.getElementById('stuNoticeCard'); if (!card) return;
+        const cls = stuMyClass(stu);
+        const today = new Date().toISOString().slice(0, 10);
+        const evs = (appState.academicEvents || []).filter(ev => ev && ev.title && ev.date >= today && (!ev.batch || ev.batch === 'All' || String(ev.batch).includes(cls)))
+          .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+        const ev = evs[0];
+        window._stuNotice = ev || null;
+        if (!ev) { card.classList.add('hidden'); return; }
+        const d = new Date(ev.date + 'T00:00:00');
+        const ds = isNaN(d) ? ev.date : d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+        const t = document.getElementById('stuNoticeText'); if (t) t.textContent = ev.title + ' — ' + ds;
+        const w = document.getElementById('stuNoticeWhen'); if (w) w.textContent = ev.type || 'Update';
+        card.classList.remove('hidden');
+      })();
       const blt = document.getElementById('tgBatchLectureTitle');
       if (blt) blt.textContent = slots.length ? slots.map(sl => stuSubjName(sl.subject) + ' · ' + stuFmtTime(sl.time)).join('  |  ') : 'Aaj koi batch lecture nahi hai';
       // Today's Active Topic: one row per subject taught today
@@ -5764,7 +5777,7 @@
     document.addEventListener('click', function (e) {
       const nb = e.target.closest && e.target.closest('#stuNoticeDetailBtn');
       if (nb) {
-        stuShowDetail('📢 Notice — Admin Office', '<p>Sunday Accounts Mock Test subah <strong>10:00 AM</strong> Hall 2 mein hoga.</p><p>Calculator compulsory hai!</p>');
+        const ev = window._stuNotice; if (ev) stuShowDetail('📢 ' + (ev.type || 'Notice'), '<p><strong>' + escHtml(ev.title) + '</strong></p><p>Date: ' + escHtml(ev.date) + '</p>' + (ev.batch ? '<p>Batch: ' + escHtml(ev.batch) + '</p>' : ''));
         return;
       }
       const row = e.target.closest && e.target.closest('[data-stu-detail]');
