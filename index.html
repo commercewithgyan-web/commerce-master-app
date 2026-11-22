@@ -9769,6 +9769,7 @@
                 ans = parts.join('\n\n');
               }
               replyBubble.style.whiteSpace = 'pre-wrap';
+              ans = String(ans).replace(/\*\*/g, '');
               replyBubble.textContent = ans;
               showToast('Gemini AI Doubt Answered!', 'emerald');
             }).catch(err => {
