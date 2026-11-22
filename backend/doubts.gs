@@ -68,6 +68,25 @@ function buildCommerceGyanDoubtPrompt_(studentName, subject, question, lens, stu
  * @param {string|number} [studentClass] - optional 11 or 12 (class-aware prompt)
  * @return {Object} Structured JSON output containing explanation & lenses
  */
+/** Truncated/invalid JSON se known string fields nikaalo (regex), taaki raw JSON student ko na dikhe. */
+function salvageDoubtJson_(text) {
+  var keys = ['topic_title', 'story', 'exam_notes', 'real_example', 'golden_rule', 'cbse_trap'];
+  var out = {}, found = 0;
+  keys.forEach(function (k) {
+    var m = new RegExp('"' + k + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)("|$)').exec(text);
+    if (m && m[1]) {
+      var v = m[1];
+      try { v = JSON.parse('"' + v.replace(/\\$/, '') + '"'); } catch (_) { v = v.replace(/\\n/g, '\n').replace(/\\"/g, '"'); }
+      out[k] = v; found++;
+    }
+  });
+  return found ? out : null;
+}
+
+function stripJsonNoise_(raw) {
+  return String(raw || '').replace(/[{}"]/g, '').replace(/\b(topic_title|story|exam_notes|real_example|golden_rule|cbse_trap)\s*:/g, '\n$1: ').trim();
+}
+
 function askDoubtGemini(studentName, subject, question, lens, studentClass) {
   var props = PropertiesService.getScriptProperties();
   var geminiKey = props.getProperty('GEMINI_KEY') || props.getProperty('GEMINI_API_KEY');
@@ -82,7 +101,7 @@ function askDoubtGemini(studentName, subject, question, lens, studentClass) {
     contents: [{ parts: [{ text: systemPrompt }] }],
     generationConfig: {
       temperature: 0.2,
-      maxOutputTokens: 1400,
+      maxOutputTokens: 1800,
       responseMimeType: 'application/json'
     }
   };
@@ -99,7 +118,7 @@ function askDoubtGemini(studentName, subject, question, lens, studentClass) {
       if (fb !== -1 && lb > fb) {
         try { parsed = JSON.parse(cleaned.slice(fb, lb + 1)); } catch (_) {}
       }
-      if (!parsed) parsed = { story: raw, answer: raw };
+      if (!parsed) parsed = salvageDoubtJson_(cleaned) || { story: stripJsonNoise_(raw), answer: stripJsonNoise_(raw) };
     }
 
     var storyText = parsed.story || (parsed.lenses ? parsed.lenses.STORY : '') || parsed.answer || '';

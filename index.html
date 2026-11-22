@@ -9758,8 +9758,17 @@
           const progT2 = setTimeout(() => { if (/Thoda aur time/.test(replyBubble.textContent)) replyBubble.textContent = 'Bas thodi der aur, jawab taiyaar ho raha hai…'; }, 16000);
           window.cgCallGas('askDoubt', { question: q, rollNo, subject })
             .then(res => {
-              const ans = res && (res.answer || res.reply);
+              let ans = res && (res.answer || res.reply);
               if (!ans) throw new Error((res && res.error) || 'Empty response');
+              if (res.story) {
+                const parts = [res.story];
+                if (res.real_example) parts.push('🏪 Example: ' + res.real_example);
+                if (res.exam_notes) parts.push('📝 Exam notes: ' + res.exam_notes);
+                if (res.golden_rule) parts.push('⭐ Golden rule: ' + res.golden_rule);
+                if (res.cbse_trap) parts.push('⚠️ CBSE trap: ' + res.cbse_trap);
+                ans = parts.join('\n\n');
+              }
+              replyBubble.style.whiteSpace = 'pre-wrap';
               replyBubble.textContent = ans;
               showToast('Gemini AI Doubt Answered!', 'emerald');
             }).catch(err => {
