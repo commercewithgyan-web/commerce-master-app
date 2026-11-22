@@ -4,11 +4,10 @@
  */
 
 var CANDIDATE_MODELS = [
+  'gemini-3.5-flash-lite',
+  'gemini-3.6-flash',
   'gemini-3.8-flash',
-  'gemini-3.5-flash',
-  'gemini-flash-latest',
-  'gemini-2.5-flash',
-  'gemini-2.0-flash'
+  'gemini-4-hydrogen'
 ];
 
 var RULE_CONFIG = {
@@ -428,20 +427,29 @@ function cleanJsonResponseText_(text) {
 
 function callGemini_(system, userParts, schema) {
   var props = PropertiesService.getScriptProperties();
-  var key = props.getProperty('GEMINI_KEY') || props.getProperty('GEMINI_API_KEY');
+  var key = String(props.getProperty('GEMINI_KEY') || props.getProperty('GEMINI_API_KEY') || '').trim();
   if (!key) throw new Error('GEMINI_KEY missing in Script Properties');
 
-  var models = CANDIDATE_MODELS.slice();
-  var customModel = props.getProperty('GEMINI_MODEL');
-  if (customModel && models.indexOf(customModel) === -1) {
-    models.unshift(customModel);
+  var cache = CacheService.getScriptCache();
+  var baseModels = CANDIDATE_MODELS.slice();
+  var customModel = String(props.getProperty('GEMINI_MODEL') || '').trim();
+  var models = [];
+  if (customModel && baseModels.indexOf(customModel) === -1 && !cache.get('REDPEN_DEAD_' + customModel)) {
+    models.push(customModel);
   }
+  baseModels.forEach(function (m) {
+    if (models.indexOf(m) === -1 && !cache.get('REDPEN_DEAD_' + m)) models.push(m);
+  });
+  if (!models.length) models = baseModels.slice();
 
   var errorLogs = [];
+  var startMs = Date.now();
+  var budgetMs = 13000;
 
   for (var i = 0; i < models.length; i++) {
+    if ((Date.now() - startMs) > budgetMs && i > 0) break;
     var model = models[i];
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + key;
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(key);
 
     var gen = { temperature: 0.1 };
     if (schema) {
@@ -462,7 +470,10 @@ function callGemini_(system, userParts, schema) {
         muteHttpExceptions: true
       });
       var code = res.getResponseCode();
-      var text = res.getContentText();
+      var text = res.getContentText() || '';
+      if (code === 404) {
+        try { cache.put('REDPEN_DEAD_' + model, '1', 21600); } catch (_) {}
+      }
 
       if (code === 200) {
         var body = JSON.parse(text);
