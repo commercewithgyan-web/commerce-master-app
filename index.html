@@ -629,7 +629,7 @@
             <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight">Good Evening, Gyan Sir</h1>
             <p class="text-xs sm:text-sm text-slate-300 mt-1">You have <strong class="text-white">4 batch lectures</strong> scheduled today across Class 11 &amp; 12, <strong class="text-amber-300" id="dashRecoveryCount">5 students</strong> queued for <code class="mono">REC-01</code> recovery drills, and the <strong class="text-emerald-300">7:00 PM DPP</strong> ready for dispatch.</p>
           </div>
-          <div class="flex flex-wrap items-center gap-2 shrink-0">
+          <div class="flex flex-wrap items-center gap-2 max-w-full">
             <button type="button" id="dashStartClassBtn" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold transition shadow flex items-center gap-1.5 cursor-pointer">
               <span>▶️</span><span>Start Class</span>
             </button>
@@ -1247,7 +1247,7 @@
               <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 text-[14px] font-bold">Promise &amp; Conversion</span>
               <span class="px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-200 border border-purple-400/30 text-[14px] font-bold">+10 Demo / +90 Admit Coins</span>
             </div>
-            <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <div class="flex flex-wrap items-center gap-2 max-w-full">
               <button id="refreshCrmPipelineBtn" type="button" class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition">
                 🔄 Sync Live CRM Sheet
               </button>
@@ -2016,24 +2016,24 @@
   <!-- ==================== TELEGRAM TEACHER DAILY OPS VIEW (5 MOBILE TABS, 0MS TOGGLE) ==================== -->
   <div id="teacherOpsWorkspace" class="flex-1 max-w-[440px] w-full mx-auto p-3 sm:p-4 space-y-4 pb-28 min-h-screen bg-slate-50 dark:bg-slate-950 sm:shadow-2xl sm:border-x sm:border-slate-200 dark:sm:border-slate-800 relative">
     <!-- Mobile Teacher Remote Top Bar -->
-    <div class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900 border border-indigo-500/30 text-white shadow-md">
-      <div class="min-w-0">
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-          <span class="text-[14px] font-bold uppercase tracking-wider text-amber-400">Daily Ops Remote</span>
-          <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[14px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">v3.2 LIVE</span>
+    <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-900 border border-indigo-500/30 text-white shadow-md gap-2">
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
+          <span class="text-[12px] font-bold uppercase tracking-wider text-amber-400 truncate">Daily Ops</span>
+          <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[11px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shrink-0">v3.2 LIVE</span>
         </div>
-        <h2 class="text-sm font-bold text-white truncate mt-0.5">Gyan Sir · Begusarai Hub</h2>
+        <h2 class="text-xs sm:text-sm font-bold text-white truncate mt-0.5">Gyan Sir · Begusarai Hub</h2>
       </div>
-      <div class="flex gap-1.5 shrink-0">
-        <button id="opsOpenRedPenTestBtn" type="button" class="h-8 px-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[12px] font-bold flex items-center gap-1 shadow-sm cursor-pointer">
-          <span>🖍️</span><span>Red-Pen AI</span>
+      <div class="flex items-center gap-1 shrink-0">
+        <button id="opsOpenRedPenTestBtn" type="button" title="Red-Pen AI Evaluation" class="h-8 px-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[12px] font-bold flex items-center gap-1 shadow-sm cursor-pointer">
+          <span>🖍️</span><span class="hidden sm:inline">Red-Pen</span>
         </button>
-        <button id="opsReturnStudioBtn" type="button" class="h-8 px-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[14px] font-bold flex items-center gap-1 shadow-sm">
-          <span>🖥️</span><span>Studio</span>
+        <button id="opsReturnStudioBtn" type="button" title="Desktop Studio" class="h-8 px-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[12px] font-bold flex items-center gap-1 shadow-sm cursor-pointer">
+          <span>🖥️</span><span class="hidden sm:inline">Studio</span>
         </button>
-        <button id="btnOpenViewAsStudentModal" type="button" class="h-8 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[14px] font-bold flex items-center gap-1 shadow-sm cursor-pointer">
-          <span>👁️</span><span>Student View</span>
+        <button id="btnOpenViewAsStudentModal" type="button" title="View as Student" class="h-8 px-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[12px] font-bold flex items-center gap-1 shadow-sm cursor-pointer">
+          <span>👁️</span><span class="hidden sm:inline">Student</span>
         </button>
       </div>
     </div>
@@ -2045,7 +2045,7 @@
         <div class="flex items-center justify-between">
           <span class="text-[14px] text-slate-500 dark:text-slate-400 flex items-center gap-1 font-medium">
             <span class="material-symbols-outlined text-[16px] text-primary">calendar_today</span>
-            <span>Aaj, 12 Dec</span>
+            <span id="opsTodayDateText">Aaj, 22 Nov</span>
           </span>
           <span class="px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-primary dark:text-purple-300 text-[14px] font-bold">Offline Center</span>
         </div>
@@ -2058,19 +2058,19 @@
       <!-- Summary Row: 3 Circular Neumorphic Badges -->
       <section class="glass-card p-4 flex items-center justify-between">
         <div class="flex-1 flex flex-col items-center justify-center text-center px-1">
-          <div class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/50 border border-purple-200 dark:border-purple-700 flex items-center justify-center text-[#1E0063] dark:text-[#F3ECFF] font-bold text-[18px] shadow-sm mb-1">3</div>
+          <div id="opsClassesScheduledCount" class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/50 border border-purple-200 dark:border-purple-700 flex items-center justify-center text-[#1E0063] dark:text-[#F3ECFF] font-bold text-[18px] shadow-sm mb-1">3</div>
           <span class="text-[14px] font-semibold text-slate-800 dark:text-slate-200">Classes</span>
           <span class="text-[14px] text-slate-500 dark:text-slate-400">Scheduled</span>
         </div>
         <div class="w-px h-10 bg-slate-200 dark:bg-slate-700"></div>
         <div class="flex-1 flex flex-col items-center justify-center text-center px-1">
-          <div class="w-12 h-12 rounded-full bg-[#FFF3EB] dark:bg-amber-950/50 border border-[#F87800]/30 flex items-center justify-center text-[#F87800] font-bold text-[18px] shadow-sm mb-1">2</div>
+          <div id="opsPendingAttendanceCount" class="w-12 h-12 rounded-full bg-[#FFF3EB] dark:bg-amber-950/50 border border-[#F87800]/30 flex items-center justify-center text-[#F87800] font-bold text-[18px] shadow-sm mb-1">2</div>
           <span class="text-[14px] font-bold text-[#9C4900] dark:text-amber-400">Pending</span>
           <span class="text-[14px] text-slate-500 dark:text-slate-400">Attendance</span>
         </div>
         <div class="w-px h-10 bg-slate-200 dark:bg-slate-700"></div>
         <div class="flex-1 flex flex-col items-center justify-center text-center px-1">
-          <div class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/50 border border-purple-200 dark:border-purple-700 flex items-center justify-center text-[#1E0063] dark:text-[#F3ECFF] font-bold text-[18px] shadow-sm mb-1">14</div>
+          <div id="opsPendingFeesCount" class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/50 border border-purple-200 dark:border-purple-700 flex items-center justify-center text-[#1E0063] dark:text-[#F3ECFF] font-bold text-[18px] shadow-sm mb-1">3</div>
           <span class="text-[14px] font-semibold text-slate-800 dark:text-slate-200">Fees baaki</span>
           <span class="text-[14px] text-slate-500 dark:text-slate-400">Reminders</span>
         </div>
@@ -2085,10 +2085,10 @@
             </div>
             <div>
               <p class="text-[14px] font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <span>2 doubts ka jawab baaki</span>
+                <span id="opsPendingDoubtsText">Doubts ka jawab taiyar</span>
                 <span class="w-2 h-2 rounded-full bg-[#F87800] animate-pulse"></span>
               </p>
-              <p class="text-[14px] text-slate-500 dark:text-slate-400">Partnership accounts • Batch Alpha</p>
+              <p class="text-[14px] text-slate-500 dark:text-slate-400">Class 11 &amp; 12 Live Batches</p>
             </div>
           </div>
           <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">chevron_right</span>
@@ -2100,7 +2100,7 @@
         <div class="flex items-center justify-between px-0.5">
           <div>
             <h2 class="text-[18px] font-bold text-slate-900 dark:text-white">Aaj Ki Classes</h2>
-            <p class="text-[14px] text-slate-500 dark:text-slate-400">3 sessions scheduled today</p>
+            <p id="opsTodayClassesSubtext" class="text-[14px] text-slate-500 dark:text-slate-400">3 sessions scheduled today</p>
           </div>
           <button type="button" onclick="document.querySelector('[data-opstab=\'syllabus\']')?.click()" class="text-primary font-bold text-[14px] flex items-center gap-0.5 hover:underline">
             <span>Syllabus dekho</span>
@@ -2108,6 +2108,7 @@
           </button>
         </div>
 
+        <div id="opsTodayClassesList" class="space-y-3">
         <!-- Class Card 1: Chal Rahi Hai -->
         <article class="glass-card p-4 flex flex-col gap-3 relative overflow-hidden border-l-4 border-l-[#1FA971]">
           <div class="flex items-start justify-between gap-2">
@@ -2206,6 +2207,7 @@
             </div>
           </div>
         </article>
+        </div>
       </section>
     </div>
 
@@ -2660,7 +2662,7 @@
     </div>
 
     <!-- TAB 2: SYLLABUS TREE & SELF-PACED PRACTICE BANK (S3 + S4) -->
-    <div id="tgTab-syllabus" class="tg-student-tab space-y-3.5 pb-28" style="display: none;">
+    <div id="tgTab-syllabus" class="tg-student-tab space-y-3.5 pb-36" style="display: none;">
       <!-- SECTION: TODAY'S PRACTICE (STITCH CALM EDUGLASS) -->
       <section class="space-y-3">
         <div class="flex items-center justify-between">
@@ -2730,7 +2732,7 @@
     </div>
 
     <!-- TAB 4: FEE LEDGER & PASSBOOK (S5: Commerce Gyan Tuition Ledger + Passbook & SWOT) -->
-    <div id="tgTab-fees" class="tg-student-tab space-y-3.5 pb-24" style="display: none;">
+    <div id="tgTab-fees" class="tg-student-tab space-y-3.5 pb-36" style="display: none;">
       <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3.5">
         <div class="flex items-start justify-between gap-2">
           <div>
@@ -2785,7 +2787,7 @@
     </div>
 
     <!-- TAB 5: LEADERBOARD, 80-80 RADAR & RED-PEN (B2: Pentagon Radar + Chapter Mastery Breakdown) -->
-    <div id="tgTab-progress" class="tg-student-tab space-y-3.5" style="display: none;">
+    <div id="tgTab-progress" class="tg-student-tab space-y-3.5 pb-36" style="display: none;">
       <!-- CBSE Subjective Copy Check Red-Pen Banner -->
       <div class="rounded-2xl bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 text-white p-4 shadow-md border border-rose-800/40 flex items-center justify-between gap-3">
         <div class="space-y-1 min-w-0">
@@ -2815,6 +2817,20 @@
         <div id="stu8080RadarBox" class="space-y-3.5"></div>
       </div>
 
+      <!-- Past Red-Pen Checked Copies List -->
+      <div id="stuRedPenHistorySection" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="text-base">📋</span>
+            <h3 class="text-sm font-extrabold text-slate-900 dark:text-white">Past Checked Copies (Red-Pen History)</h3>
+          </div>
+          <span id="stuRedPenHistoryCount" class="px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-[11px] font-bold border border-rose-200 dark:border-rose-800/50">0 Copies</span>
+        </div>
+        <div id="stuRedPenHistoryList" class="space-y-2 text-xs">
+          <p class="text-slate-500 text-center py-2">Abhi tak koi copy check nahi hui. Upar "Open Red-Pen" se apni copy submit karein!</p>
+        </div>
+      </div>
+
       <!-- Batch Leaderboard (Privacy-Masked) -->
       <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
         <div class="flex items-center justify-between gap-2">
@@ -2826,7 +2842,7 @@
     </div>
 
     <!-- TAB 6: DOUBT & ASK GEMINI AI (B1: Removed Panic SOS & Audio Query, non-clipping 4 subject pills) -->
-    <div id="tgTab-doubt" class="tg-student-tab space-y-3.5" style="display: none;">
+    <div id="tgTab-doubt" class="tg-student-tab space-y-3.5 pb-36" style="display: none;">
       <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3.5">
         <div class="flex items-start justify-between gap-2">
           <div>
@@ -5437,12 +5453,26 @@
       const container = document.getElementById('stuDailyClassNotesList');
       if (!container) return;
       const subj = appState.activeNotesSubject || 'Accountancy';
+      const rollNo = (typeof stuOwnRoll === 'function') ? stuOwnRoll() : (document.getElementById('tgStudentSelect')?.value || '');
+      const activeStu = (appState.students || []).find(s => s.roll === rollNo);
+      const stuCls = (typeof stuMyClass === 'function') ? stuMyClass(activeStu) : (String(rollNo).includes('11') ? '11' : '12');
+
       document.querySelectorAll('.stu-notes-subj-tab').forEach(b => {
         b.className = b.dataset.notessubj === subj
           ? 'stu-notes-subj-tab py-2 px-1.5 rounded-xl text-[14px] font-extrabold bg-indigo-600 text-white shadow-sm truncate cursor-pointer'
           : 'stu-notes-subj-tab py-2 px-1.5 rounded-xl text-[14px] font-bold text-slate-700 dark:text-slate-300 truncate cursor-pointer';
       });
-      const rows = (appState.dailyClassNotes || []).filter(n => (n.subject || '').toLowerCase() === subj.toLowerCase());
+
+      const isCls11Topic = (t) => /\b(BRS|Journal|Ledger|Depreciation|Ogive|Statistics|Micro|Trial)\b/i.test(t);
+      const rows = (appState.dailyClassNotes || []).filter(n => {
+        if ((n.subject || '').toLowerCase() !== subj.toLowerCase()) return false;
+        if (n.classLevel) return String(n.classLevel) === String(stuCls);
+        if (stuCls === '11') {
+          return isCls11Topic(n.topic || '') || n.subject === 'Statistics' || !/\b(Partnership|Goodwill|Admission|Share Capital|National Income|Macro|Cash Flow)\b/i.test(n.topic || '');
+        } else {
+          return !isCls11Topic(n.topic || '') && n.subject !== 'Statistics';
+        }
+      });
       container.innerHTML = rows.length ? rows.map(r => `
         <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 space-y-2">
           <div class="flex items-center justify-between">
@@ -5478,13 +5508,13 @@
 
       // 5-Axis Pentagon SVG Radar Chart (Attendance, DPP Habit, Unit Tests, Mock Exam, MCQ Accuracy)
       const axes = [
-        { label: `Attendance (${attPct}%)`, val: attPct, tx: 130, ty: 16, anchor: 'middle' },
-        { label: `DPP Habit (${dppPct}%)`, val: dppPct, tx: 208, ty: 74, anchor: 'start' },
-        { label: `Unit Tests (${unitPct}%)`, val: unitPct, tx: 178, ty: 176, anchor: 'middle' },
-        { label: `Mock Exam (${mockPct}%)`, val: mockPct, tx: 82, ty: 176, anchor: 'middle' },
-        { label: `MCQ Accuracy (${mcqAcc}%)`, val: mcqAcc, tx: 52, ty: 74, anchor: 'end' }
+        { label: `Attendance (${attPct}%)`, val: attPct, tx: 150, ty: 16, anchor: 'middle' },
+        { label: `DPP Habit (${dppPct}%)`, val: dppPct, tx: 222, ty: 74, anchor: 'start' },
+        { label: `Unit Tests (${unitPct}%)`, val: unitPct, tx: 198, ty: 178, anchor: 'middle' },
+        { label: `Mock Exam (${mockPct}%)`, val: mockPct, tx: 102, ty: 178, anchor: 'middle' },
+        { label: `MCQ Accuracy (${mcqAcc}%)`, val: mcqAcc, tx: 78, ty: 74, anchor: 'end' }
       ];
-      const cx = 130, cy = 98, R = 64;
+      const cx = 150, cy = 98, R = 58;
       const ringPoly = (scale) => [0, 1, 2, 3, 4].map(i => {
         const ang = (-Math.PI / 2) + (i * 2 * Math.PI / 5);
         return `${(cx + scale * R * Math.cos(ang)).toFixed(1)},${(cy + scale * R * Math.sin(ang)).toFixed(1)}`;
@@ -5501,19 +5531,38 @@
       }).join('');
       const spokesHtml = [0, 1, 2, 3, 4].map(i => {
         const ang = (-Math.PI / 2) + (i * 2 * Math.PI / 5);
-        return `<line x1="${cx}" y1="${cy}" x2="${(cx + R * Math.cos(ang)).toFixed(1)}" y2="${(cy + R * Math.sin(ang)).toFixed(1)}" stroke="#e2e8f0" stroke-width="1" />`;
+        return `<line x1="${cx}" y1="${cy}" x2="${(cx + R * Math.cos(ang)).toFixed(1)}" y2="${(cy + R * Math.sin(ang)).toFixed(1)}" stroke="#cbd5e1" class="stroke-slate-300 dark:stroke-slate-700" stroke-width="1" />`;
       }).join('');
+
+      const stuCls = (typeof stuMyClass === 'function') ? stuMyClass(stu) : (String(stu.batch || '').includes('11') ? '11' : '12');
+      const isClass11 = stuCls === '11';
+      const strongChap = isClass11 ? 'BRS / Journal' : 'Partnership';
+      const leakChap = isClass11 ? 'Depreciation' : 'Cash Flow';
+
+      const chaptersList = isClass11 ? [
+        { name: 'Ch 1: Introduction to Accounting', sub: '12 Subtopics · 6 Marks', pct: '96%', badge: '🟢 Mastered', color: 'emerald' },
+        { name: 'Ch 2: Theory Base of Accounting', sub: '10 Subtopics · 4 Marks', pct: '92%', badge: '🟢 Mastered', color: 'emerald' },
+        { name: 'Ch 3: Recording of Transactions (Journal & Ledger)', sub: '18 Subtopics · 12 Marks', pct: '88%', badge: '🟢 Mastered', color: 'emerald' },
+        { name: 'Ch 5: Bank Reconciliation Statement (BRS)', sub: '14 Subtopics · 8 Marks', pct: '74%', badge: '🟡 Standard', color: 'amber' },
+        { name: 'Ch 7: Depreciation & Provisions', sub: '16 Subtopics · 8 Marks', pct: '58%', badge: '🔴 Leak Alert', color: 'rose' }
+      ] : [
+        { name: 'Ch 1: Accounting for Partnership: Basics', sub: '16 Subtopics · 8 Marks', pct: '100%', badge: '🟢 Mastered', color: 'emerald' },
+        { name: 'Ch 2: Goodwill: Nature & Valuation', sub: '10 Subtopics · 6 Marks', pct: '95%', badge: '🟢 Mastered', color: 'emerald' },
+        { name: 'Ch 3: Admission of a Partner', sub: '18 Subtopics · 8 Marks', pct: '88%', badge: '🟢 Mastered', color: 'emerald' },
+        { name: 'Ch 6: Accounting for Share Capital', sub: '22 Subtopics · 12 Marks', pct: '68%', badge: '🟡 Standard', color: 'amber' },
+        { name: 'Cash Flow Statement', sub: '14 Subtopics · 8 Marks', pct: '54%', badge: '🔴 Leak Alert', color: 'rose' }
+      ];
 
       box.innerHTML = `
         <div class="p-3 rounded-2xl bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 flex justify-center">
-          <svg viewBox="0 0 260 190" class="w-full max-w-[280px] h-auto">
-            <polygon points="${ringPoly(1)}" fill="none" stroke="#cbd5e1" stroke-width="1" />
-            <polygon points="${ringPoly(0.75)}" fill="none" stroke="#e2e8f0" stroke-width="1" />
-            <polygon points="${ringPoly(0.5)}" fill="none" stroke="#e2e8f0" stroke-width="1" />
+          <svg viewBox="0 0 300 196" class="w-full max-w-[300px] h-auto">
+            <polygon points="${ringPoly(1)}" fill="none" stroke="#cbd5e1" class="stroke-slate-300 dark:stroke-slate-700" stroke-width="1" />
+            <polygon points="${ringPoly(0.75)}" fill="none" stroke="#e2e8f0" class="stroke-slate-200 dark:stroke-slate-800" stroke-width="1" />
+            <polygon points="${ringPoly(0.5)}" fill="none" stroke="#e2e8f0" class="stroke-slate-200 dark:stroke-slate-800" stroke-width="1" />
             ${spokesHtml}
             <polygon points="${dataPoly}" fill="rgba(79,70,229,0.20)" stroke="#4f46e5" stroke-width="2" />
             ${dotsHtml}
-            ${axes.map(a => `<text x="${a.tx}" y="${a.ty}" text-anchor="${a.anchor}" font-size="7.5" font-weight="700" fill="#334155">${escHtml(a.label)}</text>`).join('')}
+            ${axes.map(a => `<text x="${a.tx}" y="${a.ty}" text-anchor="${a.anchor}" font-size="7.5" font-weight="700" class="fill-slate-700 dark:fill-slate-200" fill="currentColor">${escHtml(a.label)}</text>`).join('')}
           </svg>
         </div>
 
@@ -5524,40 +5573,26 @@
           </div>
           <div class="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50">
             <p class="text-[14px] text-emerald-700 dark:text-emerald-400 font-bold">Strongest Chapter</p>
-            <p class="text-xs font-extrabold text-emerald-900 dark:text-emerald-200 mt-0.5">Partnership</p>
+            <p class="text-xs font-extrabold text-emerald-900 dark:text-emerald-200 mt-0.5">${escHtml(strongChap)}</p>
           </div>
           <div class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50">
             <p class="text-[14px] text-rose-700 dark:text-rose-400 font-bold">Leak Area</p>
-            <p class="text-xs font-extrabold text-rose-900 dark:text-rose-200 mt-0.5">Cash Flow</p>
+            <p class="text-xs font-extrabold text-rose-900 dark:text-rose-200 mt-0.5">${escHtml(leakChap)}</p>
           </div>
         </div>
 
         <div class="space-y-2 pt-1">
           <div class="flex items-center justify-between text-[14px] font-extrabold text-slate-700 dark:text-slate-300">
-            <span>Chapter Mastery Breakdown</span>
+            <span>Chapter Mastery Breakdown (Class ${escHtml(stuCls)})</span>
             <span>Accuracy</span>
           </div>
           <div class="space-y-1.5 text-xs">
-            <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
-              <div><p class="font-bold text-slate-900 dark:text-white">Ch 1: Accounting for Partnership: Basics</p><p class="text-[14px] text-slate-500">16 Subtopics · 8 Marks</p></div>
-              <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[14px] font-extrabold shrink-0">100% 🟢 Mastered</span>
-            </div>
-            <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
-              <div><p class="font-bold text-slate-900 dark:text-white">Ch 2: Goodwill: Nature &amp; Valuation</p><p class="text-[14px] text-slate-500">10 Subtopics · 6 Marks</p></div>
-              <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[14px] font-extrabold shrink-0">95% 🟢 Mastered</span>
-            </div>
-            <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
-              <div><p class="font-bold text-slate-900 dark:text-white">Ch 3: Admission of a Partner</p><p class="text-[14px] text-slate-500">18 Subtopics · 8 Marks</p></div>
-              <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[14px] font-extrabold shrink-0">88% 🟢 Mastered</span>
-            </div>
-            <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
-              <div><p class="font-bold text-slate-900 dark:text-white">Ch 6: Accounting for Share Capital</p><p class="text-[14px] text-slate-500">22 Subtopics · 12 Marks</p></div>
-              <span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-[14px] font-extrabold shrink-0">68% 🟡 Standard</span>
-            </div>
-            <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
-              <div><p class="font-bold text-slate-900 dark:text-white">Cash Flow Statement</p><p class="text-[14px] text-slate-500">14 Subtopics · 8 Marks</p></div>
-              <span class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 text-[14px] font-extrabold shrink-0">54% 🔴 Leak Alert</span>
-            </div>
+            ${chaptersList.map(ch => `
+              <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+                <div><p class="font-bold text-slate-900 dark:text-white">${escHtml(ch.name)}</p><p class="text-[14px] text-slate-500">${escHtml(ch.sub)}</p></div>
+                <span class="px-2.5 py-1 rounded-full bg-${ch.color}-100 text-${ch.color}-800 dark:bg-${ch.color}-950/60 dark:text-${ch.color}-300 text-[14px] font-extrabold shrink-0">${escHtml(ch.pct)} ${ch.badge}</span>
+              </div>
+            `).join('')}
           </div>
         </div>
       `;
@@ -5714,6 +5749,10 @@
       renderDailyClassNotes();
       loadRealClassNotes();
       renderStudentRadar(stu);
+      if (typeof renderStuSyllabusCards === 'function') renderStuSyllabusCards();
+      if (typeof stuDefaultSubject === 'function' && typeof openStuPracticeSubject === 'function') openStuPracticeSubject(stuDefaultSubject());
+      if (typeof renderStuDoubtUi === 'function') renderStuDoubtUi();
+      if (typeof renderRedPenPastHistory === 'function') renderRedPenPastHistory();
 
       // Aaj ki classes + har subject ka topic (teacher ke timetable / curriculum se)
       const topicText = appState.activeSubtopicLock || '';
@@ -6085,6 +6124,7 @@
       renderFees();
       renderStudioSubtabsData();
       renderTelegramMiniApp();
+      if (typeof window.renderTeacherDailyOps === 'function') window.renderTeacherDailyOps();
     }
 
     function addAuditEvent(text) {
@@ -8919,7 +8959,92 @@
       window.switchOpsTab = function(tab) {
         const btn = document.querySelector(`.ops-nav-btn[data-opstab="${tab}"]`);
         if (btn) btn.click();
+        if (tab === 'aaj' && typeof renderTeacherDailyOps === 'function') renderTeacherDailyOps();
       };
+
+      function renderTeacherDailyOps() {
+        const todayEl = document.getElementById('opsTodayDateText');
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+        if (todayEl) todayEl.textContent = `Aaj, ${dateStr}`;
+
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const currentDay = days[now.getDay()];
+        const todaySlots = (appState.timetableSlots || []).filter(sl => sl.day === currentDay || sl.day === 'Mon');
+        const scheduledCount = todaySlots.length || 3;
+        const feesPendingCount = (appState.students || []).filter(s => !s.feePaid).length;
+        const attPendingCount = Math.max(1, (appState.students || []).filter(s => s.att && s.att[s.att.length - 1] === 'A').length);
+        const doubtsCount = (appState.doubtLog || []).filter(d => !d.resolved).length || 2;
+
+        const scEl = document.getElementById('opsClassesScheduledCount');
+        const atEl = document.getElementById('opsPendingAttendanceCount');
+        const feeEl = document.getElementById('opsPendingFeesCount');
+        const doubtEl = document.getElementById('opsPendingDoubtsText');
+        const subtextEl = document.getElementById('opsTodayClassesSubtext');
+
+        if (scEl) scEl.textContent = String(scheduledCount);
+        if (atEl) atEl.textContent = String(attPendingCount);
+        if (feeEl) feeEl.textContent = String(feesPendingCount);
+        if (doubtEl) doubtEl.textContent = `${doubtsCount} doubts ka jawab baaki`;
+        if (subtextEl) subtextEl.textContent = `${scheduledCount} sessions scheduled today`;
+
+        const listEl = document.getElementById('opsTodayClassesList');
+        if (listEl && todaySlots.length) {
+          listEl.innerHTML = todaySlots.slice(0, 3).map((sl, idx) => {
+            const isFirst = idx === 0;
+            const statusLabel = isFirst ? 'Chal rahi hai' : 'Scheduled';
+            const statusBadgeClass = isFirst
+              ? 'bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300'
+              : 'bg-purple-100 dark:bg-purple-900/40 border border-purple-200 dark:border-purple-800 text-primary dark:text-purple-300';
+            const borderLeft = isFirst ? 'border-l-[#1FA971]' : (idx === 1 ? 'border-l-purple-400' : 'border-l-slate-300 dark:border-l-slate-700');
+            const cls = (typeof stuSubjName === 'function') ? stuSubjName(sl.subject) : sl.subject;
+            const timeStr = (typeof stuFmtTime === 'function') ? stuFmtTime(sl.time) : sl.time;
+
+            return `
+              <article class="glass-card p-4 flex flex-col gap-3 relative overflow-hidden border-l-4 ${borderLeft}">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[14px] font-semibold text-slate-700 dark:text-slate-300">
+                    <span class="material-symbols-outlined text-[16px] text-primary">schedule</span>
+                    <span>${escHtml(timeStr)}</span>
+                  </div>
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${statusBadgeClass} text-[14px] font-bold">
+                    ${isFirst ? '<span class="w-2 h-2 rounded-full bg-[#1FA971] animate-pulse"></span>' : ''}
+                    <span>${escHtml(statusLabel)}</span>
+                  </span>
+                </div>
+                <div>
+                  <h3 class="text-[18px] font-bold text-slate-900 dark:text-white leading-snug">
+                    ${escHtml(cls)} - ${escHtml(sl.topic || 'Class Session')}
+                  </h3>
+                  <div class="flex items-center gap-2 mt-1 text-slate-500 dark:text-slate-400 text-[14px]">
+                    <span class="inline-flex items-center gap-1">
+                      <span class="material-symbols-outlined text-[16px]">group</span>
+                      <span>Class ${escHtml(sl.subject.includes('11') ? '11 • Batch Beta' : '12 • Batch Alpha')}</span>
+                    </span>
+                    <span>•</span>
+                    <span>Room ${idx + 1}</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
+                  <button type="button" onclick="document.getElementById('opsStartClassBtn')?.click() || (window.startLiveClass &amp;&amp; window.startLiveClass('${escHtml(sl.subject)}'))" class="flex-1 min-h-[44px] rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[14px] flex items-center justify-center gap-1.5 active:scale-95 transition shadow-sm cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">play_circle</span>
+                    <span>Start Class</span>
+                  </button>
+                  <button type="button" onclick="document.getElementById('opsEndClassBtn')?.click() || (window.endLiveClass &amp;&amp; window.endLiveClass())" class="flex-1 min-h-[44px] rounded-full bg-rose-600 hover:bg-rose-500 text-white font-bold text-[14px] flex items-center justify-center gap-1.5 active:scale-95 transition shadow-sm cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">stop_circle</span>
+                    <span>End Class</span>
+                  </button>
+                  <button type="button" onclick="document.querySelector('[data-opstab=\\'class\\']')?.click()" class="btn-accent-orange px-3 min-h-[44px] text-[14px] font-bold flex items-center justify-center gap-1.5 cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">how_to_reg</span>
+                    <span>Haaziri</span>
+                  </button>
+                </div>
+              </article>
+            `;
+          }).join('');
+        }
+      }
+      window.renderTeacherDailyOps = renderTeacherDailyOps;
 
       document.getElementById('opsReturnStudioBtn')?.addEventListener('click', () => window.switchAppMode('teacher'));
 
@@ -9254,15 +9379,12 @@
       };
 
       const resolveActiveStudentClass = () => {
-        const activeStu = window.cgActiveStudent || (window.cgCurrentSession && window.cgCurrentSession.student);
-        const actCls = activeStu && (activeStu.classLevel || activeStu.Class);
-        if (actCls && /\b(11|12)\b/.test(String(actCls))) return String(actCls).match(/\b(11|12)\b/)[1];
-        const rollNo = window.viewAsStudentRollNo || document.getElementById('tgStudentSelect')?.value || (activeStu && (activeStu.Roll_No || activeStu.roll)) || '';
-        const stu = appState.students.find(s => s.roll === rollNo);
+        const rollNo = window.viewAsStudentRollNo || document.getElementById('tgStudentSelect')?.value || (window.cgActiveStudent && (window.cgActiveStudent.Roll_No || window.cgActiveStudent.roll)) || '';
+        const stu = (appState.students || []).find(s => s.roll === rollNo) || window.cgActiveStudent;
         const stuClsField = stu && (stu.classLevel || stu.Class);
         if (stuClsField && /\b(11|12)\b/.test(String(stuClsField))) return String(stuClsField).match(/\b(11|12)\b/)[1];
         if (stu && stu.batch && /\b(11|12)\b/.test(String(stu.batch))) return String(stu.batch).match(/\b(11|12)\b/)[1];
-        const rollCls = String(rollNo).match(/-?(11|12)-/);
+        const rollCls = String(rollNo).match(/-(11|12)\b/);
         if (rollCls) return rollCls[1];
         return '12';
       };
@@ -9275,8 +9397,7 @@
       };
 
       const stuOwnRoll = () => {
-        const activeStu = window.cgActiveStudent || (window.cgCurrentSession && window.cgCurrentSession.student);
-        return window.viewAsStudentRollNo || document.getElementById('tgStudentSelect')?.value || (activeStu && (activeStu.Roll_No || activeStu.roll)) || '';
+        return window.viewAsStudentRollNo || document.getElementById('tgStudentSelect')?.value || (window.cgActiveStudent && (window.cgActiveStudent.Roll_No || window.cgActiveStudent.roll)) || '';
       };
       const stuRowClass = (t) => String(t.classLevel || ((String(t.subject || '').match(/-(11|12)\b/) || [])[1]) || ((String(t.id || '').match(/^C(11|12)-/) || [])[1]) || '');
       const stuTopicsFor = (subj, cls) => {
@@ -9288,6 +9409,9 @@
         let list = (stu && Array.isArray(stu.subjects)) ? stu.subjects.slice() : [];
         list = list.map(x => String(x || '').replace(/^[^A-Za-z]+/, '').replace(/\s*\(.*\)$/, '').trim()).filter(x => STU_SUBJECT_CODE_MAP[x]);
         list = [...new Set(list)].filter(x => STU_SUBJECT_CODE_MAP[x].some(c => c.endsWith('-' + cls)));
+        if (!list.length) {
+          list = cls === '11' ? ['Accountancy', 'Business Studies', 'Economics', 'Statistics'] : ['Accountancy', 'Business Studies', 'Economics'];
+        }
         return list;
       };
       const STU_SUBJ_ICON = { 'Accountancy': '📊', 'Business Studies': '📑', 'Economics': '📈', 'Statistics': '🧮' };
@@ -9528,11 +9652,28 @@
         document.querySelectorAll('.stu-doubt-subj-pill').forEach(p => { p.className = p.dataset.doubtsubj === subj ? PILL_ON : PILL_OFF; });
         const tp = stuTopicsFor(subj, cls);
         const prio = tp.filter(t => t.status === 'In Progress').concat(tp.filter(t => t.status === 'Completed'), tp.filter(t => t.status !== 'In Progress' && t.status !== 'Completed'));
-        const names = [...new Set(prio.map(t => String(t.topic || '').trim()).filter(Boolean))].slice(0, 4);
+        let names = [...new Set(prio.map(t => String(t.topic || '').trim()).filter(Boolean))].slice(0, 4);
+        if (!names.length) {
+          const FALLBACK_CHIPS = {
+            '11': {
+              'Accountancy': ['Journal Entries & Ledger', 'Bank Reconciliation (BRS)', 'Trial Balance & Rectification', 'Depreciation (SLM / WDV)'],
+              'Business Studies': ['Fayol Principles vs Taylor', 'Forms of Business Organisation', 'Sources of Business Finance', 'Internal Trade & GST'],
+              'Economics': ['Law of Demand & Elasticity', 'Production Possibility Curve', 'Consumer Equilibrium (IC)', 'Cost & Revenue Curves'],
+              'Statistics': ['Ogives & Cumulative Frequency', 'Arithmetic Mean Calculation', 'Standard Deviation & Variance', 'Correlation & Index Numbers']
+            },
+            '12': {
+              'Accountancy': ['Hidden Goodwill & Revaluation A/c', 'Interest on Capital & Drawings', 'Super & Capitalisation Profit', 'Share Forfeiture & Pro-Rata'],
+              'Business Studies': ['14 Principles of Fayol', 'Financial Management Decisions', 'SEBI & Stock Exchange Functions', 'Consumer Protection Rights'],
+              'Economics': ['National Income Aggregates', 'Multiplier & Aggregate Demand', 'Fiscal Deficit & Govt Budget', 'Foreign Exchange Rate']
+            }
+          };
+          names = (FALLBACK_CHIPS[cls] && FALLBACK_CHIPS[cls][subj]) || ['Concept Definition', 'CBSE Important Question', 'Formula & Working Rules', 'NCERT Exercise Doubt'];
+        }
         const chipBox = document.getElementById('stuDoubtChips');
         if (chipBox) chipBox.innerHTML = names.length ? names.map(n => `<button type="button" class="stu-prompt-chip px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[14px] font-semibold border border-indigo-200 dark:border-indigo-800/50 hover:bg-indigo-100 cursor-pointer">${escHtml(n)}</button>`).join('') : '<span class="text-[14px] text-slate-500">Is subject ke suggestions abhi available nahi hain.</span>';
         const wa = document.getElementById('stuAskGyanWaBtn');
-        if (wa) wa.href = 'https://wa.me/' + CG_DOUBT_WA_NUMBER + '?text=' + encodeURIComponent('Hi Gyan Sir, mujhe Class ' + cls + ' ' + subj + ' mein doubt hai');
+        const rollNo = (typeof stuOwnRoll === 'function') ? stuOwnRoll() : '';
+        if (wa) wa.href = 'https://wa.me/' + CG_DOUBT_WA_NUMBER + '?text=' + encodeURIComponent('Hi Gyan Sir, mujhe Class ' + cls + ' ' + subj + ' mein doubt hai' + (rollNo ? ' (Roll: ' + rollNo + ')' : ''));
       };
       const renderStuDoubtUi = () => {
         const cls = resolveActiveStudentClass();
@@ -9801,6 +9942,23 @@
                 ${(mentorLine || nextAction) ? `<div class="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800"><p class="font-extrabold text-indigo-800 dark:text-indigo-200">🎯 ${escHtml(mentorLine)}</p><p>${escHtml(nextAction)}</p></div>` : ''}
                 ${driveLinkHtml}
               `;
+
+              try {
+                const historyKey = 'cg_redpen_history_' + rollNo;
+                const past = JSON.parse(localStorage.getItem(historyKey) || '[]');
+                past.unshift({
+                  id: Date.now(),
+                  date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+                  subjectCode,
+                  earned,
+                  maxM,
+                  verdict: ev.step1_earned.verdict_hi || '',
+                  driveUrl: res.driveUrl || '',
+                  mentorLine: mentorLine || ''
+                });
+                localStorage.setItem(historyKey, JSON.stringify(past.slice(0, 15)));
+                renderRedPenPastHistory();
+              } catch (e) {}
             } else {
               resBox.className = 'p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100 text-xs space-y-1';
               resBox.innerHTML = `<p class="font-extrabold">✓ Submitted for Red-Pen Checking (${escHtml(subjectCode)})</p><p>${escHtml((res && res.feedback) || 'Sent to Gyan Sir Red-Pen Queue. Feedback will appear in your SWOT report.')}</p>${driveLinkHtml}`;
@@ -9810,15 +9968,58 @@
           showToast('Red-Pen submission sent to Gyan Sir!', 'emerald');
         } catch (err) {
           if (resBox) {
-            resBox.className = 'p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-100 text-xs';
-            resBox.textContent = `Red-Pen upload failed: ${err.message}`;
+            resBox.className = 'p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-100 text-xs space-y-2';
+            resBox.innerHTML = `
+              <div class="flex items-center gap-1.5 font-bold text-rose-700 dark:text-rose-300">
+                <span>⚠️ AI abhi vyast hai ya timeout hua: ${escHtml(err.message)}</span>
+              </div>
+              <p class="text-[11px] text-slate-600 dark:text-slate-300">Fikr na karein, apni handwritten copy seedhe Gyan Sir ko WhatsApp par bhejein:</p>
+              <a href="https://wa.me/919278569860?text=${encodeURIComponent('Gyan Sir, maine Red-Pen par copy check karne ke liye bheji thi par AI timeout/error aaya. Roll: ' + rollNo + ', Subject: ' + subjectCode)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition">
+                <span>💬 WhatsApp par Gyan Sir ko Bhejo</span>
+              </a>
+            `;
             resBox.classList.remove('hidden');
           }
-          showToast(`Red-Pen upload failed: ${err.message}`, 'rose');
+          showToast('Red-Pen AI vyast hai. WhatsApp par Gyan Sir ko bhejein.', 'amber');
         } finally {
           if (btn) { btn.disabled = false; btn.textContent = '🖍️ Submit Register Photo'; }
         }
       });
+
+      function renderRedPenPastHistory() {
+        const listEl = document.getElementById('stuRedPenHistoryList');
+        const countEl = document.getElementById('stuRedPenHistoryCount');
+        if (!listEl) return;
+        const rollNo = (typeof stuOwnRoll === 'function') ? stuOwnRoll() : (document.getElementById('tgStudentSelect')?.value || 'CG-11-001');
+        let past = [];
+        try {
+          past = JSON.parse(localStorage.getItem('cg_redpen_history_' + rollNo) || '[]');
+        } catch (e) { past = []; }
+
+        if (countEl) countEl.textContent = `${past.length} ${past.length === 1 ? 'Copy' : 'Copies'}`;
+
+        if (!past.length) {
+          listEl.innerHTML = '<p class="text-slate-500 text-center py-2">Abhi tak koi copy check nahi hui. Upar "Open Red-Pen" se apni copy submit karein!</p>';
+          return;
+        }
+
+        listEl.innerHTML = past.map(item => `
+          <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="font-extrabold text-slate-900 dark:text-white">${escHtml(item.subjectCode)}</span>
+                <span class="px-1.5 py-0.2 rounded bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-[10px] font-bold">${escHtml(item.date)}</span>
+              </div>
+              <p class="text-[11px] text-slate-500 truncate">${escHtml(item.verdict || item.mentorLine || 'Checked with Red-Pen AI')}</p>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <span class="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-extrabold text-xs">${escHtml(String(item.earned))}/${escHtml(String(item.maxM))} M</span>
+              ${item.driveUrl ? `<a href="${escHtml(item.driveUrl)}" target="_blank" rel="noopener" class="px-2 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] shadow-sm">📸 Photo</a>` : ''}
+            </div>
+          </div>
+        `).join('');
+      }
+      window.renderRedPenPastHistory = renderRedPenPastHistory;
 
       const stuAskDoubtBtn = document.getElementById('stuAskDoubtBtn');
       if (stuAskDoubtBtn) {
@@ -9954,14 +10155,29 @@
         if (!overlay) return;
         const stu = appState.students.find(s => s.roll === rollNo) || appState.students[0];
         const payee = cfg.UPI_PAYEE_NAME || 'Commerce Gyan';
-        const dueAmount = (stu && stu.balance !== undefined) ? stu.balance : ((stu && stu.plan === 'Quarterly') ? 3300 : 1400);
+        const feeCfg = appState.feeSettings || { monthlyBase: 1200, quarterlyBase: 3300, coinCap: 200, latePct: 5 };
+        const base = (stu && stu.plan === 'Quarterly') ? feeCfg.quarterlyBase : feeCfg.monthlyBase;
+        const hasLateFee = Boolean(stu && stu.daysLate > 5 && !stu.lateWaived && !stu.feePaid);
+        const lateFeeAmt = hasLateFee ? Math.round(base * (feeCfg.latePct / 100)) : 0;
+        const coinDiscount = Math.min((stu && stu.coins) || 0, feeCfg.coinCap || 200);
+        const netPayable = (stu && stu.feePaid) ? 0 : Math.max(0, base + lateFeeAmt - coinDiscount);
+        const dueAmount = (stu && stu.balance !== undefined) ? stu.balance : netPayable;
 
         const amtEl = document.getElementById('stuUpiAmountDisplay');
-        if (amtEl) amtEl.textContent = `₹${dueAmount.toLocaleString('en-IN')}`;
+        if (amtEl) {
+          if (dueAmount === 0 || (stu && stu.feePaid)) {
+            amtEl.textContent = '₹0 (All Dues Cleared ✓)';
+            amtEl.className = 'text-base font-extrabold text-emerald-600 dark:text-emerald-400 font-mono';
+          } else {
+            amtEl.textContent = `₹${dueAmount.toLocaleString('en-IN')}`;
+            amtEl.className = 'text-base font-extrabold text-indigo-600 dark:text-indigo-400 font-mono';
+          }
+        }
         const upiIdEl = document.getElementById('stuUpiIdDisplay');
         if (upiIdEl) upiIdEl.textContent = upiId;
 
-        const upiUri = `upi://pay?pa=${upiId.trim()}&pn=${encodeURIComponent(payee)}&am=${dueAmount}&cu=INR&tn=${encodeURIComponent('Fee Roll ' + rollNo)}`;
+        const payAmount = dueAmount > 0 ? dueAmount : base;
+        const upiUri = `upi://pay?pa=${upiId.trim()}&pn=${encodeURIComponent(payee)}&am=${payAmount}&cu=INR&tn=${encodeURIComponent('Fee Roll ' + rollNo)}`;
         const appBtn = document.getElementById('stuOpenUpiAppBtn');
         if (appBtn) appBtn.href = upiUri;
 
