@@ -5746,6 +5746,8 @@
             <span class="font-mono font-bold text-primary shrink-0">${escHtml(stuFmtTime(sl.time))}</span>
           </div>`).join('') : '<p class="text-[14px] text-slate-500 p-3">Aaj koi class schedule nahi hai.</p>';
       }
+      const blt = document.getElementById('tgBatchLectureTitle');
+      if (blt) blt.textContent = slots.length ? slots.map(sl => stuSubjName(sl.subject) + ' · ' + stuFmtTime(sl.time)).join('  |  ') : 'Aaj koi batch lecture nahi hai';
       // Today's Active Topic: one row per subject taught today
       const tl = document.getElementById('tgAajTopicList');
       const title = document.getElementById('tgAajTopicTitle');
