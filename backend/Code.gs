@@ -180,7 +180,7 @@ function isAdminOnlyAction_(action) {
     'testGenerateBstFlowchartPdf', 'testGenerateSubjectiveQuestionPdf',
     'testGenerateSubjectiveAnswerPdf', 'checkBalanceSheetIntegrity',
     'getMonthlyPL', 'getBalanceSheet', 'getCashDrawer', 'reconcileNotebookRegistry',
-    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask', 'getWeeklyTimetable', 'saveWeeklyTimetable', 'saveTimetableSlot', 'deleteTimetableSlot', 'cancelBatchAndNotify', 'logLessonProgress', 'saveCurriculumTopic', 'uploadDailyClassNotes', 'registerClassNoteFile', 'addLeadToSheet', 'advanceLeadStage', 'enrolTrialToDirectory', 'updateStudentProfile', 'saveAttendanceBatch', 'undoAttendanceBatch', 'sendDefaulterNotices', 'sendFeeReminderTelegram', 'publishDppQuiz', 'cancelAndRescheduleClass', 'saveAcademicEvent', 'toggleHolidayDate', 'saveTeacherTasks', 'saveSwotConfig', 'getPaymentIntimations', 'viewStudentAsTeacher', 'exitViewStudentAsTeacher', 'getStudentRecord', 'updateStudentRecord', 'startClassSession', 'endClassSession', 'getLiveSession', 'getNextTopicForClass', 'sendClassMissedNotices'
+    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask', 'getWeeklyTimetable', 'saveWeeklyTimetable', 'saveTimetableSlot', 'deleteTimetableSlot', 'cancelBatchAndNotify', 'logLessonProgress', 'saveNotice', 'deleteNotice', 'saveCurriculumTopic', 'uploadDailyClassNotes', 'registerClassNoteFile', 'addLeadToSheet', 'advanceLeadStage', 'enrolTrialToDirectory', 'updateStudentProfile', 'saveAttendanceBatch', 'undoAttendanceBatch', 'sendDefaulterNotices', 'sendFeeReminderTelegram', 'publishDppQuiz', 'cancelAndRescheduleClass', 'saveAcademicEvent', 'toggleHolidayDate', 'saveTeacherTasks', 'saveSwotConfig', 'getPaymentIntimations', 'viewStudentAsTeacher', 'exitViewStudentAsTeacher', 'getStudentRecord', 'updateStudentRecord', 'startClassSession', 'endClassSession', 'getLiveSession', 'getNextTopicForClass', 'sendClassMissedNotices'
   ];
   return adminActions.indexOf(action) !== -1;
 }
@@ -867,6 +867,15 @@ function doPost(e) {
         break;
       case "toggleAcademicHoliday":
         result = toggleAcademicHoliday(payload);
+        break;
+      case "saveNotice":
+        result = saveNotice(payload);
+        break;
+      case "getNotices":
+        result = getNotices(payload);
+        break;
+      case "deleteNotice":
+        result = deleteNotice(payload);
         break;
       case "getWeeklyTimetable":
         result = getWeeklyTimetable();

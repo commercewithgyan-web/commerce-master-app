@@ -941,6 +941,18 @@
             <div id="academicEventsList" class="space-y-1.5 pt-1 text-xs"></div>
           </div>
 
+          <div class="bg-white rounded-2xl border border-orange-200 p-5 shadow-sm space-y-3">
+            <p class="text-sm font-extrabold text-slate-800">📢 Student Notice (Today tab)</p>
+            <input id="noticeTitle" type="text" placeholder="Title" class="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 font-semibold">
+            <textarea id="noticeBody" rows="3" placeholder="Detail (Hall, time, kya lana hai...)" class="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50"></textarea>
+            <div class="grid grid-cols-3 gap-2">
+              <select id="noticeClass" class="text-xs border border-slate-200 rounded-xl px-2 py-2 bg-slate-50 font-semibold"><option value="All">All</option><option value="12">Class 12</option><option value="11">Class 11</option></select>
+              <input id="noticeStart" type="date" class="text-xs border border-slate-200 rounded-xl px-2 py-2 bg-slate-50">
+              <input id="noticeEnd" type="date" class="text-xs border border-slate-200 rounded-xl px-2 py-2 bg-slate-50">
+            </div>
+            <button id="saveNoticeBtn" type="button" class="w-full py-2.5 rounded-xl bg-orange-500 text-white text-xs font-extrabold">Save Notice</button>
+          </div>
+
           <div class="bg-white rounded-2xl border border-rose-200 p-5 shadow-sm space-y-3">
             <div>
               <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 text-[14px] font-extrabold uppercase">Leave &amp; Shift</span>
@@ -5751,6 +5763,17 @@
         const evs = (appState.academicEvents || []).filter(ev => ev && ev.title && ev.date >= today && (!ev.batch || ev.batch === 'All' || String(ev.batch).includes(cls)))
           .sort((a, b) => String(a.date).localeCompare(String(b.date)));
         const ev = evs[0];
+        const nt = (window._stuNotices || [])[0];
+        if (nt) {
+          window._stuNotice = { type: 'Notice', title: nt.title, body: nt.body, date: nt.startDate };
+          const t0 = document.getElementById('stuNoticeText'); if (t0) t0.textContent = nt.title;
+          const w0 = document.getElementById('stuNoticeWhen'); if (w0) w0.textContent = 'Naya notice';
+          card.classList.remove('hidden'); return;
+        }
+        if (!window._stuNoticesLoaded && window.cgCallGas) {
+          window._stuNoticesLoaded = true;
+          window.cgCallGas('getNotices', { classLevel: cls }).then(r => { window._stuNotices = (r && r.notices) || []; if (window._stuNotices.length) renderStuToday(stu); }).catch(() => {});
+        }
         window._stuNotice = ev || null;
         if (!ev) { card.classList.add('hidden'); return; }
         const d = new Date(ev.date + 'T00:00:00');
@@ -5775,9 +5798,18 @@
       if (tl) tl.innerHTML = rows.map(r => `<p class="text-[14px] text-indigo-950 dark:text-indigo-100"><strong>${escHtml(r.name)}:</strong> ${escHtml(r.text)}</p>`).join('');
     }
     document.addEventListener('click', function (e) {
+      const sb = e.target.closest && e.target.closest('#saveNoticeBtn');
+      if (!sb) return;
+      const g = id => (document.getElementById(id) || {}).value || '';
+      if (!g('noticeTitle').trim()) { alert('Title likho'); return; }
+      window.cgCallGas('saveNotice', { title: g('noticeTitle'), body: g('noticeBody'), classLevel: g('noticeClass'), startDate: g('noticeStart'), endDate: g('noticeEnd') })
+        .then(r => { if (r && r.ok) { alert('Notice save ho gaya'); ['noticeTitle', 'noticeBody'].forEach(i => { document.getElementById(i).value = ''; }); } else alert('Save fail: ' + ((r && r.error) || '')); })
+        .catch(() => alert('Save fail'));
+    });
+    document.addEventListener('click', function (e) {
       const nb = e.target.closest && e.target.closest('#stuNoticeDetailBtn');
       if (nb) {
-        const ev = window._stuNotice; if (ev) stuShowDetail('📢 ' + (ev.type || 'Notice'), '<p><strong>' + escHtml(ev.title) + '</strong></p><p>Date: ' + escHtml(ev.date) + '</p>' + (ev.batch ? '<p>Batch: ' + escHtml(ev.batch) + '</p>' : ''));
+        const ev = window._stuNotice; if (ev) stuShowDetail('📢 ' + (ev.type || 'Notice'), '<p><strong>' + escHtml(ev.title) + '</strong></p>' + (ev.body ? '<p>' + escHtml(ev.body).replace(/\n/g, '<br>') + '</p>' : '') + '<p>Date: ' + escHtml(ev.date) + '</p>' + (ev.batch ? '<p>Batch: ' + escHtml(ev.batch) + '</p>' : ''));
         return;
       }
       const row = e.target.closest && e.target.closest('[data-stu-detail]');
