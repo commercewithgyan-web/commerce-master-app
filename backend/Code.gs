@@ -4893,6 +4893,7 @@ function submitRedPenSubmission(payload) {
           feedbackMsg = aiRes.rejectionReason;
         }
       } catch (aiErr) {
+        feedbackMsg = 'AI Error: ' + (aiErr.message || String(aiErr));
         Logger.log('submitRedPenSubmission AI fallback to queue: ' + aiErr.message);
       }
     }

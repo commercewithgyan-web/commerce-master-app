@@ -466,6 +466,7 @@ function callGemini_(system, userParts, schema) {
       var res = UrlFetchApp.fetch(url, {
         method: 'post',
         contentType: 'application/json',
+        headers: { 'x-goog-api-key': key },
         payload: JSON.stringify(payload),
         muteHttpExceptions: true
       });
@@ -495,6 +496,7 @@ function callGemini_(system, userParts, schema) {
         var fallbackRes = UrlFetchApp.fetch(url, {
           method: 'post',
           contentType: 'application/json',
+          headers: { 'x-goog-api-key': key },
           payload: JSON.stringify(fallbackPayload),
           muteHttpExceptions: true
         });
