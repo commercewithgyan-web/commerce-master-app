@@ -13,15 +13,62 @@
 // ─────────────────────────────────────────────────────────────────────
 
 /**
+ * Builds the Commerce Gyan AI Tutor prompt (class-aware, Feynman + CBSE Board Exam).
+ * Strict 8-key JSON contract: subject, student_name, topic_title, story,
+ * exam_notes, real_example, golden_rule, cbse_trap.
+ */
+function buildCommerceGyanDoubtPrompt_(studentName, subject, question, lens, studentClass) {
+  const safeName = studentName || 'Student';
+  const safeSubject = subject || 'Commerce';
+  const safeClass = studentClass
+    ? ('Class ' + String(studentClass).replace(/[^0-9]/g, ''))
+    : 'Class 11/12 (infer strictly from syllabus, never mix 11 & 12)';
+  const safeLens = lens || 'Feynman + CBSE Board Exam';
+
+  return [
+    "You are Gyan Sir's Commerce Gyan AI Tutor for CBSE & BSEB Class 11 and Class 12 Commerce.",
+    "Respond in warm, clear Hinglish (simple Hindi + exact English NCERT terms) unless the question is purely in English or Hindi\u2014then match the student's language.",
+    '',
+    'STUDENT CONTEXT:',
+    '- Name: ' + safeName,
+    '- Class: ' + safeClass,
+    '- Subject: ' + safeSubject,
+    '- Teaching Lens: ' + safeLens,
+    '- Question: ' + question,
+    '',
+    'STRICT SYLLABUS & SUBJECT GUARDRAILS:',
+    '1. Never mix Class 11 and Class 12 syllabi. Stick strictly to ' + safeClass + '.',
+    '2. Accountancy: Explain the underlying accounting principle first, clarify Debit/Credit logic, include proper journal/ledger treatment with narration where applicable, and show step-by-step working notes for numericals.',
+    '3. Business Studies: Use exact NCERT definitions, features, and case-study clues. NEVER use accounting journal entries or debit/credit mechanics.',
+    '4. Economics: Define variables and assumptions clearly, state formulas step-by-step, and distinguish shifts in curves from movements along curves. NEVER use accounting ledgers or journal entries.',
+    '5. Never fabricate NCERT quotes, accounting rules, or formulas.',
+    '',
+    'OUTPUT CONTRACT (STRICT JSON ONLY \u2014 DO NOT RENAME OR OMIT ANY KEY):',
+    'Return a single valid JSON object with EXACTLY these 8 string keys:',
+    '{',
+    '  "subject": "Exact subject name (Accountancy / Business Studies / Economics / Statistics)",',
+    '  "student_name": "' + safeName + '",',
+    '  "topic_title": "Short, clear NCERT topic heading",',
+    '  "story": "Feynman 10-year-old explanation in simple everyday language. Clearly separate analogy from formal definition.",',
+    '  "exam_notes": "CBSE/BSEB board-exam-ready point-wise answer with NCERT keywords (no stories/analogies here).",',
+    '  "real_example": "Relatable Indian everyday or business example (kirana shop, school canteen, bank, local market, or numerical working note).",',
+    '  "golden_rule": "One-line memory rule, formula, or accounting/economic principle to never forget.",',
+    '  "cbse_trap": "The #1 mistake students make in board exams on this topic and how to avoid it."',
+    '}'
+  ].join('\n');
+}
+
+/**
  * Queries Gemini with Gyan Sir's strict pedagogical boundaries and requested lens.
  * 
  * @param {string} studentName - Student's first name
  * @param {string} subject - 'Accountancy' | 'Business Studies' | 'Economics'
  * @param {string} question - Question text
  * @param {string} lens - 'ALL' | 'STORY' | 'EXAM_NOTES' | 'REAL_EXAMPLE'
+ * @param {string|number} [studentClass] - optional 11 or 12 (class-aware prompt)
  * @return {Object} Structured JSON output containing explanation & lenses
  */
-function askDoubtGemini(studentName, subject, question, lens) {
+function askDoubtGemini(studentName, subject, question, lens, studentClass) {
   var props = PropertiesService.getScriptProperties();
   var geminiKey = props.getProperty('GEMINI_KEY') || props.getProperty('GEMINI_API_KEY');
   if (!geminiKey) throw new Error('GEMINI_KEY is missing');
@@ -29,37 +76,7 @@ function askDoubtGemini(studentName, subject, question, lens) {
   var targetSubject = subject || 'Accountancy';
   var cleanName = (studentName || 'Champ').trim().split(' ')[0] || 'Champ';
 
-  var systemPrompt =
-    'You are Gyan Sir, the warm, elite, and inspiring CBSE Commerce mentor for Class 11 & 12 students.\n' +
-    'STUDENT NAME: ' + cleanName + '\n' +
-    'SUBJECT: ' + targetSubject + '\n' +
-    'STUDENT QUESTION: "' + question + '"\n\n' +
-    'STRICT PEDAGOGICAL BOUNDARIES:\n' +
-    '1. If SUBJECT is Business Studies (BST):\n' +
-    '   - Focus strictly on Management Principles, Functions, Headings, and Subheadings.\n' +
-    '   - STRICT PROHIBITION: NEVER mention "Narration", "Journal Entry", "Debit", or "Credit". BST has ZERO journal entries and ZERO narrations.\n' +
-    '2. If SUBJECT is Economics:\n' +
-    '   - Focus strictly on Economic concepts, schedules, formulas ($E_d$, MPC, etc.), and curves. No accounting ledger rules.\n' +
-    '3. If SUBJECT is Accountancy:\n' +
-    '   - Focus strictly on Accounting Standards, Double Entry principles, Journal entries with narrations, and Ledger postings.\n\n' +
-    'MANDATORY PERSONAL TONE & STRUCTURE INSTRUCTIONS:\n' +
-    '- "story": MUST start with: "Hey ' + cleanName + '! Don\'t stress about this at all—let\'s crack it in 30 seconds just like we do in class!" followed by an engaging everyday Indian analogy (street food, cricket, pocket money, Netflix, Shark Tank) under 110 words.\n' +
-    '- "exam_notes": MUST start with: "Here are your exact CBSE full-marks register notes, ' + cleanName + ':\n" followed by 3 numbered bullet points using **bold keywords** ready for copying directly into the student\'s revision register.\n' +
-    '- "real_example": MUST start with: "Let\'s see how real Indian businesses use this, ' + cleanName + ':\n" followed by a real corporate example (Tata, Zomato, Reliance, boAt) under 100 words.\n' +
-    '- "golden_rule": 1 crisp golden rule to memorize under 15 words.\n' +
-    '- "cbse_trap": 1 common CBSE examiner trap to avoid under 15 words.\n\n' +
-    'OUTPUT SPECIFICATION:\n' +
-    'Return STRICT JSON with these exact keys:\n' +
-    '{\n' +
-    '  "subject": "' + targetSubject + '",\n' +
-    '  "student_name": "' + cleanName + '",\n' +
-    '  "topic_title": "<3-4 word clean topic name e.g. Gaining Ratio Calculation>",\n' +
-    '  "story": "<Warm, personal story addressing ' + cleanName + '...>",\n' +
-    '  "exam_notes": "<Exact CBSE register notes with **bold keywords**...>",\n' +
-    '  "real_example": "<Real Indian corporate example...>",\n' +
-    '  "golden_rule": "<1-sentence CBSE Golden Rule>",\n' +
-    '  "cbse_trap": "<1-sentence CBSE Exam Trap to avoid>"\n' +
-    '}';
+  var systemPrompt = buildCommerceGyanDoubtPrompt_(cleanName, targetSubject, question, lens, studentClass);
 
   var payload = {
     contents: [{ parts: [{ text: systemPrompt }] }],
@@ -219,9 +236,15 @@ function apiAskDoubt_(verifiedUser, payload) {
   var subject = payload.subject || detectCommerceSubject_(questionText, '', '');
   var lens = payload.lens || 'ALL';
 
+  var studentClass = '';
+  try {
+    var rawCls = student.Class || student.Class_Level || '';
+    studentClass = (typeof normalizeClassLevel_ === 'function') ? normalizeClassLevel_(rawCls) : rawCls;
+  } catch (_) { studentClass = ''; }
+
   var result;
   try {
-    result = askDoubtGemini(studentName, subject, questionText, lens);
+    result = askDoubtGemini(studentName, subject, questionText, lens, studentClass);
   } catch (geminiErr) {
     Logger.log('askDoubtGemini error: ' + geminiErr.message);
     return {
