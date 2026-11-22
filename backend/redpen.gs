@@ -447,7 +447,7 @@ function callGemini_(system, userParts, schema) {
 
   var errorLogs = [];
   var startMs = Date.now();
-  var budgetMs = 13000;
+  var budgetMs = 20000;
 
   for (var i = 0; i < models.length; i++) {
     if ((Date.now() - startMs) > budgetMs && i > 0) break;

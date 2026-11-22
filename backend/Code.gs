@@ -229,12 +229,12 @@ function checkDppDispatchStatus_() {
     result.hasGeminiKey = Boolean(geminiKey && geminiKey.trim().length > 10);
     result.geminiKeyPrefix = geminiKey ? (geminiKey.substring(0, 6) + '...' + geminiKey.slice(-4)) : null;
     var currentModel = props.getProperty('GEMINI_MODEL');
-    if (currentModel && (currentModel.indexOf('2.0') !== -1 || currentModel.indexOf('2.5') !== -1 || currentModel.indexOf('1.5') !== -1)) {
+    if (!currentModel || currentModel.indexOf('2.0') !== -1 || currentModel.indexOf('2.5') !== -1 || currentModel.indexOf('1.5') !== -1 || currentModel.indexOf('latest') !== -1) {
       props.setProperty('GEMINI_MODEL', 'gemini-3.5-flash-lite');
       result.geminiModelFixed = true;
-      result.geminiModel = 'gemini-3.5-flash-lite (auto-upgraded from ' + currentModel + ')';
+      result.geminiModel = 'gemini-3.5-flash-lite';
     } else {
-      result.geminiModel = currentModel || '(unset - defaulting to active CANDIDATE_MODELS)';
+      result.geminiModel = currentModel;
     }
 
     // Helper: generate valid student HMAC initData for Aarav Sharma (CG-11-001 / 552858970)
