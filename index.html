@@ -4043,7 +4043,7 @@
       let abortCtl = null, abortTimer = null;
       if (aiTimeoutActions.indexOf(resolvedAction) !== -1 && typeof AbortController !== 'undefined') {
         abortCtl = new AbortController();
-        abortTimer = setTimeout(() => abortCtl.abort(), 75000);
+        abortTimer = setTimeout(() => abortCtl.abort(), 28000);
       }
       return fetch(url, {
         method: 'POST',
@@ -9754,6 +9754,8 @@
             stream.scrollTop = stream.scrollHeight;
           }
           stuAskDoubtBtn.disabled = true;
+          const progT1 = setTimeout(() => { if (replyBubble.textContent === 'Soch raha hoon…') replyBubble.textContent = 'Thoda aur time lag raha hai…'; }, 7000);
+          const progT2 = setTimeout(() => { if (/Thoda aur time/.test(replyBubble.textContent)) replyBubble.textContent = 'Bas thodi der aur, jawab taiyaar ho raha hai…'; }, 16000);
           window.cgCallGas('askDoubt', { question: q, rollNo, subject })
             .then(res => {
               const ans = res && (res.answer || res.reply);
@@ -9763,9 +9765,20 @@
             }).catch(err => {
               replyBubble.className = 'p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 mr-4 font-semibold';
               const msg = (err && err.message && /read-only|ACCESS_DENIED|rate|TIMEOUT/i.test(err.message)) ? err.message : 'AI abhi available nahi hai, teacher se poochein';
-              replyBubble.textContent = msg;
+              replyBubble.textContent = msg + ' ';
+              const retryBtn = document.createElement('button');
+              retryBtn.type = 'button';
+              retryBtn.className = 'mt-2 block px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold';
+              retryBtn.textContent = '🔄 दोबारा पूछो';
+              retryBtn.addEventListener('click', () => {
+                if (inputEl) inputEl.value = q;
+                retryBtn.remove();
+                stuAskDoubtBtn.click();
+              });
+              replyBubble.appendChild(retryBtn);
               showToast(msg, 'amber');
             }).finally(() => {
+              clearTimeout(progT1); clearTimeout(progT2);
               stuAskDoubtBtn.disabled = false;
               if (stream) stream.scrollTop = stream.scrollHeight;
             });

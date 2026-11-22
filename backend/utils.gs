@@ -18,38 +18,103 @@ function getGeminiModel_() {
 }
 
 /**
- * Executes a Gemini API generateContent call across candidate models with automatic fallback.
- * Solves model deprecation/404s and traffic spikes (503s).
- * 
+ * Returns the model names (without "models/" prefix) that support generateContent,
+ * from the Gemini models.list API. Cached 6 h. Returns [] if the list cannot be fetched.
+ * @param {string} apiKey
+ * @return {string[]}
+ */
+function getVerifiedGeminiModels_(apiKey) {
+  var cache = CacheService.getScriptCache();
+  var cacheKey = 'CG_VERIFIED_GEMINI_MODELS_V1';
+  try {
+    var hit = cache.get(cacheKey);
+    if (hit) return JSON.parse(hit);
+  } catch (_) {}
+  var names = [];
+  try {
+    var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000&key=' + apiKey, {
+      method: 'get',
+      muteHttpExceptions: true
+    });
+    if (res.getResponseCode() === 200) {
+      var list = (JSON.parse(res.getContentText()).models) || [];
+      for (var i = 0; i < list.length; i++) {
+        var m = list[i];
+        var methods = m.supportedGenerationMethods || [];
+        if (methods.indexOf('generateContent') !== -1) {
+          names.push(String(m.name || '').replace(/^models\//, ''));
+        }
+      }
+    }
+  } catch (e) {
+    Logger.log('getVerifiedGeminiModels_ failed: ' + e.message);
+  }
+  if (names.length) {
+    try { cache.put(cacheKey, JSON.stringify(names), 21600); } catch (_) {}
+  }
+  return names;
+}
+
+/** Clears the cached verified-model list (run manually after changing models). */
+function clearGeminiModelCache_() {
+  CacheService.getScriptCache().remove('CG_VERIFIED_GEMINI_MODELS_V1');
+}
+
+/**
+ * Returns a copy of payload; adds thinkingBudget:0 only for models known to accept it
+ * (gemini-2.5-flash / flash-lite). Pro and unknown models are left untouched.
+ */
+function geminiPayloadForModel_(payload, model, withThinkingOff) {
+  var copy = JSON.parse(JSON.stringify(payload));
+  if (withThinkingOff && /^gemini-2\.5-flash/.test(model)) {
+    copy.generationConfig = copy.generationConfig || {};
+    copy.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  }
+  return copy;
+}
+
+/**
+ * Executes a Gemini API generateContent call across candidate models with fallback.
+ * UrlFetchApp has no per-call timeout, so the budget is checked between attempts and
+ * the attempt count is kept small. Fast models first; pro models only if opts.allowPro.
+ *
  * @param {Object} payload - Gemini request payload { contents: [...], generationConfig: {...} }
+ * @param {Object} [opts] - { maxAttempts (default 2), budgetMs (default 16000), allowPro (default false) }
  * @return {Object} Parsed JSON response from Gemini API
  */
-function callGeminiGenerateContent_(payload) {
+function callGeminiGenerateContent_(payload, opts) {
+  opts = opts || {};
   var props = PropertiesService.getScriptProperties();
   var apiKey = props.getProperty("GEMINI_KEY") || props.getProperty("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_KEY missing in Script Properties");
 
-  // Priority order: candidate models with automatic fallback across flash, pro, and lite tiers
-  // Fast tiers first; slow pro tiers last (they are rarely reached because of the budget below).
-  var candidateModels = [
-    "gemini-3.8-flash",
-    "gemini-3.5-flash",
-    "gemini-flash-latest",
-    "gemini-3.5-flash-lite",
-    "gemini-flash-lite-latest",
-    "gemini-2.5-flash",
-    "gemini-2.5-pro",
-    "gemini-pro-latest"
-  ];
-  // Time budget: UrlFetchApp has no per-call timeout, so the budget is checked between attempts.
-  var BUDGET_MS = 40000;
-  var MAX_ATTEMPTS = 4;
+  var MAX_ATTEMPTS = opts.maxAttempts || 2;
+  var BUDGET_MS = opts.budgetMs || 16000;
   var startedAt = Date.now();
 
-  // If a custom model is configured in Script Properties, prepend it
+  var preferred = [
+    "gemini-2.5-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-flash-lite-latest",
+    "gemini-flash-latest",
+    "gemini-3.5-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.8-flash"
+  ];
+  var proModels = ["gemini-2.5-pro", "gemini-pro-latest"];
   var customModel = props.getProperty("GEMINI_MODEL");
-  if (customModel && candidateModels.indexOf(customModel) === -1) {
-    candidateModels.unshift(customModel);
+
+  var ordered = [];
+  if (customModel) ordered.push(customModel);
+  preferred.forEach(function (m) { if (ordered.indexOf(m) === -1) ordered.push(m); });
+  if (opts.allowPro) proModels.forEach(function (m) { if (ordered.indexOf(m) === -1) ordered.push(m); });
+
+  // Keep only models the API really lists (if the list is unavailable, try them as-is).
+  var verified = getVerifiedGeminiModels_(apiKey);
+  var candidateModels = ordered;
+  if (verified.length) {
+    candidateModels = ordered.filter(function (m) { return verified.indexOf(m) !== -1; });
+    if (!candidateModels.length) candidateModels = ordered;
   }
 
   var errorLogs = [];
@@ -60,23 +125,32 @@ function callGeminiGenerateContent_(payload) {
     }
     var model = candidateModels[i];
     var url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + apiKey;
-    try {
-      var response = UrlFetchApp.fetch(url, {
-        method: "POST",
-        contentType: "application/json",
-        payload: JSON.stringify(payload),
-        muteHttpExceptions: true
-      });
-      var resCode = response.getResponseCode();
-      var resText = response.getContentText();
-      
-      if (resCode === 200) {
-        return JSON.parse(resText);
-      } else {
+    var thinkingOff = true;
+    for (var pass = 0; pass < 2; pass++) {
+      try {
+        var response = UrlFetchApp.fetch(url, {
+          method: "POST",
+          contentType: "application/json",
+          payload: JSON.stringify(geminiPayloadForModel_(payload, model, thinkingOff)),
+          muteHttpExceptions: true
+        });
+        var resCode = response.getResponseCode();
+        var resText = response.getContentText();
+
+        if (resCode === 200) {
+          return JSON.parse(resText);
+        }
+        // thinkingConfig rejected -> retry the same model once without it
+        if (resCode === 400 && thinkingOff && /thinking/i.test(resText)) {
+          thinkingOff = false;
+          continue;
+        }
         errorLogs.push("Model " + model + " error " + resCode + ": " + resText.slice(0, 160));
+        if (resCode === 429 || resCode === 503) Utilities.sleep(800);
+      } catch (e) {
+        errorLogs.push("Model " + model + " exception: " + e.message);
       }
-    } catch (e) {
-      errorLogs.push("Model " + model + " exception: " + e.message);
+      break;
     }
   }
   throw new Error("Gemini API failed across candidate models:\n" + errorLogs.join("\n"));
