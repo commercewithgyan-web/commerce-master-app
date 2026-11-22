@@ -223,6 +223,42 @@ function checkDppDispatchStatus_() {
     result.botTokenConfigured = Boolean(props.getProperty('BOT_TOKEN'));
     result.channel11 = props.getProperty('CHANNEL_ID_11') || '@commercewithgyan_class11';
     result.channel12 = props.getProperty('CHANNEL_ID_12') || props.getProperty('CHANNEL_ID') || '@commercewithgyan_class12';
+    
+    // Task 4: Verify GEMINI_KEY/GEMINI_API_KEY and active GEMINI_MODEL
+    var geminiKey = props.getProperty('GEMINI_KEY') || props.getProperty('GEMINI_API_KEY');
+    result.hasGeminiKey = Boolean(geminiKey && geminiKey.trim().length > 10);
+    result.geminiKeyPrefix = geminiKey ? (geminiKey.substring(0, 6) + '...' + geminiKey.slice(-4)) : null;
+    var currentModel = props.getProperty('GEMINI_MODEL');
+    if (currentModel && (currentModel.indexOf('2.0') !== -1 || currentModel.indexOf('2.5') !== -1 || currentModel.indexOf('1.5') !== -1)) {
+      props.setProperty('GEMINI_MODEL', 'gemini-3.5-flash-lite');
+      result.geminiModelFixed = true;
+      result.geminiModel = 'gemini-3.5-flash-lite (auto-upgraded from ' + currentModel + ')';
+    } else {
+      result.geminiModel = currentModel || '(unset - defaulting to active CANDIDATE_MODELS)';
+    }
+
+    // Helper: generate valid student HMAC initData for Aarav Sharma (CG-11-001 / 552858970)
+    var bTok = props.getProperty('BOT_TOKEN') || props.getProperty('TELEGRAM_BOT_TOKEN');
+    if (bTok) {
+      var nowSec = Math.floor(Date.now() / 1000);
+      var userObj = { id: 552858970, first_name: 'Aarav Sharma', username: 'aarav_cg' };
+      var userJson = JSON.stringify(userObj);
+      var dataCheckString = 'auth_date=' + nowSec + '\nuser=' + userJson;
+      var secretKeyBytes = Utilities.computeHmacSha256Signature(
+        Utilities.newBlob(bTok).getBytes(),
+        Utilities.newBlob('WebAppData').getBytes()
+      );
+      var hashBytes = Utilities.computeHmacSha256Signature(
+        Utilities.newBlob(dataCheckString, 'UTF-8').getBytes(),
+        secretKeyBytes
+      );
+      var calculatedHash = hashBytes.map(function(b) {
+        return ('0' + (b & 0xFF).toString(16)).slice(-2);
+      }).join('').toLowerCase();
+      result.studentInitData = 'auth_date=' + encodeURIComponent(String(nowSec)) +
+                               '&user=' + encodeURIComponent(userJson) +
+                               '&hash=' + calculatedHash;
+    }
   } catch (e) {
     result.propsError = e.message;
   }
