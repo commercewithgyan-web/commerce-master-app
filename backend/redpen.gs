@@ -100,10 +100,13 @@ function runGatekeeperAndBuildCtx_(imageBase64, confirmedStudentText) {
     }
   };
 
-  var cleanBase64 = String(imageBase64 || '').replace(/^data:image\/[a-zA-Z0-9\.\-\+]+;base64,/, '').trim();
+  var rawStr = String(imageBase64 || '').trim();
+  var mimeMatch = rawStr.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/i);
+  var imgMime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+  var cleanBase64 = rawStr.replace(/^data:image\/[a-zA-Z0-9\.\-\+]+;base64,/, '').trim();
 
   var raw = JSON.parse(callGemini_(system, [
-    { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } },
+    { inlineData: { mimeType: imgMime, data: cleanBase64 } },
     { text: prompt }
   ], schema));
 
@@ -566,7 +569,8 @@ function handleRunRedPenAnalysis(data) {
       updateStudentCoinsAndLeaderboard_(String(telegramId), studentName, 12, Math.round(scored.result.computed.marks_earned || 0), 20, false);
     }
 
-    var driveUrl = saveRedPenImageToDrive_(imageBase64, telegramId);
+    var wantDrive = (data.saveToDrive === true || data.saveToDrive === 'true');
+    var driveUrl = wantDrive ? saveRedPenImageToDrive_(imageBase64, telegramId) : '';
     var subId = 'RP-' + Date.now();
     appendRow_('SHEET_QB', 'RedPen_Submissions', [
       subId,
@@ -589,6 +593,7 @@ function handleRunRedPenAnalysis(data) {
   return {
     ok: true,
     isValid: true,
+    driveUrl: (typeof driveUrl === 'string' && driveUrl !== 'DRIVE_SAVE_FAILED') ? driveUrl : '',
     data: scored.result
   };
 }

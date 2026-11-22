@@ -2026,6 +2026,9 @@
         <h2 class="text-sm font-bold text-white truncate mt-0.5">Gyan Sir · Begusarai Hub</h2>
       </div>
       <div class="flex gap-1.5 shrink-0">
+        <button id="opsOpenRedPenTestBtn" type="button" class="h-8 px-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[12px] font-bold flex items-center gap-1 shadow-sm cursor-pointer">
+          <span>🖍️</span><span>Red-Pen AI</span>
+        </button>
         <button id="opsReturnStudioBtn" type="button" class="h-8 px-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[14px] font-bold flex items-center gap-1 shadow-sm">
           <span>🖥️</span><span>Studio</span>
         </button>
@@ -3371,9 +3374,25 @@
           <option value="MAC-12" data-cls="12">12th Macroeconomics</option>
           <option value="IED-12" data-cls="12">12th Indian Eco Dev</option>
         </select>
-        <input id="redPenPhotoInput" type="file" accept="image/*" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800" />
+        <input id="redPenCameraInput" type="file" accept="image/*" capture="environment" class="hidden" />
+        <input id="redPenGalleryInput" type="file" accept="image/*" class="hidden" />
+        <div class="grid grid-cols-2 gap-2">
+          <button id="redPenClickPhotoBtn" type="button" class="h-10 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">📷 Click Photo</button>
+          <button id="redPenGalleryBtn" type="button" class="h-10 rounded-xl bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">🖼️ Upload Gallery</button>
+        </div>
+        <div id="redPenPhotoPreviewBox" class="hidden flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+          <div class="flex items-center gap-2 min-w-0">
+            <img id="redPenPhotoThumb" src="" alt="Selected page" class="w-10 h-10 rounded-lg object-cover border border-slate-300 shrink-0" />
+            <span id="redPenPhotoName" class="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate"></span>
+          </div>
+          <button id="redPenClearPhotoBtn" type="button" class="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-[11px] font-bold shrink-0">✕</button>
+        </div>
+        <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none px-1">
+          <input id="redPenSaveDriveCheck" type="checkbox" class="rounded border-slate-300 text-rose-600 focus:ring-rose-500" />
+          <span>💾 Save copy photo to Google Drive (optional)</span>
+        </label>
         <input id="redPenNoteInput" type="text" placeholder="Question / Page note (e.g. Ch 3 Q12 Working Note)" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800" />
-        <button id="submitRedPenPhotoBtn" type="button" class="w-full h-10 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold shadow">🖍️ Submit Register Photo</button>
+        <button id="submitRedPenPhotoBtn" type="button" class="w-full h-10 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold shadow cursor-pointer">🖍️ Check Answer with AI</button>
         <div id="redPenResultBox" class="hidden p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs"></div>
       </div>
     </div>
@@ -9638,7 +9657,25 @@
         openSwotModal(document.getElementById('tgStudentSelect')?.value || appState.students[0].roll);
       });
 
-      document.getElementById('openRedPenFromProgressBtn')?.addEventListener('click', () => {
+      let selectedRedPenFile = null;
+      let redPenTeacherTestMode = false;
+      const setRedPenSelectedFile = (file) => {
+        selectedRedPenFile = file || null;
+        const prevBox = document.getElementById('redPenPhotoPreviewBox');
+        const thumb = document.getElementById('redPenPhotoThumb');
+        const nameEl = document.getElementById('redPenPhotoName');
+        if (!file) {
+          if (prevBox) prevBox.classList.add('hidden');
+          if (thumb) thumb.src = '';
+          if (nameEl) nameEl.textContent = '';
+          return;
+        }
+        if (nameEl) nameEl.textContent = file.name || 'Captured Photo';
+        if (prevBox) prevBox.classList.remove('hidden');
+        if (thumb && window.URL && URL.createObjectURL) { thumb.src = URL.createObjectURL(file); }
+      };
+      const openRedPenModal = (isTeacherTest) => {
+        redPenTeacherTestMode = Boolean(isTeacherTest);
         const modal = document.getElementById('stuRedPenModal');
         const resBox = document.getElementById('redPenResultBox');
         const sel = document.getElementById('redPenSubjectSelect');
@@ -9647,7 +9684,7 @@
           let firstMatch = '';
           Array.from(sel.options).forEach(opt => {
             const oCls = opt.dataset.cls || (opt.value.includes('-11') ? '11' : '12');
-            const show = oCls === stuCls;
+            const show = redPenTeacherTestMode ? true : (oCls === stuCls);
             opt.hidden = !show;
             opt.disabled = !show;
             if (show && !firstMatch) firstMatch = opt.value;
@@ -9656,6 +9693,18 @@
         }
         if (resBox) resBox.classList.add('hidden');
         if (modal) modal.classList.remove('hidden');
+      };
+
+      document.getElementById('openRedPenFromProgressBtn')?.addEventListener('click', () => openRedPenModal(false));
+      document.getElementById('opsOpenRedPenTestBtn')?.addEventListener('click', () => openRedPenModal(true));
+      document.getElementById('redPenClickPhotoBtn')?.addEventListener('click', () => document.getElementById('redPenCameraInput')?.click());
+      document.getElementById('redPenGalleryBtn')?.addEventListener('click', () => document.getElementById('redPenGalleryInput')?.click());
+      document.getElementById('redPenCameraInput')?.addEventListener('change', (e) => { if (e.target.files && e.target.files[0]) setRedPenSelectedFile(e.target.files[0]); });
+      document.getElementById('redPenGalleryInput')?.addEventListener('change', (e) => { if (e.target.files && e.target.files[0]) setRedPenSelectedFile(e.target.files[0]); });
+      document.getElementById('redPenClearPhotoBtn')?.addEventListener('click', () => {
+        const cam = document.getElementById('redPenCameraInput'); if (cam) cam.value = '';
+        const gal = document.getElementById('redPenGalleryInput'); if (gal) gal.value = '';
+        setRedPenSelectedFile(null);
       });
 
       document.getElementById('closeStuRedPenBtn')?.addEventListener('click', () => {
@@ -9664,18 +9713,18 @@
 
       document.getElementById('submitRedPenPhotoBtn')?.addEventListener('click', async () => {
         const btn = document.getElementById('submitRedPenPhotoBtn');
-        const fileEl = document.getElementById('redPenPhotoInput');
         const note = (document.getElementById('redPenNoteInput')?.value || '').trim();
         const stuCls = resolveActiveStudentClass();
         const subjectCode = document.getElementById('redPenSubjectSelect')?.value || ('ACC-' + stuCls);
+        const saveToDrive = Boolean(document.getElementById('redPenSaveDriveCheck')?.checked);
         const resBox = document.getElementById('redPenResultBox');
-        const rollNo = window.viewAsStudentRollNo || document.getElementById('tgStudentSelect')?.value || appState.students[0].roll;
-        const file = fileEl && fileEl.files && fileEl.files[0];
+        const rollNo = redPenTeacherTestMode ? 'TEACHER_TEST' : (window.viewAsStudentRollNo || document.getElementById('tgStudentSelect')?.value || appState.students[0].roll);
+        const file = selectedRedPenFile;
         if (!file && !note) {
-          showToast('Please attach a register photo or enter a question/page note.', 'amber');
+          showToast('Please click a photo, upload from gallery, or enter a question note.', 'amber');
           return;
         }
-        if (btn) { btn.disabled = true; btn.textContent = 'Uploading for Checking…'; }
+        if (btn) { btn.disabled = true; btn.textContent = 'Checking with AI…'; }
         const readAndCompressImage = () => new Promise((resolve) => {
           if (!file) { resolve(''); return; }
           const reader = new FileReader();
@@ -9705,7 +9754,8 @@
           const imageBase64 = await readAndCompressImage();
           const res = await window.cgCallGas('submitRedPenSubmission', {
             rollNo, subjectCode, note: note || 'Register Photo Check',
-            fileName: file ? file.name : '', imageBase64
+            fileName: file ? file.name : '', imageBase64,
+            saveToDrive: saveToDrive, teacherTest: redPenTeacherTestMode
           });
           if (resBox) {
             const ev = res && res.aiEvaluation;

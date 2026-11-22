@@ -4849,15 +4849,16 @@ function saveSwotConfig(payload) {
  * @return {Object}
  */
 function submitRedPenSubmission(payload) {
-  if (!VIEW_AS_STUDENT_ALLOW_WRITES && payload && payload.isViewAsStudent) {
+  if (!VIEW_AS_STUDENT_ALLOW_WRITES && payload && payload.isViewAsStudent && !payload.teacherTest) {
     return { ok: false, error: 'Write operation rejected: View as Student session is strictly read-only (SYS-009).' };
   }
   payload = payload || {};
-  const rollNo = String(payload.rollNo || payload.studentId || 'STUDENT').trim();
+  const rollNo = String(payload.rollNo || payload.studentId || (payload.teacherTest ? 'TEACHER_TEST' : 'STUDENT')).trim();
   const subject = String(payload.subjectCode || 'ACCOUNTS').trim();
   const note = String(payload.note || 'Register Photo Check').trim();
   const fileName = String(payload.fileName || '').trim();
   const imageBase64 = String(payload.imageBase64 || '').trim();
+  const wantDrive = (payload.saveToDrive === true || payload.saveToDrive === 'true');
 
   let driveUrl = '';
   let aiEvaluation = null;
@@ -4865,23 +4866,17 @@ function submitRedPenSubmission(payload) {
   let feedbackMsg = 'Sent to Gyan Sir Red-Pen Queue. Feedback will appear in your SWOT report.';
 
   if (imageBase64) {
-    if (typeof saveRedPenImageToDrive_ === 'function') {
-      try {
-        const savedUrl = saveRedPenImageToDrive_(imageBase64, rollNo);
-        if (savedUrl && savedUrl !== 'DRIVE_SAVE_FAILED') driveUrl = savedUrl;
-      } catch (driveErr) {
-        Logger.log('submitRedPenSubmission Drive note: ' + driveErr.message);
-      }
-    }
     if (typeof handleRunRedPenAnalysis === 'function') {
       try {
         const aiRes = handleRunRedPenAnalysis({
           imageBase64: imageBase64,
-          telegramId: rollNo,
-          studentName: rollNo,
+          telegramId: payload.teacherTest ? '552858970' : rollNo,
+          studentName: payload.teacherTest ? 'Gyan Sir (Preview)' : rollNo,
           subjectCode: subject,
-          qid: payload.qid || ''
+          qid: payload.qid || '',
+          saveToDrive: wantDrive
         });
+        if (aiRes && aiRes.driveUrl) driveUrl = aiRes.driveUrl;
         if (aiRes && aiRes.ok && aiRes.isValid && aiRes.data) {
           aiEvaluation = aiRes.data;
           statusStr = 'EVALUATED';
@@ -4895,6 +4890,14 @@ function submitRedPenSubmission(payload) {
       } catch (aiErr) {
         feedbackMsg = 'AI Error: ' + (aiErr.message || String(aiErr));
         Logger.log('submitRedPenSubmission AI fallback to queue: ' + aiErr.message);
+      }
+    }
+    if (wantDrive && !driveUrl && typeof saveRedPenImageToDrive_ === 'function') {
+      try {
+        const savedUrl = saveRedPenImageToDrive_(imageBase64, rollNo);
+        if (savedUrl && savedUrl !== 'DRIVE_SAVE_FAILED') driveUrl = savedUrl;
+      } catch (driveErr) {
+        Logger.log('submitRedPenSubmission Drive note: ' + driveErr.message);
       }
     }
   }
