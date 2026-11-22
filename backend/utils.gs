@@ -9,12 +9,12 @@
 var TIMEZONE_KOLKATA = 'Asia/Kolkata';
 
 /**
- * Resolves the active Gemini model name from Script Properties with fallback to 'gemini-3.0-flash'
+ * Resolves the active Gemini model name from Script Properties with fallback to 'gemini-3.8-flash'
  * @return {string}
  */
 function getGeminiModel_() {
   var props = PropertiesService.getScriptProperties();
-  return props.getProperty('GEMINI_MODEL') || 'gemini-1.5-flash';
+  return props.getProperty('GEMINI_MODEL') || 'gemini-3.8-flash';
 }
 
 /**
@@ -32,8 +32,9 @@ function getVerifiedGeminiModels_(apiKey) {
   } catch (_) {}
   var names = [];
   try {
-    var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000&key=' + apiKey, {
+    var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000', {
       method: 'get',
+      headers: { 'x-goog-api-key': apiKey },
       muteHttpExceptions: true
     });
     if (res.getResponseCode() === 200) {
@@ -73,13 +74,32 @@ function geminiPayloadForModel_(payload, model, withThinkingOff) {
   return copy;
 }
 
+/** Models that returned 404 (retired / not available to this key) are skipped for 6 h. */
+function getBadGeminiModels_() {
+  try {
+    var hit = CacheService.getScriptCache().get('CG_BAD_GEMINI_MODELS_V1');
+    if (hit) return JSON.parse(hit);
+  } catch (_) {}
+  return [];
+}
+
+function markBadGeminiModel_(model) {
+  try {
+    var bad = getBadGeminiModels_();
+    if (bad.indexOf(model) === -1) bad.push(model);
+    CacheService.getScriptCache().put('CG_BAD_GEMINI_MODELS_V1', JSON.stringify(bad), 21600);
+  } catch (_) {}
+}
+
 /**
  * Executes a Gemini API generateContent call across candidate models with fallback.
- * UrlFetchApp has no per-call timeout, so the budget is checked between attempts and
- * the attempt count is kept small. Fast models first; pro models only if opts.allowPro.
+ * UrlFetchApp has no per-call timeout, so the budget is checked between attempts and the
+ * attempt count is small. A single hung fetch cannot be interrupted by this code.
+ * Newest fast models first; 404 models are blacklisted for 6 h; 429/503/other errors move
+ * straight to the next model without sleeping. Pro models only if opts.allowPro.
  *
- * @param {Object} payload - Gemini request payload { contents: [...], generationConfig: {...} }
- * @param {Object} [opts] - { maxAttempts (default 2), budgetMs (default 16000), allowPro (default false) }
+ * @param {Object} payload - { contents: [...], generationConfig: {...} }
+ * @param {Object} [opts] - { maxAttempts (default 3), budgetMs (default 16000), allowPro (default false) }
  * @return {Object} Parsed JSON response from Gemini API
  */
 function callGeminiGenerateContent_(payload, opts) {
@@ -88,20 +108,20 @@ function callGeminiGenerateContent_(payload, opts) {
   var apiKey = props.getProperty("GEMINI_KEY") || props.getProperty("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_KEY missing in Script Properties");
 
-  var MAX_ATTEMPTS = opts.maxAttempts || 2;
+  var MAX_ATTEMPTS = opts.maxAttempts || 3;
   var BUDGET_MS = opts.budgetMs || 16000;
   var startedAt = Date.now();
 
   var preferred = [
-    "gemini-2.5-flash-lite",
-    "gemini-2.5-flash",
-    "gemini-flash-lite-latest",
-    "gemini-flash-latest",
+    "gemini-3.8-flash",
+    "gemini-3.6-flash",
     "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
     "gemini-3.5-flash",
-    "gemini-3.8-flash"
+    "gemini-flash-lite-latest",
+    "gemini-flash-latest"
   ];
-  var proModels = ["gemini-2.5-pro", "gemini-pro-latest"];
+  var proModels = ["gemini-pro-latest"];
   var customModel = props.getProperty("GEMINI_MODEL");
 
   var ordered = [];
@@ -116,21 +136,27 @@ function callGeminiGenerateContent_(payload, opts) {
     candidateModels = ordered.filter(function (m) { return verified.indexOf(m) !== -1; });
     if (!candidateModels.length) candidateModels = ordered;
   }
+  var bad = getBadGeminiModels_();
+  var live = candidateModels.filter(function (m) { return bad.indexOf(m) === -1; });
+  if (live.length) candidateModels = live;
 
   var errorLogs = [];
+  var attempts = 0;
   for (var i = 0; i < candidateModels.length; i++) {
-    if (i >= MAX_ATTEMPTS || (Date.now() - startedAt) > BUDGET_MS) {
-      errorLogs.push("Gemini time budget exceeded after " + Math.round((Date.now() - startedAt) / 1000) + "s (" + i + " attempts)");
+    if (attempts >= MAX_ATTEMPTS || (Date.now() - startedAt) > BUDGET_MS) {
+      errorLogs.push("Gemini budget stop after " + Math.round((Date.now() - startedAt) / 1000) + "s (" + attempts + " attempts)");
       break;
     }
     var model = candidateModels[i];
-    var url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + apiKey;
+    var url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent";
     var thinkingOff = true;
+    attempts++;
     for (var pass = 0; pass < 2; pass++) {
       try {
         var response = UrlFetchApp.fetch(url, {
           method: "POST",
           contentType: "application/json",
+          headers: { "x-goog-api-key": apiKey },
           payload: JSON.stringify(geminiPayloadForModel_(payload, model, thinkingOff)),
           muteHttpExceptions: true
         });
@@ -145,15 +171,16 @@ function callGeminiGenerateContent_(payload, opts) {
           thinkingOff = false;
           continue;
         }
-        errorLogs.push("Model " + model + " error " + resCode + ": " + resText.slice(0, 160));
-        if (resCode === 429 || resCode === 503) Utilities.sleep(800);
+        if (resCode === 404) markBadGeminiModel_(model);
+        errorLogs.push("Model " + model + " error " + resCode + ": " + resText.slice(0, 160).replace(/key=[^&\s"]+/g, "key=***"));
       } catch (e) {
         errorLogs.push("Model " + model + " exception: " + e.message);
       }
       break;
     }
   }
-  throw new Error("Gemini API failed across candidate models:\n" + errorLogs.join("\n"));
+  throw new Error("Gemini API failed [verified=" + verified.length + ", tried=" + attempts +
+    ", candidates=" + candidateModels.join(",") + "]:\n" + errorLogs.join("\n"));
 }
 
 /**

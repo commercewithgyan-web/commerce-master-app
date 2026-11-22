@@ -76,7 +76,7 @@ function askDoubtGemini(studentName, subject, question, lens, studentClass) {
   var targetSubject = subject || 'Accountancy';
   var cleanName = (studentName || 'Champ').trim().split(' ')[0] || 'Champ';
 
-  var systemPrompt = buildCommerceGyanDoubtPrompt_(cleanName, targetSubject, question, lens, studentClass);
+  var systemPrompt = buildCommerceGyanDoubtPrompt_('Champ', targetSubject, question, lens, studentClass);
 
   var payload = {
     contents: [{ parts: [{ text: systemPrompt }] }],
@@ -87,7 +87,7 @@ function askDoubtGemini(studentName, subject, question, lens, studentClass) {
     }
   };
 
-  var json = callGeminiGenerateContent_(payload, { maxAttempts: 2, budgetMs: 16000 });
+  var json = callGeminiGenerateContent_(payload, { maxAttempts: 3, budgetMs: 16000 });
   if (json.candidates && json.candidates[0].content && json.candidates[0].content.parts) {
     var raw = String(json.candidates[0].content.parts[0].text || '').trim();
     var cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
@@ -269,6 +269,11 @@ function apiAskDoubt_(verifiedUser, payload) {
     result = askDoubtGemini(studentName, subject, questionText, lens, studentClass);
   } catch (geminiErr) {
     Logger.log('askDoubtGemini error: ' + geminiErr.message);
+    // Persist the real cause (per-model status) to the Errors tab; API key is redacted first.
+    try {
+      var safeMsg = String(geminiErr.message || geminiErr).replace(/key=[^&\s"']+/gi, 'key=REDACTED');
+      logError_('askDoubtGemini', new Error(safeMsg));
+    } catch (_) {}
     return {
       ok: false,
       studentName: studentName,
