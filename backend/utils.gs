@@ -30,16 +30,21 @@ function callGeminiGenerateContent_(payload) {
   if (!apiKey) throw new Error("GEMINI_KEY missing in Script Properties");
 
   // Priority order: candidate models with automatic fallback across flash, pro, and lite tiers
+  // Fast tiers first; slow pro tiers last (they are rarely reached because of the budget below).
   var candidateModels = [
     "gemini-3.8-flash",
     "gemini-3.5-flash",
     "gemini-flash-latest",
-    "gemini-2.5-pro",
-    "gemini-pro-latest",
     "gemini-3.5-flash-lite",
     "gemini-flash-lite-latest",
-    "gemini-2.5-flash"
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-pro-latest"
   ];
+  // Time budget: UrlFetchApp has no per-call timeout, so the budget is checked between attempts.
+  var BUDGET_MS = 40000;
+  var MAX_ATTEMPTS = 4;
+  var startedAt = Date.now();
 
   // If a custom model is configured in Script Properties, prepend it
   var customModel = props.getProperty("GEMINI_MODEL");
@@ -49,6 +54,10 @@ function callGeminiGenerateContent_(payload) {
 
   var errorLogs = [];
   for (var i = 0; i < candidateModels.length; i++) {
+    if (i >= MAX_ATTEMPTS || (Date.now() - startedAt) > BUDGET_MS) {
+      errorLogs.push("Gemini time budget exceeded after " + Math.round((Date.now() - startedAt) / 1000) + "s (" + i + " attempts)");
+      break;
+    }
     var model = candidateModels[i];
     var url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + apiKey;
     try {

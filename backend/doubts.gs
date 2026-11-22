@@ -239,6 +239,15 @@ function apiAskDoubt_(verifiedUser, payload) {
   var studentClass = '';
   try {
     var rawCls = student.Class || student.Class_Level || '';
+    // Admin in "View as Student": scope by the viewed student's class (admin-only path)
+    if (!rawCls && student.isAdmin && payload.isViewAsStudent) {
+      var viewRoll = String(payload.viewAsStudentRollNo || payload.rollNo || '').trim();
+      if (viewRoll && typeof getStudentRecordByRoll_ === 'function') {
+        var viewStu = getStudentRecordByRoll_(viewRoll);
+        if (viewStu) rawCls = viewStu.Class || viewStu.Class_Level || '';
+        else Logger.log('askDoubt view-as: roll not found: ' + viewRoll);
+      }
+    }
     studentClass = (typeof normalizeClassLevel_ === 'function') ? normalizeClassLevel_(rawCls) : rawCls;
   } catch (_) { studentClass = ''; }
 

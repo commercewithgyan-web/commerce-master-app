@@ -4038,18 +4038,29 @@
       if (isSandboxPreview && resolvedAction === 'submitStudentQuizAttempt') {
         return Promise.resolve({ sandbox: true, isCorrect: payload.isCorrect !== false, earnedCoins: 0, explanation: payload.explanation || 'Sandbox preview mode — not written to Sheet.' });
       }
+      // AI doubt calls get a client-side timeout so the UI never hangs forever on "Soch raha hoon…"
+      const aiTimeoutActions = ['askDoubt', 'askDoubtGemini', 'askVoiceDoubt'];
+      let abortCtl = null, abortTimer = null;
+      if (aiTimeoutActions.indexOf(resolvedAction) !== -1 && typeof AbortController !== 'undefined') {
+        abortCtl = new AbortController();
+        abortTimer = setTimeout(() => abortCtl.abort(), 75000);
+      }
       return fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ initData, action: resolvedAction, payload: Object.assign({}, payload, isSandboxPreview ? { previewSandbox: true } : {}) }),
-        redirect: 'follow'
+        redirect: 'follow',
+        signal: abortCtl ? abortCtl.signal : undefined
       }).then(r => {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
       }).then(json => {
         if (!json || json.ok !== true) throw new Error((json && json.error) || 'Backend error');
         return json.data !== undefined ? json.data : json;
-      });
+      }).catch(err => {
+        if (err && err.name === 'AbortError') throw new Error('TIMEOUT: AI ne bahut der laga di, dobara try karein');
+        throw err;
+      }).finally(() => { if (abortTimer) clearTimeout(abortTimer); });
     };
     window.cgApi = window.cgCallGas;
 
@@ -9751,7 +9762,7 @@
               showToast('Gemini AI Doubt Answered!', 'emerald');
             }).catch(err => {
               replyBubble.className = 'p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 mr-4 font-semibold';
-              const msg = (err && err.message && /read-only|ACCESS_DENIED|rate/i.test(err.message)) ? err.message : 'AI abhi available nahi hai, teacher se poochein';
+              const msg = (err && err.message && /read-only|ACCESS_DENIED|rate|TIMEOUT/i.test(err.message)) ? err.message : 'AI abhi available nahi hai, teacher se poochein';
               replyBubble.textContent = msg;
               showToast(msg, 'amber');
             }).finally(() => {
