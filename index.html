@@ -2438,7 +2438,7 @@
       </div>
 
       <!-- Quick Metrics Strip -->
-      <div class="grid grid-cols-3 gap-2 text-center">
+      <div id="tgMetricsStrip" class="grid grid-cols-3 gap-2 text-center">
         <div class="p-2.5 rounded-2xl bg-white/5 border border-white/10">
           <p class="text-[14px] text-slate-400 uppercase font-bold">Attendance</p>
           <p id="tgStudentAtt" class="text-base font-extrabold text-emerald-400 mt-0.5">94%</p>
@@ -2489,58 +2489,9 @@
             <div class="w-2.5 h-2.5 rounded-full bg-primary"></div>
             <h2 class="text-[18px] font-bold text-slate-900 dark:text-white">Aaj Ki Classes</h2>
           </div>
-          <span class="px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-primary dark:text-purple-300 text-[14px] font-semibold">
-            3 Lectures
-          </span>
+          <span id="tgTodayClassCount" class="px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-primary dark:text-purple-300 text-[14px] font-semibold">0 Lectures</span>
         </div>
-        <div class="space-y-3">
-          <!-- Class 1 -->
-          <div class="rounded-2xl p-3 bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-800/60 flex items-center justify-between">
-            <div>
-              <div class="flex items-center gap-1.5 text-[14px] text-[#F87800] font-semibold">
-                <span class="material-symbols-outlined text-[16px]">schedule</span>
-                <span>04:00 PM - 05:15 PM</span>
-                <span class="text-[14px] font-bold ml-1">• 45 mins mein</span>
-              </div>
-              <h3 class="text-[16px] font-bold text-slate-900 dark:text-white mt-0.5">Accounts</h3>
-              <p class="text-[14px] text-slate-500 dark:text-slate-400">Partnership Accounts: Admission</p>
-            </div>
-            <div class="teacher-chip whitespace-nowrap shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs">
-              <div class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[14px] font-bold">A</div>
-              <span class="text-[14px] font-semibold text-slate-700 dark:text-slate-300">Teacher A</span>
-            </div>
-          </div>
-          <!-- Class 2 -->
-          <div class="rounded-2xl p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <div>
-              <div class="flex items-center gap-1.5 text-[14px] text-slate-500 dark:text-slate-400 font-medium">
-                <span class="material-symbols-outlined text-[16px]">schedule</span>
-                <span>05:30 PM - 06:45 PM</span>
-              </div>
-              <h3 class="text-[16px] font-bold text-slate-900 dark:text-white mt-0.5">Economics</h3>
-              <p class="text-[14px] text-slate-500 dark:text-slate-400">National Income &amp; Aggregates</p>
-            </div>
-            <div class="teacher-chip whitespace-nowrap shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs">
-              <div class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[14px] font-bold">A</div>
-              <span class="text-[14px] font-semibold text-slate-700 dark:text-slate-300">Teacher A</span>
-            </div>
-          </div>
-          <!-- Class 3 -->
-          <div class="rounded-2xl p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <div>
-              <div class="flex items-center gap-1.5 text-[14px] text-slate-500 dark:text-slate-400 font-medium">
-                <span class="material-symbols-outlined text-[16px]">schedule</span>
-                <span>07:00 PM - 08:00 PM</span>
-              </div>
-              <h3 class="text-[16px] font-bold text-slate-900 dark:text-white mt-0.5">Business Studies</h3>
-              <p class="text-[14px] text-slate-500 dark:text-slate-400">Principles of Management</p>
-            </div>
-            <div class="teacher-chip whitespace-nowrap shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs">
-              <div class="w-6 h-6 rounded-full bg-[#773600] text-white flex items-center justify-center text-[14px] font-bold">A</div>
-              <span class="text-[14px] font-semibold text-slate-700 dark:text-slate-300">Teacher A</span>
-            </div>
-          </div>
-        </div>
+        <div id="tgTodayClassesList" class="space-y-3"></div>
       </section>
 
       <!-- CARD 3: Attendance Ring Card ("Haaziri Record") -->
@@ -2590,7 +2541,7 @@
             <span class="material-symbols-outlined text-[16px] text-primary">campaign</span>
             <span>Admin Office</span>
           </span>
-          <span class="text-primary dark:text-purple-300 font-bold">Details dekho →</span>
+          <button type="button" id="stuNoticeDetailBtn" class="text-primary dark:text-purple-300 font-bold cursor-pointer px-2 py-1 -mr-2">Details dekho →</button>
         </div>
       </section>
       <!-- Alerts / Absent Video Link / Holiday Shift Banner -->
@@ -2605,11 +2556,10 @@
           <span class="px-2 py-0.5 rounded-md bg-indigo-600 text-white text-[14px] font-bold">Daily Hub</span>
         </div>
         <h3 id="tgAajTopicTitle" class="text-sm font-extrabold text-indigo-950 dark:text-white">
-          Ch 3: Hidden Goodwill in Admission of Partner
+          Aaj ka topic abhi set nahi hua
         </h3>
-        <p id="tgAajTopicMeta" class="text-[14px] text-indigo-800/80 dark:text-indigo-300/80">
-          GoodNotes PDF + Daily MCQ / DPP synced with Syllabus Planner.
-        </p>
+        <p id="tgAajTopicMeta" class="text-[14px] text-indigo-800/80 dark:text-indigo-300/80"></p>
+        <div id="tgAajTopicList" class="space-y-1.5"></div>
       </div>
 
       <!-- Classroom Attendance & Streak Card (Preserved Streak #29) -->
@@ -2664,16 +2614,9 @@
 
       <!-- Unified Daily MCQ / DPP Card (S2: 4-Option Full-Screen Challenge, replaces Track 1/2/3 & 3-option quiz) -->
       <div class="rounded-3xl bg-gradient-to-br from-indigo-900 via-indigo-800 to-purple-900 text-white p-5 shadow-lg space-y-3.5 border border-indigo-700/60">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2">
-            <span class="px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-[14px] font-extrabold uppercase tracking-wide shadow-sm">7:00 PM Daily DPP</span>
-            <span class="text-[14px] font-semibold text-indigo-200">CBSE Board Exam Format</span>
-          </div>
-          <span id="stuDailyMcqTopicBadge" class="text-[14px] font-extrabold text-amber-300">🔥 4 Options (A–D) · +10 to +30 Coins</span>
-        </div>
-        <div>
+        <div class="flex items-center justify-between gap-2">
           <h3 class="text-base font-extrabold text-white">Daily MCQ &amp; Speed Challenge</h3>
-          <p class="text-xs text-indigo-100/90 mt-1 leading-relaxed">Tonight's teacher-assigned board questions from the Question Bank. Correct answer auto-advances; wrong answer highlights the right option with the full explanation from the Question Bank!</p>
+          <span id="stuDailyMcqTopicBadge" class="text-[14px] font-extrabold text-amber-300"></span>
         </div>
         <button id="stuOpenDailyMcqBtnHome" type="button" class="stu-open-daily-mcq-btn w-full h-12 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-sm font-extrabold shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
           <span>⚡</span><span>Start Daily MCQ / DPP</span>
@@ -2691,11 +2634,10 @@
 
       <!-- Today's Batch Lectures & GoodNotes PDFs -->
       <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
-        <h3 class="text-sm font-extrabold text-slate-900 dark:text-white">Today's Batch Lectures &amp; GoodNotes PDFs</h3>
+        <h3 class="text-sm font-extrabold text-slate-900 dark:text-white">Today's Batch Lectures</h3>
         <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between gap-3">
           <div class="min-w-0">
-            <p class="text-xs font-extrabold text-slate-900 dark:text-white">Ch 3: Admission of a Partner — Goodwill</p>
-            <p class="text-[14px] text-slate-500 dark:text-slate-400 mt-0.5">GoodNotes PDF + Cleared Months SWOT Receipt</p>
+            <p id="tgBatchLectureTitle" class="text-xs font-extrabold text-slate-900 dark:text-white">Aaj ki lecture ka topic upar "Today's Active Topic" mein hai</p>
           </div>
           <button id="tgOpenReceiptBtn" type="button" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shrink-0 shadow-sm cursor-pointer">
             SWOT Receipt
@@ -2765,74 +2707,9 @@
             <h3 class="text-sm font-extrabold text-slate-900 dark:text-white">CBSE Curriculum Roadmap &amp; Practice Vault</h3>
             <p class="text-[14px] text-slate-500 dark:text-slate-400 mt-0.5">Select any subject to view expandable Chapter → Sub-topic roadmap, learning objectives &amp; lectures</p>
           </div>
-          <span class="px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-[14px] font-extrabold border border-indigo-200 dark:border-indigo-800/50 shrink-0">797 Subtopics</span>
         </div>
 
-        <div id="stuSyllabusSubjectCards" class="grid grid-cols-2 gap-2.5">
-          <button type="button" data-practicesubj="Accountancy" class="stu-practice-subj-btn p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border-2 border-indigo-500 text-left transition min-h-[64px] cursor-pointer shadow-sm">
-            <p class="text-xs font-extrabold text-slate-900 dark:text-white">📊 Accountancy</p>
-            <p class="text-[14px] text-indigo-700 dark:text-indigo-300 font-semibold mt-0.5">10 Ch · 118 Subtopics · 80M</p>
-          </button>
-          <button type="button" data-practicesubj="Business Studies" class="stu-practice-subj-btn p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 text-left hover:border-indigo-400 transition min-h-[64px] cursor-pointer">
-            <p class="text-xs font-extrabold text-slate-900 dark:text-white">📑 Business Studies</p>
-            <p class="text-[14px] text-slate-500 dark:text-slate-400 font-semibold mt-0.5">12 Ch · 94 Subtopics · 80M</p>
-          </button>
-          <button type="button" data-practicesubj="Economics" class="stu-practice-subj-btn p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 text-left hover:border-indigo-400 transition min-h-[64px] cursor-pointer">
-            <p class="text-xs font-extrabold text-slate-900 dark:text-white">📈 Economics (Macro/IED)</p>
-            <p class="text-[14px] text-slate-500 dark:text-slate-400 font-semibold mt-0.5">10 Ch · 86 Subtopics · 80M</p>
-          </button>
-          <button type="button" data-practicesubj="Statistics" class="stu-practice-subj-btn p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 text-left hover:border-indigo-400 transition min-h-[64px] cursor-pointer">
-            <p class="text-xs font-extrabold text-slate-900 dark:text-white">🔢 Statistics / EPS</p>
-            <p class="text-[14px] text-slate-500 dark:text-slate-400 font-semibold mt-0.5">9 Ch · 72 Subtopics · 80M</p>
-          </button>
-        </div>
-
-        <!-- Subject CBSE Roadmap Progress Banner -->
-        <div id="stuSubjectRoadmapBanner" class="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white space-y-2.5 shadow-md">
-          <div class="flex items-center justify-between text-xs font-extrabold">
-            <span id="stuRoadmapSubjTitle" class="text-amber-400">Accountancy CBSE Roadmap</span>
-            <span id="stuRoadmapPctText" class="text-emerald-400">68% Completed</span>
-          </div>
-          <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-            <div id="stuRoadmapProgressBar" class="h-full rounded-full bg-gradient-to-r from-amber-400 to-emerald-400" style="width: 68%"></div>
-          </div>
-          <div class="grid grid-cols-4 gap-2 text-center pt-1">
-            <div><p id="stuRoadmapChCount" class="text-xs font-extrabold text-white">10</p><p class="text-[14px] text-slate-400">Chapters</p></div>
-            <div><p id="stuRoadmapTopCount" class="text-xs font-extrabold text-white">34</p><p class="text-[14px] text-slate-400">Topics</p></div>
-            <div><p id="stuRoadmapSubCount" class="text-xs font-extrabold text-white">118</p><p class="text-[14px] text-slate-400">Subtopics</p></div>
-            <div><p class="text-xs font-extrabold text-amber-400">80 Marks</p><p class="text-[14px] text-slate-400">CBSE Board</p></div>
-          </div>
-        </div>
-
-        <!-- Expandable Subject -> Chapters -> Topics -> Sub-topics Tree (S3) -->
-        <div id="stuSyllabusTreeContainer" class="space-y-2.5 pt-2 border-t border-slate-100 dark:border-slate-800"></div>
-
-        <!-- Embedded / Mobile-Only Video Container (S1 + S3) -->
-        <div id="stuVideoPlayerBox" class="hidden p-3 rounded-xl bg-slate-900 text-white space-y-2"></div>
-
-        <!-- Self-Paced Practice Vault (S4) -->
-        <div id="stuPracticeQuestionsBox" class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 text-xs space-y-2.5 text-slate-700 dark:text-slate-200"></div>
-      </div>
-    </div>
-
-    <!-- TAB 3: DAILY CLASS NOTES (S6: Replaced Personal Notebook, non-overflowing 4 subject pills) -->
-    <div id="tgTab-notes" class="tg-student-tab space-y-3.5" style="display: none;">
-      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3.5">
-        <div class="flex items-start justify-between gap-2">
-          <div>
-            <span class="text-[14px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Classroom Chalkboard Archive</span>
-            <h3 class="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">Daily Class Notes &amp; DPPs</h3>
-          </div>
-          <span class="px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-[14px] font-extrabold border border-indigo-200 dark:border-indigo-800/50 shrink-0">Goodnotes Live</span>
-        </div>
-        <p class="text-xs text-slate-500 dark:text-slate-400">Missed writing notes in class? Recover date-wise teacher chalkboard notes &amp; Daily DPP PDFs right here.</p>
-
-        <!-- 4 Subject Tabs (S6 — fixed truncation so Accountancy never spills outside its pill) -->
-        <div class="grid grid-cols-4 gap-1 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700">
-          <button type="button" data-notessubj="Accountancy" class="stu-notes-subj-tab py-2 px-1.5 rounded-xl text-[14px] font-extrabold bg-indigo-600 text-white shadow-sm truncate cursor-pointer">Accounts</button>
-          <button type="button" data-notessubj="Business Studies" class="stu-notes-subj-tab py-2 px-1.5 rounded-xl text-[14px] font-bold text-slate-700 dark:text-slate-300 truncate cursor-pointer">BST</button>
-          <button type="button" data-notessubj="Economics" class="stu-notes-subj-tab py-2 px-1.5 rounded-xl text-[14px] font-bold text-slate-700 dark:text-slate-300 truncate cursor-pointer">Economics</button>
-          <button type="button" data-notessubj="Statistics" class="stu-notes-subj-tab py-2 px-1.5 rounded-xl text-[14px] font-bold text-slate-700 dark:text-slate-300 truncate cursor-pointer">Statistics</button>
+        <div id="stuSyllabusSubjectCards" class="grid grid-cols-2 gap-2.5"><p class="col-span-2 text-xs text-slate-500">Subjects load ho rahe hain…</p>
         </div>
 
         <div id="stuDailyClassNotesList" class="space-y-2.5 text-xs"></div>
@@ -2948,27 +2825,11 @@
         <p class="text-xs text-slate-500 dark:text-slate-400">Stuck on an adjustment, formula, or case study? Select subject &amp; type your question below for step-by-step guidance.</p>
 
         <!-- 4 Subject Pills (2x2 / 4-col grid so Statistics is never clipped off-screen) -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-          <button type="button" data-doubtsubj="Accountancy" class="stu-doubt-subj-pill py-2 px-2.5 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-sm cursor-pointer">Accountancy</button>
-          <button type="button" data-doubtsubj="Business Studies" class="stu-doubt-subj-pill py-2 px-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer">Business Studies</button>
-          <button type="button" data-doubtsubj="Economics" class="stu-doubt-subj-pill py-2 px-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer">Economics</button>
-          <button type="button" data-doubtsubj="Statistics" class="stu-doubt-subj-pill py-2 px-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer">Statistics</button>
+        <div id="stuDoubtPills" class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
         </div>
 
         <!-- Quick Prompt Chips -->
-        <div class="flex flex-wrap gap-1.5">
-          <button type="button" class="stu-prompt-chip px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[14px] font-semibold border border-indigo-200 dark:border-indigo-800/50 hover:bg-indigo-100 cursor-pointer">
-            Hidden Goodwill
-          </button>
-          <button type="button" class="stu-prompt-chip px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[14px] font-semibold border border-indigo-200 dark:border-indigo-800/50 hover:bg-indigo-100 cursor-pointer">
-            Share Forfeiture
-          </button>
-          <button type="button" class="stu-prompt-chip px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[14px] font-semibold border border-indigo-200 dark:border-indigo-800/50 hover:bg-indigo-100 cursor-pointer">
-            Fayol vs Taylor
-          </button>
-          <button type="button" class="stu-prompt-chip px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[14px] font-semibold border border-indigo-200 dark:border-indigo-800/50 hover:bg-indigo-100 cursor-pointer">
-            National Income
-          </button>
+        <div id="stuDoubtChips" class="flex flex-wrap gap-1.5">
         </div>
 
         <textarea id="stuDoubtInput" rows="3" placeholder="Type your doubt here (e.g. How to calculate hidden goodwill when incoming partner brings capital?)" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-2xl p-3 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
@@ -2984,7 +2845,7 @@
         </div>
 
         <!-- WhatsApp Gyan Sir button for doubts -->
-        <a id="stuAskGyanWaBtn" href="https://wa.me/919835011201?text=Hi%20Gyan%20Sir%2C%20I%20have%20a%20doubt%20in%20Accountancy" target="_blank" rel="noopener" class="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5">
+        <a id="stuAskGyanWaBtn" href="#" target="_blank" rel="noopener" class="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5">
           <span>💬</span><span>Ask Gyan Sir Directly on WhatsApp</span>
         </a>
       </div>
@@ -3085,7 +2946,7 @@
           <span class="material-symbols-outlined text-[18px]">send</span>
           <span>Telegram par bhejo</span>
         </button>
-        <button id="btnSendFeeWhatsApp" type="button" onclick="window.open(buildWhatsAppTemplateLink('9835011201', 'FEE_PAYMENT', { amount: 2500, rollNo: document.getElementById('tgStudentSelect')?.value || 'CG-1201' }), '_blank'); document.getElementById('feePaymentProofModal')?.classList.add('hidden');" class="min-h-[44px] flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 font-bold text-[14px] border border-emerald-300 dark:border-emerald-700 transition-all">
+        <button id="btnSendFeeWhatsApp" type="button" onclick="window.open(buildWhatsAppTemplateLink('9278569860', 'FEE_PAYMENT', { amount: 2500, rollNo: document.getElementById('tgStudentSelect')?.value || 'CG-1201' }), '_blank'); document.getElementById('feePaymentProofModal')?.classList.add('hidden');" class="min-h-[44px] flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 font-bold text-[14px] border border-emerald-300 dark:border-emerald-700 transition-all">
           <span>💬 WhatsApp kholo</span>
         </button>
       </div>
@@ -5711,25 +5572,28 @@
         else recCard.classList.add('hidden');
       }
 
-      // Upcoming Weekly Schedule Preview (A4 -> Student Daily Hub)
+      // Upcoming Weekly Schedule Preview (A4 -> Student Daily Hub) — own class + own subjects only
       const stuSchedBox = document.getElementById('stuWeeklyScheduleBox');
       if (stuSchedBox) {
-        const clsTag = (stu.batch || '').includes('11') ? '-11' : '-12';
-        const mySlots = (appState.timetableSlots || []).filter(sl => (sl.subject || '').includes(clsTag)).slice(0, 6);
-        const evHtml = (appState.academicEvents || []).slice(0, 2).map(ev =>
-          `<div class="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-700/60 text-amber-950 dark:text-amber-100 flex items-center justify-between gap-2"><span class="truncate">📢 <strong class="text-amber-900 dark:text-amber-200">${escHtml(ev.type)}:</strong> ${escHtml(ev.title)}</span><span class="font-mono text-[14px] text-amber-800 dark:text-amber-300 shrink-0">${escHtml(ev.date)}</span></div>`
+        const myCodes = stuMyCodes(stu);
+        const mySlots = (appState.timetableSlots || []).filter(sl => myCodes.includes(sl.subject)).slice(0, 8);
+        const stuCls = stuMyClass(stu);
+        const evHtml = (appState.academicEvents || []).filter(ev => !ev.batch || ev.batch === 'All' || String(ev.batch).includes(stuCls)).slice(0, 2).map((ev, i) =>
+          `<button type="button" data-stu-detail="event" data-idx="${i}" class="w-full text-left p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-700/60 text-amber-950 dark:text-amber-100 flex items-center justify-between gap-2"><span>📢 <strong>${escHtml(ev.type)}:</strong> ${escHtml(ev.title)}</span><span class="font-mono text-[14px] shrink-0">${escHtml(ev.date)}</span></button>`
         ).join('');
-        stuSchedBox.innerHTML = evHtml + mySlots.map(sl => `
-          <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between gap-2">
+        stuSchedBox.innerHTML = (evHtml + mySlots.map((sl, i) => `
+          <button type="button" data-stu-detail="slot" data-idx="${i}" class="w-full text-left p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between gap-2">
             <div class="min-w-0">
-              <span class="font-mono font-bold text-indigo-600 dark:text-indigo-400">${escHtml(sl.day)} ${escHtml(sl.time)}</span>
+              <span class="font-mono font-bold text-indigo-600 dark:text-indigo-400">${escHtml(sl.day)} ${escHtml(stuFmtTime(sl.time))}</span>
               <span class="mx-1 text-slate-400">·</span>
-              <span class="font-bold text-slate-900 dark:text-white">${escHtml(sl.subject)}</span>
-              <p class="text-[14px] text-slate-500 truncate">${escHtml(sl.topic)}</p>
+              <span class="font-bold text-slate-900 dark:text-white">${escHtml(stuSubjName(sl.subject))}</span>
+              <p class="text-[14px] text-slate-500 truncate">${escHtml(sl.topic || '')}</p>
             </div>
             <span class="px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-[14px] font-bold shrink-0">${escHtml(sl.type || 'Regular')}</span>
-          </div>
-        `).join('');
+          </button>
+        `).join('')) || '<p class="text-[14px] text-slate-500">Is hafte ka schedule abhi set nahi hua.</p>';
+        stuSchedBox._slots = mySlots;
+        stuSchedBox._events = (appState.academicEvents || []).filter(ev => !ev.batch || ev.batch === 'All' || String(ev.batch).includes(stuCls)).slice(0, 2);
       }
 
       // Fintech Passbook Card in tgTab-fees (S5: No "total paid so far" sum)
@@ -5811,16 +5675,109 @@
       loadRealClassNotes();
       renderStudentRadar(stu);
 
-      const topicText = appState.activeSubtopicLock || 'C12-ACC-B1-CH03-T02-S01';
-      const lockedObj = appState.curriculumTopics.find(t => t.id === topicText);
-      const topicTitle = lockedObj ? `${lockedObj.chapter}: ${lockedObj.topic}` : 'Ch 3: Hidden Goodwill in Admission of Partner';
+      // Aaj ki classes + har subject ka topic (teacher ke timetable / curriculum se)
+      const topicText = appState.activeSubtopicLock || '';
+      const lockedObj = (appState.curriculumTopics || []).find(t => t.id === topicText);
+      const topicTitle = lockedObj ? `${lockedObj.chapter}: ${lockedObj.topic}` : 'Topic set nahi hua';
       const curTopicDisp = document.getElementById('opsCurrentTopicDisplay');
-      if (curTopicDisp) curTopicDisp.textContent = `${topicText} · ${topicTitle}`;
-      const aajTopic = document.getElementById('tgAajTopicTitle');
-      if (aajTopic) aajTopic.textContent = `${topicTitle} (${topicText})`;
+      if (curTopicDisp) curTopicDisp.textContent = topicText ? `${topicText} · ${topicTitle}` : 'Not set';
       const dppTopic = document.getElementById('opsDppActiveQueueText');
-      if (dppTopic) dppTopic.innerHTML = `• Active Topic: <strong class="font-mono">${escHtml(topicText)}</strong>`;
+      if (dppTopic) dppTopic.innerHTML = `• Active Topic: <strong class="font-mono">${escHtml(topicText || 'Not set')}</strong>`;
+      renderStuToday(stu);
     }
+
+    // ---- Student Today helpers: class/subject scoping, today's classes, per-subject topics, detail modal ----
+    const STU_SUBJ_CODES = {
+      'Accountancy': ['ACC'], 'Business Studies': ['BST'], 'Economics': ['MIC', 'MAC', 'IED'], 'Statistics': ['STA']
+    };
+    const STU_CODE_NAMES = { ACC: 'Accountancy', BST: 'Business Studies', MIC: 'Economics (Micro)', MAC: 'Economics (Macro)', IED: 'Economics (IED)', STA: 'Statistics' };
+    function stuMyClass(stu) {
+      const m = String((stu && (stu.classLevel || stu.batch)) || '').match(/\b(11|12)\b/);
+      if (m) return m[1];
+      return (window.resolveActiveStudentClass ? window.resolveActiveStudentClass() : '12');
+    }
+    function stuMyCodes(stu) {
+      const cls = stuMyClass(stu);
+      const out = [];
+      (stu && stu.subjects || []).forEach(sn => (STU_SUBJ_CODES[sn] || []).forEach(c => out.push(c + '-' + cls)));
+      return out;
+    }
+    function stuSubjName(code) { return STU_CODE_NAMES[String(code || '').split('-')[0]] || code || ''; }
+    function stuFmtTime(t) {
+      const m = String(t || '').match(/^(\d{1,2}):(\d{2})$/);
+      if (!m) return t || '';
+      let h = +m[1]; const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+      return String(h).padStart(2, '0') + ':' + m[2] + ' ' + ap;
+    }
+    function stuTopicForCode(code) {
+      const list = (appState.curriculumTopics || []).filter(t => t.subject === code);
+      const cur = list.find(t => t.status === 'In Progress');
+      return cur ? { text: `${cur.chapter}: ${cur.topic}`, medium: cur.medium || '' } : null;
+    }
+    function stuShowDetail(title, bodyHtml) {
+      let ov = document.getElementById('stuDetailOverlay');
+      if (!ov) {
+        ov = document.createElement('div');
+        ov.id = 'stuDetailOverlay';
+        ov.className = 'fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/60 p-3';
+        ov.innerHTML = '<div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4 space-y-3 shadow-xl"><div class="flex items-center justify-between gap-2"><h3 id="stuDetailTitle" class="text-base font-extrabold text-slate-900 dark:text-white"></h3><button type="button" id="stuDetailClose" class="px-2 py-1 text-slate-500 font-bold">✕</button></div><div id="stuDetailBody" class="text-sm text-slate-700 dark:text-slate-200 space-y-1.5"></div></div>';
+        document.body.appendChild(ov);
+        ov.addEventListener('click', e => { if (e.target === ov || e.target.id === 'stuDetailClose') ov.style.display = 'none'; });
+      }
+      document.getElementById('stuDetailTitle').textContent = title;
+      document.getElementById('stuDetailBody').innerHTML = bodyHtml;
+      ov.style.display = 'flex';
+    }
+    function renderStuToday(stu) {
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const today = days[new Date().getDay()];
+      const codes = stuMyCodes(stu);
+      const slots = (appState.timetableSlots || []).filter(sl => sl.day === today && codes.includes(sl.subject)).sort((a, b) => String(a.time).localeCompare(String(b.time)));
+      const list = document.getElementById('tgTodayClassesList');
+      const cnt = document.getElementById('tgTodayClassCount');
+      if (cnt) cnt.textContent = `${slots.length} ${slots.length === 1 ? 'Lecture' : 'Lectures'}`;
+      if (list) {
+        list.innerHTML = slots.length ? slots.map(sl => `
+          <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <p class="font-bold text-slate-900 dark:text-white">${escHtml(stuSubjName(sl.subject))}</p>
+              <p class="text-[14px] text-slate-500 truncate">${escHtml(sl.topic || '')}</p>
+            </div>
+            <span class="font-mono font-bold text-primary shrink-0">${escHtml(stuFmtTime(sl.time))}</span>
+          </div>`).join('') : '<p class="text-[14px] text-slate-500 p-3">Aaj koi class schedule nahi hai.</p>';
+      }
+      // Today's Active Topic: one row per subject taught today
+      const tl = document.getElementById('tgAajTopicList');
+      const title = document.getElementById('tgAajTopicTitle');
+      const seen = {};
+      const rows = [];
+      slots.forEach(sl => {
+        if (seen[sl.subject]) return; seen[sl.subject] = 1;
+        const t = stuTopicForCode(sl.subject);
+        rows.push({ name: stuSubjName(sl.subject), text: t ? t.text : (sl.topic || 'Topic set nahi hua') });
+      });
+      if (title) title.textContent = rows.length ? 'Aaj ke topics' : 'Aaj koi class nahi hai';
+      if (tl) tl.innerHTML = rows.map(r => `<p class="text-[14px] text-indigo-950 dark:text-indigo-100"><strong>${escHtml(r.name)}:</strong> ${escHtml(r.text)}</p>`).join('');
+    }
+    document.addEventListener('click', function (e) {
+      const nb = e.target.closest && e.target.closest('#stuNoticeDetailBtn');
+      if (nb) {
+        stuShowDetail('📢 Notice — Admin Office', '<p>Sunday Accounts Mock Test subah <strong>10:00 AM</strong> Hall 2 mein hoga.</p><p>Calculator compulsory hai!</p>');
+        return;
+      }
+      const row = e.target.closest && e.target.closest('[data-stu-detail]');
+      const box = document.getElementById('stuWeeklyScheduleBox');
+      if (!row || !box || !box.contains(row)) return;
+      const i = +row.getAttribute('data-idx');
+      if (row.getAttribute('data-stu-detail') === 'slot') {
+        const sl = (box._slots || [])[i]; if (!sl) return;
+        const t = stuTopicForCode(sl.subject);
+        stuShowDetail(stuSubjName(sl.subject), `<p>📅 <strong>${escHtml(sl.day)}</strong> · ${escHtml(stuFmtTime(sl.time))}</p><p>Topic: ${escHtml(sl.topic || (t && t.text) || 'Set nahi hua')}</p><p>Type: ${escHtml(sl.type || 'Regular')}</p>`);
+      } else {
+        const ev = (box._events || [])[i]; if (!ev) return;
+        stuShowDetail(ev.title, `<p>${escHtml(ev.type)} · <strong>${escHtml(ev.date)}</strong></p>`);
+      }
+    });
 
     // ==================== SWOT MODAL RENDERER (A7 TEACHER PICKER + S5 FULL DETAILS & CLEARED MONTHS) ====================
     function openSwotModal(roll) {
@@ -9240,11 +9197,56 @@
         return m ? `https://www.youtube.com/embed/${m[1]}?playsinline=1&rel=0&modestbranding=1` : '';
       };
 
+      const stuOwnRoll = () => {
+        const activeStu = window.cgActiveStudent || (window.cgCurrentSession && window.cgCurrentSession.student);
+        return window.viewAsStudentRollNo || document.getElementById('tgStudentSelect')?.value || (activeStu && (activeStu.Roll_No || activeStu.roll)) || '';
+      };
+      const stuRowClass = (t) => String(t.classLevel || ((String(t.subject || '').match(/-(11|12)\b/) || [])[1]) || ((String(t.id || '').match(/^C(11|12)-/) || [])[1]) || '');
+      const stuTopicsFor = (subj, cls) => {
+        const codes = (STU_SUBJECT_CODE_MAP[subj] || []).filter(c => c.endsWith('-' + cls));
+        return (appState.curriculumTopics || []).filter(t => codes.includes(t.subject) && stuRowClass(t) === cls);
+      };
+      const stuOwnSubjects = (cls) => {
+        const stu = (appState.students || []).find(s => s.roll === stuOwnRoll());
+        let list = (stu && Array.isArray(stu.subjects)) ? stu.subjects.slice() : [];
+        list = list.map(x => String(x || '').replace(/^[^A-Za-z]+/, '').replace(/\s*\(.*\)$/, '').trim()).filter(x => STU_SUBJECT_CODE_MAP[x]);
+        list = [...new Set(list)].filter(x => STU_SUBJECT_CODE_MAP[x].some(c => c.endsWith('-' + cls)));
+        return list;
+      };
+      const STU_SUBJ_ICON = { 'Accountancy': '📊', 'Business Studies': '📑', 'Economics': '📈', 'Statistics': '🧮' };
+      const renderStuSyllabusCards = () => {
+        const box = document.getElementById('stuSyllabusSubjectCards');
+        if (!box) return [];
+        const cls = resolveActiveStudentClass();
+        const subs = stuOwnSubjects(cls);
+        box.innerHTML = subs.length ? subs.map(sj => {
+          const tp = stuTopicsFor(sj, cls);
+          const chN = new Set(tp.map(t => t.chapter || t.subject)).size;
+          return `<button type="button" data-practicesubj="${escHtml(sj)}" class="stu-practice-subj-btn p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 text-left hover:border-indigo-400 transition min-h-[64px] cursor-pointer">
+            <p class="text-xs font-extrabold text-slate-900 dark:text-white">${STU_SUBJ_ICON[sj] || '📘'} ${escHtml(sj)}</p>
+            <p class="text-[14px] text-slate-500 dark:text-slate-400 font-semibold mt-0.5">${chN} Ch · ${tp.length} Topics · Class ${cls}</p>
+          </button>`;
+        }).join('') : '<p class="col-span-2 text-xs text-slate-500">Aapke subjects abhi set nahi hain. Gyan Sir se sampark karein.</p>';
+        return subs;
+      };
+      window.renderStuSyllabusCards = renderStuSyllabusCards;
+      // default subject = pehla apna subject (guess nahi)
+      const stuDefaultSubject = () => { const s = renderStuSyllabusCards(); return s[0] || ''; };
+      window.stuDefaultSubject = stuDefaultSubject;
+
       const openStuPracticeSubject = (subj) => {
         const treeBox = document.getElementById('stuSyllabusTreeContainer');
         const pracBox = document.getElementById('stuPracticeQuestionsBox');
         const stuCls = resolveActiveStudentClass();
-        const codes = (STU_SUBJECT_CODE_MAP[subj] || ['ACC-' + stuCls]).filter(c => c.endsWith('-' + stuCls));
+        const rollNo = stuOwnRoll();
+        const mySubs = renderStuSyllabusCards();
+        if (!subj || mySubs.indexOf(subj) === -1) subj = mySubs[0] || '';
+        if (!subj) {
+          if (treeBox) treeBox.innerHTML = '<p class="text-xs text-slate-500 p-2">Is class ke liye aapka koi subject set nahi hai.</p>';
+          if (pracBox) pracBox.innerHTML = '';
+          return;
+        }
+        const codes = (STU_SUBJECT_CODE_MAP[subj] || []).filter(c => c.endsWith('-' + stuCls));
 
         document.querySelectorAll('.stu-practice-subj-btn').forEach(b => {
           const isAct = b.dataset.practicesubj === subj;
@@ -9253,13 +9255,15 @@
             : 'stu-practice-subj-btn p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 text-left hover:border-indigo-400 transition min-h-[64px] cursor-pointer';
         });
 
-        const ROADMAP_META = {
-          'Accountancy': { ch: 10, top: 34, sub: 118, pct: 68 },
-          'Business Studies': { ch: 12, top: 38, sub: 94, pct: 74 },
-          'Economics': { ch: 10, top: 30, sub: 86, pct: 65 },
-          'Statistics': { ch: 9, top: 26, sub: 72, pct: 70 }
+        const _tp = stuTopicsFor(subj, stuCls);
+        const _chSet = new Set(_tp.map(t => t.chapter || t.subject));
+        const _done = _tp.filter(t => t.status === 'Completed').length;
+        const rMeta = {
+          ch: _chSet.size,
+          top: _tp.length,
+          sub: _tp.reduce((a, t) => a + (Number(t.subtopicsCount) || 1), 0),
+          pct: _tp.length ? Math.round(_done * 100 / _tp.length) : 0
         };
-        const rMeta = ROADMAP_META[subj] || ROADMAP_META['Accountancy'];
         const rTitle = document.getElementById('stuRoadmapSubjTitle');
         const rPct = document.getElementById('stuRoadmapPctText');
         const rBar = document.getElementById('stuRoadmapProgressBar');
@@ -9302,7 +9306,7 @@
           treeBox.classList.remove('hidden');
           const chEntries = Object.entries(chaptersMap);
           treeBox.innerHTML = `<div id="stuChapterTreeContainer" class="space-y-2.5">${chEntries.length ? chEntries.map(([chName, subtopics], cIdx) => `
-            <details ${cIdx === 0 ? 'open' : ''} class="rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 p-2.5">
+            <details class="rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 p-2.5">
               <summary class="text-xs font-extrabold text-slate-900 dark:text-white cursor-pointer flex items-center justify-between gap-2">
                 <span>📂 ${escHtml(chName)}</span>
                 <span class="text-[14px] font-mono text-indigo-600 dark:text-indigo-400 shrink-0">${subtopics.length} Topic${subtopics.length > 1 ? 's' : ''}</span>
@@ -9343,7 +9347,8 @@
                       <div class="flex items-start justify-between gap-2">
                         <div>
                           <p class="text-xs font-bold text-slate-900 dark:text-white">${escHtml(st.topic)}</p>
-                          <p class="text-[14px] font-mono text-slate-400">${escHtml(st.id)} · Medium: ${escHtml(st.medium)}${st.date ? ` · ${escHtml(st.date)}` : ''}</p>
+                          <p class="text-[14px] font-mono text-slate-400">${escHtml(st.id)}${st.date ? ` · ${escHtml(st.date)}` : ''}</p>
+                          <p class="mt-0.5"><span class="px-2 py-0.5 rounded text-[14px] font-bold ${isCgApp ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300' : isYt ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'}">${isCgApp ? '📲 Commerce Gyan App par' : isYt ? '▶ YouTube par' : '🏫 Offline (class mein)'}</span></p>
                         </div>
                         <span class="px-2 py-0.5 rounded text-[14px] font-bold shrink-0 ${stBadge}">${escHtml(st.status)}</span>
                       </div>
@@ -9429,20 +9434,43 @@
       };
 
       window.openStuPracticeSubject = openStuPracticeSubject;
-      document.querySelectorAll('.stu-practice-subj-btn').forEach(btn => {
-        btn.addEventListener('click', () => openStuPracticeSubject(btn.dataset.practicesubj));
-      });
-      openStuPracticeSubject('Accountancy');
-
-      document.querySelectorAll('.stu-doubt-subj-pill').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('.stu-doubt-subj-pill').forEach(p => {
-            p.className = p === btn
-              ? 'stu-doubt-subj-pill py-2 px-2.5 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-sm cursor-pointer'
-              : 'stu-doubt-subj-pill py-2 px-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer';
-          });
+      (function () {
+        const cardsBox = document.getElementById('stuSyllabusSubjectCards');
+        if (cardsBox) cardsBox.addEventListener('click', function (e) {
+          const btn = e.target.closest('.stu-practice-subj-btn');
+          if (btn) openStuPracticeSubject(btn.dataset.practicesubj);
         });
+      })();
+      openStuPracticeSubject(stuDefaultSubject());
+
+      const CG_DOUBT_WA_NUMBER = '919278569860';
+      const PILL_ON = 'stu-doubt-subj-pill py-2 px-2.5 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-sm cursor-pointer';
+      const PILL_OFF = 'stu-doubt-subj-pill py-2 px-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer';
+      const selectDoubtSubject = (subj) => {
+        const cls = resolveActiveStudentClass();
+        document.querySelectorAll('.stu-doubt-subj-pill').forEach(p => { p.className = p.dataset.doubtsubj === subj ? PILL_ON : PILL_OFF; });
+        const tp = stuTopicsFor(subj, cls);
+        const prio = tp.filter(t => t.status === 'In Progress').concat(tp.filter(t => t.status === 'Completed'), tp.filter(t => t.status !== 'In Progress' && t.status !== 'Completed'));
+        const names = [...new Set(prio.map(t => String(t.topic || '').trim()).filter(Boolean))].slice(0, 4);
+        const chipBox = document.getElementById('stuDoubtChips');
+        if (chipBox) chipBox.innerHTML = names.length ? names.map(n => `<button type="button" class="stu-prompt-chip px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[14px] font-semibold border border-indigo-200 dark:border-indigo-800/50 hover:bg-indigo-100 cursor-pointer">${escHtml(n)}</button>`).join('') : '<span class="text-[14px] text-slate-500">Is subject ke suggestions abhi available nahi hain.</span>';
+        const wa = document.getElementById('stuAskGyanWaBtn');
+        if (wa) wa.href = 'https://wa.me/' + CG_DOUBT_WA_NUMBER + '?text=' + encodeURIComponent('Hi Gyan Sir, mujhe Class ' + cls + ' ' + subj + ' mein doubt hai');
+      };
+      const renderStuDoubtUi = () => {
+        const cls = resolveActiveStudentClass();
+        const subs = stuOwnSubjects(cls);
+        const box = document.getElementById('stuDoubtPills');
+        if (box) box.innerHTML = subs.map(sj => `<button type="button" data-doubtsubj="${escHtml(sj)}" class="${PILL_OFF}">${escHtml(sj)}</button>`).join('');
+        if (subs.length) selectDoubtSubject(subs[0]);
+        else { const cb = document.getElementById('stuDoubtChips'); if (cb) cb.innerHTML = ''; }
+      };
+      window.renderStuDoubtUi = renderStuDoubtUi;
+      document.getElementById('stuDoubtPills')?.addEventListener('click', (e) => {
+        const b = e.target.closest('.stu-doubt-subj-pill');
+        if (b) selectDoubtSubject(b.dataset.doubtsubj);
       });
+      renderStuDoubtUi();
 
       document.getElementById('stuSyllabusTreeContainer')?.addEventListener('click', (e) => {
         const vidBtn = e.target.closest('.stu-watch-video-btn');
@@ -9652,7 +9680,7 @@
           }
           const rollNo = window.viewAsStudentRollNo || document.getElementById('tgStudentSelect')?.value || appState.students[0].roll;
           const activePill = document.querySelector('.stu-doubt-subj-pill.bg-indigo-600');
-          const subject = (activePill && activePill.dataset.doubtsubj) || 'Accountancy';
+          const subject = (activePill && activePill.dataset.doubtsubj) || '';
           if (inputEl) inputEl.value = '';
           if (stream) {
             const uBubble = document.createElement('div');
@@ -10064,6 +10092,8 @@
       };
       var tabId = map[rawTabId] || rawTabId;
       const tabs = ['aaj', 'syllabus', 'fees', 'notes', 'doubt', 'progress'];
+      const metricsStrip = document.getElementById('tgMetricsStrip');
+      if (metricsStrip) metricsStrip.style.display = (tabId === 'aaj') ? '' : 'none';
       tabs.forEach(t => {
         const el = document.getElementById('tgTab-' + t);
         const btn = document.getElementById('tgNavBtn-' + t);
@@ -10395,7 +10425,7 @@
             name: name,
             parentName: s.student.parentName || 'Guardian',
             batch: 'Class ' + (s.student.classLevel || '12') + ' · ' + (s.student.board || 'CBSE'),
-            subjects: ['Accountancy', 'Business Studies', 'Economics'],
+            subjects: (Array.isArray(b.student.Subjects) ? b.student.Subjects : String(b.student.Subjects || b.student.subjects || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean)),
             status: 'Enrolled',
             joinDate: s.student.joinDate || '15 Apr',
             clearedMonths: s.student.clearedMonths || ['Oct'],
@@ -10508,11 +10538,9 @@
         var sel = $('tgStudentSelect');
         if (sel && rKey) { sel.value = rKey; }
       }
-      var ecoCard = document.querySelector('.stu-practice-subj-btn[data-practicesubj="Economics"] p:first-child');
-      if (ecoCard) ecoCard.textContent = stuCls === '11' ? '📈 Economics (Micro)' : '📈 Economics (Macro/IED)';
       if (typeof window.openStuPracticeSubject === 'function') {
         var activeSubjBtn = document.querySelector('.stu-practice-subj-btn.border-indigo-500');
-        window.openStuPracticeSubject((activeSubjBtn && activeSubjBtn.dataset.practicesubj) || 'Accountancy');
+        window.openStuPracticeSubject((activeSubjBtn && activeSubjBtn.dataset.practicesubj) || ''); if (window.renderStuDoubtUi) window.renderStuDoubtUi();
       }
       if (typeof api === 'function' && !window['_cgSylLoaded_' + stuCls]) {
         window['_cgSylLoaded_' + stuCls] = true;
@@ -10545,7 +10573,7 @@
           appState.curriculumTopics = otherCls.concat(mapped);
           if (typeof window.openStuPracticeSubject === 'function') {
             var curBtn = document.querySelector('.stu-practice-subj-btn.border-indigo-500');
-            window.openStuPracticeSubject((curBtn && curBtn.dataset.practicesubj) || 'Accountancy');
+            window.openStuPracticeSubject((curBtn && curBtn.dataset.practicesubj) || ''); if (window.renderStuDoubtUi) window.renderStuDoubtUi();
           }
         }).catch(function () {});
       }
