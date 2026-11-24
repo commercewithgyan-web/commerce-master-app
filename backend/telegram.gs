@@ -219,6 +219,20 @@ function callTelegramApi_(method, payload) {
 // ─────────────────────────────────────────────────────────────────────
 
 /**
+ * Telegram Webhook Handler Entrypoint
+ * @param {Object} update
+ * @return {Object} jsonResponse with { ok: true }
+ */
+function handleTelegramWebhook_(update) {
+  try {
+    handleTelegramUpdate_(update);
+  } catch (err) {
+    Logger.log('Error in handleTelegramWebhook_: ' + err);
+  }
+  return jsonResponse({ ok: true });
+}
+
+/**
  * Routes Telegram updates based on message type
  * @param {Object} update
  */
@@ -268,6 +282,14 @@ function handleTextMessage_(msg) {
 
   // ── ADMIN COMMANDS ──
   if (isAdmin) {
+    if (text.indexOf('/newcode') === 0) {
+      handleAdminNewCodeCommand_(chatId, text);
+      return;
+    }
+    if (text.indexOf('/revokecode') === 0) {
+      handleAdminRevokeCodeCommand_(chatId, text);
+      return;
+    }
     if (text.indexOf('/cash') === 0) {
       handleAdminCashCommand_(chatId);
       return;
@@ -319,6 +341,10 @@ function handleTextMessage_(msg) {
     handleStartCommand_(chatId, msg.from);
     return;
   }
+  if (text.indexOf('/code') === 0) {
+    handleCodeCommand_(chatId, text);
+    return;
+  }
   if (text.indexOf('/fee') === 0) {
     handleFeeCommand_(chatId);
     return;
@@ -338,7 +364,7 @@ function handleTextMessage_(msg) {
 
   // Default friendly guidance
   var props = PropertiesService.getScriptProperties();
-  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/frontend/index.html';
+  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/';
 
   sendTelegramMessage_(chatId,
     '👋 *Hello from Commerce Gyan!*\n\n' +
@@ -476,7 +502,7 @@ function handleAdminGrantGraceCommand_(chatId, text) {
  */
 function handleStartCommand_(chatId, fromUser) {
   var props = PropertiesService.getScriptProperties();
-  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/frontend/index.html';
+  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/';
   var name = fromUser ? (fromUser.first_name || 'Student') : 'Student';
 
   var welcomeMsg =
@@ -527,7 +553,7 @@ function handleFeeCommand_(chatId) {
 function handlePhotoMessage_(msg) {
   var chatId = msg.chat.id;
   var props = PropertiesService.getScriptProperties();
-  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/frontend/index.html';
+  var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/';
 
   sendTelegramMessage_(chatId,
     '📸 *Register Photo Received!*\n\n' +
@@ -555,10 +581,8 @@ function handleCallbackQuery_(query) {
   }
 }
 
-/** Placeholder stubs for modules linked in subsequent phases */
-function handleSosCommand_(chatId) { /* Implemented in sos.gs (Phase 5B) */ }
-function handleMysteryCommand_(chatId) { /* Implemented in mysteries.gs (Phase 5B) */ }
-function handleRedPenCommand_(chatId) { /* Implemented in redpen.gs (Phase 5B) */ }
+// handleSosCommand_ -> sos.gs, handleMysteryCommand_ -> mysteries.gs, handleRedPenCommand_ -> redpen.gs
+// (do NOT redefine them here: Apps Script global scope lets the later-loaded file silently win.)
 /**
  * Handles /settopic command: /settopic Class Subject ChapterNo Subtopic
  * e.g. /settopic 12 Accountancy 6 "Working Capital Changes"

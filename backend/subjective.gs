@@ -50,7 +50,7 @@ function sendSubjectiveQuestionPDF() {
       });
 
       // Deliver single PDF to class channel via multipart Blob upload (Law C-5)
-      var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/frontend/index.html';
+      var miniAppUrl = props.getProperty('MINI_APP_URL') || 'https://commercewithgyan-web.github.io/commerce-master-app/';
       var caption =
         '📚 *OFFICIAL CBSE PRACTICE PROBLEM — CLASS ' + classLevel + '*\n' +
         '━━━━━━━━━━━━━━━━━━━━━━━━━\n' +

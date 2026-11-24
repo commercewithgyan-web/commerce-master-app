@@ -470,7 +470,7 @@ function verifyAndRouteUser_(initDataRaw, previewRollNo) {
       isTrialExpired: true,
       telegramId: telegramId,
       heading: '7-Day Free Access Complete',
-      message: 'We hope you enjoyed the Commerce Gyan App! If you want to keep using this system and continue your studies, please contact Commerce Gyan (Gyan Sir) now.',
+      message: 'We hope you enjoyed the Commerce Gyan App! If you want to keep using this system and continue your studies, please contact Commerce Gyan (Gyan Sir) now. If you already have an access code, send it to the bot as: /code YOUR-CODE',
       contactPhone: '9835011205',
       contactWhatsApp: 'https://wa.me/919835011205?text=' + encodeURIComponent('Namaste Gyan Sir, mere Commerce Gyan App ke 7 days complete ho gaye hain. Mujhe coaching batch me continue karna hai.')
     };
@@ -540,6 +540,15 @@ function requirePaidStudent_(telegramId) {
       var masterStatus = masterRow ? String(masterRow.Status || '').trim().toUpperCase() : '';
       if (masterStatus === 'DROPPED' || masterStatus === 'INACTIVE' || masterStatus === 'GRADUATED') {
         throw new Error('ACCESS_DENIED: Your student account is marked as ' + masterStatus + '. Contact Gyan Sir.');
+      }
+      if (masterRow && masterStatus === 'ACTIVE') {
+        // Enrolled in Students_Master but missing from the Fee sheet: treat as a real student, not a trial guest.
+        return {
+          studentId: masterRow.StudentID || masterRow.Roll_No, StudentID: masterRow.StudentID || masterRow.Roll_No,
+          Roll_No: masterRow.Roll_No, name: masterRow.Student_Name || masterRow.Name, Name: masterRow.Student_Name || masterRow.Name,
+          classLevel: String(masterRow.Class || ''), Class: masterRow.Class, paid: true, Paid: 'YES',
+          Status: 'ACTIVE', status: 'ACTIVE', TelegramID: cleanId
+        };
       }
       var vSheet = erp.getSheetByName('Telegram_Visitors');
       if (vSheet) {

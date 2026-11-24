@@ -83,6 +83,17 @@ function getNextMasterVaultRow_(sheet) {
   return VAULT_START_ROW + lastPopulatedOffset + 1;
 }
 
+function getMaxQidSerial_(sheet) {
+  var maxRows = Math.max(sheet.getMaxRows(), VAULT_START_ROW);
+  var qids = sheet.getRange(VAULT_START_ROW, VAULT_START_COL, maxRows - VAULT_START_ROW + 1, 1).getValues();
+  var maxSerial = 0;
+  for (var i = 0; i < qids.length; i++) {
+    var m = String(qids[i][0] || '').trim().match(/-(\d+)$/);
+    if (m) maxSerial = Math.max(maxSerial, parseInt(m[1], 10));
+  }
+  return maxSerial;
+}
+
 function generateAndInsertQuestions_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var ui = SpreadsheetApp.getUi();
@@ -183,6 +194,7 @@ function generateAndInsertQuestions_() {
 
         if (rowsData && rowsData.length > 0) {
           var startRow = getNextMasterVaultRow_(targetSheet);
+          var qidSerial = getMaxQidSerial_(targetSheet);
           var normalizedRows = rowsData.map(function(row, idx) {
             var r = [];
             for (var c = 0; c < VAULT_NUM_COLS; c++) {
@@ -192,9 +204,13 @@ function generateAndInsertQuestions_() {
               r[1] = canonicalTopicIdCell;
             }
             if (!r[0]) {
-              var seqNum = String(startRow - VAULT_START_ROW + idx + 1);
+              // Live format: 11ACC-CH07-011 (class+subject, chapter, tab-wide running serial).
+              qidSerial++;
+              var seqNum = String(qidSerial);
               while (seqNum.length < 3) seqNum = '0' + seqNum;
-              r[0] = sheetName.replace('_', '') + '-Q' + seqNum;
+              var chNum = String(parseInt(r[2], 10) || 0);
+              while (chNum.length < 2) chNum = '0' + chNum;
+              r[0] = sheetName.replace('_', '') + '-CH' + chNum + '-' + seqNum;
             }
             var isMcq = r[6].toUpperCase().indexOf('MCQ') !== -1;
             if (!isMcq) {

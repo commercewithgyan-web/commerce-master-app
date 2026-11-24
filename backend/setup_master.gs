@@ -367,7 +367,7 @@ function setProjectSecrets(config) {
 function applyAllProjectCredentials() {
   Logger.log('🚀 Running applyAllProjectCredentials()...');
   var props = PropertiesService.getScriptProperties();
-  props.setProperty('MINI_APP_URL', 'https://commercewithgyan-web.github.io/commerce-master-app/frontend/index.html');
+  props.setProperty('MINI_APP_URL', 'https://commercewithgyan-web.github.io/commerce-master-app/');
 
   // Set up 13 daily triggers
   try {
@@ -463,4 +463,92 @@ function ensureMasterSyllabusVideoType_(sylSS) {
     sheet.getRange(1, headers.length + 1).setValue('Video_Type');
     Logger.log('  ✅ Added Video_Type column to Master_Syllabus');
   }
+}
+
+/**
+ * Harmonizes and archives obsolete/duplicate tabs across production sheets.
+ * - Sheet 1: Archives duplicate 01_Master_Syllabus -> _ARCHIVE_01_Master_Syllabus
+ * - Sheet 2: Unifies Notebook_Notes, Notebook_Favourites, and StudentAnswers column schemas
+ * - Master ERP: Archives legacy Students tab -> _ARCHIVE_Students_Legacy_Oct
+ */
+function harmonizeSystemTabs() {
+  var log = [];
+  var IDS = (typeof getActiveSheetIds === 'function') ? getActiveSheetIds() : {};
+
+  // 1. Sheet 1: Syllabus Planner
+  try {
+    var sylId = IDS.SYLLABUS || PropertiesService.getScriptProperties().getProperty('SHEET_SYLLABUS');
+    if (sylId) {
+      var sylSS = SpreadsheetApp.openById(sylId);
+      var masterTab = sylSS.getSheetByName('Master_Syllabus');
+      var dupTab = sylSS.getSheetByName('01_Master_Syllabus');
+      if (dupTab) {
+        if (masterTab && masterTab.getLastRow() >= 700) {
+          var targetName = '_ARCHIVE_01_Master_Syllabus';
+          var existingArchive = sylSS.getSheetByName(targetName);
+          if (existingArchive) sylSS.deleteSheet(existingArchive);
+          dupTab.setName(targetName);
+          dupTab.hideSheet();
+          log.push('✅ Archived duplicate 01_Master_Syllabus -> ' + targetName + ' (Hidden)');
+        } else if (!masterTab) {
+          dupTab.setName('Master_Syllabus');
+          log.push('✅ Promoted 01_Master_Syllabus to Master_Syllabus');
+        }
+      } else {
+        log.push('ℹ️ Sheet 1 (Syllabus): No duplicate 01_Master_Syllabus found');
+      }
+    }
+  } catch (e1) {
+    log.push('⚠️ Sheet 1 harmonization error: ' + e1.message);
+  }
+
+  // 2. Sheet 2: Question Bank
+  try {
+    var qbId = IDS.QUESTION_BANK || PropertiesService.getScriptProperties().getProperty('SHEET_QB');
+    if (qbId) {
+      var qbSS = SpreadsheetApp.openById(qbId);
+      
+      // Standardize Notebook_Notes headers if empty
+      var notesTab = qbSS.getSheetByName('Notebook_Notes');
+      if (notesTab && notesTab.getLastRow() <= 1) {
+        notesTab.getRange(1, 1, 1, 6).setValues([['Timestamp', 'TelegramID', 'QID', 'Title', 'StudentNote', 'Topic']]);
+        log.push('✅ Formatted Notebook_Notes 6-column schema');
+      }
+
+      // Standardize Notebook_Favourites headers if empty
+      var favTab = qbSS.getSheetByName('Notebook_Favourites');
+      if (favTab && favTab.getLastRow() <= 1) {
+        favTab.getRange(1, 1, 1, 4).setValues([['Timestamp', 'TelegramID', 'QID', 'Title']]);
+        log.push('✅ Formatted Notebook_Favourites 4-column schema');
+      }
+
+      log.push('ℹ️ Sheet 2 (Question Bank) verified');
+    }
+  } catch (e2) {
+    log.push('⚠️ Sheet 2 harmonization error: ' + e2.message);
+  }
+
+  // 3. Master ERP
+  try {
+    var erpId = IDS.MASTER_ERP || PropertiesService.getScriptProperties().getProperty('MASTER_ERP');
+    if (erpId) {
+      var erpSS = SpreadsheetApp.openById(erpId);
+      var stuMaster = erpSS.getSheetByName('Students_Master');
+      var legacyStu = erpSS.getSheetByName('Students');
+      if (legacyStu && stuMaster) {
+        var legacyName = '_ARCHIVE_Students_Legacy_Oct';
+        var existingLegacy = erpSS.getSheetByName(legacyName);
+        if (existingLegacy) erpSS.deleteSheet(existingLegacy);
+        legacyStu.setName(legacyName);
+        legacyStu.hideSheet();
+        log.push('✅ Archived legacy Students tab in ERP -> ' + legacyName + ' (Hidden)');
+      } else {
+        log.push('ℹ️ Master ERP: Active Students_Master present, no legacy collision');
+      }
+    }
+  } catch (e3) {
+    log.push('⚠️ Master ERP harmonization error: ' + e3.message);
+  }
+
+  return { ok: true, logs: log };
 }

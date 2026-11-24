@@ -189,18 +189,22 @@ function getMasterVaultQuestionsByTab_(targetSheetName, includeAllStatuses) {
       var correctLetter = 'A';
       var correctIndex = 0;
       var cUpper = correctRaw.toUpperCase();
-      if (cUpper === 'A' || cUpper.indexOf('(A)') === 0 || cUpper === '0') {
-        correctLetter = 'A';
-        correctIndex = 0;
-      } else if (cUpper === 'B' || cUpper.indexOf('(B)') === 0 || cUpper === '1') {
-        correctLetter = 'B';
-        correctIndex = 1;
-      } else if (cUpper === 'C' || cUpper.indexOf('(C)') === 0 || cUpper === '2') {
-        correctLetter = 'C';
-        correctIndex = 2;
-      } else if (cUpper === 'D' || cUpper.indexOf('(D)') === 0 || cUpper === '3') {
-        correctLetter = 'D';
-        correctIndex = 3;
+      // Accepts A / (A) / A) / A. / Option A / 0-3. Anything else on an MCQ is an invalid answer key.
+      var ansMatch = cUpper.match(/^(?:OPTION\s*)?\(?([A-D])(?:[\).:\s]|$)/);
+      var ansParsed = false;
+      if (ansMatch) {
+        correctIndex = 'ABCD'.indexOf(ansMatch[1]);
+        ansParsed = true;
+      } else if (/^[0-3]$/.test(cUpper)) {
+        correctIndex = Number(cUpper);
+        ansParsed = true;
+      }
+      correctLetter = 'ABCD'.charAt(correctIndex);
+
+      // Never serve an MCQ whose answer key we cannot read (old code silently made it 'A').
+      if (qType.toUpperCase().indexOf('MCQ') !== -1 && !ansParsed) {
+        Logger.log('INVALID_ANSWER_KEY ' + targetSheetName + ' ' + qid + ' CorrectAnswer="' + correctRaw + '"');
+        if (!includeAllStatuses) continue;
       }
 
       var diffUpper = difficulty.toUpperCase();
@@ -226,6 +230,7 @@ function getMasterVaultQuestionsByTab_(targetSheetName, includeAllStatuses) {
         CorrectIndex: correctLetter,
         CorrectIndexNum: correctIndex,
         CorrectAnswerText: correctRaw,
+        AnswerKeyValid: ansParsed,
         Rubric: String(r[15] || '1 mark').trim(),
         Explanation: String(r[16] || r[15] || 'Remember NCERT core definitions.').trim(),
         TrapAlert: String(r[17] || '').trim(),

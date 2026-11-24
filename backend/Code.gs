@@ -160,7 +160,7 @@ function extractInitData_(e, requestData, payload) {
 }
 
 function isPublicAction_(action) {
-  return action === 'ping' || action === 'health' || action === 'checkDppDispatchStatus' || action === 'triggerQuestionPdfNow' || action === 'updateAnswerCronTo815PM';
+  return action === 'ping' || action === 'health' || action === 'checkDppDispatchStatus' || action === 'triggerQuestionPdfNow' || action === 'updateAnswerCronTo815PM' || action === 'harmonizeSystemTabs';
 }
 
 function isAdminOnlyAction_(action) {
@@ -323,6 +323,10 @@ function doGet(e) {
           ok: false,
           error: 'sendSubjectiveQuestionPDF function not found'
         });
+      }
+      if (action === 'harmonizeSystemTabs') {
+        const res = typeof harmonizeSystemTabs === 'function' ? harmonizeSystemTabs() : { ok: false, error: 'harmonizeSystemTabs function not found' };
+        return jsonResponse(res);
       }
       return jsonResponse({
         ok: true,
@@ -525,7 +529,8 @@ function doPost(e) {
 
     // Direct 200 OK for Telegram Webhook
     if (requestData && requestData.update_id) {
-      return handleTelegramWebhook_(requestData);
+      try { handleTelegramUpdate_(requestData); } catch (tgErr) { Logger.log('handleTelegramUpdate_ failed: ' + tgErr.message); }
+      return jsonResponse({ ok: true });
     }
 
     const payload = requestData.payload || requestData;
@@ -557,6 +562,10 @@ function doPost(e) {
           ok: false,
           error: 'sendSubjectiveQuestionPDF function not found'
         });
+      }
+      if (action === 'harmonizeSystemTabs') {
+        const res = typeof harmonizeSystemTabs === 'function' ? harmonizeSystemTabs() : { ok: false, error: 'harmonizeSystemTabs function not found' };
+        return jsonResponse(res);
       }
       return jsonResponse({
         ok: true,
@@ -669,7 +678,6 @@ function doPost(e) {
         result = bindStudentClaimCode(payload);
         break;
       case "getStudentMiniAppBootstrap":
-      case "getSession":
         result = getStudentMiniAppBootstrap(payload);
         break;
       case "markBatchAttendance":
@@ -708,9 +716,6 @@ function doPost(e) {
         break;
       case "getSwotConfig":
         result = getSwotConfig();
-        break;
-      case "getAppConfig":
-        result = getAppConfig();
         break;
       case "setActiveSubtopic":
       case "logLessonProgress":
@@ -763,9 +768,6 @@ function doPost(e) {
         break;
       case "getPracticeQuestions":
         result = handleGetPracticeQuestions_(payload, verifiedUser);
-        break;
-      case "getAppConfig":
-        result = { ok: true, commerceGyanAppUrl: getCommerceGyanAppUrl_() };
         break;
       case "sendStudentFeeReminder":
         result = sendStudentFeeReminder(payload);
@@ -856,12 +858,6 @@ function doPost(e) {
       case "saveSwotConfig":
         result = saveSwotConfig(payload);
         break;
-      case "getSwotConfig":
-        result = getSwotConfig();
-        break;
-      case "getAppConfig":
-        result = getAppConfig();
-        break;
       case "submitRedPenSubmission":
         result = submitRedPenSubmission(payload);
         break;
@@ -889,20 +885,8 @@ function doPost(e) {
       case "getAcademicCalendar":
         result = getAcademicCalendar();
         break;
-      case "getGradeWeights":
-        result = getGradeWeights();
-        break;
-      case "getSwotConfig":
-        result = getSwotConfig();
-        break;
-      case "getAppConfig":
-        result = getAppConfig();
-        break;
       case "saveCalendarEvent":
         result = saveCalendarEvent(payload);
-        break;
-      case "toggleAcademicHoliday":
-        result = toggleAcademicHoliday(payload);
         break;
       case "saveNotice":
         result = saveNotice(payload);
@@ -947,9 +931,6 @@ function doPost(e) {
         break;
       case "testGenerateBstFlowchartPdf":
         result = { ok: true, data: testGenerateBstFlowchartPdf(payload ? payload.classLevel : 12) };
-        break;
-      case "saveCalendarEvent":
-        result = saveCalendarEvent(payload);
         break;
       case "generatePrintableFeeReceipt":
         result = generatePrintableFeeReceipt(payload);
@@ -2100,7 +2081,7 @@ function getStudentMiniAppBootstrap(params) {
       const settingsSheet = tgSS.getSheetByName('Settings');
       if (settingsSheet) {
         const val = settingsSheet.getRange('B2').getValue();
-        if (val) activeSubtopic = String(val).trim();
+        if (val) activeSubtopic = parseActiveSubtopicCell_(val);
       }
     } catch (_) {}
     try { cache.put('CG_ACTIVE_SUBTOPIC', activeSubtopic, 120); } catch (_) {}
@@ -2145,7 +2126,8 @@ function getStudentMiniAppBootstrap(params) {
   const revRows = sheetToObjects(qbSS.getSheetByName('Revision_Queue'));
 
 
-  const studentNotes = notesRows.filter(n => String(n.Roll_No) === String(targetRollNo));
+  const stuTgId = String((auth.student && (auth.student.Telegram_ID || auth.student.TelegramID || auth.student.Telegram_User_ID)) || '').trim();
+  const studentNotes = notesRows.filter(n => String(n.Roll_No) === String(targetRollNo) || (stuTgId && String(n.TelegramID) === stuTgId));
   const studentFavs = favRows.filter(f => String(f.Roll_No) === String(targetRollNo));
   const studentRevQueue = revRows.filter(r => String(r.Roll_No) === String(targetRollNo));
 
@@ -2212,6 +2194,15 @@ function getStudentMiniAppBootstrap(params) {
       commerceGyanAppUrl: getCommerceGyanAppUrl_()
     }
   };
+}
+
+/** Settings!B2 may hold the per-class JSON lock ({subtopicName,...}); return the plain subtopic name. */
+function parseActiveSubtopicCell_(val) {
+  var s = String(val).trim();
+  if (s.charAt(0) === '{') {
+    try { var o = JSON.parse(s); return String(o.subtopicName || o.canonicalId || s).trim(); } catch (_) {}
+  }
+  return s;
 }
 
 function getCommerceGyanAppUrl_() {
@@ -2331,7 +2322,7 @@ function submitStudentQuizAttempt(payload, verifiedUser) {
       const studentName = payload.studentName || payload.name || rollNo;
       answersSheet.appendRow([
         nowStr,
-        payload.telegramId || payload.TelegramID || '',
+        payload.telegramId || payload.TelegramID || ((verifiedUser && verifiedUser.id && String(verifiedUser.id).indexOf('VA:') !== 0 && verifiedUser.id !== 'GUEST_STUDENT') ? String(verifiedUser.id) : ''),
         studentName,
         qId,
         selectedOpt,
@@ -2443,12 +2434,15 @@ function saveStudentNotebookItem(payload, verifiedUser) {
   if (itemType === 'FAVOURITE' || itemType === 'STAR') {
     const favSheet = qbSS.getSheetByName('Notebook_Favourites');
     if (favSheet) {
-      favSheet.appendRow([rollNo, qId, conceptTitle, nowStr]);
+      const favTgId = String((verifiedUser && verifiedUser.id && String(verifiedUser.id).indexOf('VA:') !== 0 && verifiedUser.id !== 'GUEST_STUDENT') ? verifiedUser.id : (payload.telegramId || payload.TelegramID || ''));
+      favSheet.appendRow([nowStr, favTgId, qId, conceptTitle]);
     }
   } else {
     const noteSheet = qbSS.getSheetByName('Notebook_Notes');
     if (noteSheet) {
-      noteSheet.appendRow([rollNo, qId, noteText, nowStr]);
+      // Canonical 6-col schema (notebook.gs): Timestamp, TelegramID, QID, Title, StudentNote, Topic
+      const noteTgId = String((verifiedUser && verifiedUser.id && String(verifiedUser.id).indexOf('VA:') !== 0 && verifiedUser.id !== 'GUEST_STUDENT') ? verifiedUser.id : (payload.telegramId || payload.TelegramID || ''));
+      noteSheet.appendRow([nowStr, noteTgId, qId, conceptTitle, noteText, payload.topic || payload.Topic || '']);
     }
   }
   return { ok: true, saved: true };
@@ -2855,7 +2849,7 @@ function dispatchDailyDPPAndSubjectivePDF(payload) {
       const settingsSheet = tgSS.getSheetByName('Settings');
       if (settingsSheet) {
         const val = settingsSheet.getRange('B2').getValue();
-        if (val) activeSubtopic = String(val).trim();
+        if (val) activeSubtopic = parseActiveSubtopicCell_(val);
       }
     } catch (_) {}
 
