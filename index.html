@@ -400,8 +400,8 @@
   <!-- Toast Container -->
   <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
-  <!-- Fixed Top Banner for View as Student Mode (SYS-009 / SCR-SYS-005) -->
-  <div id="viewAsStudentBanner" class="hidden fixed top-0 left-0 right-0 z-50 bg-amber-500 text-slate-950 px-4 py-2.5 flex items-center justify-between text-xs font-bold shadow-lg">
+  <!-- Fixed/Sticky Top Banner for View as Student Mode (SYS-009 / SCR-SYS-005) -->
+  <div id="viewAsStudentBanner" class="hidden sticky top-0 left-0 right-0 z-50 bg-amber-500 text-slate-950 px-4 py-2 flex items-center justify-between text-xs font-bold shadow-md">
     <div class="flex items-center gap-2">
       <span class="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping"></span>
       <span>Student view: Roll <span id="viewAsStudentRollBadge" class="font-mono underline font-extrabold">CG-00-000</span> · <button id="btnExitViewAsStudent" type="button" onclick="window.exitViewStudentAsTeacher()" class="underline font-extrabold hover:text-white transition cursor-pointer">Band karo</button> · <button id="btnAdminEditStudent" type="button" onclick="window.openAdminStudentEdit()" class="underline font-extrabold hover:text-white transition cursor-pointer">✏️ Edit data</button></span>
@@ -2095,6 +2095,37 @@
         </button>
       </section>
 
+      <!-- Teacher Ops Quick Notice Card (H4) -->
+      <section class="bg-white dark:bg-slate-900 rounded-2xl border border-amber-300 dark:border-amber-700/60 p-4 shadow-sm space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+            <h3 class="text-sm font-extrabold text-slate-900 dark:text-white">📢 Naya Student Notice Daalein</h3>
+          </div>
+          <span class="text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 rounded-full">Instant Sync</span>
+        </div>
+        <div class="space-y-2">
+          <input id="opsNoticeTitle" type="text" placeholder="Title (e.g. Accounts Chapter 3 Test on Friday)" class="w-full text-xs font-semibold border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white" />
+          <div class="grid grid-cols-2 gap-2">
+            <select id="opsNoticeClass" class="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white">
+              <option value="All">All Classes (11 &amp; 12)</option>
+              <option value="11" selected>Class 11 Only</option>
+              <option value="12">Class 12 Only</option>
+            </select>
+            <select id="opsNoticeType" class="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white">
+              <option value="Class Test">Class Test</option>
+              <option value="Notice" selected>Notice</option>
+              <option value="Holiday">Holiday</option>
+              <option value="Revision Marathon">Revision</option>
+            </select>
+          </div>
+          <textarea id="opsNoticeBody" rows="2" placeholder="Notice Details (Instructions, syllabus, timing...)" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"></textarea>
+          <button id="opsSaveNoticeBtn" type="button" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow flex items-center justify-center gap-1.5 cursor-pointer">
+            <span>📢</span><span>Publish Notice to Students</span>
+          </button>
+        </div>
+      </section>
+
       <!-- Today's Classes Timeline Section -->
       <section class="flex flex-col gap-3">
         <div class="flex items-center justify-between px-0.5">
@@ -2448,10 +2479,10 @@
               <span class="text-slate-500">·</span>
               <span id="envBadge" class="px-1.5 py-0.2 rounded font-bold bg-slate-800 text-amber-300 border border-slate-700">PROD</span>
             </div>
-            <h2 id="tgStudentNameHeader" class="text-sm sm:text-base font-bold text-white truncate mt-0.5">Student CG-1201</h2>
+            <h2 id="tgStudentNameHeader" class="text-sm sm:text-base font-bold text-white leading-tight mt-0.5 break-words">Student CG-1201</h2>
           </div>
         </div>
-        <select id="tgStudentSelect" aria-label="Switch Student Preview" class="max-w-[138px] text-[14px] bg-slate-800 border border-slate-700 rounded-xl px-2 py-1.5 text-white font-semibold shrink-0 focus:outline-none truncate"></select>
+        <select id="tgStudentSelect" aria-label="Switch Student Preview" class="max-w-[115px] text-xs bg-slate-800 border border-slate-700 rounded-xl px-2 py-1.5 text-white font-semibold shrink-0 focus:outline-none truncate"></select>
       </div>
 
       <!-- Quick Metrics Strip -->
@@ -2649,14 +2680,14 @@
 
       <!-- Today's Batch Lectures & GoodNotes PDFs -->
       <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
-        <h3 class="text-sm font-extrabold text-slate-900 dark:text-white">Today's Batch Lectures</h3>
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-extrabold text-slate-900 dark:text-white">Today's Batch Lectures</h3>
+          <span class="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-[12px] font-bold">Class Schedule</span>
+        </div>
         <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between gap-3">
           <div class="min-w-0">
             <p id="tgBatchLectureTitle" class="text-xs font-extrabold text-slate-900 dark:text-white">Aaj ki lecture ka topic upar "Today's Active Topic" mein hai</p>
           </div>
-          <button id="tgOpenReceiptBtn" type="button" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shrink-0 shadow-sm cursor-pointer">
-            SWOT Receipt
-          </button>
         </div>
       </div>
     </div>
@@ -2727,6 +2758,9 @@
         <div id="stuSyllabusSubjectCards" class="grid grid-cols-2 gap-2.5"><p class="col-span-2 text-xs text-slate-500">Subjects load ho rahe hain…</p>
         </div>
 
+        <!-- Expandable Chapter -> Topic -> Subtopic Roadmap Tree (P1) -->
+        <div id="stuSyllabusTreeContainer" class="space-y-3 pt-2"></div>
+
         <div id="stuDailyClassNotesList" class="space-y-2.5 text-xs"></div>
       </div>
     </div>
@@ -2788,14 +2822,16 @@
 
     <!-- TAB 5: LEADERBOARD, 80-80 RADAR & RED-PEN (B2: Pentagon Radar + Chapter Mastery Breakdown) -->
     <div id="tgTab-progress" class="tg-student-tab space-y-3.5 pb-36" style="display: none;">
-      <!-- CBSE Subjective Copy Check Red-Pen Banner -->
-      <div class="rounded-2xl bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 text-white p-4 shadow-md border border-rose-800/40 flex items-center justify-between gap-3">
-        <div class="space-y-1 min-w-0">
-          <span class="text-[14px] font-extrabold uppercase tracking-wider text-rose-400">CBSE Subjective Copy Check</span>
-          <h3 class="text-xs sm:text-sm font-extrabold text-white">📸 Submit Register Solution Photo for Red-Pen Check</h3>
-          <p class="text-[14px] text-slate-300">Instant 5-step CBSE grading, working note check &amp; examiner feedback.</p>
+      <!-- CBSE Subjective Copy Check Red-Pen Action Bar (PR1) -->
+      <div class="rounded-2xl bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 text-white p-3.5 shadow-md border border-rose-800/40 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-rose-600/30 border border-rose-500/50 flex items-center justify-center text-lg shrink-0">✍️</div>
+          <div>
+            <h3 class="text-xs sm:text-sm font-extrabold text-white">CBSE Copy Check</h3>
+            <span class="text-[11px] text-rose-300 font-semibold">Instant Evaluation</span>
+          </div>
         </div>
-        <button id="openRedPenFromProgressBtn" type="button" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold shadow-sm shrink-0 cursor-pointer">
+        <button id="openRedPenFromProgressBtn" type="button" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold shadow-sm shrink-0 cursor-pointer transition active:scale-95">
           Open Red-Pen
         </button>
       </div>
@@ -2857,8 +2893,12 @@
         <div id="stuDoubtPills" class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
         </div>
 
-        <!-- Quick Prompt Chips -->
-        <div id="stuDoubtChips" class="flex flex-wrap gap-1.5">
+        <!-- Quick Prompt Chips with Title (D1) -->
+        <div class="space-y-1.5 pt-1">
+          <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+            <span>💡</span><span>Suggested Doubts (Tap to copy to box):</span>
+          </p>
+          <div id="stuDoubtChips" class="flex flex-wrap gap-1.5"></div>
         </div>
 
         <textarea id="stuDoubtInput" rows="3" placeholder="Type your doubt here (e.g. How to calculate hidden goodwill when incoming partner brings capital?)" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-2xl p-3 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
@@ -2867,7 +2907,7 @@
         </button>
 
         <!-- Interactive Doubt Chat Stream -->
-        <div id="stuDoubtChatStream" class="space-y-2 max-h-60 overflow-y-auto p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-800 dark:text-slate-200 custom-scroll">
+        <div id="stuDoubtChatStream" class="space-y-2.5 max-h-72 overflow-y-auto p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-800 dark:text-slate-200 custom-scroll">
           <div class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
             💡 Gyan Sir AI is ready. Type your question above for instant step-by-step guidance.
           </div>
@@ -3954,6 +3994,7 @@
       rosterLoading: false,
       rosterLoadError: false,
       students: [
+        { roll: 'CG-11-001', name: 'Aarav Sharma', parentName: 'Sunil Sharma', batch: 'Class 11 · CBSE', classLevel: '11', subjects: ['Accountancy', 'Business Studies', 'Economics', 'Statistics'], status: 'Enrolled', joinDate: '15 Apr', clearedMonths: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'], phone: '9835011001', parentPhone: '9835091001', sibling: false, coins: 145, unitTest: 94, dppScore: 92, mockScore: 90, vivaScore: 95, att: ['P','P','P','P','P','P','P'], note: 'Class 11 Topper', plan: 'Monthly', baseFee: 1200, daysLate: 0, lateWaived: false, feePaid: false },
         { roll: 'CG-1201', name: 'Student CG-1201', parentName: 'Parent CG-1201', batch: 'Class 12 · CBSE', subjects: ['Accountancy', 'Business Studies', 'Economics'], status: 'Enrolled', joinDate: '15 Apr', clearedMonths: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'], phone: '9835011201', parentPhone: '9835091201', sibling: false, coins: 145, unitTest: 94, dppScore: 92, mockScore: 90, vivaScore: 95, att: ['P','P','P','P','P','P','P'], note: 'Strong in Partnership & Cash Flow', plan: 'Quarterly', baseFee: 3300, daysLate: 0, lateWaived: false, feePaid: true },
         { roll: 'CG-1202', name: 'Ananya Verma', parentName: 'Rakesh Verma', batch: 'Class 12 · BSEB', subjects: ['Accountancy', 'Business Studies', 'Economics'], status: 'Enrolled', joinDate: '18 Apr', clearedMonths: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'], phone: '9835011202', parentPhone: '9835011202', sibling: true, coins: 180, unitTest: 96, dppScore: 95, mockScore: 92, vivaScore: 98, att: ['P','P','P','P','P','P','P'], note: 'State Rank Contender · Sibling Linked (ONB-09)', plan: 'Monthly', baseFee: 1200, daysLate: 0, lateWaived: false, feePaid: true },
         { roll: 'CG-1203', name: 'Student CG-1203', parentName: 'Alok Sinha', batch: 'Class 12 · CBSE', subjects: ['Accountancy', 'Business Studies', 'Economics'], status: 'Enrolled', joinDate: '01 May', clearedMonths: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'], phone: '9835011203', parentPhone: '9835091203', sibling: false, coins: 90, unitTest: 78, dppScore: 84, mockScore: 76, vivaScore: 88, att: ['P','L','P','P','A','P','L'], note: 'Needs drill on Share Forfeiture Pro-rata', plan: 'Monthly', baseFee: 1200, daysLate: 8, lateWaived: false, feePaid: false },
@@ -4073,12 +4114,12 @@
       if (isSandboxPreview && resolvedAction === 'submitStudentQuizAttempt') {
         return Promise.resolve({ sandbox: true, isCorrect: payload.isCorrect !== false, earnedCoins: 0, explanation: payload.explanation || 'Sandbox preview mode — not written to Sheet.' });
       }
-      // AI doubt calls get a client-side timeout so the UI never hangs forever on "Soch raha hoon…"
+      // AI doubt calls get a generous client-side timeout (45s) for mobile network latency and Gemini LLM synthesis
       const aiTimeoutActions = ['askDoubt', 'askDoubtGemini', 'askVoiceDoubt'];
       let abortCtl = null, abortTimer = null;
       if (aiTimeoutActions.indexOf(resolvedAction) !== -1 && typeof AbortController !== 'undefined') {
         abortCtl = new AbortController();
-        abortTimer = setTimeout(() => abortCtl.abort(), 28000);
+        abortTimer = setTimeout(() => abortCtl.abort(), 45000);
       }
       return fetch(url, {
         method: 'POST',
@@ -5554,31 +5595,64 @@
       ];
 
       box.innerHTML = `
-        <div class="p-3 rounded-2xl bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 flex justify-center">
-          <svg viewBox="0 0 300 196" class="w-full max-w-[300px] h-auto">
-            <polygon points="${ringPoly(1)}" fill="none" stroke="#cbd5e1" class="stroke-slate-300 dark:stroke-slate-700" stroke-width="1" />
-            <polygon points="${ringPoly(0.75)}" fill="none" stroke="#e2e8f0" class="stroke-slate-200 dark:stroke-slate-800" stroke-width="1" />
-            <polygon points="${ringPoly(0.5)}" fill="none" stroke="#e2e8f0" class="stroke-slate-200 dark:stroke-slate-800" stroke-width="1" />
-            ${spokesHtml}
-            <polygon points="${dataPoly}" fill="rgba(79,70,229,0.20)" stroke="#4f46e5" stroke-width="2" />
-            ${dotsHtml}
-            ${axes.map(a => `<text x="${a.tx}" y="${a.ty}" text-anchor="${a.anchor}" font-size="7.5" font-weight="700" class="fill-slate-700 dark:fill-slate-200" fill="currentColor">${escHtml(a.label)}</text>`).join('')}
-          </svg>
+        <!-- CBSE 80/80 Target Progress Card (PR2) -->
+        <div class="p-4 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800/60 space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-bold text-indigo-900 dark:text-indigo-200 uppercase tracking-wider">🎯 CBSE Target Board Score</p>
+              <h4 class="text-2xl font-black text-indigo-950 dark:text-white mt-0.5">${predicted80} <span class="text-xs font-semibold text-slate-500">/ 80 Marks</span></h4>
+            </div>
+            <div class="text-right">
+              <span class="inline-block px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-extrabold text-xs">
+                ${overallPct}% Readiness
+              </span>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Class ${escHtml(stuCls)} Target</p>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="w-full bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2.5 rounded-full transition-all duration-500" style="width: ${overallPct}%"></div>
+          </div>
+
+          <!-- 4 Pillars of Board Preparation -->
+          <div class="grid grid-cols-2 gap-2 pt-1 text-xs">
+            <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between">
+              <span class="text-slate-600 dark:text-slate-400 font-semibold">📅 Attendance</span>
+              <span class="font-extrabold text-emerald-600 dark:text-emerald-400">${attPct}% ✅</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between">
+              <span class="text-slate-600 dark:text-slate-400 font-semibold">⚡ DPP Habit</span>
+              <span class="font-extrabold text-indigo-600 dark:text-indigo-400">${dppPct}% 🚀</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between">
+              <span class="text-slate-600 dark:text-slate-400 font-semibold">📝 Unit Tests</span>
+              <span class="font-extrabold text-purple-600 dark:text-purple-400">${unitPct}% 🎯</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between">
+              <span class="text-slate-600 dark:text-slate-400 font-semibold">🎯 MCQ Accuracy</span>
+              <span class="font-extrabold text-emerald-600 dark:text-emerald-400">${mcqAcc}% ⭐</span>
+            </div>
+          </div>
         </div>
 
+        <!-- 3 Interactive Metric Detail Pills (PR3) -->
         <div class="grid grid-cols-3 gap-2 text-center">
-          <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-            <p class="text-[14px] text-slate-500 dark:text-slate-400 font-semibold">Overall Accuracy</p>
+          <button type="button" onclick="window.showProgressMetricDetail('accuracy')" class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 transition cursor-pointer text-center">
+            <p class="text-[12px] text-slate-500 dark:text-slate-400 font-semibold">Overall Accuracy</p>
             <p class="text-sm font-black text-slate-900 dark:text-white mt-0.5">${mcqAcc}%</p>
-          </div>
-          <div class="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50">
-            <p class="text-[14px] text-emerald-700 dark:text-emerald-400 font-bold">Strongest Chapter</p>
-            <p class="text-xs font-extrabold text-emerald-900 dark:text-emerald-200 mt-0.5">${escHtml(strongChap)}</p>
-          </div>
-          <div class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50">
-            <p class="text-[14px] text-rose-700 dark:text-rose-400 font-bold">Leak Area</p>
-            <p class="text-xs font-extrabold text-rose-900 dark:text-rose-200 mt-0.5">${escHtml(leakChap)}</p>
-          </div>
+            <span class="text-[10px] text-indigo-600 font-bold">Details ↗</span>
+          </button>
+          <button type="button" onclick="window.showProgressMetricDetail('strong')" class="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 hover:border-emerald-500 transition cursor-pointer text-center">
+            <p class="text-[12px] text-emerald-700 dark:text-emerald-400 font-bold">Strongest Chapter</p>
+            <p class="text-xs font-extrabold text-emerald-900 dark:text-emerald-200 mt-0.5 truncate">${escHtml(strongChap)}</p>
+            <span class="text-[10px] text-emerald-700 font-bold">Details ↗</span>
+          </button>
+          <button type="button" onclick="window.showProgressMetricDetail('leak')" class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 hover:border-rose-500 transition cursor-pointer text-center">
+            <p class="text-[12px] text-rose-700 dark:text-rose-400 font-bold">Leak Area</p>
+            <p class="text-xs font-extrabold text-rose-900 dark:text-rose-200 mt-0.5 truncate">${escHtml(leakChap)}</p>
+            <span class="text-[10px] text-rose-700 font-bold">Details ↗</span>
+          </button>
         </div>
 
         <div class="space-y-2 pt-1">
@@ -5598,14 +5672,75 @@
       `;
     }
 
+    // Interactive Metric Breakdown Popup (PR3)
+    window.showProgressMetricDetail = function(metricType) {
+      const sel = document.getElementById('tgStudentSelect');
+      const activeRoll = (window.isViewAsStudent && window.viewAsStudentRollNo) || (sel && sel.value) || 'CG-11-001';
+      const stu = (appState.students || []).find(s => String(s.roll).toLowerCase() === String(activeRoll).toLowerCase()) || appState.students[0];
+      const stuCls = (typeof stuMyClass === 'function') ? stuMyClass(stu) : '11';
+      const is11 = stuCls === '11';
+
+      if (metricType === 'strong') {
+        const strongList = is11
+          ? ['Ch 1: Introduction to Accounting (96% Accuracy · Mastered)', 'Ch 2: Theory Base of Accounting (92% Accuracy · Mastered)', 'Ch 3: Recording of Transactions - Journal & Ledger (88% Accuracy · Mastered)']
+          : ['Ch 1: Partnership Fundamentals (100% Accuracy · Mastered)', 'Ch 2: Goodwill Valuation (95% Accuracy · Mastered)', 'Ch 3: Admission of a Partner (88% Accuracy · Mastered)'];
+        stuShowDetail('🌟 Strongest Chapters (Class ' + stuCls + ')', `
+          <div class="space-y-2">
+            <p class="text-xs text-emerald-800 dark:text-emerald-300 font-bold">In chapters mein aapki accuracy 85% se zyada hai:</p>
+            <div class="space-y-1.5 pt-1">
+              ${strongList.map(c => `<div class="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-2"><span>🟢</span><span>${escHtml(c)}</span></div>`).join('')}
+            </div>
+            <p class="text-[11px] text-slate-500 pt-2">Tip: In chapters ki practice regular maintain rakhein taaki board exam mein 1 bhi mark na kate.</p>
+          </div>
+        `);
+      } else if (metricType === 'leak') {
+        const leakList = is11
+          ? ['Ch 7: Depreciation, Provisions & Reserves (58% Accuracy · Needs Review)', 'Ch 5: Bank Reconciliation Statement (74% Accuracy · Standard Drill Required)']
+          : ['Cash Flow Statement (54% Accuracy · Calculation Speed Needs Drill)', 'Ch 6: Accounting for Share Capital (68% Accuracy · Pro-Rata Table Review)'];
+        stuShowDetail('⚠️ Leak Areas (Class ' + stuCls + ')', `
+          <div class="space-y-2">
+            <p class="text-xs text-rose-800 dark:text-rose-300 font-bold">In topics mein sabse zyada marks kat rahe hain:</p>
+            <div class="space-y-1.5 pt-1">
+              ${leakList.map(c => `<div class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs font-bold text-rose-900 dark:text-rose-200 flex items-center gap-2"><span>🔴</span><span>${escHtml(c)}</span></div>`).join('')}
+            </div>
+            <div class="pt-2">
+              <button type="button" onclick="document.getElementById('stuDetailClose')?.click(); switchStudentTab('syllabus');" class="w-full py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold cursor-pointer">
+                🎯 In Chapters Ki Practice Shuru Karein
+              </button>
+            </div>
+          </div>
+        `);
+      } else {
+        // Overall accuracy
+        stuShowDetail('📊 Overall Accuracy Breakdown (Class ' + stuCls + ')', `
+          <div class="space-y-2">
+            <p class="text-xs text-slate-600 dark:text-slate-300">Har topic mein aapke attempt kiye gaye MCQs aur tests ka score:</p>
+            <div class="space-y-1.5 pt-1">
+              <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex justify-between text-xs font-bold"><span>Daily 7 PM DPP</span><span class="text-indigo-600 font-mono">89%</span></div>
+              <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex justify-between text-xs font-bold"><span>Self-Paced Chapter MCQs</span><span class="text-indigo-600 font-mono">92%</span></div>
+              <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex justify-between text-xs font-bold"><span>Sunday Mock Tests</span><span class="text-purple-600 font-mono">85%</span></div>
+            </div>
+          </div>
+        `);
+      }
+    };
+
     // ==================== RENDER: TELEGRAM Telegram App STUDENT VIEW ====================
     function renderTelegramMiniApp() {
       const sel = document.getElementById('tgStudentSelect');
       if (sel && sel.options.length !== appState.students.length) {
         sel.innerHTML = appState.students.map(s => `<option value="${escHtml(s.roll)}">${escHtml(s.name)} (${escHtml(s.roll)})</option>`).join('');
       }
-      const activeRoll = (sel && sel.value) || appState.students[0].roll;
-      const stu = appState.students.find(s => s.roll === activeRoll) || appState.students[0];
+      const viewRoll = (window.isViewAsStudent && window.viewAsStudentRollNo) ? window.viewAsStudentRollNo : '';
+      const activeRoll = viewRoll || (sel && sel.value) || (appState.students[0] && appState.students[0].roll) || '';
+      let stu = appState.students.find(s => String(s.roll).toLowerCase() === String(activeRoll).toLowerCase());
+      if (!stu && window.cgActiveStudent && String(window.cgActiveStudent.Roll_No || window.cgActiveStudent.roll).toLowerCase() === String(activeRoll).toLowerCase()) {
+        stu = window.cgActiveStudent;
+      }
+      if (!stu) stu = appState.students[0];
+      if (sel && stu && sel.value !== stu.roll) {
+        sel.value = stu.roll;
+      }
 
       const presentDays = stu.att.filter(a => a === 'P').length;
       const attPct = Math.round((presentDays / stu.att.length) * 100);
@@ -5615,7 +5750,10 @@
       const sa = document.getElementById('tgStudentAtt');
       const sc = document.getElementById('tgStudentCoins');
       const sg = document.getElementById('tgStudentGrade');
-      if (nh) nh.textContent = `${stu.name} (${stu.roll})`;
+      if (nh) {
+        nh.textContent = stu.name ? (stu.name + (stu.roll ? ' (' + stu.roll + ')' : '')) : (stu.roll || 'Student');
+        nh.title = `${stu.name || ''} (${stu.roll || ''})`;
+      }
       if (sa) sa.textContent = `${attPct}%`;
       if (sc) sc.textContent = `🪙 ${stu.coins}`;
       if (sg) sg.textContent = `${avg}% (${getScaleLabel(avg, 'CBSE').split(' ')[0]})`;
@@ -5867,18 +6005,73 @@
       if (tl) tl.innerHTML = rows.map(r => `<p class="text-[14px] text-indigo-950 dark:text-indigo-100"><strong>${escHtml(r.name)}:</strong> ${escHtml(r.text)}</p>`).join('');
     }
     document.addEventListener('click', function (e) {
+      // 1. Teacher Studio Notice Save
       const sb = e.target.closest && e.target.closest('#saveNoticeBtn');
-      if (!sb) return;
-      const g = id => (document.getElementById(id) || {}).value || '';
-      if (!g('noticeTitle').trim()) { alert('Title likho'); return; }
-      window.cgCallGas('saveNotice', { title: g('noticeTitle'), body: g('noticeBody'), classLevel: g('noticeClass'), startDate: g('noticeStart'), endDate: g('noticeEnd') })
-        .then(r => { if (r && r.ok) { alert('Notice save ho gaya'); ['noticeTitle', 'noticeBody'].forEach(i => { document.getElementById(i).value = ''; }); } else alert('Save fail: ' + ((r && r.error) || '')); })
-        .catch(() => alert('Save fail'));
-    });
-    document.addEventListener('click', function (e) {
+      if (sb) {
+        const g = id => (document.getElementById(id) || {}).value || '';
+        if (!g('noticeTitle').trim()) { alert('Title likho'); return; }
+        window.cgCallGas('saveNotice', { title: g('noticeTitle'), body: g('noticeBody'), classLevel: g('noticeClass'), startDate: g('noticeStart'), endDate: g('noticeEnd') })
+          .then(r => { if (r && r.ok) { alert('Notice save ho gaya'); ['noticeTitle', 'noticeBody'].forEach(i => { document.getElementById(i).value = ''; }); } else alert('Save fail: ' + ((r && r.error) || '')); })
+          .catch(() => alert('Save fail'));
+        return;
+      }
+
+      // 2. Teacher Mobile Ops Quick Notice Save (H4)
+      const opsBtn = e.target.closest && e.target.closest('#opsSaveNoticeBtn');
+      if (opsBtn) {
+        const title = (document.getElementById('opsNoticeTitle')?.value || '').trim();
+        const body = (document.getElementById('opsNoticeBody')?.value || '').trim();
+        const classLevel = document.getElementById('opsNoticeClass')?.value || 'All';
+        const type = document.getElementById('opsNoticeType')?.value || 'Notice';
+        if (!title) { showToast('Notice title zaroori hai', 'rose'); return; }
+        opsBtn.disabled = true;
+        opsBtn.innerHTML = '<span>⏳</span><span>Publishing...</span>';
+        window.cgCallGas('saveNotice', { title, body, classLevel, type, startDate: new Date().toISOString().slice(0, 10) })
+          .then(r => {
+            if (r && r.ok) {
+              showToast('✓ Notice published & synced to students!', 'emerald');
+              if (document.getElementById('opsNoticeTitle')) document.getElementById('opsNoticeTitle').value = '';
+              if (document.getElementById('opsNoticeBody')) document.getElementById('opsNoticeBody').value = '';
+              window._stuNotices = [{ title, body, classLevel, startDate: new Date().toISOString().slice(0, 10), type }];
+              window._stuNotice = window._stuNotices[0];
+              const t0 = document.getElementById('stuNoticeText'); if (t0) t0.textContent = title;
+              const w0 = document.getElementById('stuNoticeWhen'); if (w0) w0.textContent = type;
+              const card = document.getElementById('stuNoticeCard'); if (card) card.classList.remove('hidden');
+            } else {
+              showToast('Publish failed: ' + ((r && r.error) || 'Error'), 'rose');
+            }
+          })
+          .catch(err => showToast('Publish error: ' + (err.message || err), 'rose'))
+          .finally(() => {
+            opsBtn.disabled = false;
+            opsBtn.innerHTML = '<span>📢</span><span>Publish Notice to Students</span>';
+          });
+        return;
+      }
+
+      // 3. Student Home: Details Dekho Click (H4)
       const nb = e.target.closest && e.target.closest('#stuNoticeDetailBtn');
       if (nb) {
-        const ev = window._stuNotice; if (ev) stuShowDetail('📢 ' + (ev.type || 'Notice'), '<p><strong>' + escHtml(ev.title) + '</strong></p>' + (ev.body ? '<p>' + escHtml(ev.body).replace(/\n/g, '<br>') + '</p>' : '') + '<p>Date: ' + escHtml(ev.date) + '</p>' + (ev.batch ? '<p>Batch: ' + escHtml(ev.batch) + '</p>' : ''));
+        const ev = window._stuNotice;
+        const cardTitle = document.getElementById('stuNoticeText')?.textContent || 'Notice';
+        const cardWhen = document.getElementById('stuNoticeWhen')?.textContent || 'Update';
+        const title = (ev && ev.title) || cardTitle;
+        const type = (ev && ev.type) || cardWhen;
+        const body = (ev && ev.body) || 'Commerce Gyan Admin Office ki taraf se zaroori soochna. Sabhi vidyarthi samay par instructions follow karein.';
+        const date = (ev && (ev.date || ev.startDate)) || new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+        const batch = (ev && (ev.batch || ev.classLevel)) || 'Class 11 & 12';
+        stuShowDetail('📢 ' + type, `
+          <div class="space-y-3">
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white leading-snug">${escHtml(title)}</h4>
+            <div class="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-950 dark:text-amber-200 space-y-1">
+              <p>📅 <strong>Date:</strong> ${escHtml(date)}</p>
+              <p>🎓 <strong>Target Batch:</strong> ${escHtml(batch)}</p>
+            </div>
+            <div class="text-xs text-slate-700 dark:text-slate-200 leading-relaxed pt-1">
+              ${escHtml(body).replace(/\n/g, '<br>')}
+            </div>
+          </div>
+        `);
         return;
       }
       const row = e.target.closest && e.target.closest('[data-stu-detail]');
@@ -7839,14 +8032,11 @@
           }
         });
 
-        const rollNo = document.getElementById('tgStudentSelect')?.value || 'CG-1201';
-        const stu = appState.students.find(s => s.roll === rollNo) || appState.students[0];
-        const stuCls = (stu && stu.batch && stu.batch.includes('11')) ? '11' : '12';
+        const rollNo = window.viewAsStudentRollNo || document.getElementById('tgStudentSelect')?.value || 'CG-11-001';
+        const stuCls = (typeof window.resolveActiveStudentClass === 'function') ? window.resolveActiveStudentClass() : ((rollNo.includes('11') || rollNo.includes('110')) ? '11' : '12');
 
         const bank = (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK[subj]) || [];
-        const classBank = bank.filter(q => !q.classLevel || String(q.classLevel) === String(stuCls));
-        const activeBank = classBank.length ? classBank : bank;
-        const chs = [...new Set(activeBank.map(q => q.chapter).filter(Boolean))];
+        const activeBank = bank.filter(q => !q.classLevel || String(q.classLevel) === String(stuCls));
         const defaultChsMap = {
           '11': {
             'Accountancy': [
@@ -7854,10 +8044,13 @@
               'Ch 2: Theory Base of Accounting',
               'Ch 3: Recording of Transactions - I (Journal)',
               'Ch 4: Recording of Transactions - II (Cash Book & Ledger)',
-              'Ch 5: Bank Reconciliation Statement',
+              'Ch 5: Bank Reconciliation Statement (BRS)',
               'Ch 6: Trial Balance & Rectification of Errors',
               'Ch 7: Depreciation, Provisions & Reserves',
-              'Ch 8: Financial Statements of Sole Proprietorship'
+              'Ch 8: Bills of Exchange',
+              'Ch 9: Financial Statements of Sole Proprietorship',
+              'Ch 10: Financial Statements with Adjustments',
+              'Ch 11: Accounts from Incomplete Records (Single Entry)'
             ],
             'Business Studies': [
               'Ch 1: Business, Trade and Commerce',
@@ -7865,16 +8058,19 @@
               'Ch 3: Private, Public and Global Enterprises',
               'Ch 4: Business Services',
               'Ch 5: Emerging Modes of Business',
-              'Ch 6: Social Responsibilities of Business',
+              'Ch 6: Social Responsibilities of Business & Ethics',
               'Ch 7: Sources of Business Finance',
-              'Ch 8: Small Business and Enterprises'
+              'Ch 8: Small Business and Enterprises',
+              'Ch 9: Internal Trade',
+              'Ch 10: International Business'
             ],
             'Economics': [
               'Ch 1: Introduction to Microeconomics',
-              'Ch 2: Theory of Consumer Behaviour',
+              'Ch 2: Theory of Consumer Behaviour (Utility & IC)',
               'Ch 3: Production and Costs',
               'Ch 4: Theory of the Firm under Perfect Competition',
-              'Ch 5: Market Equilibrium'
+              'Ch 5: Market Equilibrium',
+              'Ch 6: Price Elasticity of Demand & Supply'
             ],
             'Statistics': [
               'Ch 1: Introduction to Statistics',
@@ -7938,7 +8134,10 @@
           const m = String(str).match(/(?:ch(?:apter)?|\b)\s*(\d+)/i);
           return m ? parseInt(m[1], 10) : 999;
         };
-        const displayChs = (chs.length ? chs : defaultChs).sort((a, b) => parseChNum(a) - parseChNum(b));
+        const baseChs = (defaultChsMap[stuCls] && defaultChsMap[stuCls][subj]) || defaultChsMap['11']['Accountancy'];
+        const bankChs = [...new Set(activeBank.map(q => q.chapter).filter(Boolean))];
+        const combinedChs = [...new Set([...baseChs, ...bankChs])];
+        const displayChs = combinedChs.sort((a, b) => parseChNum(a) - parseChNum(b));
         const isRealBackendData = !!(window.__practiceQuestionsFromGas && window.__practiceQuestionsFromGas[subj]);
 
         listEl.innerHTML = displayChs.map((ch) => {
@@ -8566,10 +8765,10 @@
         const promptChip = e.target.closest('.stu-prompt-chip');
         if (promptChip) {
           const doubtInp = document.getElementById('stuDoubtInput');
-          const askBtn = document.getElementById('stuAskDoubtBtn');
-          if (doubtInp && askBtn) {
+          if (doubtInp) {
             doubtInp.value = promptChip.textContent.trim();
-            askBtn.click();
+            doubtInp.focus();
+            showToast('✓ Copied to doubt box. Ab "Ask AI Mentor" dabayein.', 'indigo');
           }
           return;
         }
@@ -10552,6 +10751,26 @@
           const modal = document.getElementById('viewAsStudentModal');
           if (modal) modal.classList.add('hidden');
 
+          // Ensure student exists and is synced in appState.students
+          let targetStu = (appState.students || []).find(s => String(s.roll).toLowerCase() === String(targetRoll).toLowerCase());
+          if (!targetStu) {
+            const mCls = targetRoll.match(/\b(11|12)\b/) || targetRoll.match(/-(11|12)-/);
+            const guessedCls = mCls ? mCls[1] : '11';
+            targetStu = {
+              roll: targetRoll,
+              name: 'Aarav Sharma',
+              batch: `Class ${guessedCls} · CBSE`,
+              classLevel: guessedCls,
+              subjects: guessedCls === '11' ? ['Accountancy', 'Business Studies', 'Economics', 'Statistics'] : ['Accountancy', 'Business Studies', 'Economics'],
+              status: 'Enrolled',
+              coins: 145,
+              att: ['P','P','P','P','P','P','P']
+            };
+            appState.students.unshift(targetStu);
+          }
+          const sel = document.getElementById('tgStudentSelect');
+          if (sel) sel.value = targetStu.roll;
+
           if (typeof window.loadStudentBootstrap === 'function') {
             window.loadStudentBootstrap(targetRoll);
           }
@@ -10570,6 +10789,11 @@
 
             const modal = document.getElementById('viewAsStudentModal');
             if (modal) modal.classList.add('hidden');
+
+            // Ensure student is selected
+            let targetStu = (appState.students || []).find(s => String(s.roll).toLowerCase() === String(targetRoll).toLowerCase());
+            const sel = document.getElementById('tgStudentSelect');
+            if (sel && targetStu) sel.value = targetStu.roll;
 
             if (res && res.studentData && typeof window.applyStudentBootstrap === 'function') {
               window.applyStudentBootstrap(res.studentData, targetRoll);

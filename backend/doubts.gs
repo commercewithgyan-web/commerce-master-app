@@ -101,12 +101,12 @@ function askDoubtGemini(studentName, subject, question, lens, studentClass) {
     contents: [{ parts: [{ text: systemPrompt }] }],
     generationConfig: {
       temperature: 0.2,
-      maxOutputTokens: 1800,
+      maxOutputTokens: 1000,
       responseMimeType: 'application/json'
     }
   };
 
-  var json = callGeminiGenerateContent_(payload, { maxAttempts: 3, budgetMs: 16000 });
+  var json = callGeminiGenerateContent_(payload, { maxAttempts: 3, budgetMs: 30000 });
   if (json.candidates && json.candidates[0].content && json.candidates[0].content.parts) {
     var raw = String(json.candidates[0].content.parts[0].text || '').trim();
     var cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
