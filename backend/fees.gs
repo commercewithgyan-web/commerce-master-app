@@ -282,6 +282,43 @@ function recordPayment_(paymentData) {
     // 3. Recalculate Student TotalPaid & Balance
     recalculateStudentFeeBalance_(student.StudentID);
 
+    // 4. Mirror to Master_ERP -> Fee_Ledger (Double-entry single source of truth) & Students_Master
+    try {
+      if (typeof getActiveSheetIds === 'function') {
+        var activeIds = getActiveSheetIds();
+        var erpSS = SpreadsheetApp.openById(activeIds.MASTER_ERP);
+        if (erpSS && typeof appendFeeLedgerEntry_ === 'function') {
+          appendFeeLedgerEntry_(erpSS, {
+            entryId: paymentId,
+            rollNo: student.StudentID,
+            cycle: forMonth || Utilities.formatDate(new Date(), TIMEZONE_KOLKATA, 'MMM-yyyy'),
+            chargeCode: student.PlanID || 'FEE_PAYMENT',
+            type: 'FEE_PAYMENT',
+            debitAccount: mode === 'Cash' ? 'ASSET:CASH' : 'ASSET:BANK',
+            creditAccount: 'REVENUE:TUITION',
+            amountRs: amount,
+            refEntry: matchedInvoice ? matchedInvoice.invoiceNo : 'DIRECT',
+            reason: 'Tuition Fee Payment (' + mode + ')',
+            mode: mode,
+            utr: paymentData.upiRef || (mode === 'Cash' ? 'OFFLINE_CASH' : 'NA'),
+            actor: paymentData.recordedBy || 'TEACHER'
+          });
+        }
+        var smSheet = erpSS.getSheetByName('Students_Master');
+        if (smSheet) {
+          var smData = smSheet.getDataRange().getValues();
+          for (var s = 1; s < smData.length; s++) {
+            if (String(smData[s][0]).trim() === String(student.StudentID).trim()) {
+              smSheet.getRange(s + 1, 7).setValue('Paid');
+              break;
+            }
+          }
+        }
+      }
+    } catch (erpSyncErr) {
+      Logger.log('Notice: Master_ERP Fee_Ledger synchronization in recordPayment_: ' + erpSyncErr.message);
+    }
+
     return {
       student: student,
       amount: amount,

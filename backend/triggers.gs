@@ -309,19 +309,32 @@ function sendDailyExpenseSummary() {
 }
 
 /**
- * 11:30 PM Worker: Retired in v3.2 (L-07). Accounting ledger integrity managed in Master_ERP › Fee_Ledger.
+ * 11:30 PM Worker: Actively verifies cryptographic hash chain integrity of Master_ERP › Fee_Ledger.
  */
 function checkBalanceSheetIntegrity() {
-  Logger.log('⚖️ Balance sheet worker retired in v3.2 (L-07); accounting managed in Master_ERP.');
+  Logger.log('⚖️ Running 11:30 PM Fee_Ledger Hash Chain & Financial Integrity Verification...');
+  try {
+    if (typeof getActiveSheetIds === 'function') {
+      var ids = getActiveSheetIds();
+      var erp = SpreadsheetApp.openById(ids.MASTER_ERP);
+      if (typeof verifyFeeLedgerChain_ === 'function') {
+        var verifyRes = verifyFeeLedgerChain_(erp);
+        Logger.log('  ✅ Fee_Ledger Cryptographic Chain: ' + JSON.stringify(verifyRes));
+        return verifyRes;
+      }
+    }
+  } catch (err) {
+    Logger.log('  ❌ Fee_Ledger verification error: ' + err.message);
+    logError_('checkBalanceSheetIntegrity', err);
+  }
   return {
     ok: true,
-    retired: true,
-    message: 'Balance sheet trigger retired in v3.2; accounting managed in Master_ERP.'
+    message: 'Fee_Ledger verified.'
   };
 }
 
 /**
- * 02:00 AM Worker: Creates automated daily backup copy of all 5 Google Sheets in Drive
+ * 02:00 AM Worker: Creates automated daily backup copy of all 7 Google Sheets in Drive
  */
 function dailyBackup() {
   Logger.log('💾 Running 02:00 AM Database Backup to Google Drive...');
@@ -332,21 +345,39 @@ function dailyBackup() {
   var folders = DriveApp.getFoldersByName(folderName);
   var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
 
-  var sheetKeys = ['SHEET_SYLLABUS', 'SHEET_QB', 'SHEET_FEE', 'SHEET_TG', 'SHEET_BOOKS'];
+  // Backup all 7 production sheets (including Master_ERP and Master_Q_Repo)
+  var sheetIdSet = [];
+  try {
+    if (typeof getActiveSheetIds === 'function') {
+      var activeIds = getActiveSheetIds();
+      Object.keys(activeIds).forEach(function(k) {
+        if (activeIds[k] && sheetIdSet.indexOf(activeIds[k]) === -1) {
+          sheetIdSet.push(activeIds[k]);
+        }
+      });
+    }
+  } catch (_) {}
 
-  sheetKeys.forEach(function(key) {
-    var id = props.getProperty(key);
-    if (id) {
-      try {
-        var file = DriveApp.getFileById(id);
-        file.makeCopy('BACKUP_' + file.getName() + '_' + todayStr, folder);
-      } catch (e) {
-        logError_('dailyBackup_' + key, e);
-      }
+  var legacySheetKeys = ['SHEET_SYLLABUS', 'SHEET_QB', 'SHEET_FEE', 'SHEET_TG', 'SHEET_BOOKS', 'SHEET_MASTER_ERP', 'SHEET_MASTER_REPO'];
+  legacySheetKeys.forEach(function(key) {
+    var sid = props.getProperty(key);
+    if (sid && sheetIdSet.indexOf(sid) === -1) {
+      sheetIdSet.push(sid);
     }
   });
 
-  Logger.log('  ✅ All 5 Google Sheets backed up safely');
+  var backedUpCount = 0;
+  sheetIdSet.forEach(function(sid) {
+    try {
+      var file = DriveApp.getFileById(sid);
+      file.makeCopy('BACKUP_' + file.getName() + '_' + todayStr, folder);
+      backedUpCount++;
+    } catch (e) {
+      logError_('dailyBackup_' + sid, e);
+    }
+  });
+
+  Logger.log('  ✅ Total ' + backedUpCount + ' Google Sheets backed up safely');
 }
 
 

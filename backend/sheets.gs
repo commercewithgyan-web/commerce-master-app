@@ -449,6 +449,22 @@ function logRenderExecution_(entry) {
       entry.errorMessage || '',
       entry.timestamp || getKolkataTimestamp()
     ]);
+
+    // Mirror to general PDF_Log tab if present to keep telemetry unified
+    try {
+      var ss = openSpreadsheet_('SHEET_TG');
+      var pdfLog = ss ? ss.getSheetByName('PDF_Log') : null;
+      if (pdfLog) {
+        pdfLog.appendRow([
+          entry.date || getKolkataDate(),
+          'QUESTION_OR_ANSWER_PDF',
+          entry.pdfUrl || '',
+          'Class ' + (entry.classLevel || 12) + ' ' + (entry.subject || ''),
+          entry.pageCount || 1,
+          entry.timestamp || getKolkataTimestamp()
+        ]);
+      }
+    } catch (_) {}
   } catch (err) {
     Logger.log('Error logging render execution: ' + err.message);
   }

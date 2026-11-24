@@ -1080,11 +1080,31 @@ function getQuestionBankSummary() {
   const IDS = getActiveSheetIds();
   const qb = SpreadsheetApp.openById(IDS.QUESTION_BANK);
   const repo = SpreadsheetApp.openById(IDS.MASTER_Q_REPO);
+
+  const qbSheet = qb.getSheetByName('QuestionBank') || qb.getSheetByName('Questions_Bank');
+  const legacyMcqCount = qbSheet ? sheetToObjects(qbSheet).length : 0;
+
+  const dailySheet = qb.getSheetByName('DailyQuestions') || qb.getSheetByName('DailyPackage');
+  const dailyCount = dailySheet ? sheetToObjects(dailySheet).length : 0;
+
+  let vaultQuestionCount = 0;
+  const vaultTabs = ['11_ACC', '11_BST', '11_STAT', '11_ECO_MICRO', '12_ACC', '12_BST', '12_ECO_MACRO', '12_ECO_IED'];
+  vaultTabs.forEach(tName => {
+    try {
+      const sh = repo.getSheetByName(tName);
+      if (sh) {
+        vaultQuestionCount += Math.max(0, sh.getLastRow() - 1);
+      }
+    } catch (_) {}
+  });
+
   return {
     ok: true,
-    mcqCount: sheetToObjects(qb.getSheetByName('Questions_Bank')).length,
-    theoryCount: sheetToObjects(qb.getSheetByName('Theory_Bank')).length,
-    repoIndexCount: sheetToObjects(repo.getSheetByName('00_Repository_Index')).length
+    mcqCount: legacyMcqCount,
+    dailyCount: dailyCount,
+    vaultQuestionCount: vaultQuestionCount,
+    totalQuestionsAvailable: legacyMcqCount + vaultQuestionCount,
+    activeVaultTabs: vaultTabs.length
   };
 }
 
@@ -3680,7 +3700,6 @@ function recordFeePayment(payload, verifiedUser) {
     studentSheet.getRange(studentRowIndex, 7).setValue(feeStatus === "PAID" ? "Paid" : "Pending");
 
     // R-05, R-08, R-10: Single source of truth is Fee_Ledger in Master_ERP.
-    // Mirror writes to legacy FEE_MGMT Payments tab stopped (R-08).
     // ReceiptSent status tracked in Receipts tab (R-10).
     try {
       const feeReceiptsSheet = feeSS ? feeSS.getSheetByName("Receipts") : null;
@@ -3688,6 +3707,53 @@ function recordFeePayment(payload, verifiedUser) {
         feeReceiptsSheet.appendRow([receiptId, invoiceId, cleanRollNo, paidAmountINR, dateStr, sha256ReceiptHash, "TRUE"]);
       }
     } catch (_) {}
+
+    // Roster & Schedule Reconciliation: Keep FEE_MGMT -> Fee_Schedule & Students synchronized with Master_ERP
+    try {
+      if (feeSS) {
+        // 1. Update Fee_Schedule to mark invoice as Paid and prevent false 7:00 PM fee reminders
+        const feeSchedSheet = feeSS.getSheetByName("Fee_Schedule");
+        if (feeSchedSheet) {
+          const schedData = feeSchedSheet.getDataRange().getValues();
+          const targetMonth = (payload.monthStr || currentMonthStr).toLowerCase();
+          for (let r = 1; r < schedData.length; r++) {
+            const rowStudent = String(schedData[r][1] || '').trim();
+            const rowMonth = String(schedData[r][3] || '').trim().toLowerCase();
+            const rowStatus = String(schedData[r][8] || '').trim().toLowerCase();
+            if (rowStudent === cleanRollNo && (rowMonth.indexOf(targetMonth) !== -1 || rowStatus === 'pending' || rowStatus === 'due' || rowStatus === 'overdue')) {
+              const invAmt = Number(schedData[r][5]) || paidAmountINR;
+              const prevPaid = Number(schedData[r][6]) || 0;
+              const newPaid = prevPaid + paidAmountINR;
+              const newBal = Math.max(0, invAmt - newPaid);
+              const newStatus = newBal <= 0 ? 'Paid' : 'Partial';
+              feeSchedSheet.getRange(r + 1, 7).setValue(newPaid);
+              feeSchedSheet.getRange(r + 1, 8).setValue(newBal);
+              feeSchedSheet.getRange(r + 1, 9).setValue(newStatus);
+              break;
+            }
+          }
+        }
+        // 2. Update FEE_MGMT -> Students TotalPaid (Col Q / 17), Balance (Col R / 18), and Paid flag (Col S / 19)
+        const feeStuSheet = feeSS.getSheetByName("Students");
+        if (feeStuSheet) {
+          const fStuData = feeStuSheet.getDataRange().getValues();
+          for (let fs = 1; fs < fStuData.length; fs++) {
+            if (String(fStuData[fs][0]).trim() === cleanRollNo) {
+              const curPaid = Number(fStuData[fs][16]) || 0;
+              const totalCourseFee = Number(fStuData[fs][15]) || (curPaid + balanceDueINR);
+              const updatedPaid = curPaid + paidAmountINR;
+              const updatedBal = Math.max(0, totalCourseFee - updatedPaid);
+              feeStuSheet.getRange(fs + 1, 17).setValue(updatedPaid);
+              feeStuSheet.getRange(fs + 1, 18).setValue(updatedBal);
+              feeStuSheet.getRange(fs + 1, 19).setValue(updatedBal <= 0 ? '✅' : '❌');
+              break;
+            }
+          }
+        }
+      }
+    } catch (schedErr) {
+      Logger.log("Notice: Fee_Schedule & Students reconciliation: " + schedErr.message);
+    }
 
     // Log redeemed coins debit in Coin_Ledger
     if (redeemedCoinsINR > 0 && coinSheet) {

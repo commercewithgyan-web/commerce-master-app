@@ -7163,71 +7163,156 @@
       // ── UNIFIED 4-OPTION MCQ RUNNER & CURATED PRACTICE BANK (S2 + S4) ──
       const PRACTICE_QUESTION_BANK = {
         'Accountancy': [
+          // Class 11 Accountancy
           {
-            qid: 'ACC-Q1', chapter: 'Ch 1: Partnership Fundamentals', topic: 'Interest on Partner Loan',
+            qid: 'ACC-11-Q1', classLevel: '11', chapter: 'Ch 2: Theory Base of Accounting', topic: 'Prudence Concept',
+            q: "Under which accounting concept are anticipated losses accounted for but anticipated gains ignored?",
+            options: ["Prudence (Conservatism) Concept", "Matching Concept", "Going Concern Concept", "Consistency Concept"],
+            correct: 'A', exp: "Prudence concept requires that all anticipated losses and liabilities must be recorded, but prospective unrealized gains are omitted."
+          },
+          {
+            qid: 'ACC-11-Q2', classLevel: '11', chapter: 'Ch 3: Recording of Transactions - I', topic: 'Rules of Debit & Credit',
+            q: "Rent paid to the landlord in cash should be debited to which account?",
+            options: ["Rent Account", "Landlord Personal Account", "Cash Account", "Outstanding Rent Account"],
+            correct: 'A', exp: "Under nominal account rules: 'Debit all expenses and losses'. Hence Rent Account is debited, not the landlord's personal account."
+          },
+          {
+            qid: 'ACC-11-Q3', classLevel: '11', chapter: 'Ch 5: Bank Reconciliation Statement', topic: 'Overdraft BRS',
+            q: "Overdraft as per Cash Book is ₹10,000. Cheques issued but not yet presented for payment ₹3,000. Overdraft as per Pass Book is:",
+            options: ["₹7,000 Overdraft", "₹13,000 Overdraft", "₹10,000 Favourable", "Nil Balance"],
+            correct: 'A', exp: "Cheques issued increased Cash Book overdraft. Since they have not hit Pass Book yet, Pass Book OD is lower by ₹3,000 = ₹7,000."
+          },
+          {
+            qid: 'ACC-11-Q4', classLevel: '11', chapter: 'Ch 7: Depreciation, Provisions & Reserves', topic: 'Straight Line Method',
+            q: "Under the Straight Line Method (SLM) of depreciation, the amount of annual depreciation remains:",
+            options: ["Constant every year", "Decreasing every year", "Increasing every year", "Dependent on annual net profit"],
+            correct: 'A', exp: "Under SLM (Fixed Instalment Method), depreciation is calculated on original cost, resulting in an identical fixed charge every year."
+          },
+          // Class 12 Accountancy
+          {
+            qid: 'ACC-12-Q1', classLevel: '12', chapter: 'Ch 1: Partnership Fundamentals', topic: 'Interest on Partner Loan',
             q: "Under Partnership Act 1932, if the partnership deed is silent, interest on a partner's loan is allowed at:",
             options: ["6% p.a. (Charge against profit)", "6% p.a. (Appropriation of profit)", "12% p.a. simple interest", "Nil (No interest allowed)"],
             correct: 'A', exp: "Section 13(d): Partner loan interest is a charge against profit @ 6% p.a. payable even if the firm suffers a loss."
           },
           {
-            qid: 'ACC-Q2', chapter: 'Ch 3: Admission of a Partner', topic: 'Hidden Goodwill',
+            qid: 'ACC-12-Q2', classLevel: '12', chapter: 'Ch 3: Admission of a Partner', topic: 'Hidden Goodwill',
             q: "A & B share profits 3:2 with combined capital ₹1,80,000. C is admitted for 1/4 share bringing ₹80,000 capital. Hidden Goodwill of the firm is:",
             options: ["₹40,000", "₹60,000", "₹80,000", "₹1,00,000"],
             correct: 'B', exp: "Total implied capital = ₹80,000 × 4 = ₹3,20,000. Actual capital = ₹1,80,000 + ₹80,000 = ₹2,60,000. Hidden Goodwill = ₹3,20,000 − ₹2,60,000 = ₹60,000."
           },
           {
-            qid: 'ACC-Q3', chapter: 'Ch 6: Share Capital', topic: 'Calls-in-Arrears',
+            qid: 'ACC-12-Q3', classLevel: '12', chapter: 'Ch 6: Share Capital', topic: 'Calls-in-Arrears',
             q: "In a Company's Balance Sheet (Schedule III), Calls-in-Arrears is shown as:",
             options: ["Current Liabilities", "Deduction from Subscribed Capital", "Other Non-Current Assets", "Reserves & Surplus"],
             correct: 'B', exp: "Schedule III Part I: Calls-in-Arrears is deducted from 'Subscribed but not fully paid-up' Share Capital in Notes to Accounts."
           },
           {
-            qid: 'ACC-Q4', chapter: 'Ch 5: Bank Reconciliation Statement', topic: 'Overdraft BRS',
-            q: "Overdraft as per Cash Book is ₹10,000. Cheques issued but not yet presented for payment ₹3,000. Overdraft as per Pass Book is:",
-            options: ["₹7,000 Overdraft", "₹13,000 Overdraft", "₹10,000 Favourable", "Nil Balance"],
-            correct: 'A', exp: "Cheques issued reduced Cash Book balance (increased OD), but Pass Book has not debited them yet, so Pass Book OD is lower by ₹3,000 = ₹7,000."
+            qid: 'ACC-12-Q4', classLevel: '12', chapter: 'Ch 10: Cash Flow Statement', topic: 'Financing vs Operating',
+            q: "Under AS-3, dividend paid by a non-financing (manufacturing) company is classified under:",
+            options: ["Financing Activity", "Operating Activity", "Investing Activity", "Cash & Cash Equivalents"],
+            correct: 'A', exp: "For non-financial commercial entities, dividends paid to shareholders represent cost of capital and are strictly classified under Financing Activities."
           }
         ],
         'Business Studies': [
+          // Class 11 Business Studies
           {
-            qid: 'BST-Q1', chapter: 'Ch 2: Principles of Management', topic: 'Fayol Principles',
+            qid: 'BST-11-Q1', classLevel: '11', chapter: 'Ch 1: Business, Trade and Commerce', topic: 'Primary Industry',
+            q: "Which broad category of business activities involves the extraction and reproduction of natural resources?",
+            options: ["Primary Industry", "Secondary Industry", "Tertiary Industry", "Genetic Services"],
+            correct: 'A', exp: "Primary industry includes extractive industries (farming, mining, hunting) and genetic industries (breeding plants/animals)."
+          },
+          {
+            qid: 'BST-11-Q2', classLevel: '11', chapter: 'Ch 2: Forms of Business Organisation', topic: 'HUF Karta Liability',
+            q: "In a Joint Hindu Family Business, what is the extent of legal liability of the Karta?",
+            options: ["Unlimited liability", "Limited to coparcenary share", "Limited to initial capital", "Zero liability"],
+            correct: 'A', exp: "The Karta manages the family business and bears unlimited personal liability, whereas coparceners have liability limited to their coparcenary interest."
+          },
+          {
+            qid: 'BST-11-Q3', classLevel: '11', chapter: 'Ch 7: Sources of Business Finance', topic: 'Retained Earnings',
+            q: "Which internal source of finance is popularly referred to as 'ploughing back of profits'?",
+            options: ["Retained Earnings", "Public Deposits", "Commercial Paper", "Trade Credit"],
+            correct: 'A', exp: "Retained earnings represent net profits withheld in the business for self-financing, commonly called ploughing back of profits."
+          },
+          // Class 12 Business Studies
+          {
+            qid: 'BST-12-Q1', classLevel: '12', chapter: 'Ch 2: Principles of Management', topic: 'Fayol Principles',
             q: "Which principle of Fayol prevents dual subordination and conflicting instructions to a worker?",
             options: ["Unity of Command", "Unity of Direction", "Scalar Chain", "Equity"],
             correct: 'A', exp: "Unity of Command states that each subordinate should receive orders from and be accountable to only one superior."
           },
           {
-            qid: 'BST-Q2', chapter: 'Ch 10: Financial Markets', topic: 'SEBI Settlement',
+            qid: 'BST-12-Q2', classLevel: '12', chapter: 'Ch 9: Financial Management', topic: 'Capital Structure',
+            q: "The financial decision that determines the overall proportion of debt and equity in a firm's capital is:",
+            options: ["Financing Decision", "Investment Decision", "Dividend Decision", "Working Capital Decision"],
+            correct: 'A', exp: "Financing decisions determine the quantum of finance to be raised from various long-term sources and decide the debt-equity mix."
+          },
+          {
+            qid: 'BST-12-Q3', classLevel: '12', chapter: 'Ch 10: Financial Markets', topic: 'SEBI Settlement',
             q: "Under current SEBI guidelines, equity trades on NSE and BSE settle under which cycle?",
             options: ["T+1 Settlement Cycle", "T+2 Settlement Cycle", "T+3 Settlement Cycle", "T+5 Weekly Settlement"],
             correct: 'A', exp: "Indian stock exchanges operate on a T+1 rolling settlement cycle (trade day plus 1 working day)."
+          },
+          {
+            qid: 'BST-12-Q4', classLevel: '12', chapter: 'Ch 11: Marketing Management', topic: 'Marketing Philosophies',
+            q: "Which marketing philosophy emphasizes customer satisfaction along with long-term ecological and societal well-being?",
+            options: ["Societal Marketing Concept", "Selling Concept", "Production Concept", "Product Concept"],
+            correct: 'A', exp: "Societal marketing concept balances company profits, consumer wants, and long-term public and environmental interest."
           }
         ],
         'Economics': [
+          // Class 11 Microeconomics
           {
-            qid: 'ECO-Q1', chapter: 'Ch 1: National Income', topic: 'NFIA vs Domestic',
+            qid: 'ECO-11-Q1', classLevel: '11', chapter: 'Ch 1: Introduction to Microeconomics', topic: 'PPF Slope',
+            q: "The slope of the Production Possibility Frontier (PPF) is measured by:",
+            options: ["Marginal Rate of Transformation (MRT)", "Marginal Rate of Substitution (MRS)", "Marginal Utility of Money", "Opportunity Ratio"],
+            correct: 'A', exp: "The slope of the PPF is MRT (ΔY / ΔX), which reflects increasing marginal opportunity cost."
+          },
+          {
+            qid: 'ECO-11-Q2', classLevel: '11', chapter: 'Ch 2: Theory of Consumer Behaviour', topic: 'Indifference Curve Equilibrium',
+            q: "In indifference curve analysis, consumer equilibrium is attained at the point where:",
+            options: ["MRS_xy = Px / Py", "MRS_xy > Px / Py", "MUx = MUy", "Total Utility is zero"],
+            correct: 'A', exp: "Consumer equilibrium occurs where the budget line is tangent to the indifference curve, i.e., MRS_xy = Px / Py."
+          },
+          // Class 12 Macroeconomics & IED
+          {
+            qid: 'ECO-12-Q1', classLevel: '12', chapter: 'Ch 1: National Income', topic: 'NFIA vs Domestic',
             q: "Which of the following is NOT included in Domestic Factor Income of India?",
             options: ["Factor income earned by non-residents within India", "Net Factor Income from Abroad (NFIA)", "Profits earned by foreign banks operating in Mumbai", "Wages paid to Indian workers in Begusarai"],
             correct: 'B', exp: "NFIA comes from outside domestic territory and is added to Domestic Income (NDP_FC) to derive National Income (NNP_FC)."
           },
           {
-            qid: 'ECO-Q2', chapter: 'Ch 3: Income & Employment', topic: 'Multiplier',
+            qid: 'ECO-12-Q2', classLevel: '12', chapter: 'Ch 3: Income & Employment', topic: 'Multiplier',
             q: "If Marginal Propensity to Consume (MPC) is 0.8, what is the value of the Investment Multiplier (k)?",
             options: ["4", "5", "1.25", "8"],
             correct: 'B', exp: "Multiplier k = 1 / (1 − MPC) = 1 / (1 − 0.8) = 1 / 0.2 = 5."
+          },
+          {
+            qid: 'ECO-12-Q3', classLevel: '12', chapter: 'Ch 8: Liberalisation, Privatisation & Globalisation', topic: 'NEP 1991',
+            q: "In which year did the Government of India introduce the New Economic Policy (NEP) with LPG structural reforms?",
+            options: ["July 1991", "August 1985", "January 2000", "April 1998"],
+            correct: 'A', exp: "In July 1991, India launched the New Economic Policy (LPG reforms) under Finance Minister Dr. Manmohan Singh."
           }
         ],
         'Statistics': [
+          // Class 11 Statistics
           {
-            qid: 'STA-Q1', chapter: 'Ch 5: Central Tendency', topic: 'Median & Ogive',
+            qid: 'STA-11-Q1', classLevel: '11', chapter: 'Ch 5: Central Tendency', topic: 'Median & Ogive',
             q: "Which measure of central tendency can be located graphically using cumulative frequency curves (Ogives)?",
             options: ["Arithmetic Mean", "Median", "Geometric Mean", "Harmonic Mean"],
             correct: 'B', exp: "The X-coordinate of the intersection of 'Less-than' and 'More-than' ogives gives the Median."
           },
           {
-            qid: 'STA-Q2', chapter: 'Ch 5: Central Tendency', topic: 'Properties of Mean',
+            qid: 'STA-11-Q2', classLevel: '11', chapter: 'Ch 5: Central Tendency', topic: 'Properties of Mean',
             q: "The algebraic sum of deviations of individual observations from their Arithmetic Mean is:",
             options: ["Always Zero", "Always Positive", "Always Negative", "Equal to Standard Deviation"],
-            correct: 'A', exp: "Sum of deviations from Arithmetic Mean Σ(X − X̄) is always zero."
+            correct: 'A', exp: "Sum of deviations from Arithmetic Mean Σ(X − X̄) is mathematically always equal to zero."
+          },
+          {
+            qid: 'STA-11-Q3', classLevel: '11', chapter: 'Ch 7: Correlation', topic: 'Karl Pearson Range',
+            q: "Karl Pearson's coefficient of correlation (r) always lies between:",
+            options: ["−1 and +1", "0 and +1", "−0.5 and +0.5", "0 and 100"],
+            correct: 'A', exp: "Correlation coefficient r satisfies −1 ≤ r ≤ +1. Values near ±1 indicate strong correlation, while 0 indicates no linear relationship."
           }
         ]
       };
@@ -7754,15 +7839,101 @@
           }
         });
 
+        const rollNo = document.getElementById('tgStudentSelect')?.value || 'CG-1201';
+        const stu = appState.students.find(s => s.roll === rollNo) || appState.students[0];
+        const stuCls = (stu && stu.batch && stu.batch.includes('11')) ? '11' : '12';
+
         const bank = (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK[subj]) || [];
-        const chs = [...new Set(bank.map(q => q.chapter).filter(Boolean))];
-        const defaultChs = [
-          'Ch 1: Partnership Fundamentals',
-          'Ch 2: Goodwill Valuation',
-          'Ch 3: Admission of a Partner',
-          'Ch 4: Retirement and Death of Partner',
-          'Ch 5: Dissolution of Partnership Firm'
-        ];
+        const classBank = bank.filter(q => !q.classLevel || String(q.classLevel) === String(stuCls));
+        const activeBank = classBank.length ? classBank : bank;
+        const chs = [...new Set(activeBank.map(q => q.chapter).filter(Boolean))];
+        const defaultChsMap = {
+          '11': {
+            'Accountancy': [
+              'Ch 1: Introduction to Accounting',
+              'Ch 2: Theory Base of Accounting',
+              'Ch 3: Recording of Transactions - I (Journal)',
+              'Ch 4: Recording of Transactions - II (Cash Book & Ledger)',
+              'Ch 5: Bank Reconciliation Statement',
+              'Ch 6: Trial Balance & Rectification of Errors',
+              'Ch 7: Depreciation, Provisions & Reserves',
+              'Ch 8: Financial Statements of Sole Proprietorship'
+            ],
+            'Business Studies': [
+              'Ch 1: Business, Trade and Commerce',
+              'Ch 2: Forms of Business Organisation',
+              'Ch 3: Private, Public and Global Enterprises',
+              'Ch 4: Business Services',
+              'Ch 5: Emerging Modes of Business',
+              'Ch 6: Social Responsibilities of Business',
+              'Ch 7: Sources of Business Finance',
+              'Ch 8: Small Business and Enterprises'
+            ],
+            'Economics': [
+              'Ch 1: Introduction to Microeconomics',
+              'Ch 2: Theory of Consumer Behaviour',
+              'Ch 3: Production and Costs',
+              'Ch 4: Theory of the Firm under Perfect Competition',
+              'Ch 5: Market Equilibrium'
+            ],
+            'Statistics': [
+              'Ch 1: Introduction to Statistics',
+              'Ch 2: Collection of Data',
+              'Ch 3: Organisation of Data',
+              'Ch 4: Presentation of Data',
+              'Ch 5: Measures of Central Tendency',
+              'Ch 6: Measures of Dispersion',
+              'Ch 7: Correlation',
+              'Ch 8: Index Numbers'
+            ]
+          },
+          '12': {
+            'Accountancy': [
+              'Ch 1: Partnership Fundamentals',
+              'Ch 2: Goodwill: Nature and Valuation',
+              'Ch 3: Admission of a Partner',
+              'Ch 4: Retirement and Death of Partner',
+              'Ch 5: Dissolution of Partnership Firm',
+              'Ch 6: Accounting for Share Capital',
+              'Ch 7: Issue and Redemption of Debentures',
+              'Ch 8: Financial Statements of a Company & Analysis',
+              'Ch 9: Accounting Ratios',
+              'Ch 10: Cash Flow Statement'
+            ],
+            'Business Studies': [
+              'Ch 1: Nature and Significance of Management',
+              'Ch 2: Principles of Management',
+              'Ch 3: Business Environment',
+              'Ch 4: Planning',
+              'Ch 5: Organising',
+              'Ch 6: Staffing',
+              'Ch 7: Directing',
+              'Ch 8: Controlling',
+              'Ch 9: Financial Management',
+              'Ch 10: Financial Markets',
+              'Ch 11: Marketing Management',
+              'Ch 12: Consumer Protection'
+            ],
+            'Economics': [
+              'Ch 1: National Income and Related Aggregates',
+              'Ch 2: Money and Banking',
+              'Ch 3: Determination of Income and Employment',
+              'Ch 4: Government Budget and the Economy',
+              'Ch 5: Balance of Payments & Foreign Exchange',
+              'Ch 6: Indian Economy on the Eve of Independence',
+              'Ch 7: Indian Economy (1950-1990)',
+              'Ch 8: Liberalisation, Privatisation and Globalisation',
+              'Ch 9: Human Capital Formation in India',
+              'Ch 10: Rural Development'
+            ],
+            'Statistics': [
+              'Ch 5: Measures of Central Tendency',
+              'Ch 6: Measures of Dispersion',
+              'Ch 7: Correlation'
+            ]
+          }
+        };
+        const defaultChs = (defaultChsMap[stuCls] && defaultChsMap[stuCls][subj]) || defaultChsMap['12']['Accountancy'];
         const parseChNum = (str) => {
           const m = String(str).match(/(?:ch(?:apter)?|\b)\s*(\d+)/i);
           return m ? parseInt(m[1], 10) : 999;
@@ -7772,7 +7943,7 @@
 
         listEl.innerHTML = displayChs.map((ch) => {
           // Question count only if real backend data provides it (R6)
-          const qCount = bank.filter(q => q.chapter === ch).length;
+          const qCount = activeBank.filter(q => q.chapter === ch).length;
           const countBadge = (isRealBackendData && qCount > 0) ? `<span class="text-[14px] font-bold text-[#7C30E0] dark:text-[#C8BCF6] shrink-0">${qCount} Qs</span>` : '';
           return `<label class="flex items-center justify-between p-2.5 rounded-xl hover:bg-purple-50/50 dark:hover:bg-purple-950/30 border border-transparent cursor-pointer transition">
             <div class="flex items-center gap-2.5 min-w-0 pr-2">
@@ -7816,25 +7987,36 @@
           subject: selectedPracticeSubject, classLevel: stuCls, chapters: selected, rollNo
         }).then(list => {
           const gasItems = Array.isArray(list) ? list : (list && list.questions) || [];
-          const fallbackBank = (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK[selectedPracticeSubject]) || [];
+          const rawFallback = (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK[selectedPracticeSubject]) || [];
+          const classBank = rawFallback.filter(q => !q.classLevel || String(q.classLevel) === String(stuCls));
+          const fallbackBank = classBank.length ? classBank : rawFallback;
           const merged = gasItems.length ? gasItems : fallbackBank;
           const filtered = merged.filter(q => !q.chapter || selected.some(ch => ch.includes(q.chapter) || q.chapter.includes(ch.split(':')[0])));
           const finalQs = filtered.length ? filtered : merged;
+          const isOffline = !gasItems.length;
+          if (isOffline) {
+            showToast(`Offline Practice Mode (Class ${stuCls})`, 'info');
+          }
           window.launchMcqRunner({
             title: `${selectedPracticeSubject} Practice`,
-            badge: 'Chapter Practice',
+            badge: isOffline ? 'Offline Practice' : 'Chapter Practice',
             mode: 'practice',
             subject: selectedPracticeSubject,
             questions: finalQs
           });
         }).catch(() => {
-          const fallbackBank = (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK[selectedPracticeSubject]) || window.PRACTICE_QUESTION_BANK['Accountancy'];
+          const rawFallback = (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK[selectedPracticeSubject]) || (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK['Accountancy']) || [];
+          const classBank = rawFallback.filter(q => !q.classLevel || String(q.classLevel) === String(stuCls));
+          const fallbackBank = classBank.length ? classBank : rawFallback;
+          const filtered = fallbackBank.filter(q => !q.chapter || selected.some(ch => ch.includes(q.chapter) || q.chapter.includes(ch.split(':')[0])));
+          const finalQs = filtered.length ? filtered : fallbackBank;
+          showToast(`Offline Practice Mode (Class ${stuCls})`, 'info');
           window.launchMcqRunner({
             title: `${selectedPracticeSubject} Practice`,
-            badge: 'Chapter Practice',
+            badge: 'Offline Practice',
             mode: 'practice',
             subject: selectedPracticeSubject,
-            questions: fallbackBank
+            questions: finalQs
           });
         });
       });
@@ -7844,13 +8026,35 @@
         const rollNo = document.getElementById('tgStudentSelect')?.value || 'CG-1201';
         const stu = appState.students.find(s => s.roll === rollNo) || appState.students[0];
         const cls = (stu && stu.batch && stu.batch.includes('11')) ? '11' : '12';
-        const fallbackList = (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK['Accountancy']) || [];
-        window.cgCallGas('getDailyQuestion', { classLevel: cls, subtopicId: appState.activeSubtopicLock })
+        const currentSubj = appState.activeSubject || selectedPracticeSubject || 'Accountancy';
+        const rawFallback = (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK[currentSubj]) || (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK['Accountancy']) || [];
+        const classBank = rawFallback.filter(q => !q.classLevel || String(q.classLevel) === String(cls));
+        const fallbackList = classBank.length ? classBank : rawFallback;
+
+        window.cgCallGas('getDailyQuestion', { classLevel: cls, subject: currentSubj, subtopicId: appState.activeSubtopicLock })
           .then(qs => {
-            const list = Array.isArray(qs) && qs.length ? qs : fallbackList;
-            window.launchMcqRunner({ title: 'Today\'s DPP', badge: 'Daily Practice', mode: 'daily', subject: 'Accountancy', questions: list });
+            const gasItems = Array.isArray(qs) ? qs : (qs && qs.questions) || [];
+            const isOffline = !gasItems.length;
+            const list = gasItems.length ? gasItems : fallbackList;
+            if (isOffline) {
+              showToast(`Offline DPP Mode (Class ${cls})`, 'info');
+            }
+            window.launchMcqRunner({
+              title: "Today's DPP",
+              badge: isOffline ? 'Offline DPP' : 'Daily Practice',
+              mode: 'daily',
+              subject: currentSubj,
+              questions: list
+            });
           }).catch(() => {
-            window.launchMcqRunner({ title: 'Today\'s DPP', badge: 'Daily Practice', mode: 'daily', subject: 'Accountancy', questions: fallbackList });
+            showToast(`Offline DPP Mode (Class ${cls})`, 'info');
+            window.launchMcqRunner({
+              title: "Today's DPP",
+              badge: 'Offline DPP',
+              mode: 'daily',
+              subject: currentSubj,
+              questions: fallbackList
+            });
           });
       };
       document.querySelectorAll('.stu-open-daily-mcq-btn, #stuOpenDailyMcqBtn, #stuOpenDailyMcqBtnHome').forEach(btn => {
@@ -9572,7 +9776,9 @@
         if (pracBox) {
           const bankChapters = [...new Set([
             ...Object.keys(chaptersMap),
-            ...((window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK[subj]) || []).map(q => q.chapter).filter(Boolean)
+            ...((window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK[subj]) || [])
+              .filter(q => !q.classLevel || String(q.classLevel) === String(stuCls))
+              .map(q => q.chapter).filter(Boolean)
           ])];
           pracBox.innerHTML = `
             <div class="flex items-center justify-between pb-1.5 border-b border-slate-200 dark:border-slate-700">
@@ -9606,25 +9812,36 @@
               subject: subj, classLevel: stuCls, chapters: selectedChapters, rollNo
             }).then(list => {
               const gasItems = Array.isArray(list) ? list : (list && list.questions) || [];
-              const fallbackBank = (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK[subj]) || [];
+              const rawFallback = (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK[subj]) || [];
+              const classBank = rawFallback.filter(q => !q.classLevel || String(q.classLevel) === String(stuCls));
+              const fallbackBank = classBank.length ? classBank : rawFallback;
               const merged = gasItems.length ? gasItems : fallbackBank;
               const filtered = merged.filter(q => !q.chapter || selectedChapters.some(ch => ch.includes(q.chapter) || q.chapter.includes(ch.split(':')[0])));
               const finalQs = filtered.length ? filtered : merged;
+              const isOffline = !gasItems.length;
+              if (isOffline) {
+                showToast(`Offline Practice Mode (Class ${stuCls})`, 'info');
+              }
               window.launchMcqRunner({
                 title: `${subj} Self-Paced Practice`,
-                badge: 'Self-Paced Practice',
+                badge: isOffline ? 'Offline Practice' : 'Self-Paced Practice',
                 mode: 'practice',
                 subject: subj,
                 questions: finalQs
               });
             }).catch(() => {
-              const fallbackBank = (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK[subj]) || window.PRACTICE_QUESTION_BANK['Accountancy'];
+              const rawFallback = (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK[subj]) || (window.PRACTICE_QUESTION_BANK && window.PRACTICE_QUESTION_BANK['Accountancy']) || [];
+              const classBank = rawFallback.filter(q => !q.classLevel || String(q.classLevel) === String(stuCls));
+              const fallbackBank = classBank.length ? classBank : rawFallback;
+              const filtered = fallbackBank.filter(q => !q.chapter || selectedChapters.some(ch => ch.includes(q.chapter) || q.chapter.includes(ch.split(':')[0])));
+              const finalQs = filtered.length ? filtered : fallbackBank;
+              showToast(`Offline Practice Mode (Class ${stuCls})`, 'info');
               window.launchMcqRunner({
                 title: `${subj} Self-Paced Practice`,
-                badge: 'Self-Paced Practice',
+                badge: 'Offline Practice',
                 mode: 'practice',
                 subject: subj,
-                questions: fallbackBank
+                questions: finalQs
               });
             }).finally(() => {
               btn.disabled = false;
