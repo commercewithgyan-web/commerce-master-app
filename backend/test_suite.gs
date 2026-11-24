@@ -132,7 +132,8 @@ function runAllCommerceTests() {
 
   // ── TEST 8: MINI APP ROUTES (Phase 1 of 2026-11-12 review fixes) ──
   Logger.log('\n📋 Running Test Group 8: Mini App Route Wiring...');
-  var unknownRes = handleApiRequest({ action: 'noSuchActionForTest' });
+  // handleApiRequest fails closed without initData; pass a pre-verified fake user (2nd arg) to reach the action switch.
+  var unknownRes = handleApiRequest({ action: 'noSuchActionForTest' }, { id: '888877770', first_name: 'TestUser', is_admin: false });
   assert('Unknown action still returns Unknown action', unknownRes && unknownRes.ok === false && String(unknownRes.error).indexOf('Unknown action') === 0, 'Got: ' + JSON.stringify(unknownRes));
 
   var routeNames = ['getHomeDashboard', 'getNotebook', 'getProgress', 'getFeeDashboard', 'addNote', 'runRedPenAnalysis'];
@@ -158,7 +159,10 @@ function runAllCommerceTests() {
 
   // ── TEST 10: DAILY PRACTICE SHEET PERMANENT TEMPLATE & VAULT ──
   Logger.log('\n📋 Running Test Group 10: Daily Practice Sheet Permanent Template & Vault...');
-  var qHtml = generateDailyPracticeSheetHtml_({
+  // v4.3.0: engine is generateMultiPageDailyPracticeSheetHtml_ and returns {html, pageCount, ...}.
+  // PDF template checks are isolated so a template failure cannot hide the vault assertions below.
+  try {
+  var qHtml = generateMultiPageDailyPracticeSheetHtml_({
     date: '2026-11-12',
     classLevel: 12,
     subject: 'Accountancy',
@@ -166,16 +170,16 @@ function runAllCommerceTests() {
     questionText: 'A and B are partners...',
     marks: 6,
     qid: 'DPS-12-Q'
-  }, false);
+  }, false).html;
 
   assert('Question HTML generated', typeof qHtml === 'string' && qHtml.length > 500);
-  assert('Question HTML contains DAILY PRACTICE SHEET pill', qHtml.indexOf('DAILY PRACTICE SHEET') !== -1);
-  assert('Question HTML contains COMMERCE GYAN branding', qHtml.indexOf('COMMERCE GYAN') !== -1 && qHtml.indexOf('BE THE BEST FROM THE REST') !== -1);
+  assert('Question HTML contains DAILY PRACTICE PAPER kicker', qHtml.indexOf('DAILY PRACTICE PAPER') !== -1);
+  assert('Question HTML contains COMMERCE GYAN branding', qHtml.indexOf('Commerce Gyan') !== -1 && qHtml.indexOf('Commerce with Gyan') !== -1);
   assert('Question HTML contains A4 dimensions', qHtml.indexOf('210mm 297mm') !== -1);
   assert('Question HTML contains Begusarai footer & phone', qHtml.indexOf('Behind G.D. College, 2nd Floor, Begusarai') !== -1 && qHtml.indexOf('9278569860') !== -1);
-  assert('Question HTML contains evening register prompt', qHtml.indexOf('Solve this question in your physical practice register tonight') !== -1);
+  assert('Question HTML contains evening register prompt', qHtml.indexOf('Solve this question in your practice register') !== -1);
 
-  var aHtml = generateDailyPracticeSheetHtml_({
+  var aHtml = generateMultiPageDailyPracticeSheetHtml_({
     date: '2026-11-12',
     classLevel: 12,
     subject: 'Accountancy',
@@ -186,18 +190,21 @@ function runAllCommerceTests() {
     marksBreakdown: '• 1.5 Marks: Interest on capital\n• 1.0 Mark: Partner salary',
     commonMistakes: '• Ratio trap: Avoid equal split',
     qid: 'DPS-12-A'
-  }, true);
+  }, true).html;
 
-  assert('Answer HTML contains ANSWER KEY pill', aHtml.indexOf('DAILY PRACTICE SHEET • ANSWER KEY') !== -1);
+  assert('Answer HTML contains ANSWER KEY kicker', aHtml.indexOf('ANSWER KEY · DPP NO.') !== -1);
   assert('Answer HTML contains CBSE Rubric card', aHtml.indexOf('CBSE Step-by-Step Marking Scheme &amp; Rubric') !== -1 || aHtml.indexOf('CBSE Step-by-Step Marking Scheme & Rubric') !== -1);
   assert('Answer HTML contains Traps card', aHtml.indexOf('Common Examiner Traps to Avoid') !== -1);
+  } catch (errPdfT) {
+    assert('Group 10 PDF template tests ran without throwing (' + errPdfT.message + ')', false);
+  }
 
   var q11_4 = getApprovedSubjectiveQuestion_(11, {}, 4);
-  assert('Class 11 4-Mark vault problem returned (BRS)', q11_4 && q11_4.marks === 4 && q11_4.chapterName.indexOf('BRS') !== -1);
+  assert('Class 11 4-Mark vault problem returned', q11_4 && q11_4.marks === 4 && /^11ACC-/.test(q11_4.qid));
   var q12_4 = getApprovedSubjectiveQuestion_(12, {}, 4);
-  assert('Class 12 4-Mark vault problem returned (Shares)', q12_4 && q12_4.marks === 4 && q12_4.chapterName.indexOf('Share Capital') !== -1);
+  assert('Class 12 4-Mark vault problem returned', q12_4 && q12_4.marks === 4 && /^12BST-/.test(q12_4.qid));
   var q12_6 = getApprovedSubjectiveQuestion_(12, {}, 6);
-  assert('Class 12 6-Mark vault problem returned (Partnership)', q12_6 && q12_6.marks === 6 && q12_6.chapterName.indexOf('Partnership') !== -1);
+  assert('Class 12 6-Mark vault problem returned', q12_6 && q12_6.marks === 6 && /^12BST-/.test(q12_6.qid));
 
   // ── SUMMARY ──
   Logger.log('\n═══════════════════════════════════════════════');
@@ -261,28 +268,40 @@ function runTelegramAuthAndVisitorTests() {
   assert('Admin ID with wrong hash is NOT authenticated', !badHashPassed, 'Admin with wrong hash should be rejected');
 
   // 2c. Admin ID with valid HMAC signature succeeds
-  var testBotToken = '123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11';
+  // Sign with a real configured bot token read from Script Properties (never logged). If none is set, 2c/3/4 are skipped.
+  var testBotToken = '';
+  var tokenPropKeys = ['TELEGRAM_BOT_TOKEN', 'BOT_TOKEN', 'BOT_TOKEN_DOST', 'BOT_TOKEN_HELP', 'CGHELP_BOT_TOKEN', 'SECONDARY_BOT_TOKEN'];
+  for (var tk = 0; tk < tokenPropKeys.length && !testBotToken; tk++) {
+    var tkVal = PropertiesService.getScriptProperties().getProperty(tokenPropKeys[tk]);
+    if (tkVal) testBotToken = String(tkVal.split(',')[0]).trim();
+  }
   var secretKeyBytes = Utilities.computeHmacSha256Signature(Utilities.newBlob(testBotToken).getBytes(), Utilities.newBlob('WebAppData').getBytes());
   var dataCheckString = 'auth_date=' + nowSec + '\nquery_id=AAHadmin\nuser=' + adminUserJson;
   var calculatedHashBytes = Utilities.computeHmacSha256Signature(Utilities.newBlob(dataCheckString, 'UTF-8').getBytes(), secretKeyBytes);
   var validHash = calculatedHashBytes.map(function(b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('').toLowerCase();
 
   var validAdminPayload = 'query_id=AAHadmin&user=' + encodeURIComponent(adminUserJson) + '&auth_date=' + nowSec + '&hash=' + validHash;
-  var validAdminUser = null;
-  try {
-    validAdminUser = verifyTelegramInitData_(validAdminPayload);
-  } catch (e) {
-    Logger.log('Valid admin HMAC verification failed: ' + e);
+  if (!testBotToken) {
+    Logger.log('  ⏭️ SKIP: 2c/3/4 (no bot token in Script Properties to sign with)');
+  } else {
+    var validAdminUser = null;
+    try {
+      validAdminUser = verifyTelegramInitData_(validAdminPayload);
+    } catch (e) {
+      Logger.log('Valid admin HMAC verification failed: ' + e);
+    }
+    assert('Admin ID with valid HMAC signature succeeds', validAdminUser && validAdminUser.is_admin === true, 'Got: ' + JSON.stringify(validAdminUser));
+
+    // 3. Routing Admin with Valid Signature
+    var adminRoute = verifyAndRouteUser_(validAdminPayload);
+    assert('Admin with valid signature routes to ADMIN role', adminRoute && adminRoute.ok === true && adminRoute.role === 'ADMIN' && adminRoute.isAdmin === true, 'Got: ' + JSON.stringify(adminRoute));
+
+    // 4. Preview sandbox for Admin requires a signed payload (null initData fails closed)
+    var stageRoute = verifyAndRouteUser_(validAdminPayload, 'CG-11-001');
+    assert('Preview sandbox routes to ADMIN preview', stageRoute && stageRoute.ok === true && stageRoute.role === 'ADMIN' && stageRoute.impersonateRollNo === 'CG-11-001', 'Got: ' + JSON.stringify(stageRoute));
   }
-  assert('Admin ID with valid HMAC signature succeeds', validAdminUser && validAdminUser.is_admin === true, 'Got: ' + JSON.stringify(validAdminUser));
-
-  // 3. Routing Admin with Valid Signature
-  var adminRoute = verifyAndRouteUser_(validAdminPayload);
-  assert('Admin with valid signature routes to ADMIN role', adminRoute && adminRoute.ok === true && adminRoute.role === 'ADMIN' && adminRoute.isAdmin === true, 'Got: ' + JSON.stringify(adminRoute));
-
-  // 4. Staging / sandbox bypass for Admin
-  var stageRoute = verifyAndRouteUser_(null, 'CG-11-001');
-  assert('Preview sandbox routes to ADMIN preview', stageRoute && stageRoute.ok === true && stageRoute.role === 'ADMIN', 'Got: ' + JSON.stringify(stageRoute));
+  var nullRoute = verifyAndRouteUser_(null, 'CG-11-001');
+  assert('Null initData fails closed (no preview bypass)', nullRoute && nullRoute.ok === false, 'Got: ' + JSON.stringify(nullRoute));
 
   // 5. Visitor auto-record & 7-day calculation
   var IDS = getActiveSheetIds();

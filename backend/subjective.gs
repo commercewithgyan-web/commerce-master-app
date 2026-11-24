@@ -2862,6 +2862,43 @@ function getApprovedSubjectiveQuestion_(classLevel, subtopic, targetMarks) {
   targetMarks = Number(targetMarks) || 0;
   var usedQids = getDispatchedSubjectiveQids_(classLevel);
 
+  // 0. Master Vault (MASTER_Q_REPO): approved + READY TO APPROVE non-MCQ rows for the active subject's tab.
+  // Same gate as the MCQ picker. Any miss or error falls through to the old SHEET_QB / curated logic below.
+  try {
+    var vaultTab = getMasterRepoSheetName_(subtopic.subject || (classLevel === 12 ? 'Business Studies' : 'Accountancy'), classLevel);
+    if (vaultTab) {
+      var vaultRows = getMasterVaultQuestionsByTab_(vaultTab, false);
+      var wantCh = Number(subtopic.chapterNo) || 0;
+      var chosen = null;
+      for (var pass = 0; pass < 2 && !chosen; pass++) {
+        for (var k = 0; k < vaultRows.length; k++) {
+          var vr = vaultRows[k];
+          if (String(vr.QuestionType || '').toUpperCase().indexOf('MCQ') !== -1) continue;
+          if (targetMarks && Number(vr.Marks) !== targetMarks) continue;
+          if (usedQids[vr.QID]) continue;
+          if (pass === 0 && (!wantCh || Number(vr.Chapter) !== wantCh)) continue;
+          chosen = vr;
+          break;
+        }
+      }
+      if (chosen) {
+        return {
+          qid: chosen.QID,
+          subject: vaultTab.replace(/^1[12]_/, ''),
+          chapter: 'Chapter ' + chosen.Chapter,
+          chapterName: chosen.ChapterName,
+          question: chosen.Question,
+          marks: Number(chosen.Marks) || 6,
+          modelAnswer: chosen.Explanation,
+          rubric: chosen.Rubric,
+          traps: chosen.TrapAlert
+        };
+      }
+    }
+  } catch (errVault) {
+    Logger.log('Notice in getApprovedSubjectiveQuestion_ reading Master Vault: ' + errVault.message);
+  }
+
   // 1. Try to query SHEET_QB!Theory_Bank then SHEET_QB!QuestionBank
   var bankTabs = ['Theory_Bank', 'QuestionBank'];
   for (var t = 0; t < bankTabs.length; t++) {
