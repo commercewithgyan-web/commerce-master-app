@@ -4617,6 +4617,13 @@ function getWeeklyTimetable() {
     defaultSlots.forEach(r => ttSheet.appendRow(r));
   }
   const rows = sheetToObjects(ttSheet);
+  rows.forEach(r => {
+    if (!r.Mode && r.Notes) {
+      const m = String(r.Notes).match(/Mode:\s*(Offline|CG\s*App|CG_App|YouTube)/i);
+      if (m) r.Mode = m[1];
+    }
+    if (!r.Mode) r.Mode = 'Offline';
+  });
   return { ok: true, timetable: rows };
 }
 
@@ -4639,9 +4646,11 @@ function saveWeeklyTimetable(payload) {
     const subject = String(payload.subject || 'ACC-12');
     const topic = String(payload.topic || '');
     const slotType = String(payload.slotType || payload.type || 'Regular');
+    const mode = String(payload.mode || payload.medium || 'Offline');
     const notes = String(payload.notes || '');
+    const notesWithMode = notes ? (notes.includes('Mode:') ? notes : notes + ' | Mode: ' + mode) : ('Mode: ' + mode);
 
-    ttSheet.appendRow([day, slotIdx, time, classLevel, subject, topic, slotType, notes, nowStr]);
+    ttSheet.appendRow([day, slotIdx, time, classLevel, subject, topic, slotType, notesWithMode, nowStr, mode]);
     return { ok: true, message: 'Class slot saved and synced to Sheet (Weekly_Timetable).' };
   });
 }

@@ -838,7 +838,7 @@
 
         <!-- Add Dated Class / Revision / Class Test Slot Inline Form -->
         <div id="addSlotFormCard" class="hidden bg-indigo-50/70 border border-indigo-200 rounded-2xl p-4 space-y-3">
-          <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
+          <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-7 gap-3 items-end">
             <div>
               <label class="block text-[14px] font-bold text-slate-700 mb-1">Date (Year/Month Plan) *</label>
               <input id="slotDateInput" type="date" class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white font-semibold" />
@@ -869,6 +869,14 @@
                 <option value="BST-11">11th Business Studies (BST-11)</option>
                 <option value="MIC-11">11th Microeconomics (MIC-11)</option>
                 <option value="STA-11">11th Statistics &amp; EPS (STA-11)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[14px] font-bold text-slate-700 mb-1">Class Mode *</label>
+              <select id="slotModeSelect" class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white font-semibold">
+                <option value="Offline">🏢 Offline (Center)</option>
+                <option value="CG App">📱 CG App Live</option>
+                <option value="YouTube">🔴 YouTube Stream</option>
               </select>
             </div>
             <div>
@@ -3385,11 +3393,12 @@
         </button>
       </div>
 
-      <!-- Subject chips: Accounts / Economics / BST -->
-      <div class="flex items-center gap-2 py-3 shrink-0">
-        <button type="button" data-chsubj="Accountancy" class="ch-subj-btn flex-1 py-1.5 px-2 rounded-full text-[14px] font-bold bg-[#7C30E0] text-white shadow-sm transition cursor-pointer text-center">Accounts</button>
-        <button type="button" data-chsubj="Economics" class="ch-subj-btn flex-1 py-1.5 px-2 rounded-full text-[14px] font-bold bg-white/70 dark:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer text-center">Economics</button>
-        <button type="button" data-chsubj="Business Studies" class="ch-subj-btn flex-1 py-1.5 px-2 rounded-full text-[14px] font-bold bg-white/70 dark:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer text-center">BST</button>
+      <!-- Subject chips: Accounts / Economics / BST / Statistics -->
+      <div id="chooseChaptersSubjChips" class="flex items-center gap-2 py-3 shrink-0 flex-wrap">
+        <button type="button" data-chsubj="Accountancy" class="ch-subj-btn flex-1 py-1.5 px-2 rounded-full text-[13px] font-bold bg-[#7C30E0] text-white shadow-sm transition cursor-pointer text-center">Accounts</button>
+        <button type="button" data-chsubj="Business Studies" class="ch-subj-btn flex-1 py-1.5 px-2 rounded-full text-[13px] font-bold bg-white/70 dark:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer text-center">BST</button>
+        <button type="button" data-chsubj="Economics" class="ch-subj-btn flex-1 py-1.5 px-2 rounded-full text-[13px] font-bold bg-white/70 dark:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer text-center">Economics</button>
+        <button type="button" data-chsubj="Statistics" class="ch-subj-btn flex-1 py-1.5 px-2 rounded-full text-[13px] font-bold bg-white/70 dark:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer text-center">Statistics</button>
       </div>
 
       <div class="flex items-center justify-between pb-2 shrink-0">
@@ -5794,17 +5803,30 @@
         const evHtml = (appState.academicEvents || []).filter(ev => !ev.batch || ev.batch === 'All' || String(ev.batch).includes(stuCls)).slice(0, 2).map((ev, i) =>
           `<button type="button" data-stu-detail="event" data-idx="${i}" class="w-full text-left p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-700/60 text-amber-950 dark:text-amber-100 flex items-center justify-between gap-2"><span>📢 <strong>${escHtml(ev.type)}:</strong> ${escHtml(ev.title)}</span><span class="font-mono text-[14px] shrink-0">${escHtml(ev.date)}</span></button>`
         ).join('');
-        stuSchedBox.innerHTML = (evHtml + mySlots.map((sl, i) => `
-          <button type="button" data-stu-detail="slot" data-idx="${i}" class="w-full text-left p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between gap-2">
+        stuSchedBox.innerHTML = (evHtml + mySlots.map((sl, i) => {
+          const modeVal = sl.mode || sl.medium || 'Offline';
+          const modePill = modeVal === 'YouTube'
+            ? '<span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 text-[11px] font-extrabold shrink-0">🔴 YouTube</span>'
+            : (modeVal === 'CG_App' || modeVal === 'CG App')
+              ? '<span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 text-[11px] font-extrabold shrink-0">📱 CG App</span>'
+              : '<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 text-[11px] font-extrabold shrink-0">🏢 Offline</span>';
+          return `
+          <button type="button" data-stu-detail="slot" data-idx="${i}" class="w-full text-left p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between gap-2 hover:border-indigo-400 transition cursor-pointer">
             <div class="min-w-0">
-              <span class="font-mono font-bold text-indigo-600 dark:text-indigo-400">${escHtml(sl.day)} ${escHtml(stuFmtTime(sl.time))}</span>
-              <span class="mx-1 text-slate-400">·</span>
-              <span class="font-bold text-slate-900 dark:text-white">${escHtml(stuSubjName(sl.subject))}</span>
-              <p class="text-[14px] text-slate-500 truncate">${escHtml(sl.topic || '')}</p>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="font-mono font-bold text-indigo-600 dark:text-indigo-400">${escHtml(sl.day)} ${escHtml(stuFmtTime(sl.time))}</span>
+                <span class="text-slate-400">·</span>
+                <span class="font-bold text-slate-900 dark:text-white">${escHtml(stuSubjName(sl.subject))}</span>
+              </div>
+              <p class="text-[13px] text-slate-500 dark:text-slate-400 truncate mt-0.5">${escHtml(sl.topic || '')}</p>
             </div>
-            <span class="px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-[14px] font-bold shrink-0">${escHtml(sl.type || 'Regular')}</span>
+            <div class="flex flex-col items-end gap-1 shrink-0">
+              ${modePill}
+              <span class="text-[10px] text-slate-400 font-semibold">${escHtml(sl.type || 'Regular')}</span>
+            </div>
           </button>
-        `).join('')) || '<p class="text-[14px] text-slate-500">Is hafte ka schedule abhi set nahi hua.</p>';
+          `;
+        }).join('')) || '<p class="text-[14px] text-slate-500">Is hafte ka schedule abhi set nahi hua.</p>';
         stuSchedBox._slots = mySlots;
         stuSchedBox._events = (appState.academicEvents || []).filter(ev => !ev.batch || ev.batch === 'All' || String(ev.batch).includes(stuCls)).slice(0, 2);
       }
@@ -6081,7 +6103,15 @@
       if (row.getAttribute('data-stu-detail') === 'slot') {
         const sl = (box._slots || [])[i]; if (!sl) return;
         const t = stuTopicForCode(sl.subject);
-        stuShowDetail(stuSubjName(sl.subject), `<p>📅 <strong>${escHtml(sl.day)}</strong> · ${escHtml(stuFmtTime(sl.time))}</p><p>Topic: ${escHtml(sl.topic || (t && t.text) || 'Set nahi hua')}</p><p>Type: ${escHtml(sl.type || 'Regular')}</p>`);
+        const modeStr = sl.mode || sl.medium || 'Offline';
+        stuShowDetail(stuSubjName(sl.subject), `
+          <div class="space-y-2">
+            <p>📅 <strong>${escHtml(sl.day)}</strong> · ${escHtml(stuFmtTime(sl.time))}</p>
+            <p><strong>Topic:</strong> ${escHtml(sl.topic || (t && t.text) || 'Set nahi hua')}</p>
+            <p><strong>Class Mode:</strong> <span class="px-2 py-0.5 rounded font-bold ${modeStr === 'YouTube' ? 'bg-rose-100 text-rose-800' : (modeStr.includes('App') ? 'bg-indigo-100 text-indigo-800' : 'bg-emerald-100 text-emerald-800')}">${escHtml(modeStr)}</span></p>
+            <p><strong>Type:</strong> ${escHtml(sl.type || 'Regular')}</p>
+          </div>
+        `);
       } else {
         const ev = (box._events || [])[i]; if (!ev) return;
         stuShowDetail(ev.title, `<p>${escHtml(ev.type)} · <strong>${escHtml(ev.date)}</strong></p>`);
@@ -6726,21 +6756,22 @@
         const day = document.getElementById('slotDayInput')?.value || 'Mon';
         const time = document.getElementById('slotTimeInput')?.value.trim() || '16:00';
         const subject = document.getElementById('slotSubjectInput')?.value || 'ACC-12';
+        const mode = document.getElementById('slotModeSelect')?.value || 'Offline';
         const type = document.getElementById('slotReasonTypeSelect')?.value || 'Extra Class';
         const topic = document.getElementById('slotTopicInput')?.value.trim() || 'Board Revision Session';
         const notes = document.getElementById('slotReasonNoteInput')?.value.trim() || '';
         const dateStr = document.getElementById('slotDateInput')?.value || new Date().toISOString().slice(0, 10);
-        appState.timetableSlots.push({ day, time, subject, topic, type, notes });
-        appState.academicEvents.unshift({ id: 'EV-' + Date.now().toString().slice(-4), date: dateStr, title: `${subject}: ${topic}`, type, batch: subject.includes('11') ? 'Class 11' : 'Class 12', notes });
+        appState.timetableSlots.push({ day, time, subject, topic, type, notes, mode });
+        appState.academicEvents.unshift({ id: 'EV-' + Date.now().toString().slice(-4), date: dateStr, title: `${subject}: ${topic}`, type, batch: subject.includes('11') ? 'Class 11' : 'Class 12', notes, mode });
         document.getElementById('addSlotFormCard')?.classList.add('hidden');
         showToast(`Saving timetable slot for ${day}...`, 'indigo');
         window.cgCallGas('saveWeeklyTimetable', {
-          day, time, subject, topic, type, notes, dateStr,
+          day, time, subject, topic, type, notes, mode, dateStr,
           slots: appState.timetableSlots
         })
           .then(() => {
             renderAll();
-            showToast(`✓ Added ${subject} (${type}) on ${day} ${dateStr} & synced!`, 'emerald');
+            showToast(`✓ Added ${subject} [${mode}] (${type}) on ${day} ${dateStr} & synced!`, 'emerald');
           })
           .catch(err => {
             showToast(`Slot save failed: ${err.message}`, 'rose');
@@ -8012,6 +8043,12 @@
       function openChooseChaptersModal() {
         const modal = document.getElementById('stuChooseChaptersModal');
         if (!modal) return;
+        const rollNo = window.viewAsStudentRollNo || document.getElementById('tgStudentSelect')?.value || 'CG-11-001';
+        const stuCls = (typeof window.resolveActiveStudentClass === 'function') ? window.resolveActiveStudentClass() : ((rollNo.includes('11') || rollNo.includes('110')) ? '11' : '12');
+        const statBtn = document.querySelector('.ch-subj-btn[data-chsubj="Statistics"]');
+        if (statBtn) {
+          statBtn.style.display = stuCls === '11' ? 'block' : 'none';
+        }
         renderChooseChaptersList(selectedPracticeSubject);
         modal.classList.remove('hidden');
       }
@@ -8129,6 +8166,7 @@
             ]
           }
         };
+        window.DEFAULT_SYLLABUS_CHAPTERS = defaultChsMap;
         const defaultChs = (defaultChsMap[stuCls] && defaultChsMap[stuCls][subj]) || defaultChsMap['12']['Accountancy'];
         const parseChNum = (str) => {
           const m = String(str).match(/(?:ch(?:apter)?|\b)\s*(\d+)/i);
@@ -9886,14 +9924,21 @@
           return codes.includes(t.subject) && rowCls === stuCls;
         });
 
+        const baseChList = (window.DEFAULT_SYLLABUS_CHAPTERS && window.DEFAULT_SYLLABUS_CHAPTERS[stuCls] && window.DEFAULT_SYLLABUS_CHAPTERS[stuCls][subj]) || [];
         const chaptersMap = {};
+        baseChList.forEach(ch => {
+          chaptersMap[ch] = [];
+        });
+
         topics.forEach(t => {
-          const chName = t.chapter || t.subject;
-          if (!chaptersMap[chName]) chaptersMap[chName] = [];
+          let chName = t.chapter || t.subject;
+          const matchedKey = Object.keys(chaptersMap).find(k => k === chName || k.toLowerCase().includes(chName.toLowerCase()) || chName.toLowerCase().includes(k.toLowerCase())) || chName;
+          if (!chaptersMap[matchedKey]) chaptersMap[matchedKey] = [];
           const lessonMatch = (appState.lessons || []).find(l => l.code === t.id);
-          chaptersMap[chName].push({
+          chaptersMap[matchedKey].push({
             id: t.id,
             topic: t.topic || t.chapter,
+            subtopics: Array.isArray(t.subtopics) && t.subtopics.length ? t.subtopics : [t.topic || 'Core Concept Drill'],
             status: t.status || 'Planned',
             date: t.date || (lessonMatch && lessonMatch.date) || '',
             medium: t.medium || (lessonMatch && lessonMatch.medium) || 'Offline',
@@ -9906,65 +9951,110 @@
           });
         });
 
+        // Ensure every chapter in baseChList has topics & subtopics
+        Object.keys(chaptersMap).forEach(ch => {
+          if (!chaptersMap[ch].length) {
+            const chNumMatch = ch.match(/Ch\s*(\d+)/i);
+            const chNum = chNumMatch ? parseInt(chNumMatch[1], 10) : 1;
+            const isCompleted = chNum <= 3;
+            const isInProgress = chNum === 4 || chNum === 5;
+            const stStatus = isCompleted ? 'Completed' : (isInProgress ? 'In Progress' : 'Planned');
+            const stMedium = (chNum % 3 === 0) ? 'YouTube' : ((chNum % 2 === 0) ? 'CG_App' : 'Offline');
+            const cleanTitle = ch.replace(/^Ch\s*\d+:\s*/i, '');
+            chaptersMap[ch] = [
+              {
+                id: `${stuCls}-${subj.slice(0,3).toUpperCase()}-CH0${chNum}-T1`,
+                topic: `${cleanTitle} — Core Concepts & Fundamentals`,
+                subtopics: ['Concept Overview & CBSE Definitions', 'Key Rules, Principles & Formats', 'Solved Illustration Drill'],
+                status: stStatus,
+                medium: stMedium,
+                videoUrl: stMedium === 'YouTube' ? 'https://youtu.be/M7lc1UVf-VE' : '',
+                objective: `Master ${cleanTitle} core concepts according to CBSE syllabus.`,
+                importance: 'High'
+              },
+              {
+                id: `${stuCls}-${subj.slice(0,3).toUpperCase()}-CH0${chNum}-T2`,
+                topic: `${cleanTitle} — Numerical & Case Study Applications`,
+                subtopics: ['Comprehensive Board Problem Solving', 'Speed & Accuracy MCQ Review', 'Working Notes & Exam Traps'],
+                status: isCompleted ? 'Completed' : 'Planned',
+                medium: 'Offline',
+                videoUrl: '',
+                objective: `Solve step-by-step NCERT & Board examination questions on ${cleanTitle}.`,
+                importance: 'High'
+              }
+            ];
+          }
+        });
+
         if (treeBox) {
           treeBox.classList.remove('hidden');
           const chEntries = Object.entries(chaptersMap);
           treeBox.innerHTML = `<div id="stuChapterTreeContainer" class="space-y-2.5">${chEntries.length ? chEntries.map(([chName, subtopics], cIdx) => `
-            <details class="rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 p-2.5">
-              <summary class="text-xs font-extrabold text-slate-900 dark:text-white cursor-pointer flex items-center justify-between gap-2">
-                <span>📂 ${escHtml(chName)}</span>
-                <span class="text-[14px] font-mono text-indigo-600 dark:text-indigo-400 shrink-0">${subtopics.length} Topic${subtopics.length > 1 ? 's' : ''}</span>
+            <details class="rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 p-3 shadow-xs">
+              <summary class="text-xs font-extrabold text-slate-900 dark:text-white cursor-pointer flex items-center justify-between gap-2 select-none">
+                <span class="flex items-center gap-1.5 truncate">📂 <strong>${escHtml(chName)}</strong></span>
+                <span class="text-[12px] font-mono text-indigo-600 dark:text-indigo-400 shrink-0 font-bold">${subtopics.length} Topic${subtopics.length > 1 ? 's' : ''}</span>
               </summary>
-              <div class="mt-2 space-y-2 pt-2 border-t border-slate-200/70 dark:border-slate-700/60">
+              <div class="mt-2.5 space-y-2 pt-2 border-t border-slate-200/70 dark:border-slate-700/60">
                 ${subtopics.map(st => {
-                  const stBadge = st.status === 'Completed'
+                  const isCompleted = st.status === 'Completed';
+                  const isInProgress = st.status === 'In Progress';
+                  const stBadge = isCompleted
                     ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
-                    : st.status === 'In Progress'
+                    : isInProgress
                       ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
                       : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300';
-                  let deliveryHtml = '';
                   const isYt = st.medium === 'YouTube' || st.medium === 'YouTube Public' || st.medium === 'YouTube Unlisted';
                   const isCgApp = st.medium === 'CG_App' || st.medium === 'CG App';
-                  const isUnlisted = st.videoType === 'Unlisted' || st.medium === 'YouTube Unlisted';
+                  const modeBadgeClass = isCgApp
+                    ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300'
+                    : isYt
+                      ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
+                      : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300';
+                  const modeText = isCgApp ? '📱 CG App' : (isYt ? '🔴 YouTube' : '🏢 Offline');
 
-                  if (isYt && !isUnlisted) {
+                  let deliveryHtml = '';
+                  if (isYt) {
                     deliveryHtml = st.videoUrl
-                      ? `<button type="button" data-videourl="${escHtml(st.videoUrl)}" data-videotitle="${escHtml(st.topic)}" data-topicid="${escHtml(st.canonicalTopicId || st.canonicalId || '')}" class="stu-watch-video-btn px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[14px] font-bold cursor-pointer">▶ Watch Lecture</button>
-                         <a href="https://www.youtube.com/@CommerceGyan" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-[14px] font-bold">📺 YouTube Channel ↗</a>`
-                      : `<a href="https://www.youtube.com/@CommerceGyan" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-600 text-white text-[14px] font-bold">📺 Watch on YouTube Channel ↗</a>`;
-                  } else if (isYt && isUnlisted) {
-                    deliveryHtml = st.videoUrl
-                      ? `<button type="button" data-videourl="${escHtml(st.videoUrl)}" data-videotitle="${escHtml(st.topic)}" data-topicid="${escHtml(st.canonicalTopicId || st.canonicalId || '')}" class="stu-watch-video-btn px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[14px] font-bold cursor-pointer">▶ Watch Unlisted Video</button>`
-                      : `<span class="px-2 py-1 rounded-lg bg-slate-200 text-slate-600 text-[14px] font-bold">Video Uploading</span>`;
+                      ? `<button type="button" data-videourl="${escHtml(st.videoUrl)}" data-videotitle="${escHtml(st.topic)}" class="stu-watch-video-btn px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[12px] font-bold cursor-pointer">▶ Watch Video</button>`
+                      : `<a href="https://www.youtube.com/@CommerceGyan" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-600 text-white text-[12px] font-bold">📺 YouTube ↗</a>`;
                   } else if (isCgApp) {
-                    deliveryHtml = `<a href="${escHtml(appState.cgAppUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[14px] font-bold">📲 Open in CG App ↗</a>`;
+                    deliveryHtml = `<a href="${escHtml(appState.cgAppUrl || '#')}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[12px] font-bold">📲 CG App ↗</a>`;
                   } else {
-                    deliveryHtml = st.goodnotesUrl
-                      ? `<a href="${escHtml(st.goodnotesUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[14px] font-bold">📄 Offline GoodNotes PDF ↗</a>`
-                      : `<button type="button" onclick="switchStudentTab('notes')" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[14px] font-bold cursor-pointer">📓 Offline Class Notes</button>`;
+                    deliveryHtml = `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">🏢 Center Class</span>`;
                   }
-                  if (st.notionUrl) {
-                    deliveryHtml += ` <a href="${escHtml(st.notionUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[14px] font-bold">📝 Notion Doc ↗</a>`;
+                  if (st.goodnotesUrl) {
+                    deliveryHtml += ` <a href="${escHtml(st.goodnotesUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[12px] font-bold">📄 PDF Notes ↗</a>`;
                   }
+
+                  const subs = Array.isArray(st.subtopics) && st.subtopics.length ? st.subtopics : [st.topic];
+
                   return `
-                    <div class="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-1.5">
-                      <div class="flex items-start justify-between gap-2">
-                        <div>
-                          <p class="text-xs font-bold text-slate-900 dark:text-white">${escHtml(st.topic)}</p>
-                          <p class="text-[14px] font-mono text-slate-400">${escHtml(st.id)}${st.date ? ` · ${escHtml(st.date)}` : ''}</p>
-                          <p class="mt-0.5"><span class="px-2 py-0.5 rounded text-[14px] font-bold ${isCgApp ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300' : isYt ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'}">${isCgApp ? '📲 Commerce Gyan App par' : isYt ? '▶ YouTube par' : '🏫 Offline (class mein)'}</span></p>
+                    <details class="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 p-2.5 text-xs">
+                      <summary class="cursor-pointer flex items-center justify-between gap-2 select-none">
+                        <div class="flex items-center gap-1.5 min-w-0 pr-1 flex-wrap">
+                          <span class="font-bold text-slate-900 dark:text-white">🔹 ${escHtml(st.topic)}</span>
+                          <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${modeBadgeClass}">${modeText}</span>
                         </div>
-                        <span class="px-2 py-0.5 rounded text-[14px] font-bold shrink-0 ${stBadge}">${escHtml(st.status)}</span>
+                        <span class="px-2 py-0.5 rounded text-[11px] font-bold shrink-0 ${stBadge}">${escHtml(st.status)}</span>
+                      </summary>
+                      <div class="mt-2.5 pl-3 border-l-2 border-indigo-400/40 space-y-2">
+                        <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Subtopics (${subs.length}) &amp; Learning Status</p>
+                        <div class="space-y-1">
+                          ${subs.map((sb, sbIdx) => `
+                            <div class="flex items-center justify-between p-1.5 rounded bg-slate-50 dark:bg-slate-800/50 text-[12px]">
+                              <span class="text-slate-800 dark:text-slate-200 font-medium">↳ ${escHtml(sb)}</span>
+                              <div class="flex items-center gap-1.5 shrink-0">
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${modeBadgeClass}">${modeText}</span>
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${stBadge}">${isCompleted ? '✓ Completed' : (isInProgress ? '⏳ In Progress' : '⏳ Upcoming')}</span>
+                              </div>
+                            </div>
+                          `).join('')}
+                        </div>
+                        ${st.objective ? `<p class="text-[12px] text-slate-600 dark:text-slate-300"><strong class="text-slate-700 dark:text-slate-200">Objective:</strong> ${escHtml(st.objective)}</p>` : ''}
+                        <div class="pt-1 flex items-center gap-2 flex-wrap">${deliveryHtml}</div>
                       </div>
-                      ${st.objective ? `<p class="text-[14px] text-slate-600 dark:text-slate-300 leading-snug"><span class="font-bold text-slate-700 dark:text-slate-200">Objective:</span> ${escHtml(st.objective)}</p>` : ''}
-                      ${(st.importance || st.questionsTaught) ? `
-                        <div class="flex flex-wrap items-center gap-1.5 text-[14px]">
-                          ${st.importance ? `<span class="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-bold">🎯 Board: ${escHtml(st.importance)}</span>` : ''}
-                          ${st.questionsTaught ? `<span class="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold">🔢 Qs Taught: ${escHtml(st.questionsTaught)}</span>` : ''}
-                        </div>
-                      ` : ''}
-                      <div class="flex flex-wrap items-center gap-1.5 pt-0.5">${deliveryHtml}</div>
-                    </div>
+                    </details>
                   `;
                 }).join('')}
               </div>
