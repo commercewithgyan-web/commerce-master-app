@@ -180,7 +180,7 @@ function isAdminOnlyAction_(action) {
     'testGenerateBstFlowchartPdf', 'testGenerateSubjectiveQuestionPdf',
     'testGenerateSubjectiveAnswerPdf', 'checkBalanceSheetIntegrity',
     'getMonthlyPL', 'getBalanceSheet', 'getCashDrawer', 'reconcileNotebookRegistry',
-    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask', 'getWeeklyTimetable', 'saveWeeklyTimetable', 'saveTimetableSlot', 'deleteTimetableSlot', 'cancelBatchAndNotify', 'logLessonProgress', 'saveNotice', 'deleteNotice', 'saveCurriculumTopic', 'uploadDailyClassNotes', 'registerClassNoteFile', 'addLeadToSheet', 'advanceLeadStage', 'enrolTrialToDirectory', 'updateStudentProfile', 'saveAttendanceBatch', 'undoAttendanceBatch', 'sendDefaulterNotices', 'sendFeeReminderTelegram', 'publishDppQuiz', 'cancelAndRescheduleClass', 'saveAcademicEvent', 'toggleHolidayDate', 'saveTeacherTasks', 'saveSwotConfig', 'getPaymentIntimations', 'viewStudentAsTeacher', 'exitViewStudentAsTeacher', 'getStudentRecord', 'updateStudentRecord', 'startClassSession', 'endClassSession', 'getLiveSession', 'getNextTopicForClass', 'sendClassMissedNotices'
+    'setActiveSubtopic', 'saveLessonPlan', 'generateLessonPlan', 'saveAcademicTask', 'getAcademicTasks', 'toggleAcademicTask', 'getWeeklyTimetable', 'saveWeeklyTimetable', 'saveTimetableSlot', 'deleteTimetableSlot', 'cancelBatchAndNotify', 'logLessonProgress', 'saveNotice', 'deleteNotice', 'saveCurriculumTopic', 'uploadDailyClassNotes', 'registerClassNoteFile', 'addLeadToSheet', 'advanceLeadStage', 'enrolTrialToDirectory', 'updateStudentProfile', 'saveAttendanceBatch', 'undoAttendanceBatch', 'sendDefaulterNotices', 'sendFeeReminderTelegram', 'publishDppQuiz', 'cancelAndRescheduleClass', 'saveAcademicEvent', 'toggleHolidayDate', 'saveTeacherTasks', 'saveSwotConfig', 'getPaymentIntimations', 'viewStudentAsTeacher', 'exitViewStudentAsTeacher', 'getStudentRecord', 'updateStudentRecord', 'startClassSession', 'endClassSession', 'getLiveSession', 'getNextTopicForClass', 'sendClassMissedNotices', 'populateChapterQuestionsBatch'
   ];
   return adminActions.indexOf(action) !== -1;
 }
@@ -608,6 +608,13 @@ function doPost(e) {
       return jsonResponse({ ok: true, data: { live: ls.live, class: ls.class, subject: ls.subject } });
     }
 
+    if (action === "browserLogin") {
+      return jsonResponse(browserLogin_(payload));
+    }
+    if (action === "browserRegisterTrial") {
+      return jsonResponse(browserRegisterTrial_(payload));
+    }
+
     const initData = extractInitData_(e, requestData, payload);
 
     if (action === "verifyAuth") {
@@ -678,7 +685,7 @@ function doPost(e) {
         result = bindStudentClaimCode(payload);
         break;
       case "getStudentMiniAppBootstrap":
-        result = getStudentMiniAppBootstrap(payload);
+        result = getStudentMiniAppBootstrap(Object.assign({}, payload || {}, { initData: initData }));
         break;
       case "markBatchAttendance":
       case "saveAttendanceBatch":
@@ -859,7 +866,18 @@ function doPost(e) {
         result = saveSwotConfig(payload);
         break;
       case "submitRedPenSubmission":
-        result = submitRedPenSubmission(payload);
+        result = submitRedPenSubmission(payload, verifiedUser);
+        break;
+      case "getRedPenHistory":
+        result = (typeof getRedPenHistory_ === 'function')
+          ? getRedPenHistory_(resolveCallerRollNo_(verifiedUser, payload), verifiedUser && verifiedUser.id)
+          : { ok: true, items: [] };
+        break;
+      case "getQuestionBankCoverage":
+        result = getQuestionBankCoverage();
+        break;
+      case "populateChapterQuestionsBatch":
+        result = populateChapterQuestionsBatch(payload);
         break;
       case "getAcademicTasks":
         result = getAcademicTasks(payload);
@@ -4917,36 +4935,56 @@ function saveSwotConfig(payload) {
  * @param {Object} payload { rollNo, subjectCode, note, fileName, imageBase64 }
  * @return {Object}
  */
-function submitRedPenSubmission(payload) {
+function submitRedPenSubmission(payload, verifiedUser) {
   if (!VIEW_AS_STUDENT_ALLOW_WRITES && payload && payload.isViewAsStudent && !payload.teacherTest) {
     return { ok: false, error: 'Write operation rejected: View as Student session is strictly read-only (SYS-009).' };
   }
   payload = payload || {};
-  const rollNo = String(payload.rollNo || payload.studentId || (payload.teacherTest ? 'TEACHER_TEST' : 'STUDENT')).trim();
+  const verifiedRoll = (verifiedUser && !verifiedUser.is_admin && typeof resolveCallerRollNo_ === 'function')
+    ? resolveCallerRollNo_(verifiedUser, payload)
+    : '';
+  const rollNo = String(verifiedRoll || payload.rollNo || payload.studentId || (payload.teacherTest ? 'TEACHER_TEST' : 'STUDENT')).trim();
   const subject = String(payload.subjectCode || 'ACCOUNTS').trim();
-  const note = String(payload.note || 'Register Photo Check').trim();
+  const note = String(payload.note || payload.questionText || 'Register Photo Check').trim();
   const fileName = String(payload.fileName || '').trim();
   const imageBase64 = String(payload.imageBase64 || '').trim();
+  const studentAnswerText = String(payload.studentAnswerText || payload.answerText || '').trim();
+  const questionText = String(payload.questionText || note || '').trim();
+  const maxMarks = Number(payload.maxMarks) || 3;
   const wantDrive = (payload.saveToDrive === true || payload.saveToDrive === 'true');
+  const callerTgId = (verifiedUser && verifiedUser.id) ? String(verifiedUser.id) : (payload.teacherTest ? '552858970' : rollNo);
+  const callerName = (verifiedUser && verifiedUser.first_name) ? String(verifiedUser.first_name) : (payload.teacherTest ? 'Gyan Sir (Preview)' : rollNo);
 
   let driveUrl = '';
   let aiEvaluation = null;
   let statusStr = 'PENDING_REVIEW';
   let feedbackMsg = 'Sent to Gyan Sir Red-Pen Queue. Feedback will appear in your SWOT report.';
+  let isValidFlag = true;
+  let rejectionReason = '';
 
-  if (imageBase64) {
+  if (imageBase64 || studentAnswerText) {
     if (typeof handleRunRedPenAnalysis === 'function') {
       try {
         const aiRes = handleRunRedPenAnalysis({
           imageBase64: imageBase64,
-          telegramId: payload.teacherTest ? '552858970' : rollNo,
-          studentName: payload.teacherTest ? 'Gyan Sir (Preview)' : rollNo,
+          studentAnswerText: studentAnswerText,
+          questionText: questionText,
+          note: note,
+          maxMarks: maxMarks,
+          telegramId: callerTgId,
+          studentName: callerName,
+          rollNo: rollNo,
           subjectCode: subject,
           qid: payload.qid || '',
           saveToDrive: wantDrive
         });
         if (aiRes && aiRes.driveUrl) driveUrl = aiRes.driveUrl;
-        if (aiRes && aiRes.ok && aiRes.isValid && aiRes.data) {
+        if (aiRes && aiRes.isValid === false) {
+          isValidFlag = false;
+          rejectionReason = aiRes.rejectionReason || 'Please submit a valid handwritten answer photo or complete typed answer.';
+          statusStr = 'REJECTED';
+          feedbackMsg = rejectionReason;
+        } else if (aiRes && aiRes.ok && aiRes.isValid && aiRes.data) {
           aiEvaluation = aiRes.data;
           statusStr = 'EVALUATED';
           const earned = aiRes.data.computed ? aiRes.data.computed.marks_earned : '';
@@ -4961,7 +4999,7 @@ function submitRedPenSubmission(payload) {
         Logger.log('submitRedPenSubmission AI fallback to queue: ' + aiErr.message);
       }
     }
-    if (wantDrive && !driveUrl && typeof saveRedPenImageToDrive_ === 'function') {
+    if (wantDrive && imageBase64 && !driveUrl && typeof saveRedPenImageToDrive_ === 'function') {
       try {
         const savedUrl = saveRedPenImageToDrive_(imageBase64, rollNo);
         if (savedUrl && savedUrl !== 'DRIVE_SAVE_FAILED') driveUrl = savedUrl;
@@ -4969,6 +5007,14 @@ function submitRedPenSubmission(payload) {
         Logger.log('submitRedPenSubmission Drive note: ' + driveErr.message);
       }
     }
+  } else {
+    return {
+      ok: true,
+      isValid: false,
+      rejectionReason: 'Blank submission: Please upload a photo of your handwritten answer OR type your answer.',
+      status: 'REJECTED',
+      feedback: 'Blank submission rejected.'
+    };
   }
 
   return withWriteLock_(() => {
@@ -4985,13 +5031,15 @@ function submitRedPenSubmission(payload) {
       rollNo,
       subject,
       note,
-      fileName,
+      fileName || (studentAnswerText ? 'TYPED_ANSWER' : ''),
       statusStr,
       feedbackMsg,
       driveUrl
     ]);
     return {
       ok: true,
+      isValid: isValidFlag,
+      rejectionReason: rejectionReason,
       rollNo: rollNo,
       subject: subject,
       driveUrl: driveUrl,
@@ -5349,4 +5397,278 @@ function initRecordingWebhookSecret() {
   } else {
     Logger.log('ALREADY SET (not shown)');
   }
+}
+
+/**
+ * Audits Master_Syllabus vs Master Question Repository (all 8 tabs) per Class -> Subject -> Chapter.
+ */
+function getQuestionBankCoverage() {
+  const IDS = getActiveSheetIds();
+  const sylSS = SpreadsheetApp.openById(IDS.SYLLABUS);
+  const sylSheet = sylSS.getSheetByName('Master_Syllabus') || sylSS.getSheetByName('01_Master_Syllabus');
+  const sylRows = sylSheet ? sheetToObjects(sylSheet) : [];
+
+  const chaptersMap = {};
+  sylRows.forEach(r => {
+    const cls = normalizeClassLevel_(r.Class);
+    if (!cls) return;
+    const subj = String(r.Subject || '').trim();
+    const tab = getMasterRepoSheetName_(subj, cls);
+    if (!tab) return;
+    const chNo = String(parseInt(r.ChapterNo, 10) || r.ChapterNo || '0').trim() || '0';
+    const chName = String(r.ChapterName || r.Chapter || '').trim();
+    if (!chName && chNo === '0') return;
+    const key = tab + '::' + chNo;
+    if (!chaptersMap[key]) {
+      chaptersMap[key] = {
+        classLevel: cls,
+        subject: subj,
+        tab: tab,
+        chapterNo: chNo,
+        chapterName: chName,
+        canonicalId: String(r.Canonical_Topic_ID || '').trim(),
+        topicSample: String(r.Topic || r.Topic_Name || chName).trim(),
+        subtopicSample: String(r.Subtopic || chName).trim(),
+        totalRows: 0,
+        approvedLive: 0
+      };
+    }
+  });
+
+  const tabs = ['11_ACC', '11_BST', '11_ECO_MICRO', '11_STAT', '12_ACC', '12_BST', '12_ECO_MACRO', '12_ECO_IED'];
+  const repoSS = SpreadsheetApp.openById(IDS.MASTER_Q_REPO);
+  tabs.forEach(tab => {
+    const sh = repoSS.getSheetByName(tab);
+    if (!sh) return;
+    const maxRows = sh.getMaxRows();
+    if (maxRows < 6) return;
+    const numRows = Math.min(maxRows - 5, 1500);
+    const vals = sh.getRange(6, 27, numRows, 21).getValues();
+    vals.forEach(r => {
+      const qid = String(r[0] || '').trim();
+      const qText = String(r[9] || '').trim();
+      if (!qid && !qText) return;
+      if (qid.toLowerCase() === 'qid' || qText.toLowerCase() === 'questiontext') return;
+      const chNo = String(parseInt(r[2], 10) || r[2] || '0').trim() || '0';
+      const chName = String(r[3] || '').trim();
+      const key = tab + '::' + chNo;
+      if (!chaptersMap[key]) {
+        chaptersMap[key] = {
+          classLevel: tab.slice(0, 2),
+          subject: tab,
+          tab: tab,
+          chapterNo: chNo,
+          chapterName: chName || ('Chapter ' + chNo),
+          canonicalId: String(r[1] || '').trim(),
+          topicSample: String(r[4] || chName).trim(),
+          subtopicSample: String(r[5] || chName).trim(),
+          totalRows: 0,
+          approvedLive: 0
+        };
+      }
+      chaptersMap[key].totalRows++;
+      const st = String(r[19] || '').trim().toLowerCase();
+      const qa = String(r[20] || '').toUpperCase().indexOf('READY TO APPROVE') !== -1;
+      if (st === 'approved' && qa) chaptersMap[key].approvedLive++;
+    });
+  });
+
+  const report = Object.keys(chaptersMap).map(k => chaptersMap[k]).sort((a, b) => {
+    if (a.tab !== b.tab) return a.tab.localeCompare(b.tab);
+    return (parseInt(a.chapterNo, 10) || 0) - (parseInt(b.chapterNo, 10) || 0);
+  });
+
+  return { ok: true, count: report.length, chapters: report };
+}
+
+/**
+ * Safely appends deduplicated, approved questions into MASTER_Q_REPO tab (Columns AA:AT + AU).
+ */
+function populateChapterQuestionsBatch(payload) {
+  payload = payload || {};
+  const tabName = String(payload.tabName || '').trim();
+  const rows = Array.isArray(payload.rows) ? payload.rows : [];
+  if (!tabName || !rows.length) return { ok: false, error: 'Missing tabName or rows' };
+
+  return withWriteLock_(() => {
+    const IDS = getActiveSheetIds();
+    const repoSS = SpreadsheetApp.openById(IDS.MASTER_Q_REPO);
+    const sh = repoSS.getSheetByName(tabName);
+    if (!sh) return { ok: false, error: 'Tab not found: ' + tabName };
+
+    const startRow = 6;
+    const maxRows = Math.max(sh.getMaxRows(), startRow);
+    const existingData = sh.getRange(startRow, 27, maxRows - startRow + 1, 21).getValues();
+    let lastPopulatedOffset = -1;
+    let maxSerial = 0;
+    const seenTexts = {};
+
+    for (let i = 0; i < existingData.length; i++) {
+      const qid = String(existingData[i][0] || '').trim();
+      const qText = String(existingData[i][9] || '').trim();
+      if (qid || qText) lastPopulatedOffset = i;
+      const m = qid.match(/-(\d+)$/);
+      if (m) maxSerial = Math.max(maxSerial, parseInt(m[1], 10));
+      if (qText) seenTexts[qText.toLowerCase().replace(/\s+/g, ' ')] = true;
+    }
+
+    const insertRow = startRow + lastPopulatedOffset + 1;
+    const toInsert = [];
+    rows.forEach(raw => {
+      if (!Array.isArray(raw) || raw.length < 15) return;
+      const qText = String(raw[9] || '').trim();
+      const norm = qText.toLowerCase().replace(/\s+/g, ' ');
+      if (!qText || seenTexts[norm]) return;
+      seenTexts[norm] = true;
+
+      const r = [];
+      for (let c = 0; c < 20; c++) {
+        r.push(raw[c] !== undefined && raw[c] !== null ? String(raw[c]).trim() : '');
+      }
+      if (!r[0]) {
+        maxSerial++;
+        const seq = String(maxSerial).padStart(3, '0');
+        const ch = String(parseInt(r[2], 10) || 0).padStart(2, '0');
+        r[0] = tabName.replace(/_/g, '') + '-CH' + ch + '-' + seq;
+      }
+      r[19] = 'Approved';
+      toInsert.push(r);
+    });
+
+    if (!toInsert.length) return { ok: true, added: 0, skippedDuplicates: rows.length };
+
+    sh.getRange(insertRow, 27, toInsert.length, 20).setValues(toInsert);
+
+    // Ensure Column AU (47) has READY TO APPROVE if no formula is populating it
+    const auFormulas = sh.getRange(insertRow, 47, toInsert.length, 1).getFormulas();
+    const auVals = sh.getRange(insertRow, 47, toInsert.length, 1).getValues();
+    const auUpdates = [];
+    let needsAuWrite = false;
+    for (let i = 0; i < toInsert.length; i++) {
+      if (!auFormulas[i][0] && String(auVals[i][0] || '').toUpperCase().indexOf('READY TO APPROVE') === -1) {
+        auUpdates.push(['✅ READY TO APPROVE']);
+        needsAuWrite = true;
+      } else {
+        auUpdates.push([auVals[i][0]]);
+      }
+    }
+    if (needsAuWrite) {
+      sh.getRange(insertRow, 47, toInsert.length, 1).setValues(auUpdates);
+    }
+
+    SpreadsheetApp.flush();
+    try {
+      const cache = CacheService.getScriptCache();
+      cache.remove('MV_TAB_V4_' + tabName + '_APP');
+      cache.remove('MV_TAB_V4_' + tabName + '_ALL');
+    } catch (_) {}
+
+    return { ok: true, tabName: tabName, added: toInsert.length, startRow: insertRow };
+  });
+}
+
+/**
+ * Generates and inserts CBSE/NCERT-aligned questions for under-populated chapters using Gemini.
+ */
+function seedQbChunk_(payload) {
+  payload = payload || {};
+  if (payload.tabName && Array.isArray(payload.directRows) && payload.directRows.length) {
+    return populateChapterQuestionsBatch({ tabName: payload.tabName, rows: payload.directRows });
+  }
+  const offset = Number(payload.offset) || 0;
+  const limit = Math.min(Number(payload.limit) || 3, 5);
+  const cov = getQuestionBankCoverage();
+  const under = (cov.chapters || []).filter(c => c.approvedLive < 10);
+  const slice = under.slice(offset, offset + limit);
+  const results = [];
+
+  slice.forEach(ch => {
+    const needed = Math.max(10 - ch.approvedLive, 0);
+    if (needed <= 0) return;
+    const countToGen = Math.max(needed, 10);
+    const systemPrompt =
+      'You are Senior CBSE Commerce Examiner Gyan Sir. Generate exactly ' + countToGen +
+      ' unique, academically accurate CBSE Class ' + ch.classLevel + ' ' + ch.subject +
+      ' questions for Chapter ' + (ch.chapterNo || '0') + ': "' + ch.chapterName + '". ' +
+      'Follow NCERT syllabus strictly. Do NOT label any question as an official CBSE previous-year question. ' +
+      'Include a balanced mix: 5 MCQs (1 mark each, distinct options A-D, CorrectAnswer strictly A/B/C/D), ' +
+      '2 Short Answer (3 marks), 2 Case/Numerical/Application (4 marks), and 1 Long Answer (6 marks). ' +
+      'For non-MCQs set OptA, OptB, OptC, OptD to "-" and put full model solution in CorrectAnswer, ' +
+      'and format Official_CBSE_Marking_Scheme as "<n> marks for <step>; <n> marks for <step>..." summing to Marks. ' +
+      'Return strictly a JSON array of objects.';
+
+    const userPrompt =
+      'Class: ' + ch.classLevel + ' | Subject: ' + ch.subject + ' | Tab: ' + ch.tab +
+      ' | ChapterNo: ' + (ch.chapterNo || '1') + ' | ChapterName: ' + ch.chapterName +
+      ' | Canonical_Topic_ID: ' + (ch.canonicalId || ('C' + ch.classLevel + '-CH' + (ch.chapterNo || '1'))) +
+      ' | Topic: ' + (ch.topicSample || ch.chapterName);
+
+    const schema = {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        required: ['QuestionType', 'Marks', 'Difficulty', 'Topic', 'Subtopic', 'QuestionText', 'OptA', 'OptB', 'OptC', 'OptD', 'CorrectAnswer', 'Official_CBSE_Marking_Scheme', 'Explanation_NCERT', 'Trap_Alert', 'RealWorld_SharkTank_Hint'],
+        properties: {
+          QuestionType: { type: 'STRING' },
+          Marks: { type: 'NUMBER' },
+          Difficulty: { type: 'STRING' },
+          Topic: { type: 'STRING' },
+          Subtopic: { type: 'STRING' },
+          QuestionText: { type: 'STRING' },
+          OptA: { type: 'STRING' },
+          OptB: { type: 'STRING' },
+          OptC: { type: 'STRING' },
+          OptD: { type: 'STRING' },
+          CorrectAnswer: { type: 'STRING' },
+          Official_CBSE_Marking_Scheme: { type: 'STRING' },
+          Explanation_NCERT: { type: 'STRING' },
+          Trap_Alert: { type: 'STRING' },
+          RealWorld_SharkTank_Hint: { type: 'STRING' }
+        }
+      }
+    };
+
+    try {
+      const rawJson = callGemini_(systemPrompt, [{ text: userPrompt }], schema);
+      const items = JSON.parse(rawJson);
+      const rows = (Array.isArray(items) ? items : []).map(it => {
+        const qType = String(it.QuestionType || 'MCQ').trim();
+        const isMcq = qType.toUpperCase().indexOf('MCQ') !== -1;
+        let ans = String(it.CorrectAnswer || '').trim();
+        if (isMcq) {
+          const m = ans.toUpperCase().match(/[ABCD]/);
+          ans = m ? m[0] : 'A';
+        }
+        return [
+          '',
+          ch.canonicalId || ('C' + ch.classLevel + '-CH' + (ch.chapterNo || '0')),
+          ch.chapterNo || '0',
+          ch.chapterName,
+          it.Topic || ch.topicSample || ch.chapterName,
+          it.Subtopic || ch.subtopicSample || ch.chapterName,
+          qType,
+          String(it.Marks || (isMcq ? 1 : 3)),
+          it.Difficulty || 'Standard',
+          it.QuestionText || '',
+          isMcq ? (it.OptA || 'Option A') : '-',
+          isMcq ? (it.OptB || 'Option B') : '-',
+          isMcq ? (it.OptC || 'Option C') : '-',
+          isMcq ? (it.OptD || 'Option D') : '-',
+          ans,
+          it.Official_CBSE_Marking_Scheme || '1 mark for correct answer',
+          it.Explanation_NCERT || 'Refer NCERT textbook.',
+          it.Trap_Alert || 'Read the question stem carefully.',
+          it.RealWorld_SharkTank_Hint || 'Think of a real Indian business example.',
+          'Approved'
+        ];
+      }).filter(r => r[9] && r[14]);
+
+      const ins = populateChapterQuestionsBatch({ tabName: ch.tab, rows: rows });
+      results.push({ tab: ch.tab, chapterNo: ch.chapterNo, chapterName: ch.chapterName, generated: rows.length, inserted: ins });
+    } catch (e) {
+      results.push({ tab: ch.tab, chapterNo: ch.chapterNo, chapterName: ch.chapterName, error: e.message });
+    }
+  });
+
+  return { ok: true, remainingUnder10Before: under.length, processed: results };
 }

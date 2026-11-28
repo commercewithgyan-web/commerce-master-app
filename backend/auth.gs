@@ -38,6 +38,9 @@ function verifyTelegramInitData_(initData) {
   if (!initData || typeof initData !== 'string' || initData.trim() === '') {
     throw new Error('HTTP 401: AUTH_FAILED (MISSING_INIT_DATA)');
   }
+  if (initData.trim().indexOf('cg_v1.') === 0) {
+    return verifyBrowserToken_(initData.trim());
+  }
 
   // Parse query string parameters
   var pairs = initData.split('&');
@@ -328,6 +331,10 @@ function findStudentByTelegramId_(erp, telegramId) {
     var vaRoll = telegramId.slice(3);
     return students.find(function(s) { return String(s.Roll_No || '').trim() === vaRoll; }) || null;
   }
+  if (telegramId.indexOf('STU_') === 0) {
+    var stuRoll = telegramId.slice(4);
+    return students.find(function(s) { return String(s.Roll_No || '').trim().toUpperCase() === stuRoll.toUpperCase(); }) || null;
+  }
   var student = students.find(function(s) {
     return String(s.Telegram_ID || s.Telegram_User_ID || '') === telegramId;
   });
@@ -555,8 +562,10 @@ function requirePaidStudent_(telegramId) {
         var vRows = sheetToObjects(vSheet);
         var vMatch = vRows.find(function(v) { return String(v.Telegram_ID) === cleanId; });
         if (vMatch) {
-          var firstDate = new Date(String(vMatch.First_Opened_At).replace(' ', 'T'));
-          var daysElapsed = (Date.now() - firstDate.getTime()) / (1000 * 60 * 60 * 24);
+          var firstRaw = vMatch.First_Opened_At;
+          var firstDate = (firstRaw instanceof Date) ? firstRaw : new Date(String(firstRaw || '').replace(' ', 'T'));
+          if (isNaN(firstDate.getTime())) firstDate = new Date(firstRaw);
+          var daysElapsed = isNaN(firstDate.getTime()) ? 0 : (Date.now() - firstDate.getTime()) / (1000 * 60 * 60 * 24);
           if (daysElapsed <= 7) {
             return {
               studentId: 'CG-GUEST-' + cleanId.slice(-4),
@@ -750,4 +759,173 @@ function timingSafeEqual_(a, b) {
     diff |= (strA.charCodeAt(i) ^ strB.charCodeAt(i % Math.max(1, lenB)));
   }
   return diff === 0;
+}
+
+/* ---------- BROWSER SESSION AUTH (LAPTOP / DESKTOP / DIGITAL BOARD) ---------- */
+
+function getBrowserSessionSecret_() {
+  var props = PropertiesService.getScriptProperties();
+  var secret = props.getProperty('BROWSER_SESSION_SECRET') || props.getProperty('BOT_TOKEN') || props.getProperty('TELEGRAM_BOT_TOKEN');
+  if (!secret) {
+    secret = Utilities.getUuid() + '-' + Date.now();
+    props.setProperty('BROWSER_SESSION_SECRET', secret);
+  }
+  return String(secret);
+}
+
+function issueBrowserToken_(userObj) {
+  var payload = {
+    id: String(userObj.id),
+    first_name: String(userObj.first_name || 'Student'),
+    username: String(userObj.username || ''),
+    is_admin: Boolean(userObj.is_admin),
+    rollNo: String(userObj.rollNo || ''),
+    classLevel: String(userObj.classLevel || ''),
+    exp: Math.floor(Date.now() / 1000) + 86400
+  };
+  var b64 = Utilities.base64EncodeWebSafe(JSON.stringify(payload));
+  var sigBytes = Utilities.computeHmacSha256Signature(b64, getBrowserSessionSecret_());
+  var sig = Utilities.base64EncodeWebSafe(sigBytes);
+  return 'cg_v1.' + b64 + '.' + sig;
+}
+
+function verifyBrowserToken_(token) {
+  var t = String(token || '').trim();
+  if (t.indexOf('cg_v1.') !== 0) {
+    throw new Error('HTTP 401: AUTH_FAILED (INVALID_TOKEN_FORMAT)');
+  }
+  var parts = t.split('.');
+  if (parts.length !== 3) {
+    throw new Error('HTTP 401: AUTH_FAILED (MALFORMED_TOKEN)');
+  }
+  var b64 = parts[1];
+  var sig = parts[2];
+  var expectedBytes = Utilities.computeHmacSha256Signature(b64, getBrowserSessionSecret_());
+  var expectedSig = Utilities.base64EncodeWebSafe(expectedBytes);
+  if (!timingSafeEqual_(sig, expectedSig)) {
+    throw new Error('HTTP 401: AUTH_FAILED (INVALID_TOKEN_SIGNATURE)');
+  }
+  var jsonStr = Utilities.newBlob(Utilities.base64DecodeWebSafe(b64)).getDataAsString('UTF-8');
+  var payload = JSON.parse(jsonStr);
+  if (!payload || !payload.exp || Math.floor(Date.now() / 1000) > payload.exp) {
+    throw new Error('HTTP 401: AUTH_FAILED (SESSION_EXPIRED)');
+  }
+  var cleanId = String(payload.id || '').trim();
+  return {
+    id: cleanId,
+    first_name: payload.first_name || 'Student',
+    username: payload.username || '',
+    is_admin: isAdmin_(cleanId) || Boolean(payload.is_admin && isMasterAdminId_(cleanId)),
+    rollNo: payload.rollNo || '',
+    classLevel: payload.classLevel || '',
+    auth_mode: 'browser_token'
+  };
+}
+
+function browserLogin_(payload) {
+  payload = payload || {};
+  var mode = String(payload.mode || 'student').toLowerCase();
+  var props = PropertiesService.getScriptProperties();
+  var cache = CacheService.getScriptCache();
+
+  if (mode === 'teacher' || mode === 'admin') {
+    var passcode = String(payload.passcode || payload.recoveryKey || '').trim();
+    var expected = String(props.getProperty('ADMIN_RECOVERY_KEY') || props.getProperty('TEACHER_PORTAL_PIN') || '').trim();
+    var failCount = parseInt(cache.get('BROWSER_ADMIN_FAIL') || '0', 10);
+    if (failCount >= 5) {
+      return { ok: false, error: 'Too many failed attempts. Please wait 1 hour or use Telegram.' };
+    }
+    if (!expected) {
+      return { ok: false, error: 'Teacher portal passcode is not configured on server (ADMIN_RECOVERY_KEY).' };
+    }
+    if (!passcode || !timingSafeEqual_(passcode, expected)) {
+      cache.put('BROWSER_ADMIN_FAIL', String(failCount + 1), 3600);
+      return { ok: false, error: 'Invalid teacher passcode.' };
+    }
+    cache.remove('BROWSER_ADMIN_FAIL');
+    var adminId = getMasterAdminId_();
+    var token = issueBrowserToken_({ id: adminId, first_name: 'Gyan Sir', is_admin: true });
+    return { ok: true, token: token, role: 'ADMIN', isAdmin: true, name: 'Gyan Sir' };
+  }
+
+  // Student Login: Roll No + (Registered Mobile or Access Code)
+  var rollNo = String(payload.rollNo || '').trim().toUpperCase();
+  var secret = String(payload.mobile || payload.accessCode || payload.credential || '').trim();
+  if (!rollNo || !secret) {
+    return { ok: false, error: 'Please enter both Roll Number and Registered Mobile / Access Code.' };
+  }
+
+  var erp = SpreadsheetApp.openById(getActiveSheetIds().MASTER_ERP);
+  var studentSheet = erp.getSheetByName('Students_Master');
+  var students = studentSheet ? sheetToObjects(studentSheet) : [];
+  var student = students.find(function(s) { return String(s.Roll_No || '').trim().toUpperCase() === rollNo; });
+
+  if (!student) {
+    return { ok: false, error: 'Roll Number "' + rollNo + '" not found. Try New Student Trial or check your Roll No.' };
+  }
+
+  var stStatus = String(student.Status || '').trim().toUpperCase();
+  if (stStatus === 'DROPPED' || stStatus === 'INACTIVE' || stStatus === 'GRADUATED') {
+    return { ok: false, error: 'Account status is ' + stStatus + '. Please contact Gyan Sir.' };
+  }
+
+  var stuMobile = normalizePhone10(student.Mobile || student.Phone || student.Parent_Mobile || '');
+  var inputPhone = normalizePhone10(secret);
+  var mobileMatches = stuMobile && inputPhone && (stuMobile === inputPhone || (secret.replace(/\D/g, '').length === 4 && stuMobile.slice(-4) === secret.replace(/\D/g, '')));
+
+  var codeMatches = false;
+  if (!mobileMatches && secret.toUpperCase().indexOf('CG-') === 0) {
+    var acSheet = erp.getSheetByName('Access_Codes');
+    if (acSheet) {
+      var codes = sheetToObjects(acSheet);
+      codeMatches = codes.some(function(c) {
+        return String(c.Code || '').trim().toUpperCase() === secret.toUpperCase() &&
+               String(c.Roll_No || '').trim().toUpperCase() === rollNo &&
+               String(c.Status || '').toUpperCase() !== 'REVOKED';
+      });
+    }
+  }
+
+  if (!mobileMatches && !codeMatches) {
+    return { ok: false, error: 'Mobile number or Access Code does not match our records for ' + rollNo + '.' };
+  }
+
+  var tgId = String(student.Telegram_ID || student.Telegram_User_ID || ('STU_' + rollNo)).trim();
+  var stuName = String(student.Student_Name || student.Name || 'Student').trim();
+  var stuCls = String(student.Class || '11').replace(/[^0-9]/g, '') || '11';
+  var token = issueBrowserToken_({ id: tgId, first_name: stuName, is_admin: false, rollNo: rollNo, classLevel: stuCls });
+  return { ok: true, token: token, role: 'STUDENT', isAdmin: false, rollNo: rollNo, name: stuName, classLevel: stuCls };
+}
+
+function browserRegisterTrial_(payload) {
+  payload = payload || {};
+  var name = String(payload.name || '').trim();
+  var mobile = normalizePhone10(payload.mobile || '');
+  var cls = String(payload.classLevel || '11').replace(/[^0-9]/g, '') === '12' ? '12' : '11';
+  if (!name || name.length < 2) return { ok: false, error: 'Please enter your full name.' };
+  if (!mobile || mobile.length !== 10) return { ok: false, error: 'Please enter a valid 10-digit mobile number.' };
+
+  var erp = SpreadsheetApp.openById(getActiveSheetIds().MASTER_ERP);
+  var studentSheet = erp.getSheetByName('Students_Master');
+  var students = studentSheet ? sheetToObjects(studentSheet) : [];
+  var existing = students.find(function(s) {
+    return normalizePhone10(s.Mobile || s.Phone || s.Parent_Mobile || '') === mobile;
+  });
+
+  if (existing) {
+    var roll = String(existing.Roll_No || '').trim();
+    var tgId = String(existing.Telegram_ID || existing.Telegram_User_ID || ('STU_' + roll)).trim();
+    var stuCls = String(existing.Class || cls).replace(/[^0-9]/g, '') || cls;
+    var tok = issueBrowserToken_({ id: tgId, first_name: existing.Student_Name || existing.Name || name, is_admin: false, rollNo: roll, classLevel: stuCls });
+    return { ok: true, token: tok, role: 'STUDENT', rollNo: roll, name: existing.Student_Name || name, classLevel: stuCls, existingAccount: true };
+  }
+
+  var brId = 'BR_' + mobile;
+  var visitor = getOrRecordTelegramVisitor_(erp, { id: brId, first_name: name, username: 'web_' + mobile.slice(-4) });
+  if (visitor.isExpired) {
+    return { ok: false, error: 'Your 7-day free trial has expired. Please contact Gyan Sir (9835011205) for admission.' };
+  }
+  var trialRoll = 'CG-TRIAL-' + mobile.slice(-4);
+  var tok = issueBrowserToken_({ id: brId, first_name: name, is_admin: false, rollNo: trialRoll, classLevel: cls });
+  return { ok: true, token: tok, role: 'STUDENT', isTrial: true, trialDaysLeft: visitor.trialDaysLeft, rollNo: trialRoll, name: name, classLevel: cls };
 }

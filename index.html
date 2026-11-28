@@ -243,73 +243,158 @@
     }
   </style>
   <script>
-    // Global AUTH_FAILED screen overlay for unauthorized or outside-Telegram sessions (with instant preview controls)
+    // Global Commerce Gyan Portal Sign-In overlay for browser sessions (Desktop / Laptop / Digital Board / Mobile Web)
+    window.cgLogout = function() {
+      try { localStorage.removeItem('cg_browser_session'); } catch (e) {}
+      try { localStorage.removeItem('cg_browser_role'); } catch (e) {}
+      location.reload();
+    };
+
     window.showAuthFailed = function(customMsg) {
       if (document.getElementById('cgAuthFailedOverlay')) return;
       try {
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-          window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+          window.Telegram.WebApp.HapticFeedback.notificationOccurred('warning');
         }
       } catch (e) {}
       var overlay = document.createElement('div');
       overlay.id = 'cgAuthFailedOverlay';
       overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-gradient-to-b from-[#f6f1ff] via-[#fcf9ff] to-[#f0ecfb] dark:from-[#0B0A12] dark:via-[#161226] dark:to-[#120F1F] font-sans overflow-y-auto';
       overlay.innerHTML = [
-        '<div class="relative w-full max-w-[390px] rounded-[32px] p-6 text-center glass-card border border-white/60 dark:border-white/10 shadow-2xl">',
-        '  <div class="flex justify-center mb-5">',
-        '    <div class="w-[120px] h-[120px] rounded-[28px] bg-white/70 dark:bg-white/10 backdrop-blur-xl border border-white/60 dark:border-white/15 p-3 flex items-center justify-center shadow-lg">',
-        '      <div class="w-full h-full rounded-[20px] bg-gradient-to-br from-[#7C30E0] to-[#1E0063] flex flex-col items-center justify-center text-white shadow-md">',
-        '        <span class="text-2xl font-black tracking-wider">CG</span>',
-        '        <span class="text-[14px] font-bold tracking-widest uppercase opacity-90">COMMERCE</span>',
+        '<div class="relative w-full max-w-[420px] rounded-[28px] p-6 glass-card border border-white/60 dark:border-white/10 shadow-2xl my-auto">',
+        '  <div class="flex items-center gap-3.5 mb-5">',
+        '    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#7C30E0] to-[#1E0063] flex flex-col items-center justify-center text-white shadow-md shrink-0">',
+        '      <span class="text-lg font-black leading-none">CG</span>',
+        '      <span class="text-[9px] font-bold tracking-widest uppercase opacity-90 mt-0.5">GYAN</span>',
+        '    </div>',
+        '    <div class="min-w-0">',
+        '      <h1 class="text-xl font-bold font-sans text-[#1E0063] dark:text-[#F3ECFF] tracking-tight">Commerce Gyan</h1>',
+        '      <p class="text-xs font-medium text-[#4D4468] dark:text-[#C8BCF6]/90">Class 11 & 12 CBSE · Begusarai</p>',
+        '    </div>',
+        '  </div>',
+        (customMsg ? '<div class="mb-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-700 text-xs font-semibold text-amber-900 dark:text-amber-200">' + String(customMsg).replace(/</g, '&lt;') + '</div>' : ''),
+        '  <div class="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 mb-4" id="cgAuthTabs">',
+        '    <button type="button" data-authmode="student" class="cg-auth-tab py-2 px-2 rounded-lg text-xs font-bold bg-white dark:bg-slate-900 text-[#1E0063] dark:text-white shadow-sm cursor-pointer">Student</button>',
+        '    <button type="button" data-authmode="trial" class="cg-auth-tab py-2 px-2 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 cursor-pointer">Free Trial</button>',
+        '    <button type="button" data-authmode="teacher" class="cg-auth-tab py-2 px-2 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 cursor-pointer">Teacher</button>',
+        '  </div>',
+        '  <div id="cgAuthErr" class="hidden mb-3 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-700 text-xs font-semibold text-rose-700 dark:text-rose-200"></div>',
+        '  <form id="cgAuthStudentForm" class="space-y-3">',
+        '    <div>',
+        '      <label class="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">Roll Number</label>',
+        '      <input id="cgLoginRoll" type="text" placeholder="e.g. CG-11-001" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold uppercase" />',
+        '    </div>',
+        '    <div>',
+        '      <label class="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">Registered Mobile or Access Code</label>',
+        '      <input id="cgLoginSecret" type="text" placeholder="10-digit mobile or CG-XXXXXX" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold" />',
+        '    </div>',
+        '    <button id="cgLoginStudentBtn" type="submit" class="w-full min-h-[44px] rounded-xl bg-[#7C30E0] hover:bg-[#6922c9] text-white text-sm font-bold shadow-md cursor-pointer transition">Sign In to Student Portal</button>',
+        '  </form>',
+        '  <form id="cgAuthTrialForm" class="hidden space-y-3">',
+        '    <div>',
+        '      <label class="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">Full Name</label>',
+        '      <input id="cgTrialName" type="text" placeholder="e.g. Aarav Kumar" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold" />',
+        '    </div>',
+        '    <div class="grid grid-cols-2 gap-2.5">',
+        '      <div>',
+        '        <label class="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">Class</label>',
+        '        <select id="cgTrialClass" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-bold">',
+        '          <option value="11">Class 11</option>',
+        '          <option value="12">Class 12</option>',
+        '        </select>',
+        '      </div>',
+        '      <div>',
+        '        <label class="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">Mobile (10 digits)</label>',
+        '        <input id="cgTrialMobile" type="tel" maxlength="10" placeholder="9876543210" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold" />',
         '      </div>',
         '    </div>',
-        '  </div>',
-        '  <h1 class="text-2xl font-bold font-sans text-[#1E0063] dark:text-[#F3ECFF] tracking-tight mb-1">Commerce Gyan</h1>',
-        '  <p class="text-[14px] font-medium text-[#4D4468] dark:text-[#C8BCF6]/90 mb-5">Padhai, fees aur progress — sab ek jagah</p>',
-        '  <div class="w-full max-w-[260px] mx-auto mb-6">',
-        '    <div class="w-full h-1.5 bg-purple-100 dark:bg-white/10 rounded-full overflow-hidden shadow-inner">',
-        '      <div class="h-full w-2/3 bg-gradient-to-r from-[#7C30E0] via-[#A855F7] to-[#F87800] rounded-full animate-pulse shadow-[0_0_12px_#7C30E0]"></div>',
+        '    <button id="cgLoginTrialBtn" type="submit" class="w-full min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-md cursor-pointer transition">Start 7-Day Free Trial</button>',
+        '  </form>',
+        '  <form id="cgAuthTeacherForm" class="hidden space-y-3">',
+        '    <div>',
+        '      <label class="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">Teacher Admin Passcode</label>',
+        '      <input id="cgTeacherPasscode" type="password" placeholder="Enter Gyan Sir Passcode" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold" />',
         '    </div>',
-        '    <div class="flex items-center justify-center gap-1.5 mt-2.5 text-[#7C30E0] dark:text-[#FFA84A] text-[14px] font-medium">',
-        '      <span>Telegram se khul raha hai</span>',
-        '      <span class="inline-flex gap-1 items-center ml-0.5"><span class="w-1.5 h-1.5 rounded-full bg-[#7C30E0] dark:bg-[#FFA84A] animate-ping"></span></span>',
-        '    </div>',
-        '  </div>',
-        '  <div class="rounded-2xl p-4 text-left bg-white/60 dark:bg-white/[0.06] border border-amber-500/30 dark:border-amber-500/40 mb-5 shadow-sm">',
-        '    <div class="flex items-start gap-3">',
-        '      <div class="w-9 h-9 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-[#F5A524] shrink-0">',
-        '        <span class="material-symbols-outlined text-[20px]">warning</span>',
-        '      </div>',
-        '      <div class="flex-1 min-w-0">',
-        '        <div class="text-[14px] font-bold uppercase tracking-wider text-amber-700 dark:text-[#F5A524] mb-0.5">Connection Alert</div>',
-        '        <p class="text-[14px] font-medium text-slate-700 dark:text-[#F3ECFF]/95 leading-snug">' + (customMsg || 'Login nahi ho paya. Telegram se dobara kholo.') + '</p>',
-        '      </div>',
-        '    </div>',
-        '    <div class="mt-3 pt-2.5 border-t border-slate-200/50 dark:border-white/10 flex justify-end">',
-        '      <a href="https://t.me/CommerceGyanDostbot" class="min-h-[44px] px-5 py-2 rounded-full bg-[#7C30E0] text-white text-[14px] font-bold flex items-center gap-2 shadow-md active:scale-95 transition-all">',
-        '        <span class="material-symbols-outlined text-[18px]">sync</span><span>Retry</span>',
-        '      </a>',
-        '    </div>',
-        '  </div>',
-        '  <div class="flex flex-col gap-2 pt-2 border-t border-slate-200/50 dark:border-white/10">',
-        '    <div class="text-[14px] font-semibold text-slate-500 dark:text-slate-400 mb-1">Developer Preview Modes</div>',
-        '    <button type="button" onclick="document.documentElement.classList.remove(\'cg-lock\'); document.getElementById(\'cgAuthFailedOverlay\').remove(); if(window.switchAppMode) window.switchAppMode(\'ops\');" class="min-h-[44px] px-4 py-2 rounded-full bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/40 dark:hover:bg-purple-900/60 text-[#7C30E0] dark:text-purple-200 text-[14px] font-bold border border-purple-300 dark:border-purple-700/50 flex items-center justify-center gap-2 cursor-pointer transition">',
-        '      <span>📲</span><span>Open Teacher Daily Ops (5 Tabs)</span>',
-        '    </button>',
-        '    <button type="button" onclick="document.documentElement.classList.remove(\'cg-lock\'); document.getElementById(\'cgAuthFailedOverlay\').remove(); if(window.switchAppMode) window.switchAppMode(\'student\');" class="min-h-[44px] px-4 py-2 rounded-full bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 text-[14px] font-bold border border-emerald-300 dark:border-emerald-700/50 flex items-center justify-center gap-2 cursor-pointer transition">',
-        '      <span>🎓</span><span>Open Student App (5 Tabs)</span>',
-        '    </button>',
-        '    <button type="button" onclick="document.documentElement.classList.remove(\'cg-lock\'); document.getElementById(\'cgAuthFailedOverlay\').remove(); if(window.switchAppMode) window.switchAppMode(\'teacher\');" class="min-h-[44px] px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[14px] font-bold border border-slate-300 dark:border-slate-600 flex items-center justify-center gap-2 cursor-pointer transition">',
-        '      <span>🖥️</span><span>Open Teacher Command Studio (Laptop)</span>',
-        '    </button>',
-        '  </div>',
-        '  <div class="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 text-[14px] font-medium">',
-        '    <span class="material-symbols-outlined text-[16px] text-[#7C30E0] dark:text-purple-400">verified_user</span>',
-        '    <span>Surakshit Telegram Login</span>',
+        '    <button id="cgLoginTeacherBtn" type="submit" class="w-full min-h-[44px] rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white text-sm font-bold shadow-md cursor-pointer transition">Open Teacher Studio</button>',
+        '  </form>',
+        '  <div class="mt-4 pt-3 border-t border-slate-200/70 dark:border-white/10 flex items-center justify-between text-xs">',
+        '    <a href="https://t.me/CommerceGyanDostbot" target="_blank" rel="noopener" class="font-bold text-[#7C30E0] dark:text-[#C8BCF6] hover:underline">Open in Telegram ↗</a>',
+        '    <span class="inline-flex items-center gap-1 text-slate-500 dark:text-slate-400 font-medium"><span class="material-symbols-outlined text-[15px] text-emerald-500">verified_user</span>HMAC Secured</span>',
         '  </div>',
         '</div>'
       ].join('');
       document.body.appendChild(overlay);
+
+      var errEl = document.getElementById('cgAuthErr');
+      var showErr = function(msg) {
+        if (!errEl) return;
+        errEl.textContent = msg;
+        errEl.classList.remove('hidden');
+      };
+      var hideErr = function() { if (errEl) errEl.classList.add('hidden'); };
+
+      document.querySelectorAll('.cg-auth-tab').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          hideErr();
+          var m = btn.getAttribute('data-authmode');
+          document.querySelectorAll('.cg-auth-tab').forEach(function(b) {
+            b.className = (b === btn)
+              ? 'cg-auth-tab py-2 px-2 rounded-lg text-xs font-bold bg-white dark:bg-slate-900 text-[#1E0063] dark:text-white shadow-sm cursor-pointer'
+              : 'cg-auth-tab py-2 px-2 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 cursor-pointer';
+          });
+          document.getElementById('cgAuthStudentForm').classList.toggle('hidden', m !== 'student');
+          document.getElementById('cgAuthTrialForm').classList.toggle('hidden', m !== 'trial');
+          document.getElementById('cgAuthTeacherForm').classList.toggle('hidden', m !== 'teacher');
+        });
+      });
+
+      var postAuth = function(action, payload, btnEl, origText) {
+        hideErr();
+        if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Signing in…'; }
+        var url = 'https://script.google.com/macros/s/AKfycbzmOtPr1jYIG6ktQymaVNrrJ7SGkB2KglPxyXzIK-ha94M66ilYn_dr92T-Aj1Fh0DrBQ/exec';
+        try { var saved = localStorage.getItem('cg_backend_url'); if (saved) url = saved; } catch (_) {}
+        fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: action, payload: payload }),
+          redirect: 'follow'
+        }).then(function(r) { return r.json(); }).then(function(res) {
+          if (!res || !res.ok || !res.token) {
+            throw new Error((res && res.error) || 'Sign-in failed. Please check your details.');
+          }
+          try { localStorage.setItem('cg_browser_session', res.token); } catch (_) {}
+          location.reload();
+        }).catch(function(e) {
+          showErr(e.message || 'Connection error');
+          if (btnEl) { btnEl.disabled = false; btnEl.textContent = origText; }
+        });
+      };
+
+      document.getElementById('cgAuthStudentForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        postAuth('browserLogin', {
+          mode: 'student',
+          rollNo: document.getElementById('cgLoginRoll').value.trim(),
+          mobile: document.getElementById('cgLoginSecret').value.trim()
+        }, document.getElementById('cgLoginStudentBtn'), 'Sign In to Student Portal');
+      });
+
+      document.getElementById('cgAuthTrialForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        postAuth('browserRegisterTrial', {
+          name: document.getElementById('cgTrialName').value.trim(),
+          classLevel: document.getElementById('cgTrialClass').value,
+          mobile: document.getElementById('cgTrialMobile').value.trim()
+        }, document.getElementById('cgLoginTrialBtn'), 'Start 7-Day Free Trial');
+      });
+
+      document.getElementById('cgAuthTeacherForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        postAuth('browserLogin', {
+          mode: 'teacher',
+          passcode: document.getElementById('cgTeacherPasscode').value.trim()
+        }, document.getElementById('cgLoginTeacherBtn'), 'Open Teacher Studio');
+      });
     };
 
     // Auto-sync Telegram Theme
@@ -429,29 +514,33 @@
         </div>
       </div>
 
-      <!-- Center: Switch back to Mobile Ops & Quick Pipeline -->
-      <div class="flex items-center gap-1.5 sm:gap-2">
-        <button type="button" onclick="window.switchAppMode('ops')" class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md cursor-pointer">
-          <span>📲</span><span>Return to Mobile Ops</span>
+      <!-- Center: Switch back to Mobile Ops, Red-Pen & Quick Pipeline -->
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <button id="studioOpenRedPenBtn" type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center gap-1 bg-rose-600 hover:bg-rose-500 text-white shadow-md cursor-pointer whitespace-nowrap">
+          <span>🖍️</span><span>Red-Pen</span>
         </button>
-        <button id="roleToggleBtn" type="button" onclick="window.switchAppMode('student')" class="px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white shadow-md cursor-pointer">
+        <button type="button" onclick="window.switchAppMode('ops')" class="px-2.5 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md cursor-pointer whitespace-nowrap">
+          <span>📲</span><span>Mobile Ops</span>
+        </button>
+        <button id="roleToggleBtn" type="button" onclick="window.switchAppMode('student')" class="px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white shadow-md cursor-pointer whitespace-nowrap">
           <span>🎓</span><span>Student App</span>
         </button>
-        <button id="topQuickPipelineBtn" type="button" class="hidden md:inline-flex px-2.5 py-1.5 rounded-xl text-xs font-bold transition items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 shadow-sm cursor-pointer">
-          <span>🎯</span><span>CRM Pipeline</span>
+        <button id="topQuickPipelineBtn" type="button" class="hidden md:inline-flex px-2.5 py-1.5 rounded-xl text-xs font-bold transition items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 shadow-sm cursor-pointer whitespace-nowrap">
+          <span>🎯</span><span>CRM</span>
         </button>
       </div>
 
-      <!-- Right: Free Tier Student Meter & Sync Button -->
-      <div class="flex items-center gap-2 sm:gap-3">
-        <div class="hidden xl:flex items-center gap-2 bg-slate-800/90 border border-slate-700 px-3 py-1 rounded-lg">
+      <!-- Right: Free Tier Student Meter, Sync & Sign Out -->
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div class="hidden xl:flex items-center gap-2 bg-slate-800/90 border border-slate-700 px-2.5 py-1 rounded-lg whitespace-nowrap">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span class="text-xs text-slate-300 font-medium">Students: <strong id="headerStudentCount" class="text-white">60</strong> / 100</span>
+          <span class="text-xs text-slate-300 font-medium">Students: <strong id="headerStudentCount" class="text-white">60</strong></span>
         </div>
-        <button id="openSyncQuickBtn" type="button" class="hidden md:inline-flex px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition items-center gap-1.5 shadow-sm">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-          <span>Sync Sheets</span>
+        <button id="openSyncQuickBtn" type="button" class="hidden md:inline-flex px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition items-center gap-1 shadow-sm whitespace-nowrap cursor-pointer">
+          <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span>Sync</span>
         </button>
+        <button type="button" onclick="window.cgLogout()" title="Sign Out" class="px-2 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 whitespace-nowrap cursor-pointer">Sign Out</button>
       </div>
     </div>
   </header>
@@ -2472,25 +2561,28 @@
   </div>
 
   <!-- ==================== STUDENT TELEGRAM Telegram App VIEW (6 PRE-RENDERED TABS, 0MS TOGGLE) ==================== -->
-  <div id="studentWorkspace" class="hidden flex-1 max-w-[440px] w-full mx-auto p-3 sm:p-4 space-y-4 pb-28 min-h-screen bg-slate-50 dark:bg-slate-950 sm:shadow-2xl sm:border-x sm:border-slate-200 dark:sm:border-slate-800 relative">
+  <div id="studentWorkspace" class="hidden flex-1 max-w-[440px] w-full mx-auto p-3 sm:p-4 space-y-4 pb-36 min-h-screen bg-slate-50 dark:bg-slate-950 sm:shadow-2xl sm:border-x sm:border-slate-200 dark:sm:border-slate-800 relative">
     <!-- Student Workspace Header Bar (Replaced by #viewAsStudentBanner when viewing as student; hidden for regular students) -->
     <div id="studentWorkspaceToggleBar" class="hidden"></div>
 
     <!-- Student Profile Header Card -->
     <div class="bg-slate-900 text-white rounded-3xl p-4 sm:p-5 shadow-lg space-y-3 border border-slate-800">
-      <div class="flex items-center justify-between gap-2.5">
+      <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2.5 min-w-0 flex-1">
           <div class="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center font-extrabold text-sm border border-indigo-400/50 shrink-0 shadow-sm">CG</div>
           <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-1.5 text-[14px]">
+            <div class="flex items-center gap-1.5 text-[11px] whitespace-nowrap">
               <span class="font-bold uppercase tracking-wider text-emerald-400">Student Portal</span>
               <span class="text-slate-500">·</span>
               <span id="envBadge" class="px-1.5 py-0.2 rounded font-bold bg-slate-800 text-amber-300 border border-slate-700">PROD</span>
             </div>
-            <h2 id="tgStudentNameHeader" class="text-sm sm:text-base font-bold text-white leading-tight mt-0.5 break-words">Student CG-1201</h2>
+            <h2 id="tgStudentNameHeader" class="text-sm sm:text-base font-bold text-white leading-tight mt-0.5 truncate">Student CG-1201</h2>
           </div>
         </div>
-        <select id="tgStudentSelect" aria-label="Switch Student Preview" class="max-w-[115px] text-xs bg-slate-800 border border-slate-700 rounded-xl px-2 py-1.5 text-white font-semibold shrink-0 focus:outline-none truncate"></select>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <select id="tgStudentSelect" aria-label="Switch Student Preview" class="max-w-[110px] text-xs bg-slate-800 border border-slate-700 rounded-xl px-2 py-1.5 text-white font-semibold focus:outline-none truncate"></select>
+          <button type="button" onclick="window.cgLogout()" title="Sign Out" class="px-2 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-bold text-slate-300 cursor-pointer whitespace-nowrap">Exit</button>
+        </div>
       </div>
 
       <!-- Quick Metrics Strip -->
@@ -2897,8 +2989,8 @@
         </div>
         <p class="text-xs text-slate-500 dark:text-slate-400">Stuck on an adjustment, formula, or case study? Select subject &amp; type your question below for step-by-step guidance.</p>
 
-        <!-- 4 Subject Pills (2x2 / 4-col grid so Statistics is never clipped off-screen) -->
-        <div id="stuDoubtPills" class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+        <!-- 4 Subject Pills (flex-wrap so Accountancy/Business Studies never clip) -->
+        <div id="stuDoubtPills" class="flex flex-wrap gap-1.5">
         </div>
 
         <!-- Quick Prompt Chips with Title (D1) -->
@@ -3418,17 +3510,21 @@
     </div>
   </div>
 
-  <!-- Student Red-Pen Photo Upload & Analysis Modal (B2 + Preserved #63-#68) -->
+  <!-- Student Red-Pen Photo Upload & Analysis Modal -->
   <div id="stuRedPenModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 max-h-[92vh] overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl max-w-md w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 max-h-[92vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
         <div>
-          <span class="text-[14px] font-bold uppercase tracking-wider text-rose-600">Red-Pen Checking (#63–#68)</span>
-          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Submit Register Photo for Analysis</h3>
+          <span class="text-xs font-bold uppercase tracking-wider text-rose-600">CBSE Red-Pen Evaluator</span>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Check Handwritten or Typed Answer</h3>
         </div>
-        <button id="closeStuRedPenBtn" type="button" class="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold">✕</button>
+        <button id="closeStuRedPenBtn" type="button" class="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold cursor-pointer">✕</button>
       </div>
       <div class="space-y-2.5">
+        <div class="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800">
+          <button id="redPenModePhotoBtn" type="button" class="py-1.5 px-2 rounded-lg text-xs font-bold bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm cursor-pointer">📸 Handwritten Photo</button>
+          <button id="redPenModeTextBtn" type="button" class="py-1.5 px-2 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 cursor-pointer">✍️ Type Answer</button>
+        </div>
         <select id="redPenSubjectSelect" class="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800">
           <option value="ACC-11" data-cls="11">11th Accountancy</option>
           <option value="BST-11" data-cls="11">11th Business Studies</option>
@@ -3439,24 +3535,38 @@
           <option value="MAC-12" data-cls="12">12th Macroeconomics</option>
           <option value="IED-12" data-cls="12">12th Indian Eco Dev</option>
         </select>
-        <input id="redPenCameraInput" type="file" accept="image/*" capture="environment" class="hidden" />
-        <input id="redPenGalleryInput" type="file" accept="image/*" class="hidden" />
-        <div class="grid grid-cols-2 gap-2">
-          <button id="redPenClickPhotoBtn" type="button" class="h-10 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">📷 Click Photo</button>
-          <button id="redPenGalleryBtn" type="button" class="h-10 rounded-xl bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">🖼️ Upload Gallery</button>
-        </div>
-        <div id="redPenPhotoPreviewBox" class="hidden flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-          <div class="flex items-center gap-2 min-w-0">
-            <img id="redPenPhotoThumb" src="" alt="Selected page" class="w-10 h-10 rounded-lg object-cover border border-slate-300 shrink-0" />
-            <span id="redPenPhotoName" class="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate"></span>
+        <div id="redPenPhotoSection" class="space-y-2.5">
+          <input id="redPenCameraInput" type="file" accept="image/*" capture="environment" class="hidden" />
+          <input id="redPenGalleryInput" type="file" accept="image/*" class="hidden" />
+          <div class="grid grid-cols-2 gap-2">
+            <button id="redPenClickPhotoBtn" type="button" class="h-10 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">📷 Click Photo</button>
+            <button id="redPenGalleryBtn" type="button" class="h-10 rounded-xl bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">🖼️ Upload Gallery</button>
           </div>
-          <button id="redPenClearPhotoBtn" type="button" class="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-[11px] font-bold shrink-0">✕</button>
+          <div id="redPenPhotoPreviewBox" class="hidden flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <div class="flex items-center gap-2 min-w-0">
+              <img id="redPenPhotoThumb" src="" alt="Selected page" class="w-10 h-10 rounded-lg object-cover border border-slate-300 shrink-0" />
+              <span id="redPenPhotoName" class="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate"></span>
+            </div>
+            <button id="redPenClearPhotoBtn" type="button" class="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-[11px] font-bold shrink-0">✕</button>
+          </div>
+          <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none px-1">
+            <input id="redPenSaveDriveCheck" type="checkbox" class="rounded border-slate-300 text-rose-600 focus:ring-rose-500" />
+            <span>💾 Save copy photo to Google Drive (optional)</span>
+          </label>
+          <input id="redPenNoteInput" type="text" placeholder="Question / Page note (e.g. Ch 3 Q12)" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800" />
         </div>
-        <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none px-1">
-          <input id="redPenSaveDriveCheck" type="checkbox" class="rounded border-slate-300 text-rose-600 focus:ring-rose-500" />
-          <span>💾 Save copy photo to Google Drive (optional)</span>
-        </label>
-        <input id="redPenNoteInput" type="text" placeholder="Question / Page note (e.g. Ch 3 Q12 Working Note)" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800" />
+        <div id="redPenTextSection" class="hidden space-y-2.5">
+          <div class="grid grid-cols-3 gap-2">
+            <input id="redPenQuestionInput" type="text" placeholder="Question (e.g. State 3 features of Management)" class="col-span-2 text-xs border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800" />
+            <select id="redPenMaxMarksSelect" class="text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-xl px-2 py-2 bg-slate-50 dark:bg-slate-800">
+              <option value="1">1 Mark</option>
+              <option value="3" selected>3 Marks</option>
+              <option value="4">4 Marks</option>
+              <option value="6">6 Marks</option>
+            </select>
+          </div>
+          <textarea id="redPenAnswerTextarea" rows="5" placeholder="Write or paste your complete answer here (supports numericals, journal entries, definitions, case studies)..." class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 resize-y"></textarea>
+        </div>
         <button id="submitRedPenPhotoBtn" type="button" class="w-full h-10 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold shadow cursor-pointer">🖍️ Check Answer with AI</button>
         <div id="redPenResultBox" class="hidden p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs"></div>
       </div>
@@ -4107,7 +4217,10 @@
         const saved = localStorage.getItem('cg_backend_url');
         if (saved) url = saved;
       } catch (_) {}
-      const initData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
+      const tgInitData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
+      let browserSession = '';
+      try { browserSession = localStorage.getItem('cg_browser_session') || ''; } catch (_) {}
+      const initData = tgInitData || browserSession;
       const isSandboxPreview = !initData;
       // SYS-009: Server & client-side read-only guard for View as Student proxy
       const CG_VIEW_AS_ALLOW_WRITES = true; // owner decision 18 Nov 2026
@@ -5625,22 +5738,22 @@
           </div>
 
           <!-- 4 Pillars of Board Preparation -->
-          <div class="grid grid-cols-2 gap-2 pt-1 text-xs">
-            <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between">
-              <span class="text-slate-600 dark:text-slate-400 font-semibold">📅 Attendance</span>
-              <span class="font-extrabold text-emerald-600 dark:text-emerald-400">${attPct}% ✅</span>
+          <div class="grid grid-cols-2 gap-2 pt-1 text-[11px]">
+            <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between gap-1.5">
+              <span class="text-slate-600 dark:text-slate-400 font-semibold truncate">📅 Attendance</span>
+              <span class="font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap shrink-0">${attPct}% ✅</span>
             </div>
-            <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between">
-              <span class="text-slate-600 dark:text-slate-400 font-semibold">⚡ DPP Habit</span>
-              <span class="font-extrabold text-indigo-600 dark:text-indigo-400">${dppPct}% 🚀</span>
+            <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between gap-1.5">
+              <span class="text-slate-600 dark:text-slate-400 font-semibold truncate">⚡ DPP Habit</span>
+              <span class="font-extrabold text-indigo-600 dark:text-indigo-400 whitespace-nowrap shrink-0">${dppPct}% 🚀</span>
             </div>
-            <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between">
-              <span class="text-slate-600 dark:text-slate-400 font-semibold">📝 Unit Tests</span>
-              <span class="font-extrabold text-purple-600 dark:text-purple-400">${unitPct}% 🎯</span>
+            <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between gap-1.5">
+              <span class="text-slate-600 dark:text-slate-400 font-semibold truncate">📝 Unit Tests</span>
+              <span class="font-extrabold text-purple-600 dark:text-purple-400 whitespace-nowrap shrink-0">${unitPct}% 🎯</span>
             </div>
-            <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between">
-              <span class="text-slate-600 dark:text-slate-400 font-semibold">🎯 MCQ Accuracy</span>
-              <span class="font-extrabold text-emerald-600 dark:text-emerald-400">${mcqAcc}% ⭐</span>
+            <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between gap-1.5">
+              <span class="text-slate-600 dark:text-slate-400 font-semibold truncate">🎯 Accuracy</span>
+              <span class="font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap shrink-0">${mcqAcc}% ⭐</span>
             </div>
           </div>
         </div>
@@ -5866,7 +5979,12 @@
       const instEl = document.getElementById('tgStuInstalmentInfo');
       if (instEl) instEl.textContent = `${stu.plan} · ₹${base.toLocaleString('en-IN')}`;
       const netDue = document.getElementById('tgStuNetDue');
-      if (netDue) netDue.textContent = stu.feePaid ? '₹0 (All Dues Cleared)' : `₹${netPayable.toLocaleString('en-IN')}`;
+      if (netDue) {
+        netDue.textContent = stu.feePaid ? '₹0 (All Dues Cleared)' : `₹${netPayable.toLocaleString('en-IN')}`;
+        netDue.className = stu.feePaid
+          ? 'font-extrabold text-emerald-700 dark:text-emerald-400'
+          : 'font-extrabold text-rose-600 dark:text-rose-400';
+      }
       const nextDue = document.getElementById('tgStuNextDueDate');
       if (nextDue) nextDue.textContent = stu.feePaid ? '05 Dec' : 'Overdue / Immediate';
 
@@ -5875,12 +5993,12 @@
       if (rHist) {
         const months = stu.clearedMonths && stu.clearedMonths.length ? stu.clearedMonths.slice(-3).reverse() : ['Oct'];
         rHist.innerHTML = months.map((m, idx) => `
-          <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between text-xs">
-            <div>
+          <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between gap-2 text-xs">
+            <div class="min-w-0">
               <p class="font-bold text-slate-900 dark:text-white">RCP-${escHtml(stu.roll)}-${String(10 - idx).padStart(2, '0')} (${escHtml(m)})</p>
-              <p class="text-[14px] text-slate-500 dark:text-slate-400 font-mono">05 ${escHtml(m)} · ₹${base - 50} · UPI · Penalty: ₹0 · Coins: −₹50</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">05 ${escHtml(m)} · ₹${base - 50} · UPI · Penalty: ₹0 · Coins: −₹50</p>
             </div>
-            <button type="button" data-swotroll="${escHtml(stu.roll)}" class="open-swot-btn px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[14px] font-bold shadow-sm cursor-pointer">📄 SWOT</button>
+            <button type="button" data-swotroll="${escHtml(stu.roll)}" class="open-swot-btn px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm cursor-pointer shrink-0 whitespace-nowrap">📄 SWOT</button>
           </div>
         `).join('');
       }
@@ -10306,6 +10424,23 @@
 
       let selectedRedPenFile = null;
       let redPenTeacherTestMode = false;
+      let redPenInputMode = 'photo';
+      const setRedPenInputMode = (mode) => {
+        redPenInputMode = mode === 'text' ? 'text' : 'photo';
+        const photoSec = document.getElementById('redPenPhotoSection');
+        const textSec = document.getElementById('redPenTextSection');
+        const photoBtn = document.getElementById('redPenModePhotoBtn');
+        const textBtn = document.getElementById('redPenModeTextBtn');
+        if (photoSec) photoSec.classList.toggle('hidden', redPenInputMode !== 'photo');
+        if (textSec) textSec.classList.toggle('hidden', redPenInputMode !== 'text');
+        const activeCls = 'py-1.5 px-2 rounded-lg text-xs font-bold bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm cursor-pointer';
+        const idleCls = 'py-1.5 px-2 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 cursor-pointer';
+        if (photoBtn) photoBtn.className = redPenInputMode === 'photo' ? activeCls : idleCls;
+        if (textBtn) textBtn.className = redPenInputMode === 'text' ? activeCls : idleCls;
+      };
+      document.getElementById('redPenModePhotoBtn')?.addEventListener('click', () => setRedPenInputMode('photo'));
+      document.getElementById('redPenModeTextBtn')?.addEventListener('click', () => setRedPenInputMode('text'));
+
       const setRedPenSelectedFile = (file) => {
         selectedRedPenFile = file || null;
         const prevBox = document.getElementById('redPenPhotoPreviewBox');
@@ -10344,6 +10479,7 @@
 
       document.getElementById('openRedPenFromProgressBtn')?.addEventListener('click', () => openRedPenModal(false));
       document.getElementById('opsOpenRedPenTestBtn')?.addEventListener('click', () => openRedPenModal(true));
+      document.getElementById('studioOpenRedPenBtn')?.addEventListener('click', () => openRedPenModal(true));
       document.getElementById('redPenClickPhotoBtn')?.addEventListener('click', () => document.getElementById('redPenCameraInput')?.click());
       document.getElementById('redPenGalleryBtn')?.addEventListener('click', () => document.getElementById('redPenGalleryInput')?.click());
       document.getElementById('redPenCameraInput')?.addEventListener('change', (e) => { if (e.target.files && e.target.files[0]) setRedPenSelectedFile(e.target.files[0]); });
@@ -10361,14 +10497,21 @@
       document.getElementById('submitRedPenPhotoBtn')?.addEventListener('click', async () => {
         const btn = document.getElementById('submitRedPenPhotoBtn');
         const note = (document.getElementById('redPenNoteInput')?.value || '').trim();
+        const questionText = (document.getElementById('redPenQuestionInput')?.value || '').trim();
+        const studentAnswerText = (document.getElementById('redPenAnswerTextarea')?.value || '').trim();
+        const maxMarks = Number(document.getElementById('redPenMaxMarksSelect')?.value || 3);
         const stuCls = resolveActiveStudentClass();
         const subjectCode = document.getElementById('redPenSubjectSelect')?.value || ('ACC-' + stuCls);
         const saveToDrive = Boolean(document.getElementById('redPenSaveDriveCheck')?.checked);
         const resBox = document.getElementById('redPenResultBox');
-        const rollNo = redPenTeacherTestMode ? 'TEACHER_TEST' : (window.viewAsStudentRollNo || document.getElementById('tgStudentSelect')?.value || appState.students[0].roll);
-        const file = selectedRedPenFile;
-        if (!file && !note) {
-          showToast('Please click a photo, upload from gallery, or enter a question note.', 'amber');
+        const rollNo = redPenTeacherTestMode ? 'TEACHER_TEST' : (window.viewAsStudentRollNo || (typeof stuOwnRoll === 'function' ? stuOwnRoll() : '') || document.getElementById('tgStudentSelect')?.value || appState.students[0].roll);
+        const file = redPenInputMode === 'photo' ? selectedRedPenFile : null;
+        if (redPenInputMode === 'photo' && !file) {
+          showToast('Please click a photo or upload from gallery (or switch to Type Answer).', 'amber');
+          return;
+        }
+        if (redPenInputMode === 'text' && !studentAnswerText) {
+          showToast('Please type your answer before submitting for Red-Pen check.', 'amber');
           return;
         }
         if (btn) { btn.disabled = true; btn.textContent = 'Checking with AI…'; }
@@ -10400,14 +10543,24 @@
         try {
           const imageBase64 = await readAndCompressImage();
           const res = await window.cgCallGas('submitRedPenSubmission', {
-            rollNo, subjectCode, note: note || 'Register Photo Check',
-            fileName: file ? file.name : '', imageBase64,
-            saveToDrive: saveToDrive, teacherTest: redPenTeacherTestMode
+            rollNo, subjectCode,
+            note: note || questionText || 'Red-Pen Check',
+            questionText: questionText || note || '',
+            studentAnswerText: redPenInputMode === 'text' ? studentAnswerText : '',
+            maxMarks: maxMarks,
+            fileName: file ? file.name : '',
+            imageBase64,
+            saveToDrive: saveToDrive,
+            teacherTest: redPenTeacherTestMode
           });
           if (resBox) {
             const ev = res && res.aiEvaluation;
             const driveLinkHtml = (res && res.driveUrl) ? `<p class="pt-1"><a href="${escHtml(res.driveUrl)}" target="_blank" rel="noopener" class="underline font-bold">📸 Saved Photo Link ↗</a></p>` : '';
-            if (ev && ev.step1_earned) {
+            if (res && res.isValid === false) {
+              resBox.className = 'p-3 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-100 text-xs space-y-1';
+              resBox.innerHTML = `<p class="font-extrabold">⚠️ Copy Not Accepted</p><p>${escHtml(res.rejectionReason || res.feedback || 'Please submit a clear handwritten photo or complete typed answer.')}</p>`;
+              showToast('Copy could not be evaluated. See notice.', 'amber');
+            } else if (ev && ev.step1_earned) {
               const earned = ev.computed ? ev.computed.marks_earned : 0;
               const maxM = ev.meta ? ev.meta.max_marks : 3;
               const rights = (ev.step1_earned.did_right_hi || []).map(x => `<li>✅ ${escHtml(x)}</li>`).join('');
@@ -10488,11 +10641,11 @@
           }
           showToast('Red-Pen AI vyast hai. WhatsApp par Gyan Sir ko bhejein.', 'amber');
         } finally {
-          if (btn) { btn.disabled = false; btn.textContent = '🖍️ Submit Register Photo'; }
+          if (btn) { btn.disabled = false; btn.textContent = '🖍️ Check Answer with AI'; }
         }
       });
 
-      function renderRedPenPastHistory() {
+      function renderRedPenPastHistory(serverItems) {
         const listEl = document.getElementById('stuRedPenHistoryList');
         const countEl = document.getElementById('stuRedPenHistoryCount');
         if (!listEl) return;
@@ -10501,6 +10654,23 @@
         try {
           past = JSON.parse(localStorage.getItem('cg_redpen_history_' + rollNo) || '[]');
         } catch (e) { past = []; }
+        if (Array.isArray(serverItems) && serverItems.length) {
+          window._cgRpServerItems = serverItems;
+        }
+        const cachedServer = window._cgRpServerItems || [];
+        if (cachedServer.length) {
+          const seen = new Set(past.map(p => String(p.subjectCode) + '|' + String(p.verdict).slice(0, 40)));
+          cachedServer.forEach(it => {
+            const k = String(it.subjectCode) + '|' + String(it.verdict).slice(0, 40);
+            if (!seen.has(k)) { past.push(it); seen.add(k); }
+          });
+        } else if (!window._cgRpHistFetched && typeof window.cgCallGas === 'function') {
+          window._cgRpHistFetched = true;
+          window.cgCallGas('getRedPenHistory', { rollNo }).then(res => {
+            const items = (res && res.items) || [];
+            if (items.length) renderRedPenPastHistory(items);
+          }).catch(() => {});
+        }
 
         if (countEl) countEl.textContent = `${past.length} ${past.length === 1 ? 'Copy' : 'Copies'}`;
 
@@ -11063,7 +11233,9 @@
 
   var DEFAULT_BACKEND = 'https://script.google.com/macros/s/AKfycbzmOtPr1jYIG6ktQymaVNrrJ7SGkB2KglPxyXzIK-ha94M66ilYn_dr92T-Aj1Fh0DrBQ/exec';
   var tg = (window.Telegram && window.Telegram.WebApp) || null;
-  var initData = (tg && tg.initData) || '';
+  var browserSessionTok = '';
+  try { browserSessionTok = localStorage.getItem('cg_browser_session') || ''; } catch (e) {}
+  var initData = (tg && tg.initData) || browserSessionTok;
   var isLocal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.protocol === 'file:';
   var live = false;      // true once a verified teacher session is active
   var session = null;
@@ -11137,8 +11309,8 @@
         '<div class="relative w-full max-w-[340px] rounded-[32px] p-6 text-center glass-card border border-white/60 dark:border-white/10 shadow-2xl">',
         '  <div class="flex justify-center mb-4">',
         '    <div class="w-[84px] h-[84px] rounded-[24px] bg-gradient-to-br from-[#7C30E0] to-[#1E0063] flex flex-col items-center justify-center text-white shadow-lg">',
-        '      <span class="text-xl font-black">CG</span>',
-        '      <span class="text-[14px] font-bold tracking-wider uppercase opacity-90">COMMERCE</span>',
+        '      <span class="text-xl font-black leading-none">CG</span>',
+        '      <span class="text-[9px] font-bold tracking-widest uppercase opacity-90 mt-1">GYAN</span>',
         '    </div>',
         '  </div>',
         '  <h1 id="cgGateTitle" class="text-xl font-bold font-sans text-[#1E0063] dark:text-[#F3ECFF] tracking-tight mb-1">Commerce Gyan</h1>',
@@ -11148,6 +11320,9 @@
         '      <div class="h-full w-2/3 bg-gradient-to-r from-[#7C30E0] to-[#F87800] rounded-full animate-pulse"></div>',
         '    </div>',
         '  </div>',
+        '  <div id="cgGateActions" class="hidden mt-3 pt-3 border-t border-slate-200/60 dark:border-white/10">',
+        '    <button type="button" onclick="window.cgLogout && window.cgLogout()" class="w-full min-h-[42px] px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 text-white text-xs font-bold cursor-pointer">Sign Out / Switch Account</button>',
+        '  </div>',
         '</div>'
       ].join('');
       document.body.appendChild(gate);
@@ -11155,6 +11330,7 @@
     var titleEl = $('cgGateTitle'); if (titleEl) titleEl.textContent = title;
     var msgEl = $('cgGateMsg'); if (msgEl) msgEl.textContent = message;
     var prog = $('cgGateProgress'); if (prog) prog.style.display = busy ? 'block' : 'none';
+    var acts = $('cgGateActions'); if (acts) acts.classList.toggle('hidden', Boolean(busy));
   }
 
   function hideGate() {
@@ -11347,7 +11523,7 @@
             name: name,
             parentName: s.student.parentName || 'Guardian',
             batch: 'Class ' + (s.student.classLevel || '12') + ' · ' + (s.student.board || 'CBSE'),
-            subjects: (Array.isArray(b.student.Subjects) ? b.student.Subjects : String(b.student.Subjects || b.student.subjects || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean)),
+            subjects: (Array.isArray(s.student.Subjects) ? s.student.Subjects : String(s.student.Subjects || s.student.subjects || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean)),
             status: 'Enrolled',
             joinDate: s.student.joinDate || '15 Apr',
             clearedMonths: s.student.clearedMonths || ['Oct'],
@@ -11623,7 +11799,17 @@
         );
       }
     }).catch(function (e) {
-      showGate('Connection problem', 'Could not reach server (' + e.message + '). Please reopen the app.');
+      var msg = String((e && e.message) || e || '');
+      if (/SESSION_EXPIRED|INVALID_TOKEN|AUTH_FAILED/i.test(msg)) {
+        try { localStorage.removeItem('cg_browser_session'); } catch (_) {}
+        hideGate();
+        unlock();
+        if (typeof window.showAuthFailed === 'function') {
+          window.showAuthFailed('Session expired. Please sign in again.');
+          return;
+        }
+      }
+      showGate('Connection problem', 'Could not reach server (' + msg + '). Please reopen the app.');
     });
   }
 

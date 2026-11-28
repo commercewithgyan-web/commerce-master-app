@@ -7,8 +7,27 @@ var CANDIDATE_MODELS = [
   'gemini-3.5-flash-lite',
   'gemini-3.6-flash',
   'gemini-3.8-flash',
-  'gemini-4-hydrogen'
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-flash-latest'
 ];
+
+function normalizeRedPenSubjectCode_(raw) {
+  var s = String(raw || '').trim().toUpperCase();
+  var map = {
+    'ACC-11': 'ACC11', 'ACC11': 'ACC11', 'ACCOUNTANCY-11': 'ACC11',
+    'ACC-12': 'ACC12', 'ACC12': 'ACC12', 'ACCOUNTANCY-12': 'ACC12',
+    'BST-11': 'BST11', 'BST11': 'BST11', 'BUSINESS STUDIES-11': 'BST11',
+    'BST-12': 'BST12', 'BST12': 'BST12', 'BUSINESS STUDIES-12': 'BST12',
+    'MIC-11': 'ECO11_MICRO', 'MICRO-11': 'ECO11_MICRO', 'ECO11_MICRO': 'ECO11_MICRO',
+    'MAC-12': 'ECO12_MACRO', 'MACRO-12': 'ECO12_MACRO', 'ECO12_MACRO': 'ECO12_MACRO',
+    'IED-12': 'IED12', 'IED12': 'IED12',
+    'STA-11': 'STAT11', 'STAT-11': 'STAT11', 'STAT11': 'STAT11'
+  };
+  if (map[s]) return map[s];
+  var compact = s.replace(/[^A-Z0-9_]/g, '');
+  return SUBJECT_PACKS[compact] ? compact : 'BST12';
+}
 
 var RULE_CONFIG = {
   ownFigureRule: true,
@@ -37,7 +56,7 @@ var SUBJECT_PACKS = {
 
 var VERTICAL_RULES = {
   ACCOUNTS:
-    'LENS: stepwise marking. Journal entry = accounts + Dr/Cr + amount. Ledger/statement = format judged separately from figures. ' +
+    'LENS: stepwise marking. Journal entry = accounts + Dr/Cr + amount. If Debit and Credit are reversed (e.g. Sales Dr To Cash instead of Cash Dr To Sales), the entry is WRONG and earns 0 marks for that entry. Ledger/statement = format judged separately from figures. ' +
     'Working notes, formulas and headings earn marks only if the value points list them.\n' +
     'MARKS-AFFECTING: wrong account, wrong amount, wrong Dr/Cr, missing entry, wrong head/sub-head, wrong formula, missing item that has its own value point.\n' +
     'ALERT ONLY: missing ruling, blank L.F., missing date, abbreviated but identifiable account name, missing rupee sign, narration (unless a value point lists it), rounding inside tolerance.',
@@ -113,10 +132,87 @@ function runGatekeeperAndBuildCtx_(imageBase64, confirmedStudentText) {
   if (confirmedStudentText) {
     raw.studentText = confirmedStudentText;
   }
+  if (arguments.length > 2 && arguments[2]) {
+    raw.subjectCode = normalizeRedPenSubjectCode_(arguments[2]);
+  }
   // Value points above are built by the AI from the photo. They become OFFICIAL
   // only when attachOfficialScheme_() replaces them with the sheet's Column P.
   raw.schemeStatus = 'AI_GENERATED';
   return raw;
+}
+
+/**
+ * Builds Gatekeeper-equivalent evaluation context for typed/text student answers
+ * (numerical, theoretical, case-based, or long descriptive).
+ */
+function runTextContextBuilder_(questionText, studentAnswerText, subjectCode, maxMarks, qidHint) {
+  var normSubj = normalizeRedPenSubjectCode_(subjectCode);
+  var pack = SUBJECT_PACKS[normSubj] || SUBJECT_PACKS['BST12'];
+  var marksNum = Number(maxMarks) || 3;
+  var qText = String(questionText || '').trim();
+  var aText = String(studentAnswerText || '').trim();
+
+  var ctx = {
+    isHandwritten: true,
+    rejectionReason: '',
+    subjectCode: normSubj,
+    questionType: marksNum <= 1 ? '1M' : (marksNum <= 3 ? 'SA1' : (marksNum <= 4 ? 'SA2' : 'LA')),
+    maxMarks: marksNum,
+    questionText: qText || ('CBSE ' + pack.name + ' Practice Question'),
+    qidOnPage: qidHint || '',
+    studentText: aText,
+    valuePoints: [],
+    schemeStatus: 'AI_GENERATED'
+  };
+
+  // If official scheme exists for QID, attachOfficialScheme_ will populate valuePoints & maxMarks
+  ctx = attachOfficialScheme_(ctx, qidHint);
+  if (ctx.schemeStatus === 'OFFICIAL' && ctx.valuePoints.length) {
+    return ctx;
+  }
+
+  var system = 'You are the CBSE Examiner Value-Point Builder for ' + pack.name + '. ' +
+    'Given a question (or student answer context), construct the official CBSE step-wise Value Points breakdown summing to exactly ' + marksNum + ' marks.';
+  var prompt = [
+    'SUBJECT: ' + normSubj + ' (' + pack.name + ')',
+    'MAX_MARKS: ' + marksNum,
+    'QUESTION: ' + ctx.questionText,
+    'STUDENT_ANSWER_PREVIEW: ' + aText.slice(0, 500),
+    'Return JSON with questionType (1M, SA1, SA2, LA, NUM, CASE), refined questionText if generic, and valuePoints (VP1, VP2...) whose marks sum to ' + marksNum + '.'
+  ].join('\n');
+
+  var schema = {
+    type: 'OBJECT',
+    required: ['questionType', 'questionText', 'valuePoints'],
+    properties: {
+      questionType: { type: 'STRING', enum: ['1M', 'SA1', 'SA2', 'LA', 'NUM', 'CASE'] },
+      questionText: { type: 'STRING' },
+      valuePoints: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          required: ['id', 'label', 'marks', 'type', 'keywords'],
+          properties: {
+            id: { type: 'STRING' },
+            label: { type: 'STRING' },
+            marks: { type: 'NUMBER' },
+            type: { type: 'STRING' },
+            keywords: { type: 'ARRAY', items: { type: 'STRING' } }
+          }
+        }
+      }
+    }
+  };
+
+  var raw = JSON.parse(callGemini_(system, [{ text: prompt }], schema));
+  if (raw.questionType) ctx.questionType = raw.questionType;
+  if (raw.questionText && !qText) ctx.questionText = raw.questionText;
+  if (Array.isArray(raw.valuePoints) && raw.valuePoints.length) {
+    ctx.valuePoints = raw.valuePoints;
+  } else {
+    ctx.valuePoints = [{ id: 'VP1', label: 'Core concept and accurate CBSE presentation', marks: marksNum, type: 'point', keywords: [] }];
+  }
+  return ctx;
 }
 
 /* ---------- OFFICIAL SCHEME FROM MASTER VAULT (Column AP) ---------- */
@@ -443,6 +539,13 @@ function callGemini_(system, userParts, schema) {
   baseModels.forEach(function (m) {
     if (models.indexOf(m) === -1 && !cache.get('REDPEN_DEAD_' + m)) models.push(m);
   });
+  if (typeof getVerifiedGeminiModels_ === 'function') {
+    var verified = getVerifiedGeminiModels_(key);
+    if (verified && verified.length) {
+      var filtered = models.filter(function (m) { return verified.indexOf(m) !== -1; });
+      if (filtered.length) models = filtered;
+    }
+  }
   if (!models.length) models = baseModels.slice();
 
   var errorLogs = [];
@@ -526,12 +629,22 @@ function callGemini_(system, userParts, schema) {
 
 /** Main Endpoint Handler */
 function handleRunRedPenAnalysis(data) {
-  var imageBase64 = data.imageBase64 || data.image || (data.pagesBase64 && data.pagesBase64[0]);
-  var confirmedText = data.confirmedText || null;
+  var imageBase64 = data.imageBase64 || data.image || (data.pagesBase64 && data.pagesBase64[0]) || '';
+  var studentAnswerText = String(data.studentAnswerText || data.answerText || data.confirmedText || '').trim();
+  var questionText = String(data.questionText || data.note || '').trim();
+  var subjectCode = normalizeRedPenSubjectCode_(data.subjectCode);
+  var maxMarks = Number(data.maxMarks) || 3;
   var telegramId = data.telegramId || 'GUEST_STUDENT';
   var studentName = data.studentName || 'Champion';
+  var rollNo = String(data.rollNo || telegramId || 'STUDENT').trim();
 
-  if (!imageBase64) return { ok: false, error: 'No image received' };
+  if (!imageBase64 && !studentAnswerText) {
+    return {
+      ok: true,
+      isValid: false,
+      rejectionReason: 'Blank submission: Please upload a photo of your handwritten answer OR type your answer before submitting.'
+    };
+  }
 
   // Enforce 3 free copy checks per student per day (Law 1: Zero Marginal Cost Quota Protection)
   var todayStr = getKolkataDate();
@@ -546,16 +659,28 @@ function handleRunRedPenAnalysis(data) {
     };
   }
 
-  var ctx = runGatekeeperAndBuildCtx_(imageBase64, confirmedText);
-  if (!ctx.isHandwritten) {
-    return {
-      ok: true,
-      isValid: false,
-      rejectionReason: ctx.rejectionReason || 'Please upload a clear photo of your handwritten notebook answer.'
-    };
+  var ctx;
+  if (imageBase64) {
+    ctx = runGatekeeperAndBuildCtx_(imageBase64, studentAnswerText || null, subjectCode);
+    if (!ctx.isHandwritten) {
+      return {
+        ok: true,
+        isValid: false,
+        rejectionReason: ctx.rejectionReason || 'Please upload a clear photo of your handwritten notebook answer.'
+      };
+    }
+    if (data.subjectCode) ctx.subjectCode = subjectCode;
+    ctx = attachOfficialScheme_(ctx, data.qid);
+  } else {
+    if (studentAnswerText.length < 3) {
+      return {
+        ok: true,
+        isValid: false,
+        rejectionReason: 'Answer too short or blank. Please write a complete answer so Gyan Sir can evaluate your steps and keywords.'
+      };
+    }
+    ctx = runTextContextBuilder_(questionText, studentAnswerText, subjectCode, maxMarks, data.qid);
   }
-
-  ctx = attachOfficialScheme_(ctx, data.qid);
 
   var prompt = buildEvaluatePrompt(ctx);
   var schema = redpenResponseSchema();
@@ -563,27 +688,28 @@ function handleRunRedPenAnalysis(data) {
   var scored = validateAndScore(raw, ctx);
 
   // Background logging, drive save, and award +20 CG Coins
+  var driveUrl = '';
   try {
     cache.put(quotaKey, String(usedToday + 1), 86400);
     if (typeof updateStudentCoinsAndLeaderboard_ === 'function' && telegramId !== 'GUEST_STUDENT') {
       updateStudentCoinsAndLeaderboard_(String(telegramId), studentName, 12, Math.round(scored.result.computed.marks_earned || 0), 20, false);
     }
 
-    var wantDrive = (data.saveToDrive === true || data.saveToDrive === 'true');
-    var driveUrl = wantDrive ? saveRedPenImageToDrive_(imageBase64, telegramId) : '';
+    var wantDrive = imageBase64 && (data.saveToDrive === true || data.saveToDrive === 'true');
+    driveUrl = wantDrive ? saveRedPenImageToDrive_(imageBase64, telegramId) : '';
     var subId = 'RP-' + Date.now();
     appendRow_('SHEET_QB', 'RedPen_Submissions', [
       subId,
       getKolkataTimestamp(),
-      String(telegramId),
+      String(rollNo),
       studentName,
-      ctx.subjectCode || 'BST12',
+      ctx.subjectCode || subjectCode,
       ctx.questionText || '',
       driveUrl,
       scored.result.computed.marks_earned + ' / ' + scored.result.meta.max_marks + ' Marks',
       (scored.result.step2_issues.issues || []).map(function(iss) { return iss.explain_hi; }).join('; '),
       scored.result.step5_mentor.line_hi || '',
-      '',
+      String(telegramId),
       'Evaluated'
     ]);
   } catch (e) {
@@ -596,6 +722,69 @@ function handleRunRedPenAnalysis(data) {
     driveUrl: (typeof driveUrl === 'string' && driveUrl !== 'DRIVE_SAVE_FAILED') ? driveUrl : '',
     data: scored.result
   };
+}
+
+/**
+ * Fetches persisted Red-Pen evaluation history from Google Sheets for a student.
+ */
+function getRedPenHistory_(rollNo, telegramId) {
+  var items = [];
+  var targetRoll = String(rollNo || '').trim().toUpperCase();
+  var targetTg = String(telegramId || '').trim();
+  try {
+    var srpRows = getAllRowsAsObjects_('SHEET_QB', 'Student_Red_Pen', 500);
+    for (var j = srpRows.length - 1; j >= 0; j--) {
+      var sr = srpRows[j];
+      var srRoll = String(sr.Roll_No || '').trim().toUpperCase();
+      if (targetRoll && srRoll === targetRoll) {
+        var fb = String(sr.Feedback || '');
+        var sm = fb.match(/Score:\s*([\d.]+)\s*\/\s*([\d.]+)/i);
+        items.push({
+          id: 'srp_' + j,
+          date: String(sr.Timestamp || ''),
+          subjectCode: String(sr.Subject || ''),
+          earned: sm ? Number(sm[1]) : 0,
+          maxM: sm ? Number(sm[2]) : 3,
+          verdict: fb || String(sr.Status || 'Evaluated'),
+          mentorLine: '',
+          driveUrl: String(sr.Drive_URL || ''),
+          questionText: String(sr.Note || ''),
+          status: String(sr.Status || 'EVALUATED')
+        });
+      }
+      if (items.length >= 15) break;
+    }
+  } catch (e) {
+    Logger.log('getRedPenHistory_ Student_Red_Pen note: ' + e.message);
+  }
+  if (items.length < 15) {
+    try {
+      var rows = getAllRowsAsObjects_('SHEET_QB', 'RedPen_Submissions', 500);
+      for (var i = rows.length - 1; i >= 0; i--) {
+        var r = rows[i];
+        var rTg = String(r.TelegramID || r.Student_ID || r.Roll_No || '').trim();
+        if ((targetRoll && rTg.toUpperCase() === targetRoll) || (targetTg && rTg === targetTg)) {
+          var scoreStr = String(r.Estimated_Marks || r.Marks_Score || r.Score || '');
+          var m = scoreStr.match(/([\d.]+)\s*\/\s*([\d.]+)/);
+          items.push({
+            id: r.SubmissionID || ('rp_' + i),
+            date: String(r.Timestamp || ''),
+            subjectCode: String(r.Subject || r.Class || ''),
+            earned: m ? Number(m[1]) : 0,
+            maxM: m ? Number(m[2]) : 3,
+            verdict: String(r.Traps_Caught || r.Feedback_Summary || 'Evaluated'),
+            mentorLine: String(r.Narration_Check || r.Mentor_Line || ''),
+            driveUrl: String(r.ImageDriveURL || r.Drive_URL || ''),
+            questionText: String(r.Chapter || r.Question_Text || '')
+          });
+        }
+        if (items.length >= 15) break;
+      }
+    } catch (e2) {
+      Logger.log('getRedPenHistory_ RedPen_Submissions note: ' + e2.message);
+    }
+  }
+  return { ok: true, items: items.slice(0, 15) };
 }
 
 /**
